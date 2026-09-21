@@ -1,8 +1,8 @@
 {
-  "name": "lensflow-monorepo",
+  "name": "lensy-crm",
   "version": "0.1.0",
   "private": true,
-  "description": "LensFlow - All-in-one Smart CRM for Freelance Photographers & Boutique Studios",
+  "description": "Lensy - All-in-one Smart CRM for Freelance Photographers & Boutique Studios",
   "workspaces": [
     "packages/*",
     "apps/*"

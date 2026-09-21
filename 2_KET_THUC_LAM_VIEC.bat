@@ -1,6 +1,6 @@
 @echo off
 chcp 65001 >nul
-title LENSFLOW CRM - KẾT THÚC VÀ ĐỒNG BỘ DỰ ÁN
+title LENSY CRM - KẾT THÚC VÀ ĐỒNG BỘ DỰ ÁN
 color 0A
 
 :: Setup Node.js, npm & Git PATH
@@ -11,7 +11,7 @@ cd /d "%~dp0"
 :SYNC_PROCESS
 cls
 echo ====================================================================
-echo   LENSFLOW CRM - KẾT THÚC PHIÊN LÀM VIỆC VÀ LƯU TRỮ AN TOÀN
+echo   LENSY CRM - KẾT THÚC PHIÊN LÀM VIỆC VÀ LƯU TRỮ AN TOÀN
 echo ====================================================================
 echo.
 

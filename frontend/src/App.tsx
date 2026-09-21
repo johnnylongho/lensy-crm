@@ -29,12 +29,12 @@ export function App() {
         <div className="max-w-6xl mx-auto flex flex-wrap items-center justify-between gap-3">
           <div className="flex items-center gap-2.5">
             <div className="w-8 h-8 rounded-xl bg-amber-500/20 text-amber-400 border border-amber-500/30 flex items-center justify-center font-bold text-sm">
-              LF
+              LS
             </div>
             <div>
               <div className="flex items-center gap-2">
                 <span className="font-extrabold text-sm text-white tracking-tight">
-                  LensFlow Studio
+                  Lensy Studio
                 </span>
                 <span className="text-[10px] uppercase font-bold px-1.5 py-0.5 rounded bg-amber-500/10 text-amber-400 border border-amber-500/20">
                   PoC Preview

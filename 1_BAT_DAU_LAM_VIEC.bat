@@ -1,6 +1,6 @@
 @echo off
 chcp 65001 >nul
-title LENSFLOW CRM - BẮT ĐẦU PHIÊN LÀM VIỆC
+title LENSY CRM - BẮT ĐẦU PHIÊN LÀM VIỆC
 color 0B
 
 :: 1. Setup Node.js, npm & Git PATH
@@ -10,7 +10,7 @@ cd /d "%~dp0"
 
 cls
 echo ====================================================================
-echo   LENSFLOW CRM - KHỞI ĐỘNG PHIÊN LÀM VIỆC (DEV ENVIRONMENT)
+echo   LENSY CRM - KHỞI ĐỘNG PHIÊN LÀM VIỆC (DEV ENVIRONMENT)
 echo   Trợ lý số All-in-one cho Freelance Photographer & Studio
 echo ====================================================================
 echo.

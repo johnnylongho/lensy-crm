@@ -1,4 +1,5 @@
 @echo off
+setlocal EnableDelayedExpansion
 chcp 65001 >nul
 title LENSY CRM - KET THUC VA DONG BO DU AN
 color 0A
@@ -53,14 +54,17 @@ echo Dang dong goi cac thay doi (git add -A)...
 git add -A
 
 echo.
-set "USER_INPUT=Luu phien lam viec Lensy tren %COMPUTERNAME%"
+set "USER_INPUT="
 set /p USER_INPUT="Nhap ghi chu cho phien lam viec (Nhan Enter de dung mac dinh): "
 
-if "%USER_INPUT%"=="" (
-    set "USER_INPUT=Luu phien lam viec Lensy tren %COMPUTERNAME%"
+if not defined USER_INPUT (
+    set "USER_INPUT=Dong bo phien lam viec Lensy tu %COMPUTERNAME%"
+)
+if "!USER_INPUT!"=="" (
+    set "USER_INPUT=Dong bo phien lam viec Lensy tu %COMPUTERNAME%"
 )
 
-git commit -m "%USER_INPUT%"
+git commit -m "!USER_INPUT!"
 goto CHECK_REMOTE
 
 :NO_LOCAL_CHANGES

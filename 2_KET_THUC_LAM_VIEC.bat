@@ -1,6 +1,6 @@
 @echo off
 chcp 65001 >nul
-title LENSY CRM - KẾT THÚC VÀ ĐỒNG BỘ DỰ ÁN
+title LENSY CRM - KET THUC VA DONG BO DU AN
 color 0A
 
 :: Setup Node.js, npm & Git PATH
@@ -11,28 +11,28 @@ cd /d "%~dp0"
 :SYNC_PROCESS
 cls
 echo ====================================================================
-echo   LENSY CRM (MIRMIA STUDIO) - KẾT THÚC VÀ ĐỒNG BỘ DỰ ÁN
+echo   LENSY CRM (MIRMIA STUDIO) - KET THUC VA DONG BO DU AN
 echo ====================================================================
 echo.
 
-:: 1. Tắt các tiến trình chạy nền trên cổng 5173 và 5000 (Dọn dẹp cổng)
-echo [1/3] Đang dọn dẹp các tiến trình server đang chạy nền...
-powershell -Command "Get-NetTCPConnection -LocalPort 5173, 5000, 3000 -ErrorAction SilentlyContinue | ForEach-Object { Stop-Process -Id $_.OwningProcess -Force -ErrorAction SilentlyContinue }" >nul 2>nul
-echo [OK] Đã giải phóng các cổng 5173, 5000 an toàn.
+:: 1. Don dep cac tien trinh dev server tren cong 5173 va 5000
+echo [1/3] Dang don dep cac tien trinh dev server tren cong 5173, 5000...
+powershell -NoProfile -ExecutionPolicy Bypass -Command "Get-NetTCPConnection -LocalPort 5173, 5000, 3000 -State Listen -ErrorAction SilentlyContinue | ForEach-Object { Stop-Process -Id $_.OwningProcess -Force -ErrorAction SilentlyContinue }" >nul 2>nul
+echo [OK] Da giai phong cac cong dev server an toan.
 echo.
 
-:: 2. Kiểm tra Git
+:: 2. Kiem tra Git
 where git >nul 2>nul
 if %errorlevel% neq 0 (
     color 0C
-    echo [LỖI] Không tìm thấy Git trên hệ thống!
-    echo Vui lòng cài đặt Git để tự động lưu lịch sử mã nguồn.
+    echo [LOI] Khong tim thay Git tren he thong!
+    echo Vui long kiem tra lai phan mem Git.
     pause
     exit /b 1
 )
 
-:: 3. Kiểm tra thay đổi mã nguồn
-echo [2/3] Kiểm tra trạng thái thay đổi mã nguồn...
+:: 3. Kiem tra thay doi ma nguon
+echo [2/3] Kiem tra trang thai thay doi ma nguon...
 git status --porcelain > "%temp%\lf_git_status.tmp"
 
 set HAS_CHANGES=0
@@ -44,38 +44,38 @@ if exist "%temp%\lf_git_status.tmp" del "%temp%\lf_git_status.tmp" >nul 2>nul
 if "%HAS_CHANGES%"=="0" goto NO_LOCAL_CHANGES
 
 :HAS_LOCAL_CHANGES
-echo Danh sách các file vừa được chỉnh sửa / tạo mới:
+echo Danh sach cac file vua duoc thay doi / tao moi:
 echo --------------------------------------------------------------------
 git status -s
 echo --------------------------------------------------------------------
 echo.
-echo Đang đóng gói các thay đổi (git add -A)...
+echo Dang dong goi cac thay doi (git add -A)...
 git add -A
 
 echo.
-set "USER_INPUT="
-set /p USER_INPUT="Nhập ghi chú cho phiên làm việc (Nhấn Enter để dùng mặc định): "
+set "USER_INPUT=Luu phien lam viec Lensy tren %COMPUTERNAME%"
+set /p USER_INPUT="Nhap ghi chu cho phien lam viec (Nhan Enter de dung mac dinh): "
 
 if "%USER_INPUT%"=="" (
-    set "USER_INPUT=Lưu phiên làm việc LensFlow từ %COMPUTERNAME% lúc %TIME%"
+    set "USER_INPUT=Luu phien lam viec Lensy tren %COMPUTERNAME%"
 )
 
 git commit -m "%USER_INPUT%"
 goto CHECK_REMOTE
 
 :NO_LOCAL_CHANGES
-echo [THÔNG TIN] Toàn bộ mã nguồn trên máy đã được lưu sạch sẽ (Không có file mới).
+echo [THONG TIN] Toan bo ma nguon tren may da duoc luu sach se (Khong co file moi).
 goto CHECK_REMOTE
 
 :CHECK_REMOTE
 echo.
-echo [3/3] Đang kiểm tra kết nối Cloud / GitHub Remote...
+echo [3/3] Dang kiem tra ket noi Cloud / GitHub Remote...
 git remote get-url origin >nul 2>nul
 if %errorlevel% neq 0 (
     goto LOCAL_ONLY_SUCCESS
 )
 
-echo Đang đẩy dữ liệu lên GitHub (git push origin main)...
+echo Dang day du lieu len GitHub (git push origin main)...
 git push origin main
 if %errorlevel% neq 0 goto PUSH_FAILED
 
@@ -83,15 +83,15 @@ if %errorlevel% neq 0 goto PUSH_FAILED
 color 0A
 echo.
 echo ====================================================================
-echo   [THÀNH CÔNG] ĐỒNG BỘ HOÀN TẤT 100%% LÊN GITHUB!
+echo   [THANH CONG] DONG BO HOAN TAT 100%% LEN GITHUB!
 echo ====================================================================
-echo   - Bản cập nhật mới nhất:
+echo   - Ban cap nhat moi nhat tren Cloud:
 git log -1 --format="     + Commit: %%h - %%s"
 echo.
-echo   [OK] TOÀN BỘ MÃ NGUỒN ĐÃ AN TOÀN - BẠN CÓ THỂ YÊN TÂM TẮT MÁY!
+echo   [OK] TOAN BO MA NGUON DA AN TOAN - BAN CO THE YEN TAM TAT MAY!
 echo ====================================================================
 echo.
-echo Nhấn phím bất kỳ để đóng cửa sổ này...
+echo Nhan phim bat ky de dong cua so nay...
 pause >nul
 exit /b 0
 
@@ -99,18 +99,19 @@ exit /b 0
 color 0A
 echo.
 echo ====================================================================
-echo   [THÀNH CÔNG] ĐÃ LƯU TRỮ TOÀN BỘ PHIÊN LÀM VIỆC VÀO LOCAL GIT!
+echo   [THANH CONG] DA LUU TRU PHIEN LAM VIEC VAO LOCAL GIT!
 echo ====================================================================
-echo   - Bản lưu gần nhất:
+echo   - Ban luu gan nhat:
 git log -1 --format="     + Commit: %%h - %%s"
-echo   - Lưu ý: Bạn chưa gắn link GitHub (origin remote).
-echo   - Nếu muốn sao lưu lên Cloud, hãy chạy lệnh:
-echo       git remote add origin https://github.com/your-username/your-repo.git
 echo.
-echo   [OK] CÁC TIẾN TRÌNH ĐÃ ĐƯỢC TẮT SẠCH - AN TOÀN ĐỂ TẮT MÁY!
+echo   - Ghi chu: Ban chua cau hinh link GitHub (origin remote).
+echo   - De sao luu len GitHub Cloud, hay chay lenh:
+echo       git remote add origin https://github.com/your-username/lensy.git
+echo.
+echo   [OK] CAC TIEN TRINH DA DUOC TAT SACH - AN TOAN DE TAT MAY!
 echo ====================================================================
 echo.
-echo Nhấn phím bất kỳ để đóng cửa sổ này...
+echo Nhan phim bat ky de dong cua so nay...
 pause >nul
 exit /b 0
 
@@ -118,17 +119,17 @@ exit /b 0
 color 0C
 echo.
 echo ====================================================================
-echo   [CẢNH BÁO] ĐỒNG BỘ CLOUD CHƯA HOÀN TẤT!
+echo   [CANH BAO] DONG BO CLOUD CHUA HOAN TAT!
 echo ====================================================================
-echo   Nguyên nhân có thể do:
-echo    1. Mất kết nối Internet trên thiết bị này.
-echo    2. Trên GitHub đang có bản mới hơn chưa được kéo về (Conflict).
-echo    3. Quyền đăng nhập hoặc token GitHub cần được xác thực lại.
+echo   Nguyen nhan co the do:
+echo    1. Mat ket noi Internet tren thiet bi nay.
+echo    2. Tren GitHub dang co ban moi hon chua duoc keo ve (Conflict).
+echo    3. Quyen dang nhap hoac token GitHub can duoc xac thuc lai.
 echo.
-set /p RETRY="Gõ Y để thử đồng bộ lại (hoặc nhấn Enter để thoát): "
+set /p RETRY="Go Y de thu dong bo lai (hoac nhan Enter de thoat): "
 if /i "%RETRY%"=="Y" goto SYNC_PROCESS
 
 echo.
-echo Nhấn phím bất kỳ để đóng cửa sổ này...
+echo Nhan phim bat ky de dong cua so nay...
 pause >nul
 exit /b 1

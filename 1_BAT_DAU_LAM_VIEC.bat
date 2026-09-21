@@ -1,6 +1,6 @@
 @echo off
 chcp 65001 >nul
-title LENSY CRM - BẮT ĐẦU PHIÊN LÀM VIỆC
+title LENSY CRM - BAT DAU PHIEN LAM VIEC
 color 0B
 
 :: 1. Setup Node.js, npm & Git PATH
@@ -10,59 +10,58 @@ cd /d "%~dp0"
 
 cls
 echo ====================================================================
-echo   LENSY CRM - KHỞI ĐỘNG PHIÊN LÀM VIỆC (DEV ENVIRONMENT)
-echo   Phát triển bởi: MIRMIA STUDIO & ACADEMY
+echo   LENSY CRM - KHOI DONG PHIEN LAM VIEC (DEV ENVIRONMENT)
+echo   Phat trien boi: MIRMIA STUDIO & ACADEMY
 echo ====================================================================
 echo.
 
-:: 2. Kiểm tra Git
+:: 2. Kiem tra Git
 where git >nul 2>nul
 if %errorlevel% neq 0 (
     color 0C
-    echo [CẢNH BÁO] Không tìm thấy Git trên máy tính!
-    echo Bạn vẫn có thể chạy web, nhưng tính năng đồng bộ mã nguồn sẽ bị tắt.
+    echo [CANH BAO] Khong tim thay Git tren may tinh!
+    echo Ban van co the chay web, nhung tinh nang dong bo ma nguon se bi tat.
     echo.
 ) else (
-    :: Kiểm tra nếu đã có git remote thì pull code mới nhất
     git remote -v >nul 2>nul
     if %errorlevel% equ 0 (
-        echo [1/3] Đang kiểm tra và tải code mới nhất từ GitHub...
+        echo [1/3] Dang kiem tra va tai code moi nhat tu GitHub...
         git pull origin main 2>nul
         if %errorlevel% neq 0 (
             color 0E
-            echo [THÔNG BÁO] Chưa đồng bộ được từ GitHub (chưa có remote hoặc mất mạng).
-            echo Đang tiếp tục chạy mã nguồn hiện tại trên máy.
+            echo [THONG BAO] Chua dong bo duoc tu GitHub (chua co remote hoac mat mang).
+            echo Dang tiep tuc chay ma nguon hien tai tren may.
         ) else (
-            echo [OK] Đã đồng bộ bản mới nhất từ GitHub thành công!
+            echo [OK] Da dong bo ban moi nhat tu GitHub thanh cong!
         )
     ) else (
-        echo [1/3] Dự án đang chạy ở chế độ cục bộ (Local Git Ready).
+        echo [1/3] Du an dang chay o che do cuc bo (Local Git Ready).
     )
 )
 echo.
 
-:: 3. Khởi động Backend (Nếu có thư mục /backend)
+:: 3. Khoi dong Backend (Neu co thu muc backend)
 if exist "backend\package.json" (
-    echo [*] Đang khởi động Backend API Server (Cổng 5000)...
-    start "LensFlow Backend (Port 5000)" /min cmd /c "cd /d "%~dp0backend" && call npm.cmd run dev"
+    echo [*] Dang khoi dong Backend API Server (Cong 5000)...
+    start "Lensy Backend (Port 5000)" /min cmd /c "cd /d "%~dp0backend" && call npm.cmd run dev"
 )
 
-:: 4. Mở trình duyệt tự động sau 3 giây
+:: 4. Mo trinh duyet tu dong sau 3 giay
 color 0B
-echo [2/3] Đang chuẩn bị mở trình duyệt tới http://localhost:5173 ...
+echo [2/3] Dang chuan bi mo trinh duyet toi http://localhost:5173 ...
 start /b cmd /c "ping 127.0.0.1 -n 4 >nul & start http://localhost:5173"
 echo.
 
-:: 5. Khởi động Frontend Dev Server
-echo [3/3] Đang khởi động Frontend Web App (Cổng 5173)...
+:: 5. Khoi dong Frontend Dev Server
+echo [3/3] Dang khoi dong Frontend Web App (Cong 5173)...
 echo ====================================================================
-echo   - Giao diện Khách (Quote Link):     http://localhost:5173
-echo   - Lịch chụp Thợ ảnh (Calendar View): http://localhost:5173
+echo   - Giao dien Khach (Quote Link):     http://localhost:5173
+echo   - Lich chup Tho anh (Calendar View): http://localhost:5173
 echo   - Backend API Server:               http://localhost:5000/api
 echo.
-echo   HÃY GIỮ CỬA SỔ NÀY TRONG KHI LÀM VIỆC.
-echo   Khi kết thúc, hãy chạy file '2_KET_THUC_LAM_VIEC.bat' để đóng sạch
-echo   tiến trình và sao lưu mã nguồn an toàn!
+echo   HAY GIU CUA SO NAY TRONG KHI LAM VIEC.
+echo   Khi ket thuc, hay chay file '2_KET_THUC_LAM_VIEC.bat' de dong sach
+echo   tien trinh va sao luu ma nguon an toan!
 echo ====================================================================
 echo.
 
@@ -74,5 +73,5 @@ if exist "frontend\package.json" (
 )
 
 echo.
-echo [THÔNG BÁO] Server đã dừng hoạt động.
+echo [THONG BAO] Server da dung hoat dong.
 pause

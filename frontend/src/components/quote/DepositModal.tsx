@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
-import { X, Copy, Check, QrCode, Building2, ShieldCheck, CheckCircle2 } from 'lucide-react';
+import { X, Copy, Check, QrCode, Building2, ShieldCheck, CheckCircle2, Loader2 } from 'lucide-react';
 import { QuoteData } from '../../types';
+import { supabase, isSupabaseConfigured } from '../../lib/supabase';
 
 interface Props {
   quote: QuoteData;
@@ -26,13 +27,31 @@ export const DepositModal: React.FC<Props> = ({ quote, isOpen, onClose, onConfir
     setTimeout(() => setter(false), 2000);
   };
 
-  const handleSuccessSubmit = () => {
-    setIsSuccess(true);
-    setTimeout(() => {
-      onConfirmDeposit();
-      onClose();
-      setIsSuccess(false);
-    }, 1200);
+  const [isUpdatingSupabase, setIsUpdatingSupabase] = useState(false);
+
+  const handleSuccessSubmit = async () => {
+    setIsUpdatingSupabase(true);
+    try {
+      if (isSupabaseConfigured) {
+        await supabase
+          .from('bookings')
+          .update({
+            status: 'da_chot',
+            paid_amount: quote.depositAmount
+          })
+          .eq('quote_token', quote.quoteToken);
+      }
+    } catch (e) {
+      console.warn('Lỗi cập nhật trạng thái cọc trên Supabase:', e);
+    } finally {
+      setIsUpdatingSupabase(false);
+      setIsSuccess(true);
+      setTimeout(() => {
+        onConfirmDeposit();
+        onClose();
+        setIsSuccess(false);
+      }, 1200);
+    }
   };
 
   return (
@@ -148,11 +167,21 @@ export const DepositModal: React.FC<Props> = ({ quote, isOpen, onClose, onConfir
             <div className="space-y-2">
               <button
                 type="button"
+                disabled={isUpdatingSupabase}
                 onClick={handleSuccessSubmit}
-                className="w-full py-3.5 px-4 bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white font-bold rounded-2xl transition-all shadow-lg shadow-emerald-600/30 flex items-center justify-center gap-2 text-sm"
+                className="w-full py-3.5 px-4 bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white font-bold rounded-2xl transition-all shadow-lg shadow-emerald-600/30 flex items-center justify-center gap-2 text-sm disabled:opacity-60"
               >
-                <ShieldCheck className="w-4 h-4" />
-                <span>Tôi Đã Hoàn Tất Chuyển Khoản</span>
+                {isUpdatingSupabase ? (
+                  <>
+                    <Loader2 className="w-4 h-4 animate-spin" />
+                    <span>Đang cập nhật lên Supabase...</span>
+                  </>
+                ) : (
+                  <>
+                    <ShieldCheck className="w-4 h-4" />
+                    <span>Tôi Đã Hoàn Tất Chuyển Khoản</span>
+                  </>
+                )}
               </button>
 
               <button

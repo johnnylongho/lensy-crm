@@ -22,6 +22,23 @@ export function App() {
     );
   };
 
+  // When client submits booking form, immediately append to calendar events
+  const handleNewBooking = (newBooking: any) => {
+    const newEvent: CalendarEvent = {
+      id: newBooking.id || `ev-${Date.now()}`,
+      clientName: newBooking.client_name || newBooking.clientName,
+      sessionType: newBooking.session_type || newBooking.sessionType || 'wedding',
+      eventDate: newBooking.event_date || newBooking.eventDate,
+      startTime: (newBooking.start_time || newBooking.startTime || '08:00').substring(0, 5),
+      endTime: (newBooking.end_time || newBooking.endTime || '12:00').substring(0, 5),
+      location: newBooking.location || 'Tại Studio',
+      status: (newBooking.status as any) || 'cho_coc',
+      packagePrice: Number(newBooking.package_price || newBooking.packagePrice || 18000000),
+      depositAmount: Number(newBooking.deposit_amount || newBooking.depositAmount || 5400000),
+    };
+    setCalendarEvents(prev => [newEvent, ...prev]);
+  };
+
   return (
     <div className="min-h-screen bg-[#080c14] text-slate-100 flex flex-col">
       {/* Top Demo Mode Switcher Bar */}
@@ -87,6 +104,7 @@ export function App() {
           <QuoteView
             initialQuote={quote}
             onQuoteStatusChange={handleQuoteStatusChange}
+            onBookingSubmit={handleNewBooking}
           />
         ) : (
           <PhotographerDashboard

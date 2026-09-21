@@ -4,6 +4,7 @@ import { QuoteSessionInfo } from './QuoteSessionInfo';
 import { QuoteInclusions } from './QuoteInclusions';
 import { QuoteEquipment } from './QuoteEquipment';
 import { QuotePriceSummary } from './QuotePriceSummary';
+import { ClientBookingForm } from './ClientBookingForm';
 import { DepositModal } from './DepositModal';
 import { QuoteData } from '../../types';
 import { Phone, Mail, MessageCircle, Heart } from 'lucide-react';
@@ -11,9 +12,10 @@ import { Phone, Mail, MessageCircle, Heart } from 'lucide-react';
 interface Props {
   initialQuote: QuoteData;
   onQuoteStatusChange?: (newStatus: QuoteData['status']) => void;
+  onBookingSubmit?: (newBooking: any) => void;
 }
 
-export const QuoteView: React.FC<Props> = ({ initialQuote, onQuoteStatusChange }) => {
+export const QuoteView: React.FC<Props> = ({ initialQuote, onQuoteStatusChange, onBookingSubmit }) => {
   const [quote, setQuote] = useState<QuoteData>(initialQuote);
   const [isDepositModalOpen, setIsDepositModalOpen] = useState(false);
 
@@ -51,6 +53,16 @@ export const QuoteView: React.FC<Props> = ({ initialQuote, onQuoteStatusChange }
         <QuotePriceSummary
           quote={quote}
           onOpenDepositModal={() => setIsDepositModalOpen(true)}
+        />
+
+        {/* Client Booking Submission Form (Direct Supabase Insert) */}
+        <ClientBookingForm
+          defaultSessionType={quote.sessionType}
+          defaultPrice={quote.packagePrice}
+          defaultDeposit={quote.depositAmount}
+          onBookingCreated={(newBooking) => {
+            if (onBookingSubmit) onBookingSubmit(newBooking);
+          }}
         />
 
         {/* Photographer Contact Card */}

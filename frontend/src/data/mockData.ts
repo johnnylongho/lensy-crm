@@ -1,0 +1,157 @@
+import { QuoteData, CalendarEvent } from '../types';
+
+export const MOCK_QUOTE: QuoteData = {
+  id: 'quote-luxury-wedding-2026',
+  quoteToken: 'q-minh-thao-wedding',
+  studioName: 'L’AURA STUDIO & WEDDING PHOTOGRAPHY',
+  studioLogoText: 'L’AURA',
+  photographerName: 'Thế Hoàng (Lead Photographer)',
+  photographerPhone: '0901234567',
+  photographerEmail: 'contact@laurastudio.vn',
+  clientName: 'Anh Minh & Chị Thảo',
+  clientPhone: '0987654321',
+  clientEmail: 'minhthao.wedding@gmail.com',
+  sessionType: 'wedding',
+  sessionTitle: 'Gói Phóng Sự Cưới Cao Cấp (Luxury Wedding Journalism)',
+  eventDate: '2026-10-18',
+  startTime: '07:00',
+  endTime: '14:00',
+  location: 'Trung tâm Hội nghị White Palace, TP. Hồ Chí Minh',
+  packagePrice: 18000000,
+  depositPercentage: 30,
+  depositAmount: 5400000,
+  remainingAmount: 12600000,
+  status: 'cho_coc',
+  inclusions: [
+    {
+      id: 'inc-1',
+      title: '02 Thợ Chụp Chuyên Nghiệp',
+      description: '01 Thợ chính dẫn dắt khoảnh khắc cảm xúc + 01 Thợ phụ bắt góc toàn cảnh & hậu trường.'
+    },
+    {
+      id: 'inc-2',
+      title: 'Thiết Bị Full-Frame Cao Cấp',
+      description: 'Hệ máy Sony A7 IV & A7R V cùng hệ ống kính GM chuyên dụng chụp thiếu sáng.'
+    },
+    {
+      id: 'inc-3',
+      title: 'Hậu Kỳ Màu Độc Quyền',
+      description: 'Toàn bộ file ảnh được blend màu Fine-art tone màu điện ảnh sang trọng.'
+    },
+    {
+      id: 'inc-4',
+      title: 'Bàn Giao Siêu Tốc',
+      description: 'Trả 30-50 ảnh Highlight trong 24h để đăng mạng xã hội. Trả toàn bộ link Drive trong 7 ngày.'
+    }
+  ],
+  equipmentList: [
+    'Body Sony Alpha 7 IV (Primary)',
+    'Body Sony Alpha 7R V (Backup/Secondary)',
+    'Lens FE 24-70mm F2.8 GM II',
+    'Lens FE 70-200mm F2.8 GM OSS II',
+    'Lens FE 50mm F1.2 GM (Chuyên chân dung cảm xúc)',
+    'Hệ thống Đèn Flash Godox V1 + AD200 Pro'
+  ],
+  deliverables: [
+    'Toàn bộ 800 - 1.200 file gốc chất lượng cao',
+    '120 file chỉnh sửa màu sắc chi tiết',
+    '01 Album Photobook siêu sắc nét 30x30cm (30 trang)',
+    '01 USB gỗ khắc tên cô dâu chú rể lưu trữ trọn đời',
+    'Link Online Gallery lưu trữ riêng tư trong 1 năm'
+  ],
+  specialNotes: 'Báo giá đã bao gồm chi phí di chuyển nội thành TP.HCM. Ekip có mặt trước giờ làm lễ 45 phút để set up thiết bị.',
+  validUntil: '2026-10-05',
+  bankInfo: {
+    bankName: 'MB Bank (Ngân Hàng Quân Đội)',
+    accountNumber: '0901234567',
+    accountName: 'NGUYEN THE HOANG'
+  }
+};
+
+// Calendar events spread out across the month
+export const MOCK_CALENDAR_EVENTS: CalendarEvent[] = [
+  {
+    id: 'ev-1',
+    clientName: 'Hoàng Oanh Lookbook',
+    sessionType: 'lookbook',
+    eventDate: '2026-09-22',
+    startTime: '13:30',
+    endTime: '17:30',
+    location: 'Studio Lam Vũ, Q.3',
+    status: 'da_chot',
+    packagePrice: 7500000,
+    depositAmount: 3000000,
+  },
+  {
+    id: 'ev-2',
+    clientName: 'Anh Tuấn & Chị Mai',
+    sessionType: 'wedding',
+    eventDate: '2026-09-25',
+    startTime: '07:30',
+    endTime: '13:30',
+    location: 'White Palace Hoàng Văn Thụ',
+    status: 'da_chot',
+    packagePrice: 12000000,
+    depositAmount: 4000000,
+  },
+  {
+    id: 'ev-3',
+    clientName: 'Khai Trương Showroom BrandX',
+    sessionType: 'event',
+    eventDate: '2026-09-28',
+    startTime: '09:00',
+    endTime: '16:00',
+    location: 'Landmark 81, Bình Thạnh',
+    status: 'da_chot',
+    packagePrice: 15000000,
+    depositAmount: 5000000,
+  },
+  {
+    id: 'ev-4',
+    clientName: 'Cặp Đôi Bảo & Ngọc',
+    sessionType: 'prewedding',
+    eventDate: '2026-10-04',
+    startTime: '05:30',
+    endTime: '18:00',
+    location: 'Ngoại cảnh Đà Lạt',
+    status: 'da_chot',
+    packagePrice: 22000000,
+    depositAmount: 10000000,
+  },
+  {
+    id: 'ev-5',
+    clientName: 'Chân Dung Profile Doanh Nhân',
+    sessionType: 'portrait',
+    eventDate: '2026-10-10',
+    startTime: '10:00',
+    endTime: '12:00',
+    location: 'The Coffee House Signature, Q.1',
+    status: 'cho_coc',
+    packagePrice: 4500000,
+    depositAmount: 1500000,
+  },
+  {
+    id: 'ev-6',
+    clientName: 'Minh & Thảo (Quote Đang Gửi)',
+    sessionType: 'wedding',
+    eventDate: '2026-10-18',
+    startTime: '07:00',
+    endTime: '14:00',
+    location: 'White Palace, TP.HCM',
+    status: 'cho_coc',
+    packagePrice: 18000000,
+    depositAmount: 5400000,
+  },
+  {
+    id: 'ev-7',
+    clientName: 'Thời Trang Thu Đông ChicMode',
+    sessionType: 'commercial',
+    eventDate: '2026-10-24',
+    startTime: '08:00',
+    endTime: '17:00',
+    location: 'Phim trường Long Island, Q.9',
+    status: 'da_tra_file',
+    packagePrice: 16000000,
+    depositAmount: 8000000,
+  }
+];

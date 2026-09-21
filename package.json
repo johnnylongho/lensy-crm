@@ -1,0 +1,26 @@
+{
+  "name": "lensflow-monorepo",
+  "version": "0.1.0",
+  "private": true,
+  "description": "LensFlow - All-in-one Smart CRM for Freelance Photographers & Boutique Studios",
+  "workspaces": [
+    "packages/*",
+    "apps/*"
+  ],
+  "scripts": {
+    "dev": "npm run dev --workspaces",
+    "dev:web": "npm run dev --workspace=@lensflow/web",
+    "dev:server": "npm run dev --workspace=@lensflow/server",
+    "build": "npm run build --workspaces"
+  },
+  "keywords": [
+    "crm",
+    "photography",
+    "freelance",
+    "supabase",
+    "react",
+    "nodejs"
+  ],
+  "author": "LensFlow Team",
+  "license": "MIT"
+}

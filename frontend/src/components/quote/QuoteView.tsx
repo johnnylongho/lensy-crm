@@ -82,8 +82,8 @@ export const QuoteView: React.FC<Props> = ({ initialQuote, onQuoteStatusChange }
         </div>
 
         {/* Footer Note */}
-        <div className="text-center py-4 text-[11px] text-slate-500 flex items-center justify-center gap-1">
-          <span>Được tạo bởi Lensy Studio Platform</span>
+        <div className="text-center py-4 text-[11px] text-slate-500 flex items-center justify-center gap-1.5">
+          <span>Lensy CRM • Phát triển bởi <strong>MIRMIA STUDIO & ACADEMY</strong></span>
           <Heart className="w-3 h-3 text-rose-500 inline fill-rose-500" />
         </div>
       </div>

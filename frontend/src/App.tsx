@@ -28,16 +28,23 @@ export function App() {
       <nav className="sticky top-0 z-40 bg-slate-950/90 backdrop-blur-md border-b border-slate-800/80 px-4 py-2.5">
         <div className="max-w-6xl mx-auto flex flex-wrap items-center justify-between gap-3">
           <div className="flex items-center gap-2.5">
-            <div className="w-8 h-8 rounded-xl bg-amber-500/20 text-amber-400 border border-amber-500/30 flex items-center justify-center font-bold text-sm">
-              LS
+            <div className="w-9 h-9 rounded-xl overflow-hidden border border-red-500/30 bg-black shadow-md flex-shrink-0">
+              <img
+                src="/mirmia-logo.png"
+                alt="Mirmia Studio & Academy"
+                className="w-full h-full object-cover"
+              />
             </div>
             <div>
               <div className="flex items-center gap-2">
                 <span className="font-extrabold text-sm text-white tracking-tight">
-                  Lensy Studio
+                  Lensy
                 </span>
-                <span className="text-[10px] uppercase font-bold px-1.5 py-0.5 rounded bg-amber-500/10 text-amber-400 border border-amber-500/20">
-                  PoC Preview
+                <span className="text-[10px] text-slate-400 font-medium hidden sm:inline">
+                  by Mirmia Studio
+                </span>
+                <span className="text-[9px] uppercase font-bold px-1.5 py-0.5 rounded bg-red-950/70 text-red-300 border border-red-500/30">
+                  MIRMIA
                 </span>
               </div>
             </div>

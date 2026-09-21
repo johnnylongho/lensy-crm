@@ -11,7 +11,7 @@ cd /d "%~dp0"
 cls
 echo ====================================================================
 echo   LENSY CRM - KHỞI ĐỘNG PHIÊN LÀM VIỆC (DEV ENVIRONMENT)
-echo   Trợ lý số All-in-one cho Freelance Photographer & Studio
+echo   Phát triển bởi: MIRMIA STUDIO & ACADEMY
 echo ====================================================================
 echo.
 

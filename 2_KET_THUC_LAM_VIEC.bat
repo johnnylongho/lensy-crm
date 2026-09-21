@@ -11,7 +11,7 @@ cd /d "%~dp0"
 :SYNC_PROCESS
 cls
 echo ====================================================================
-echo   LENSY CRM - KẾT THÚC PHIÊN LÀM VIỆC VÀ LƯU TRỮ AN TOÀN
+echo   LENSY CRM (MIRMIA STUDIO) - KẾT THÚC VÀ ĐỒNG BỘ DỰ ÁN
 echo ====================================================================
 echo.
 

@@ -17,17 +17,21 @@ export const DashboardHeader: React.FC<Props> = ({ events }) => {
       {/* Title & Profile Bar */}
       <div className="flex flex-wrap items-center justify-between gap-3 bg-slate-900/60 p-4 sm:p-5 rounded-3xl border border-slate-800">
         <div className="flex items-center gap-3">
-          <div className="w-12 h-12 rounded-2xl bg-gradient-to-tr from-amber-500 to-amber-600 flex items-center justify-center text-slate-950 font-black text-lg shadow-lg shadow-amber-500/20">
-            TH
+          <div className="w-12 h-12 rounded-2xl overflow-hidden border border-red-500/30 bg-black shadow-lg shadow-red-950/40 flex-shrink-0">
+            <img
+              src="/mirmia-logo.png"
+              alt="Mirmia Studio & Academy"
+              className="w-full h-full object-cover"
+            />
           </div>
           <div>
             <div className="flex items-center gap-2">
-              <h2 className="text-base sm:text-lg font-bold text-white">Thế Hoàng Photography</h2>
-              <span className="px-2 py-0.5 text-[10px] font-bold bg-amber-500/20 border border-amber-500/30 text-amber-300 rounded-full">
-                Lead Studio
+              <h2 className="text-base sm:text-lg font-bold text-white">MIRMIA STUDIO & ACADEMY</h2>
+              <span className="px-2 py-0.5 text-[10px] font-bold bg-red-950/60 border border-red-500/30 text-red-300 rounded-full">
+                Lensy CRM
               </span>
             </div>
-            <p className="text-xs text-slate-400">Quản lý lịch trình chụp & theo dõi nhận show</p>
+            <p className="text-xs text-slate-400">Hệ thống trợ lý số quản lý lịch trình & nhận show cho Mirmia</p>
           </div>
         </div>
 

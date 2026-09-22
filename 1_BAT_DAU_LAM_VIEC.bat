@@ -40,13 +40,15 @@ if %errorlevel% neq 0 (
 )
 echo.
 
-:: 3. Khoi dong Backend (Neu co thu muc apps/server hoac backend)
+:: 3. Giai phong cong va khoi dong Backend chay ngam (Chung cua so, khong mo them cua so phu)
+powershell -NoProfile -ExecutionPolicy Bypass -Command "Get-NetTCPConnection -LocalPort 5173, 5000, 3000 -State Listen -ErrorAction SilentlyContinue | ForEach-Object { Stop-Process -Id $_.OwningProcess -Force -ErrorAction SilentlyContinue }" >nul 2>nul
+
 if exist "apps\server\package.json" (
-    echo [*] Dang khoi dong Backend API Server [Cong 5000]...
-    start "Lensy Backend" /min cmd /c "cd /d "%~dp0" && call npm.cmd run dev:server"
+    echo [*] Dang khoi dong Backend API Server [Cong 5000 ngam]...
+    start "" /b cmd /c "cd /d "%~dp0" && call npm.cmd run dev:server"
 ) else if exist "backend\package.json" (
-    echo [*] Dang khoi dong Backend API Server [Cong 5000]...
-    start "Lensy Backend" /min cmd /c "cd /d "%~dp0backend" && call npm.cmd run dev"
+    echo [*] Dang khoi dong Backend API Server [Cong 5000 ngam]...
+    start "" /b cmd /c "cd /d "%~dp0backend" && call npm.cmd run dev"
 )
 
 :: 4. Mo trinh duyet tu dong sau 3 giay

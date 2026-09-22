@@ -66,8 +66,8 @@ const anonKey = process.env.SUPABASE_ANON_KEY || '';
 const secretKey = process.env.SUPABASE_SERVICE_ROLE_KEY || '';
 const supabaseUrl = process.env.SUPABASE_URL || '';
 
-assert(anonKey.startsWith('sb_publishable_'), 'Supabase Publishable / Anon Key hợp lệ', anonKey.substring(0, 20) + '...');
-assert(secretKey.startsWith('sb_secret_'), 'Supabase Secret / Service Role Key hợp lệ', secretKey.substring(0, 16) + '...');
+assert(anonKey.startsWith('sb_publishable_') || anonKey.startsWith('eyJ'), 'Supabase Publishable / Anon Key hợp lệ', anonKey.substring(0, 20) + '...');
+assert(secretKey.startsWith('sb_secret_') || secretKey.startsWith('eyJ'), 'Supabase Secret / Service Role Key hợp lệ', secretKey.substring(0, 16) + '...');
 
 if (supabaseUrl.includes('your-project')) {
   warn('Supabase URL đang dùng mẫu giữ chỗ (Placeholder)', 'SUPABASE_URL=' + supabaseUrl + ' (Cần điền Project URL thực từ Supabase Dashboard để kích hoạt live database)');

@@ -5,9 +5,11 @@ import { CalendarView } from './CalendarView';
 import { DayShootsModal } from './DayShootsModal';
 import { UpcomingShootsList } from './UpcomingShootsList';
 import { KanbanView } from './KanbanView';
+import { DebtReminderModal } from './DebtReminderModal';
 import { CalendarEvent, BookingStatus } from '../../types';
 import { supabase, isSupabaseConfigured } from '../../lib/supabase';
-import { Calendar, Kanban, RefreshCw, Radio, CheckCircle2, AlertCircle } from 'lucide-react';
+import { STATUS_CONFIG } from './BookingStatusSelect';
+import { Calendar, Kanban, RefreshCw, CheckCircle2, AlertCircle } from 'lucide-react';
 
 interface Props {
   events: CalendarEvent[];
@@ -18,13 +20,25 @@ interface Props {
 export const PhotographerDashboard: React.FC<Props> = ({
   events: initialEvents,
   onViewQuote,
-  onRefreshEvents
 }) => {
   const [events, setEvents] = useState<CalendarEvent[]>(initialEvents);
   const [selectedDate, setSelectedDate] = useState<Date>(new Date('2026-09-25'));
   const [viewMode, setViewMode] = useState<'calendar' | 'kanban'>('calendar');
   const [isLoading, setIsLoading] = useState(false);
-  const [isRealtimeActive, setIsRealtimeActive] = useState(false);
+  const [activeDebtReminderBooking, setActiveDebtReminderBooking] =
+    useState<CalendarEvent | null>(null);
+  const [toastNotification, setToastNotification] = useState<{
+    type: 'success' | 'error';
+    message: string;
+  } | null>(null);
+
+  // Auto hide toast after 4s
+  useEffect(() => {
+    if (toastNotification) {
+      const timer = setTimeout(() => setToastNotification(null), 4000);
+      return () => clearTimeout(timer);
+    }
+  }, [toastNotification]);
 
   // Hàm fetch danh sách lịch chụp từ Supabase
   const fetchBookingsFromSupabase = async () => {
@@ -42,18 +56,31 @@ export const PhotographerDashboard: React.FC<Props> = ({
         }
 
         if (data && data.length > 0) {
-          const mappedEvents: CalendarEvent[] = data.map((b: any) => ({
-            id: b.id,
-            clientName: b.client_name,
-            sessionType: b.session_type,
-            eventDate: b.event_date,
-            startTime: b.start_time?.substring(0, 5) || '08:00',
-            endTime: b.end_time?.substring(0, 5) || '12:00',
-            location: b.location || 'Tại Studio',
-            status: b.status as BookingStatus,
-            packagePrice: Number(b.package_price || 0),
-            depositAmount: Number(b.deposit_amount || 0),
-          }));
+          const mappedEvents: CalendarEvent[] = data.map((b: any) => {
+            const pkgPrice = Number(b.package_price || 0);
+            const depAmount = Number(b.deposit_amount || 0);
+            const paid = Number(b.paid_amount || 0);
+            const rem = Number(
+              b.remaining_amount !== undefined && b.remaining_amount !== null
+                ? b.remaining_amount
+                : pkgPrice - paid
+            );
+
+            return {
+              id: b.id,
+              clientName: b.client_name,
+              sessionType: b.session_type,
+              eventDate: b.event_date,
+              startTime: b.start_time?.substring(0, 5) || '08:00',
+              endTime: b.end_time?.substring(0, 5) || '12:00',
+              location: b.location || 'Tại Studio',
+              status: b.status as BookingStatus,
+              packagePrice: pkgPrice,
+              depositAmount: depAmount,
+              paidAmount: paid,
+              remainingAmount: rem,
+            };
+          });
           setEvents(mappedEvents);
         }
       }
@@ -79,11 +106,7 @@ export const PhotographerDashboard: React.FC<Props> = ({
             fetchBookingsFromSupabase();
           }
         )
-        .subscribe(status => {
-          if (status === 'SUBSCRIBED') {
-            setIsRealtimeActive(true);
-          }
-        });
+        .subscribe();
 
       return () => {
         supabase.removeChannel(channel);
@@ -99,21 +122,73 @@ export const PhotographerDashboard: React.FC<Props> = ({
   }, [initialEvents]);
 
   // Cập nhật trạng thái show (đổi từ Chờ cọc -> Đã chốt -> Đã trả file...)
+  // Đồng thời tự động cập nhật dòng tiền (30% cọc khi chuyển sang Đã nhận cọc, nợ đọng)
   const handleStatusChange = async (eventId: string, newStatus: BookingStatus) => {
-    // Cập nhật UI lạc quan (Optimistic update)
+    const targetEvent = events.find(e => e.id === eventId);
+    if (!targetEvent) return;
+
+    let updatedDeposit = targetEvent.depositAmount;
+    let updatedPaid = targetEvent.paidAmount ?? 0;
+
+    // Tự động tính 30% khi chuyển sang trạng thái "Đã nhận cọc"
+    if (newStatus === 'da_chot') {
+      const deposit30 = Math.round(targetEvent.packagePrice * 0.3);
+      updatedDeposit = targetEvent.depositAmount > 0 ? targetEvent.depositAmount : deposit30;
+      updatedPaid = updatedDeposit;
+    } else if (newStatus === 'hoan_thanh') {
+      updatedPaid = targetEvent.packagePrice;
+      if (updatedDeposit === 0) {
+        updatedDeposit = Math.round(targetEvent.packagePrice * 0.3);
+      }
+    } else if (newStatus === 'cho_coc') {
+      updatedPaid = 0;
+    }
+
+    const updatedRemaining = Math.max(0, targetEvent.packagePrice - updatedPaid);
+
+    // 1. Cập nhật UI lạc quan (Optimistic update)
     setEvents(prev =>
-      prev.map(e => (e.id === eventId ? { ...e, status: newStatus } : e))
+      prev.map(e =>
+        e.id === eventId
+          ? {
+              ...e,
+              status: newStatus,
+              depositAmount: updatedDeposit,
+              paidAmount: updatedPaid,
+              remainingAmount: updatedRemaining,
+            }
+          : e
+      )
     );
 
+    const statusInfo = STATUS_CONFIG[newStatus] || { label: newStatus };
+    setToastNotification({
+      type: 'success',
+      message: `Đã đổi trạng thái "${targetEvent.clientName}" ➔ ${statusInfo.label} (Cọc: ${updatedDeposit.toLocaleString('vi-VN')} đ | Nợ: ${updatedRemaining.toLocaleString('vi-VN')} đ)`,
+    });
+
+    // 2. Viết hàm UPDATE của Supabase: Cập nhật status, deposit_amount, paid_amount
     if (isSupabaseConfigured) {
       try {
+        const updatePayload: any = {
+          status: newStatus,
+          deposit_amount: updatedDeposit,
+          paid_amount: updatedPaid,
+        };
+
         const { error } = await supabase
           .from('bookings')
-          .update({ status: newStatus })
+          .update(updatePayload)
           .eq('id', eventId);
+
         if (error) throw error;
-      } catch (err) {
+      } catch (err: any) {
         console.error('Lỗi khi update status trên Supabase:', err);
+        setToastNotification({
+          type: 'error',
+          message: `Lỗi đồng bộ Supabase: ${err.message || 'Kiểm tra lại kết nối mạng'}`,
+        });
+        // Rollback nếu có lỗi
         fetchBookingsFromSupabase();
       }
     }
@@ -126,6 +201,34 @@ export const PhotographerDashboard: React.FC<Props> = ({
 
   return (
     <div className="w-full max-w-6xl mx-auto px-4 py-6 space-y-6">
+      {/* Top Floating Toast Notification */}
+      {toastNotification && (
+        <div className="fixed bottom-5 right-5 z-50 animate-bounce">
+          <div
+            className={`p-3.5 px-4 rounded-2xl shadow-2xl flex items-center gap-3 text-xs font-semibold border backdrop-blur-md ${
+              toastNotification.type === 'success'
+                ? 'bg-slate-900/95 border-emerald-500/50 text-emerald-200'
+                : 'bg-slate-900/95 border-rose-500/50 text-rose-200'
+            }`}
+          >
+            {toastNotification.type === 'success' ? (
+              <CheckCircle2 className="w-4 h-4 text-emerald-400 flex-shrink-0" />
+            ) : (
+              <AlertCircle className="w-4 h-4 text-rose-400 flex-shrink-0" />
+            )}
+            <span>{toastNotification.message}</span>
+          </div>
+        </div>
+      )}
+
+      {/* Modal Nhắc nợ tinh tế (USP 1) */}
+      <DebtReminderModal
+        isOpen={Boolean(activeDebtReminderBooking)}
+        booking={activeDebtReminderBooking}
+        onClose={() => setActiveDebtReminderBooking(null)}
+        onCopied={msg => setToastNotification({ type: 'success', message: msg })}
+      />
+
       {/* Top Header & Key Metrics */}
       <DashboardHeader events={events} />
 
@@ -198,6 +301,8 @@ export const PhotographerDashboard: React.FC<Props> = ({
             <UpcomingShootsList
               events={events}
               onSelectEventDate={handleSelectEventDate}
+              onStatusChange={handleStatusChange}
+              onOpenDebtReminder={setActiveDebtReminderBooking}
             />
           </div>
 
@@ -207,6 +312,8 @@ export const PhotographerDashboard: React.FC<Props> = ({
                 selectedDate={selectedDate}
                 events={events}
                 onViewQuote={onViewQuote}
+                onStatusChange={handleStatusChange}
+                onOpenDebtReminder={setActiveDebtReminderBooking}
               />
             </div>
           </div>
@@ -216,6 +323,7 @@ export const PhotographerDashboard: React.FC<Props> = ({
           <KanbanView
             events={events}
             onStatusChange={handleStatusChange}
+            onOpenDebtReminder={setActiveDebtReminderBooking}
           />
         </div>
       )}

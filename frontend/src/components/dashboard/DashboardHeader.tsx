@@ -1,6 +1,7 @@
 import React from 'react';
 import { Calendar, DollarSign, Camera, CheckCircle2, TrendingUp } from 'lucide-react';
 import { CalendarEvent } from '../../types';
+import { InstallPwaButton } from './InstallPwaButton';
 
 interface Props {
   events: CalendarEvent[];
@@ -35,7 +36,8 @@ export const DashboardHeader: React.FC<Props> = ({ events }) => {
           </div>
         </div>
 
-        <div className="flex items-center gap-2">
+        <div className="flex flex-wrap items-center gap-2.5">
+          <InstallPwaButton />
           <div className="px-3 py-1.5 rounded-xl bg-slate-950/80 border border-slate-800 text-xs">
             <span className="text-slate-400 block text-[10px]">Đã Thu Cọc</span>
             <span className="font-mono font-bold text-emerald-400">

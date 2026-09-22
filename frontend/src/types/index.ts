@@ -53,4 +53,6 @@ export interface CalendarEvent {
   status: BookingStatus;
   packagePrice: number;
   depositAmount: number;
+  paidAmount?: number;
+  remainingAmount?: number;
 }

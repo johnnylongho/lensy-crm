@@ -1,16 +1,26 @@
 import React from 'react';
 import { format, isSameDay, parseISO } from 'date-fns';
 import { vi } from 'date-fns/locale';
-import { Calendar, Clock, MapPin, DollarSign, CheckCircle2, AlertCircle, Eye, ShieldAlert } from 'lucide-react';
-import { CalendarEvent } from '../../types';
+import { Calendar, Clock, MapPin, Eye, MessageSquareQuote } from 'lucide-react';
+import { CalendarEvent, BookingStatus } from '../../types';
+import { BookingStatusSelect, STATUS_CONFIG } from './BookingStatusSelect';
+import { BookingFinancialCard } from './BookingFinancialCard';
 
 interface Props {
   selectedDate: Date;
   events: CalendarEvent[];
   onViewQuote?: (eventId: string) => void;
+  onStatusChange?: (eventId: string, newStatus: BookingStatus) => void;
+  onOpenDebtReminder?: (booking: CalendarEvent) => void;
 }
 
-export const DayShootsModal: React.FC<Props> = ({ selectedDate, events, onViewQuote }) => {
+export const DayShootsModal: React.FC<Props> = ({
+  selectedDate,
+  events,
+  onViewQuote,
+  onStatusChange,
+  onOpenDebtReminder,
+}) => {
   const dayEvents = events.filter(e => isSameDay(parseISO(e.eventDate), selectedDate));
   const formattedDate = format(selectedDate, 'EEEE, dd/MM/yyyy', { locale: vi });
 
@@ -39,13 +49,29 @@ export const DayShootsModal: React.FC<Props> = ({ selectedDate, events, onViewQu
       ) : (
         <div className="space-y-3">
           {dayEvents.map(item => {
-            const isConfirmed = item.status === 'da_chot' || item.status === 'da_tra_file' || item.status === 'hoan_thanh';
+            const statusTheme = STATUS_CONFIG[item.status] || STATUS_CONFIG.cho_coc;
+
+            const effectiveDeposit =
+              item.status === 'da_chot' && (!item.depositAmount || item.depositAmount === 0)
+                ? Math.round(item.packagePrice * 0.3)
+                : item.depositAmount;
+            const effectivePaid =
+              item.status === 'hoan_thanh'
+                ? item.packagePrice
+                : item.paidAmount && item.paidAmount > 0
+                ? item.paidAmount
+                : effectiveDeposit;
+            const remainingDebt = Math.max(0, item.packagePrice - effectivePaid);
+
+            const isDebtReminderEligible =
+              item.status === 'da_tra_file' && remainingDebt > 0;
 
             return (
               <div
                 key={item.id}
-                className="p-4 rounded-2xl bg-slate-950/70 border border-slate-800/80 hover:border-slate-700 transition-all space-y-3"
+                className={`p-4 rounded-2xl border transition-all duration-200 shadow-md space-y-3 ${statusTheme.cardBg} ${statusTheme.cardBorder}`}
               >
+                {/* Header with Client Name & Status Dropdown */}
                 <div className="flex items-start justify-between gap-2">
                   <div>
                     <h4 className="font-bold text-white text-sm">{item.clientName}</h4>
@@ -54,20 +80,17 @@ export const DayShootsModal: React.FC<Props> = ({ selectedDate, events, onViewQu
                     </span>
                   </div>
 
-                  <div>
-                    {isConfirmed ? (
-                      <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-emerald-500/15 border border-emerald-500/30 text-emerald-400 text-[10px] font-bold">
-                        <CheckCircle2 className="w-3 h-3" /> Đã Khóa Lịch
-                      </span>
-                    ) : (
-                      <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-amber-500/15 border border-amber-500/30 text-amber-400 text-[10px] font-bold">
-                        <AlertCircle className="w-3 h-3" /> Chờ Khách Cọc
-                      </span>
-                    )}
-                  </div>
+                  {onStatusChange && (
+                    <BookingStatusSelect
+                      status={item.status}
+                      onChange={newStatus => onStatusChange(item.id, newStatus)}
+                      size="sm"
+                    />
+                  )}
                 </div>
 
-                <div className="space-y-1.5 text-xs text-slate-300">
+                {/* Date & Location */}
+                <div className="space-y-1 text-xs text-slate-300">
                   <div className="flex items-center gap-2">
                     <Clock className="w-3.5 h-3.5 text-indigo-400" />
                     <span>Thời gian: <strong>{item.startTime} - {item.endTime}</strong></span>
@@ -77,26 +100,38 @@ export const DayShootsModal: React.FC<Props> = ({ selectedDate, events, onViewQu
                     <MapPin className="w-3.5 h-3.5 text-rose-400" />
                     <span className="truncate">Địa điểm: {item.location}</span>
                   </div>
-
-                  <div className="flex items-center justify-between pt-1 font-mono text-xs">
-                    <span className="text-slate-400">Giá gói:</span>
-                    <span className="text-white font-bold">{item.packagePrice.toLocaleString('vi-VN')} đ</span>
-                  </div>
-
-                  <div className="flex items-center justify-between font-mono text-xs text-amber-300">
-                    <span className="text-slate-400">Tiền cọc:</span>
-                    <span className="font-bold">{item.depositAmount.toLocaleString('vi-VN')} đ</span>
-                  </div>
                 </div>
 
+                {/* 3 Financial Metrics */}
+                <BookingFinancialCard
+                  packagePrice={item.packagePrice}
+                  depositAmount={item.depositAmount}
+                  status={item.status}
+                  paidAmount={item.paidAmount}
+                  compact={false}
+                />
+
+                {/* USP 1: Nút "Nhắc thanh toán" */}
+                {isDebtReminderEligible && onOpenDebtReminder && (
+                  <button
+                    type="button"
+                    onClick={() => onOpenDebtReminder(item)}
+                    className="w-full py-2 px-3 rounded-xl bg-gradient-to-r from-amber-500 via-rose-500 to-pink-500 hover:from-amber-400 hover:to-rose-400 text-slate-950 font-extrabold text-xs flex items-center justify-center gap-1.5 shadow-lg shadow-rose-950/60 transition-all hover:scale-[1.02] active:scale-[0.98]"
+                  >
+                    <MessageSquareQuote className="w-4 h-4" />
+                    <span>Nhắc thanh toán ({remainingDebt.toLocaleString('vi-VN')} đ)</span>
+                  </button>
+                )}
+
+                {/* View Quote Link Button */}
                 {onViewQuote && (
-                  <div className="pt-2 border-t border-slate-800/80">
+                  <div className="pt-1">
                     <button
                       type="button"
                       onClick={() => onViewQuote(item.id)}
-                      className="w-full py-1.5 px-3 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-semibold flex items-center justify-center gap-1.5 transition-colors"
+                      className="w-full py-1.5 px-3 rounded-xl bg-slate-900/90 hover:bg-slate-800 border border-slate-700 text-slate-200 text-xs font-semibold flex items-center justify-center gap-1.5 transition-colors shadow-sm"
                     >
-                      <Eye className="w-3.5 h-3.5" /> Xem Link Báo Giá Của Show Này
+                      <Eye className="w-3.5 h-3.5 text-amber-400" /> Xem Thư Báo Giá (Quote Link)
                     </button>
                   </div>
                 )}

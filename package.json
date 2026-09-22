@@ -3,15 +3,10 @@
   "version": "0.1.0",
   "private": true,
   "description": "Lensy - All-in-one Smart CRM for Freelance Photographers & Boutique Studios",
-  "workspaces": [
-    "packages/*",
-    "apps/*"
-  ],
   "scripts": {
-    "dev": "npm run dev --workspaces",
-    "dev:web": "npm run dev --workspace=@lensflow/web",
-    "dev:server": "npm run dev --workspace=@lensflow/server",
-    "build": "npm run build --workspaces"
+    "dev": "npm --prefix frontend run dev",
+    "build": "npm --prefix frontend run build",
+    "preview": "npm --prefix frontend run preview"
   },
   "keywords": [
     "crm",

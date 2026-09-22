@@ -16,7 +16,7 @@
     "react",
     "nodejs"
   ],
-  "author": "LensFlow Team",
+  "author": "Lensy Team",
   "license": "MIT",
   "devDependencies": {
     "dotenv": "^18.0.2"

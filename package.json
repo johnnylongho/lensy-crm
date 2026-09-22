@@ -17,5 +17,8 @@
     "nodejs"
   ],
   "author": "LensFlow Team",
-  "license": "MIT"
+  "license": "MIT",
+  "devDependencies": {
+    "dotenv": "^18.0.2"
+  }
 }

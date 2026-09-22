@@ -1,13 +1,15 @@
 import React from 'react';
-import { Calendar, DollarSign, Camera, CheckCircle2, TrendingUp } from 'lucide-react';
+import { Calendar, DollarSign, Camera, CheckCircle2, TrendingUp, LogOut, User } from 'lucide-react';
 import { CalendarEvent } from '../../types';
 import { InstallPwaButton } from './InstallPwaButton';
+import { useAuth } from '../../context/AuthContext';
 
 interface Props {
   events: CalendarEvent[];
 }
 
 export const DashboardHeader: React.FC<Props> = ({ events }) => {
+  const { user, signOut } = useAuth();
   const bookedEvents = events.filter(e => e.status === 'da_chot' || e.status === 'da_tra_file' || e.status === 'hoan_thanh');
   const pendingEvents = events.filter(e => e.status === 'cho_coc');
   const totalRevenue = events.reduce((sum, e) => sum + e.packagePrice, 0);
@@ -32,7 +34,13 @@ export const DashboardHeader: React.FC<Props> = ({ events }) => {
                 Lensy CRM
               </span>
             </div>
-            <p className="text-xs text-slate-400">Hệ thống trợ lý số quản lý lịch trình & nhận show cho Mirmia</p>
+            <p className="text-xs text-slate-400">
+              {user ? (
+                <span>Tài khoản: <strong className="text-amber-400 font-mono">{user.email}</strong></span>
+              ) : (
+                'Hệ thống trợ lý số quản lý lịch trình & nhận show cho Mirmia'
+              )}
+            </p>
           </div>
         </div>
 
@@ -44,6 +52,18 @@ export const DashboardHeader: React.FC<Props> = ({ events }) => {
               {totalDepositCollected.toLocaleString('vi-VN')} đ
             </span>
           </div>
+
+          {user && (
+            <button
+              type="button"
+              onClick={() => signOut()}
+              className="px-3 py-1.5 rounded-xl bg-slate-800 hover:bg-rose-950/80 border border-slate-700 hover:border-rose-500/50 text-slate-300 hover:text-rose-300 text-xs font-bold transition-all flex items-center gap-1.5 shadow-sm"
+              title="Đăng xuất khỏi Lensy"
+            >
+              <LogOut className="w-3.5 h-3.5" />
+              <span>Đăng xuất</span>
+            </button>
+          )}
         </div>
       </div>
 

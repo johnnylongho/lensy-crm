@@ -10,8 +10,8 @@ cd /d "%~dp0"
 
 cls
 echo ====================================================================
-echo   LENSY CRM - KHOI DONG PHIEN LAM VIEC (DEV ENVIRONMENT)
-echo   Phat trien boi: MIRMIA STUDIO & ACADEMY
+echo   LENSY CRM - KHOI DONG PHIEN LAM VIEC [DEV ENVIRONMENT]
+echo   Phat trien boi: MIRMIA STUDIO ^& ACADEMY
 echo ====================================================================
 echo.
 
@@ -29,21 +29,24 @@ if %errorlevel% neq 0 (
         git pull origin main 2>nul
         if %errorlevel% neq 0 (
             color 0E
-            echo [THONG BAO] Chua dong bo duoc tu GitHub (chua co remote hoac mat mang).
+            echo [THONG BAO] Chua dong bo duoc tu GitHub [chua co remote hoac mat mang].
             echo Dang tiep tuc chay ma nguon hien tai tren may.
         ) else (
             echo [OK] Da dong bo ban moi nhat tu GitHub thanh cong!
         )
     ) else (
-        echo [1/3] Du an dang chay o che do cuc bo (Local Git Ready).
+        echo [1/3] Du an dang chay o che do cuc bo [Local Git Ready].
     )
 )
 echo.
 
-:: 3. Khoi dong Backend (Neu co thu muc backend)
-if exist "backend\package.json" (
-    echo [*] Dang khoi dong Backend API Server (Cong 5000)...
-    start "Lensy Backend (Port 5000)" /min cmd /c "cd /d "%~dp0backend" && call npm.cmd run dev"
+:: 3. Khoi dong Backend (Neu co thu muc apps/server hoac backend)
+if exist "apps\server\package.json" (
+    echo [*] Dang khoi dong Backend API Server [Cong 5000]...
+    start "Lensy Backend" /min cmd /c "cd /d "%~dp0" && call npm.cmd run dev:server"
+) else if exist "backend\package.json" (
+    echo [*] Dang khoi dong Backend API Server [Cong 5000]...
+    start "Lensy Backend" /min cmd /c "cd /d "%~dp0backend" && call npm.cmd run dev"
 )
 
 :: 4. Mo trinh duyet tu dong sau 3 giay

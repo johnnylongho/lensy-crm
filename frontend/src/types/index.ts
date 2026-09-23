@@ -55,4 +55,6 @@ export interface CalendarEvent {
   depositAmount: number;
   paidAmount?: number;
   remainingAmount?: number;
+  quoteToken?: string;
+  notes?: string;
 }

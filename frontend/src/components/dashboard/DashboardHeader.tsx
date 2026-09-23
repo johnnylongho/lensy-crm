@@ -6,9 +6,10 @@ import { useAuth } from '../../context/AuthContext';
 
 interface Props {
   events: CalendarEvent[];
+  onOpenCreateQuote?: () => void;
 }
 
-export const DashboardHeader: React.FC<Props> = ({ events }) => {
+export const DashboardHeader: React.FC<Props> = ({ events, onOpenCreateQuote }) => {
   const { user, signOut } = useAuth();
   const bookedEvents = events.filter(e => e.status === 'da_chot' || e.status === 'da_tra_file' || e.status === 'hoan_thanh');
   const pendingEvents = events.filter(e => e.status === 'cho_coc');
@@ -45,6 +46,17 @@ export const DashboardHeader: React.FC<Props> = ({ events }) => {
         </div>
 
         <div className="flex flex-wrap items-center gap-2.5">
+          {onOpenCreateQuote && (
+            <button
+              type="button"
+              onClick={onOpenCreateQuote}
+              className="px-3.5 py-2 rounded-xl bg-gradient-to-r from-amber-500 to-yellow-500 hover:from-amber-400 hover:to-yellow-400 text-slate-950 text-xs font-extrabold flex items-center gap-1.5 shadow-md shadow-amber-500/25 transition-all hover:scale-[1.02]"
+            >
+              <Camera className="w-3.5 h-3.5" />
+              <span>+ Tạo Báo Giá Mới</span>
+            </button>
+          )}
+
           <InstallPwaButton />
           <div className="px-3 py-1.5 rounded-xl bg-slate-950/80 border border-slate-800 text-xs">
             <span className="text-slate-400 block text-[10px]">Đã Thu Cọc</span>

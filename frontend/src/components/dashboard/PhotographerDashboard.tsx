@@ -6,6 +6,7 @@ import { DayShootsModal } from './DayShootsModal';
 import { UpcomingShootsList } from './UpcomingShootsList';
 import { KanbanView } from './KanbanView';
 import { DebtReminderModal } from './DebtReminderModal';
+import { CreateQuoteModal } from './CreateQuoteModal';
 import { CalendarEvent, BookingStatus } from '../../types';
 import { supabase, isSupabaseConfigured } from '../../lib/supabase';
 import { STATUS_CONFIG } from './BookingStatusSelect';
@@ -27,6 +28,7 @@ export const PhotographerDashboard: React.FC<Props> = ({
   const [isLoading, setIsLoading] = useState(false);
   const [activeDebtReminderBooking, setActiveDebtReminderBooking] =
     useState<CalendarEvent | null>(null);
+  const [isCreateQuoteOpen, setIsCreateQuoteOpen] = useState(false);
   const [toastNotification, setToastNotification] = useState<{
     type: 'success' | 'error';
     message: string;
@@ -79,6 +81,8 @@ export const PhotographerDashboard: React.FC<Props> = ({
               depositAmount: depAmount,
               paidAmount: paid,
               remainingAmount: rem,
+              quoteToken: b.quote_token,
+              notes: b.notes,
             };
           });
           setEvents(mappedEvents);
@@ -194,9 +198,20 @@ export const PhotographerDashboard: React.FC<Props> = ({
     }
   };
 
-  const handleSelectEventDate = (dateStr: string) => {
+    const handleSelectEventDate = (dateStr: string) => {
     setSelectedDate(parseISO(dateStr));
     setViewMode('calendar');
+  };
+
+  const handleOpenQuote = (eventId: string) => {
+    const target = events.find(e => e.id === eventId);
+    if (target?.quoteToken) {
+      window.open(`/quote/${target.quoteToken}`, '_blank');
+    } else if (onViewQuote) {
+      onViewQuote(eventId);
+    } else {
+      window.open('/', '_blank');
+    }
   };
 
   return (
@@ -221,7 +236,7 @@ export const PhotographerDashboard: React.FC<Props> = ({
         </div>
       )}
 
-      {/* Modal Nhắc nợ tinh tế (USP 1) */}
+      {/* Modal Nhắc nợ tinh tế (USP 2) */}
       <DebtReminderModal
         isOpen={Boolean(activeDebtReminderBooking)}
         booking={activeDebtReminderBooking}
@@ -229,8 +244,26 @@ export const PhotographerDashboard: React.FC<Props> = ({
         onCopied={msg => setToastNotification({ type: 'success', message: msg })}
       />
 
+      {/* Modal Tạo Báo Giá & Quét Xung Đột Thiết Bị (USP 1) */}
+      <CreateQuoteModal
+        isOpen={isCreateQuoteOpen}
+        onClose={() => setIsCreateQuoteOpen(false)}
+        existingEvents={events}
+        onQuoteCreated={newEvent => {
+          setEvents(prev => [newEvent, ...prev]);
+          setToastNotification({
+            type: 'success',
+            message: `🎉 Đã tạo báo giá cho "${newEvent.clientName}" & cập nhật lịch trình!`,
+          });
+          fetchBookingsFromSupabase();
+        }}
+      />
+
       {/* Top Header & Key Metrics */}
-      <DashboardHeader events={events} />
+      <DashboardHeader
+        events={events}
+        onOpenCreateQuote={() => setIsCreateQuoteOpen(true)}
+      />
 
       {/* Control Bar: View Switcher (Calendar vs Kanban) & Realtime Status */}
       <div className="flex flex-wrap items-center justify-between gap-3 bg-slate-900/60 p-3 rounded-2xl border border-slate-800">
@@ -311,7 +344,7 @@ export const PhotographerDashboard: React.FC<Props> = ({
               <DayShootsModal
                 selectedDate={selectedDate}
                 events={events}
-                onViewQuote={onViewQuote}
+                onViewQuote={handleOpenQuote}
                 onStatusChange={handleStatusChange}
                 onOpenDebtReminder={setActiveDebtReminderBooking}
               />

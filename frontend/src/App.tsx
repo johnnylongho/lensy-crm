@@ -175,6 +175,16 @@ export function App() {
                 />
               }
             />
+            <Route
+              path="/quote/:token"
+              element={
+                <QuoteView
+                  initialQuote={quote}
+                  onQuoteStatusChange={handleQuoteStatusChange}
+                  onBookingSubmit={handleNewBooking}
+                />
+              }
+            />
 
             {/* 2. Trang Đăng Nhập / Đăng Ký */}
             <Route path="/login" element={<LoginPage />} />

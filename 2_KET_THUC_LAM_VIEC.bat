@@ -86,10 +86,28 @@ if %errorlevel% neq 0 goto PUSH_FAILED
 color 0A
 echo.
 echo ====================================================================
-echo   [THANH CONG] DONG BO HOAN TAT 100%% LEN GITHUB!
+echo   [THANH CONG] DONG BO HOAN TAT 100%% LEN GITHUB ^& VERCEL!
 echo ====================================================================
-echo   - Ban cap nhat moi nhat tren Cloud:
+echo   - Ban cap nhat moi nhat vua duoc day len:
 git log -1 --format="     + Commit: %%h - %%s"
+echo.
+echo   - DUONG LINK VERCEL CHINH THUC (LUON TU DONG CAP NHAT):
+echo     * Trang Chu / Báo Giá:
+echo       https://lensy-crm-server.vercel.app
+echo.
+echo     * Link Dat Lich Cua Ban:
+echo       https://lensy-crm-server.vercel.app/book/johnnylongho
+echo.
+echo     * Dashboard Quan Ly / Thiet Bi / Cai Dat:
+echo       https://lensy-crm-server.vercel.app/dashboard
+echo.
+echo   --------------------------------------------------------------------
+echo   [!] LUU Y QUAN TRONG VE VERCEL:
+echo    1. Vercel mat khoang 30 - 45 giay de tu dong build ban moi nhat.
+echo    2. KHONG TRUY CAP cac duong link co ma bam cu (vi du: ...-r8v6hujhu-...)
+echo       vi do la ban snapshot co dinh trong qua khu, se khong cap nhat!
+echo    3. Neu trinh duyet con nho cache cu, hay nhan Ctrl + Shift + R
+echo       de lam moi trang web.
 echo.
 echo   [OK] TOAN BO MA NGUON DA AN TOAN - BAN CO THE YEN TAM TAT MAY!
 echo ====================================================================

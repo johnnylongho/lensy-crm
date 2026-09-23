@@ -1,5 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { CalendarEvent } from '../../types';
+import { useAuth } from '../../context/AuthContext';
+import { supabase, isSupabaseConfigured } from '../../lib/supabase';
 import {
   X,
   Copy,
@@ -18,25 +20,84 @@ interface Props {
   booking: CalendarEvent | null;
   onClose: () => void;
   onCopied?: (text: string) => void;
+  photographerBankInfo?: {
+    bankName?: string;
+    accountNumber?: string;
+    accountName?: string;
+    studioName?: string;
+  };
 }
 
 type ToneType = 'gentle' | 'professional' | 'short';
+
+// Hàm ánh xạ tên ngân hàng sang mã định danh VietQR
+function getVietQrBankSlug(bankName: string): string {
+  const lower = (bankName || '').toLowerCase();
+  if (lower.includes('techcom')) return 'techcombank';
+  if (lower.includes('vietcom') || lower.includes('vcb')) return 'vietcombank';
+  if (lower.includes('tiên phong') || lower.includes('tpbank')) return 'tpbank';
+  if (lower.includes('acb') || lower.includes('á châu')) return 'acb';
+  if (lower.includes('vpbank') || lower.includes('thịnh vượng')) return 'vpbank';
+  if (lower.includes('bidv')) return 'bidv';
+  if (lower.includes('vietin') || lower.includes('icb') || lower.includes('ctg')) return 'vietinbank';
+  if (lower.includes('sacom')) return 'sacombank';
+  if (lower.includes('vib')) return 'vib';
+  if (lower.includes('hdbank') || lower.includes('hd')) return 'hdbank';
+  if (lower.includes('msb') || lower.includes('hàng hải')) return 'msb';
+  if (lower.includes('ocb')) return 'ocb';
+  if (lower.includes('seabank')) return 'seabank';
+  return 'mbbank';
+}
 
 export const DebtReminderModal: React.FC<Props> = ({
   isOpen,
   booking,
   onClose,
   onCopied,
+  photographerBankInfo,
 }) => {
+  const { user } = useAuth();
   const [selectedTone, setSelectedTone] = useState<ToneType>('gentle');
   const [customMessage, setCustomMessage] = useState<string>('');
   const [isCopied, setIsCopied] = useState<boolean>(false);
   const [showQr, setShowQr] = useState<boolean>(false);
 
-  // Bank Info Defaults
-  const bankName = 'MB Bank (Quân Đội)';
-  const accountNumber = '0901234567';
-  const accountName = 'MIRMIA STUDIO';
+  // Bank Info State (Lấy chính xác từ Cài Đặt của Thợ ảnh)
+  const [bankName, setBankName] = useState<string>(photographerBankInfo?.bankName || 'MB Bank');
+  const [accountNumber, setAccountNumber] = useState<string>(photographerBankInfo?.accountNumber || '0901234567');
+  const [accountName, setAccountName] = useState<string>(photographerBankInfo?.accountName || 'JOHNNY LONG HO');
+  const [studioName, setStudioName] = useState<string>(photographerBankInfo?.studioName || 'MIRMIA STUDIO & ACADEMY');
+
+  // Lấy dữ liệu ngân hàng thời gian thực từ bảng users của thợ ảnh
+  useEffect(() => {
+    if (photographerBankInfo?.accountNumber) {
+      setBankName(photographerBankInfo.bankName || 'MB Bank');
+      setAccountNumber(photographerBankInfo.accountNumber);
+      setAccountName(photographerBankInfo.accountName || 'JOHNNY LONG HO');
+      setStudioName(photographerBankInfo.studioName || 'MIRMIA STUDIO & ACADEMY');
+      return;
+    }
+
+    if (!user) return;
+
+    if (isSupabaseConfigured) {
+      supabase
+        .from('users')
+        .select('bank_name, bank_account_number, bank_account_name, studio_name, full_name')
+        .eq('id', user.id)
+        .maybeSingle()
+        .then(({ data, error }) => {
+          if (data && !error) {
+            if (data.bank_name) setBankName(data.bank_name);
+            if (data.bank_account_number) setAccountNumber(data.bank_account_number);
+            if (data.bank_account_name || data.full_name) {
+              setAccountName(data.bank_account_name || data.full_name);
+            }
+            if (data.studio_name) setStudioName(data.studio_name);
+          }
+        });
+    }
+  }, [user, photographerBankInfo]);
 
   // Calculate Remaining Balance
   const packagePrice = booking?.packagePrice || 0;
@@ -45,7 +106,7 @@ export const DebtReminderModal: React.FC<Props> = ({
   const paidAmount = booking?.paidAmount || depositAmount;
   const remainingDebt = Math.max(0, packagePrice - paidAmount);
 
-  // Sinh template tin nhắn theo Tone đã chọn
+  // Sinh template tin nhắn theo Tone đã chọn và thông tin ngân hàng thực tế
   useEffect(() => {
     if (!booking) return;
 
@@ -57,14 +118,14 @@ export const DebtReminderModal: React.FC<Props> = ({
       );
     } else if (selectedTone === 'professional') {
       setCustomMessage(
-        `Chào anh/chị ${booking.clientName}, Mirmia Studio đã hoàn tất và bàn giao file ảnh trọn bộ gói ${booking.sessionType.toUpperCase()}. Theo hợp đồng, số dư quyết toán còn lại là ${formattedRemaining}. Anh/chị vui lòng sắp xếp chuyển khoản qua STK: ${accountNumber} - ${bankName} (Chủ TK: ${accountName}) để bên em lưu trữ vĩnh viễn file gốc trên Cloud Drive nhé. Em cảm ơn anh/chị rất nhiều!`
+        `Chào anh/chị ${booking.clientName}, ${studioName} đã hoàn tất và bàn giao file ảnh trọn bộ gói ${booking.sessionType.toUpperCase()}. Theo hợp đồng, số dư quyết toán còn lại là ${formattedRemaining}. Anh/chị vui lòng sắp xếp chuyển khoản qua STK: ${accountNumber} - ${bankName} (Chủ TK: ${accountName}) để bên em lưu trữ vĩnh viễn file gốc trên Cloud Drive nhé. Em cảm ơn anh/chị rất nhiều!`
       );
     } else {
       setCustomMessage(
         `Em gửi anh/chị ${booking.clientName} thông tin quyết toán gói chụp: Số tiền còn lại là ${formattedRemaining} qua STK ${bankName}: ${accountNumber} (${accountName}), cú pháp: TT ${booking.clientName}. Em cảm ơn anh/chị nhiều nha!`
       );
     }
-  }, [booking, selectedTone, remainingDebt]);
+  }, [booking, selectedTone, remainingDebt, bankName, accountNumber, accountName, studioName]);
 
   if (!isOpen || !booking) return null;
 
@@ -84,8 +145,9 @@ export const DebtReminderModal: React.FC<Props> = ({
     }
   };
 
-  // VietQR Image URL
-  const vietQrUrl = `https://img.vietqr.io/image/mbbank-${accountNumber}-compact2.png?amount=${remainingDebt}&addInfo=${encodeURIComponent(
+  // VietQR Image URL với mã ngân hàng động
+  const bankSlug = getVietQrBankSlug(bankName);
+  const vietQrUrl = `https://img.vietqr.io/image/${bankSlug}-${accountNumber}-compact2.png?amount=${remainingDebt}&addInfo=${encodeURIComponent(
     `TT ${booking.clientName} Lensy`
   )}&accountName=${encodeURIComponent(accountName)}`;
 

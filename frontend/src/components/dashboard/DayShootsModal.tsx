@@ -5,12 +5,14 @@ import { Calendar, Clock, MapPin, Eye, MessageSquareQuote } from 'lucide-react';
 import { CalendarEvent, BookingStatus } from '../../types';
 import { BookingStatusSelect, STATUS_CONFIG } from './BookingStatusSelect';
 import { BookingFinancialCard } from './BookingFinancialCard';
+import { generateGoogleCalendarUrl } from '../../lib/calendarIntegration';
 
 interface Props {
   selectedDate: Date;
   events: CalendarEvent[];
   onViewQuote?: (eventId: string) => void;
   onStatusChange?: (eventId: string, newStatus: BookingStatus) => void;
+  onSelectBooking?: (booking: CalendarEvent) => void;
   onOpenDebtReminder?: (booking: CalendarEvent) => void;
 }
 
@@ -19,6 +21,7 @@ export const DayShootsModal: React.FC<Props> = ({
   events,
   onViewQuote,
   onStatusChange,
+  onSelectBooking,
   onOpenDebtReminder,
 }) => {
   const dayEvents = events.filter(e => isSameDay(parseISO(e.eventDate), selectedDate));
@@ -73,11 +76,25 @@ export const DayShootsModal: React.FC<Props> = ({
               >
                 {/* Header with Client Name & Status Dropdown */}
                 <div className="flex items-start justify-between gap-2">
-                  <div>
-                    <h4 className="font-bold text-white text-sm">{item.clientName}</h4>
-                    <span className="text-[10px] uppercase tracking-wider font-semibold text-amber-400">
-                      {item.sessionType} Photography
-                    </span>
+                  <div className="space-y-0.5">
+                    <button
+                      type="button"
+                      onClick={() => onSelectBooking && onSelectBooking(item)}
+                      className="font-bold text-white text-sm hover:text-amber-400 hover:underline text-left transition-colors"
+                      title="Xem chi tiết & Gán thiết bị"
+                    >
+                      {item.clientName}
+                    </button>
+                    <div className="flex items-center gap-1.5 flex-wrap">
+                      <span className="text-[10px] uppercase tracking-wider font-semibold text-amber-400">
+                        {item.sessionType} Photography
+                      </span>
+                      {item.assignedGears && item.assignedGears.length > 0 && (
+                        <span className="text-[9px] px-1.5 py-0.5 rounded font-bold border bg-sky-950/80 border-sky-500/40 text-sky-300">
+                          {item.assignedGears.length} thiết bị
+                        </span>
+                      )}
+                    </div>
                   </div>
 
                   {onStatusChange && (
@@ -123,18 +140,40 @@ export const DayShootsModal: React.FC<Props> = ({
                   </button>
                 )}
 
-                {/* View Quote Link Button */}
-                {onViewQuote && (
-                  <div className="pt-1">
+                {/* Action Buttons: View Quote & Google Calendar Sync */}
+                <div className="pt-1 grid grid-cols-2 gap-2">
+                  {onViewQuote && (
                     <button
                       type="button"
                       onClick={() => onViewQuote(item.id)}
-                      className="w-full py-1.5 px-3 rounded-xl bg-slate-900/90 hover:bg-slate-800 border border-slate-700 text-slate-200 text-xs font-semibold flex items-center justify-center gap-1.5 transition-colors shadow-sm"
+                      className="py-1.5 px-2.5 rounded-xl bg-slate-900/90 hover:bg-slate-800 border border-slate-700 text-slate-200 text-xs font-semibold flex items-center justify-center gap-1.5 transition-colors shadow-sm"
                     >
-                      <Eye className="w-3.5 h-3.5 text-amber-400" /> Xem Thư Báo Giá (Quote Link)
+                      <Eye className="w-3.5 h-3.5 text-amber-400" /> Báo Giá
                     </button>
-                  </div>
-                )}
+                  )}
+                  <button
+                    type="button"
+                    onClick={() => {
+                      const url = generateGoogleCalendarUrl({
+                        title: `[Mirmia] Show Chụp ${item.sessionType} - ${item.clientName}`,
+                        clientName: item.clientName,
+                        sessionType: item.sessionType,
+                        eventDate: item.eventDate,
+                        startTime: item.startTime,
+                        endTime: item.endTime,
+                        location: item.location,
+                        notes: item.notes,
+                        quoteToken: item.quoteToken,
+                        quoteUrl: `${window.location.origin}/quote/${item.quoteToken || ''}`,
+                      });
+                      window.open(url, '_blank');
+                    }}
+                    className="py-1.5 px-2.5 rounded-xl bg-slate-900/90 hover:bg-slate-800 border border-slate-700 text-amber-300 text-xs font-semibold flex items-center justify-center gap-1.5 transition-colors shadow-sm"
+                    title="Đồng bộ vào Google Calendar"
+                  >
+                    <Calendar className="w-3.5 h-3.5 text-amber-400" /> G-Calendar
+                  </button>
+                </div>
               </div>
             );
           })}

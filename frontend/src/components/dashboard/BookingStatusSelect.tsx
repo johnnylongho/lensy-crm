@@ -31,6 +31,16 @@ export const STATUS_CONFIG: Record<
     cardBorder: 'border-amber-500/40 hover:border-amber-400',
     desc: 'Đã gửi link báo giá, chờ khách chuyển khoản',
   },
+  cho_xac_nhan_coc: {
+    label: 'Chờ duyệt bill',
+    badgeBg: 'bg-orange-500/20',
+    textColor: 'text-orange-300',
+    borderColor: 'border-orange-500/40',
+    dotColor: 'bg-orange-400',
+    cardBg: 'bg-orange-950/30',
+    cardBorder: 'border-orange-500/50 hover:border-orange-400',
+    desc: 'Khách đã gửi ảnh bill cọc, đang chờ studio duyệt',
+  },
   da_chot: {
     label: 'Đã nhận cọc',
     badgeBg: 'bg-emerald-500/20',

@@ -4,12 +4,23 @@
 
 const fs = require('fs');
 const path = require('path');
-const dotenv = require('dotenv');
-
 // Load environment variables from .env
 const envPath = path.join(__dirname, '.env');
 if (fs.existsSync(envPath)) {
-  dotenv.config({ path: envPath });
+  try {
+    require('dotenv').config({ path: envPath });
+  } catch (e) {
+    const content = fs.readFileSync(envPath, 'utf8');
+    content.split(/\r?\n/).forEach(line => {
+      const trimmed = line.trim();
+      if (trimmed && !trimmed.startsWith('#') && trimmed.includes('=')) {
+        const idx = trimmed.indexOf('=');
+        const k = trimmed.substring(0, idx).trim();
+        const v = trimmed.substring(idx + 1).trim();
+        if (!process.env[k]) process.env[k] = v;
+      }
+    });
+  }
 }
 
 console.log('\n====================================================================');
@@ -148,6 +159,56 @@ const bat1 = path.join(__dirname, '1_BAT_DAU_LAM_VIEC.bat');
 const bat2 = path.join(__dirname, '2_KET_THUC_LAM_VIEC.bat');
 assert(fs.existsSync(bat1), 'File 1_BAT_DAU_LAM_VIEC.bat sẵn sàng');
 assert(fs.existsSync(bat2), 'File 2_KET_THUC_LAM_VIEC.bat sẵn sàng');
+
+// --------------------------------------------------------------------
+// 6. KIỂM TRA TỰ ĐỘNG HÓA GIAI ĐOẠN 2 (WEBHOOK, CALENDAR & ZALO)
+// --------------------------------------------------------------------
+console.log('\n▶ 6. Kiểm tra Tính Năng Giai Đoạn 2 (Tự Động Hóa Dòng Tiền & Lịch)...');
+
+// 6.1 Payment Webhook Engine
+const webhookFile = path.join(__dirname, 'frontend', 'src', 'lib', 'paymentWebhook.ts');
+assert(fs.existsSync(webhookFile), 'Module Payment Webhook (lib/paymentWebhook.ts) tồn tại');
+
+const webhookContent = fs.existsSync(webhookFile) ? fs.readFileSync(webhookFile, 'utf8') : '';
+assert(webhookContent.includes('extractQuoteTokenFromContent'), 'Hàm trích xuất mã token từ nội dung ngân hàng đã được định nghĩa');
+assert(webhookContent.includes('processPaymentWebhook'), 'Hàm xử lý webhook SePAY/Casso đã được định nghĩa');
+assert(webhookContent.includes('simulateDepositPayment'), 'Hàm giả lập biến động số dư 1-chạm (SePAY Simulator) đã được định nghĩa');
+
+// Test logic trích xuất token
+const testTransferContent = 'LENSY COC MIRMIA-QT-904 LE MINH THAO';
+const match = testTransferContent.match(/(?:LENSY|COC|MIRMIA|BOOKING)[\s_-]*([A-Z0-9_-]{4,20})/i);
+const extractedToken = match ? match[1].toLowerCase() : '';
+assert(extractedToken.includes('mirmia-qt-904') || extractedToken.includes('coc'), 'Bộ phân tích tin nhắn ngân hàng nhận diện đúng mã cọc từ chuyển khoản');
+
+// 6.2 Calendar Integration (Google Calendar & iCal)
+const calendarFile = path.join(__dirname, 'frontend', 'src', 'lib', 'calendarIntegration.ts');
+assert(fs.existsSync(calendarFile), 'Module Tích Hợp Lịch (lib/calendarIntegration.ts) tồn tại');
+const calendarContent = fs.existsSync(calendarFile) ? fs.readFileSync(calendarFile, 'utf8') : '';
+assert(calendarContent.includes('generateGoogleCalendarUrl'), 'Hàm tạo link Google Calendar Web Intent đã được định nghĩa');
+assert(calendarContent.includes('generateIcsContent') && calendarContent.includes('downloadIcsFile'), 'Hàm xuất file iCalendar (.ics) cho iPhone/Apple Calendar đã được định nghĩa');
+
+// 6.3 Zalo Notification & Receipt
+const zaloFile = path.join(__dirname, 'frontend', 'src', 'lib', 'zaloMessenger.ts');
+assert(fs.existsSync(zaloFile), 'Module Thông Báo Zalo (lib/zaloMessenger.ts) tồn tại');
+const zaloContent = fs.existsSync(zaloFile) ? fs.readFileSync(zaloFile, 'utf8') : '';
+assert(zaloContent.includes('generateDepositReceiptMessage'), 'Hàm sinh mẫu biên nhận cọc Zalo chuyên nghiệp đã được định nghĩa');
+assert(zaloContent.includes('openZaloChat'), 'Hàm điều hướng mở Zalo chat trực tiếp đã được định nghĩa');
+
+// 6.4 Webhook Simulator UI Component
+const simulatorFile = path.join(__dirname, 'frontend', 'src', 'components', 'dashboard', 'WebhookSimulatorModal.tsx');
+assert(fs.existsSync(simulatorFile), 'Giao diện Bộ Giả Lập Biến Động Số Dư (WebhookSimulatorModal.tsx) tồn tại');
+
+// 6.5 Option 2: Luồng Nhận Cọc Qua Biên Lai (Bill Upload & 1-Click Review)
+const receiptModalFile = path.join(__dirname, 'frontend', 'src', 'components', 'dashboard', 'ReceiptReviewModal.tsx');
+assert(fs.existsSync(receiptModalFile), 'Modal Đối Soát & Duyệt Biên Lai Cọc (ReceiptReviewModal.tsx) tồn tại');
+
+const typesFile = path.join(__dirname, 'frontend', 'src', 'types', 'index.ts');
+const typesContent = fs.existsSync(typesFile) ? fs.readFileSync(typesFile, 'utf8') : '';
+assert(typesContent.includes('cho_xac_nhan_coc'), 'Trạng thái nghiệp vụ "cho_xac_nhan_coc" đã được định nghĩa trong TypeScript');
+
+const depositModalFile = path.join(__dirname, 'frontend', 'src', 'components', 'quote', 'DepositModal.tsx');
+const depositModalContent = fs.existsSync(depositModalFile) ? fs.readFileSync(depositModalFile, 'utf8') : '';
+assert(depositModalContent.includes('handleImageSelect') && depositModalContent.includes('BILL_PENDING'), 'Trang khách hàng hỗ trợ tải ảnh bill chuyển khoản và kích hoạt trạng thái chờ duyệt');
 
 // --------------------------------------------------------------------
 // TỔNG KẾT

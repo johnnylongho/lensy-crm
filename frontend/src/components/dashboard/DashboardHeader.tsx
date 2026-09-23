@@ -1,5 +1,6 @@
 import React from 'react';
-import { Calendar, DollarSign, Camera, CheckCircle2, TrendingUp, LogOut, User } from 'lucide-react';
+import { Link } from 'react-router-dom';
+import { Calendar, DollarSign, Camera, CheckCircle2, TrendingUp, LogOut, User, Settings } from 'lucide-react';
 import { CalendarEvent } from '../../types';
 import { InstallPwaButton } from './InstallPwaButton';
 import { useAuth } from '../../context/AuthContext';
@@ -7,12 +8,20 @@ import { useAuth } from '../../context/AuthContext';
 interface Props {
   events: CalendarEvent[];
   onOpenCreateQuote?: () => void;
+  onOpenWebhookSimulator?: () => void;
+  onOpenReceiptReview?: (booking: CalendarEvent) => void;
 }
 
-export const DashboardHeader: React.FC<Props> = ({ events, onOpenCreateQuote }) => {
+export const DashboardHeader: React.FC<Props> = ({
+  events,
+  onOpenCreateQuote,
+  onOpenWebhookSimulator,
+  onOpenReceiptReview,
+}) => {
   const { user, signOut } = useAuth();
   const bookedEvents = events.filter(e => e.status === 'da_chot' || e.status === 'da_tra_file' || e.status === 'hoan_thanh');
   const pendingEvents = events.filter(e => e.status === 'cho_coc');
+  const pendingReceipts = events.filter(e => e.status === 'cho_xac_nhan_coc');
   const totalRevenue = events.reduce((sum, e) => sum + e.packagePrice, 0);
   const totalDepositCollected = events.reduce((sum, e) => sum + e.depositAmount, 0);
 
@@ -46,6 +55,27 @@ export const DashboardHeader: React.FC<Props> = ({ events, onOpenCreateQuote }) 
         </div>
 
         <div className="flex flex-wrap items-center gap-2.5">
+          {pendingReceipts.length > 0 && onOpenReceiptReview && (
+            <button
+              type="button"
+              onClick={() => onOpenReceiptReview(pendingReceipts[0])}
+              className="px-3.5 py-2 rounded-xl bg-gradient-to-r from-orange-600 to-amber-600 hover:from-orange-500 hover:to-amber-500 text-white text-xs font-extrabold flex items-center gap-1.5 transition-all shadow-lg shadow-orange-950/60 animate-pulse hover:scale-[1.02]"
+              title="Có khách hàng vừa gửi ảnh biên lai cọc cần duyệt"
+            >
+              <span>🔔 {pendingReceipts.length} Biên Lai Cần Duyệt</span>
+            </button>
+          )}
+          {onOpenWebhookSimulator && (
+            <button
+              type="button"
+              onClick={onOpenWebhookSimulator}
+              className="px-3 py-2 rounded-xl bg-slate-800 hover:bg-amber-500/20 border border-slate-700 hover:border-amber-500/50 text-amber-300 text-xs font-bold flex items-center gap-1.5 transition-all shadow-sm"
+              title="Mô phỏng nhận tiền cọc qua SePAY/VietQR để test tự động hóa"
+            >
+              <span>⚡ Test Cọc (SePAY)</span>
+            </button>
+          )}
+
           {onOpenCreateQuote && (
             <button
               type="button"
@@ -56,6 +86,24 @@ export const DashboardHeader: React.FC<Props> = ({ events, onOpenCreateQuote }) 
               <span>+ Tạo Báo Giá Mới</span>
             </button>
           )}
+
+          <Link
+            to="/dashboard/gears"
+            className="px-3.5 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 border border-slate-700 hover:border-sky-500/50 text-slate-200 hover:text-sky-300 text-xs font-bold flex items-center gap-1.5 transition-all shadow-sm"
+            title="Quản lý kho thiết bị Camera, Lens, Đèn"
+          >
+            <Camera className="w-3.5 h-3.5 text-sky-400" />
+            <span>Kho Thiết Bị</span>
+          </Link>
+
+          <Link
+            to="/dashboard/settings"
+            className="px-3.5 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 border border-slate-700 hover:border-amber-500/50 text-slate-200 hover:text-amber-400 text-xs font-bold flex items-center gap-1.5 transition-all shadow-sm"
+            title="Cài đặt thông tin Studio, Username và Số tài khoản ngân hàng"
+          >
+            <Settings className="w-3.5 h-3.5 text-amber-400" />
+            <span>Cài Đặt</span>
+          </Link>
 
           <InstallPwaButton />
           <div className="px-3 py-1.5 rounded-xl bg-slate-950/80 border border-slate-800 text-xs">

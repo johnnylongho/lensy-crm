@@ -7,6 +7,9 @@ import { UpcomingShootsList } from './UpcomingShootsList';
 import { KanbanView } from './KanbanView';
 import { DebtReminderModal } from './DebtReminderModal';
 import { CreateQuoteModal } from './CreateQuoteModal';
+import { WebhookSimulatorModal } from './WebhookSimulatorModal';
+import { ReceiptReviewModal } from './ReceiptReviewModal';
+import { BookingDetailModal } from './BookingDetailModal';
 import { CalendarEvent, BookingStatus } from '../../types';
 import { supabase, isSupabaseConfigured } from '../../lib/supabase';
 import { STATUS_CONFIG } from './BookingStatusSelect';
@@ -28,7 +31,12 @@ export const PhotographerDashboard: React.FC<Props> = ({
   const [isLoading, setIsLoading] = useState(false);
   const [activeDebtReminderBooking, setActiveDebtReminderBooking] =
     useState<CalendarEvent | null>(null);
+  const [activeReviewBooking, setActiveReviewBooking] =
+    useState<CalendarEvent | null>(null);
+  const [activeDetailBooking, setActiveDetailBooking] =
+    useState<CalendarEvent | null>(null);
   const [isCreateQuoteOpen, setIsCreateQuoteOpen] = useState(false);
+  const [isWebhookSimulatorOpen, setIsWebhookSimulatorOpen] = useState(false);
   const [toastNotification, setToastNotification] = useState<{
     type: 'success' | 'error';
     message: string;
@@ -68,6 +76,18 @@ export const PhotographerDashboard: React.FC<Props> = ({
                 : pkgPrice - paid
             );
 
+            const isBillPending =
+              b.status === 'cho_xac_nhan_coc' ||
+              (b.status === 'cho_coc' && b.notes && b.notes.includes('[BILL_PENDING]'));
+            const status: BookingStatus = isBillPending ? 'cho_xac_nhan_coc' : (b.status as BookingStatus);
+            let receiptImg: string | undefined = undefined;
+            if (b.quote_token) {
+              try {
+                const stored = localStorage.getItem(`receipt_${b.quote_token}`);
+                if (stored) receiptImg = stored;
+              } catch (e) {}
+            }
+
             return {
               id: b.id,
               clientName: b.client_name,
@@ -76,13 +96,15 @@ export const PhotographerDashboard: React.FC<Props> = ({
               startTime: b.start_time?.substring(0, 5) || '08:00',
               endTime: b.end_time?.substring(0, 5) || '12:00',
               location: b.location || 'Tại Studio',
-              status: b.status as BookingStatus,
+              status: status,
               packagePrice: pkgPrice,
               depositAmount: depAmount,
               paidAmount: paid,
               remainingAmount: rem,
               quoteToken: b.quote_token,
               notes: b.notes,
+              receiptUrl: receiptImg,
+              assignedGears: b.assigned_gears || [],
             };
           });
           setEvents(mappedEvents);
@@ -244,6 +266,22 @@ export const PhotographerDashboard: React.FC<Props> = ({
         onCopied={msg => setToastNotification({ type: 'success', message: msg })}
       />
 
+      {/* Modal Chi Tiết Booking & Gắn Thiết Bị / Quét Trùng Lặp (USP 2) */}
+      <BookingDetailModal
+        isOpen={Boolean(activeDetailBooking)}
+        booking={activeDetailBooking}
+        allBookings={events}
+        onClose={() => setActiveDetailBooking(null)}
+        onBookingUpdated={updated => {
+          setEvents(prev => prev.map(e => e.id === updated.id ? updated : e));
+          setActiveDetailBooking(updated);
+        }}
+        onOpenDebtReminder={b => {
+          setActiveDetailBooking(null);
+          setActiveDebtReminderBooking(b);
+        }}
+      />
+
       {/* Modal Tạo Báo Giá & Quét Xung Đột Thiết Bị (USP 1) */}
       <CreateQuoteModal
         isOpen={isCreateQuoteOpen}
@@ -259,10 +297,77 @@ export const PhotographerDashboard: React.FC<Props> = ({
         }}
       />
 
+      {/* Modal Giả Lập Webhook Biến Động Số Dư (Giai Đoạn 2) */}
+      <WebhookSimulatorModal
+        isOpen={isWebhookSimulatorOpen}
+        onClose={() => setIsWebhookSimulatorOpen(false)}
+        pendingBookings={events.filter(e => e.status === 'cho_coc' || e.status === 'cho_xac_nhan_coc')}
+        onSuccess={result => {
+          setToastNotification({
+            type: 'success',
+            message: `⚡ ${result.message}`,
+          });
+          fetchBookingsFromSupabase();
+          if (result.bookingId) {
+            setEvents(prev =>
+              prev.map(e =>
+                e.id === result.bookingId
+                  ? {
+                      ...e,
+                      status: 'da_chot',
+                      paidAmount: (e.paidAmount || 0) + (result.amount || 0),
+                    }
+                  : e
+              )
+            );
+          }
+        }}
+      />
+
+      {/* Modal Đối Soát & Duyệt Biên Lai Cọc Khách Hàng */}
+      <ReceiptReviewModal
+        isOpen={Boolean(activeReviewBooking)}
+        booking={activeReviewBooking}
+        onClose={() => setActiveReviewBooking(null)}
+        onConfirmSuccess={updatedId => {
+          setToastNotification({
+            type: 'success',
+            message: `🎉 Đã duyệt cọc thành công và khóa lịch chụp!`,
+          });
+          setEvents(prev =>
+            prev.map(e =>
+              e.id === updatedId
+                ? {
+                    ...e,
+                    status: 'da_chot',
+                    paidAmount: e.depositAmount,
+                    remainingAmount: Math.max(0, e.packagePrice - e.depositAmount),
+                  }
+                : e
+            )
+          );
+          fetchBookingsFromSupabase();
+        }}
+        onRejectRequest={rejectedId => {
+          setToastNotification({
+            type: 'error',
+            message: `Đã yêu cầu khách hàng gửi lại ảnh biên lai.`,
+          });
+          setEvents(prev =>
+            prev.map(e =>
+              e.id === rejectedId ? { ...e, status: 'cho_coc' } : e
+            )
+          );
+          fetchBookingsFromSupabase();
+        }}
+      />
+
       {/* Top Header & Key Metrics */}
       <DashboardHeader
         events={events}
         onOpenCreateQuote={() => setIsCreateQuoteOpen(true)}
+        onOpenWebhookSimulator={() => setIsWebhookSimulatorOpen(true)}
+        onOpenReceiptReview={booking => setActiveReviewBooking(booking)}
       />
 
       {/* Control Bar: View Switcher (Calendar vs Kanban) & Realtime Status */}
@@ -334,8 +439,10 @@ export const PhotographerDashboard: React.FC<Props> = ({
             <UpcomingShootsList
               events={events}
               onSelectEventDate={handleSelectEventDate}
+              onSelectBooking={setActiveDetailBooking}
               onStatusChange={handleStatusChange}
               onOpenDebtReminder={setActiveDebtReminderBooking}
+              onOpenReceiptReview={booking => setActiveReviewBooking(booking)}
             />
           </div>
 
@@ -346,6 +453,7 @@ export const PhotographerDashboard: React.FC<Props> = ({
                 events={events}
                 onViewQuote={handleOpenQuote}
                 onStatusChange={handleStatusChange}
+                onSelectBooking={setActiveDetailBooking}
                 onOpenDebtReminder={setActiveDebtReminderBooking}
               />
             </div>
@@ -356,6 +464,7 @@ export const PhotographerDashboard: React.FC<Props> = ({
           <KanbanView
             events={events}
             onStatusChange={handleStatusChange}
+            onSelectBooking={setActiveDetailBooking}
             onOpenDebtReminder={setActiveDebtReminderBooking}
           />
         </div>

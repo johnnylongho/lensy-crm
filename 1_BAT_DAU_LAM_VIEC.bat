@@ -69,8 +69,16 @@ echo.
 
 if exist "frontend\package.json" (
     cd /d "%~dp0frontend"
+    if not exist "node_modules\" (
+        echo [!] Phat hien chua co node_modules, dang tu dong chay npm install...
+        call npm.cmd install
+    )
     call npm.cmd run dev
 ) else (
+    if not exist "node_modules\" (
+        echo [!] Phat hien chua co node_modules, dang tu dong chay npm install...
+        call npm.cmd install
+    )
     call npm.cmd run dev
 )
 

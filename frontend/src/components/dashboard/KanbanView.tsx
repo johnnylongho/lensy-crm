@@ -1,12 +1,13 @@
 import React from 'react';
 import { CalendarEvent, BookingStatus } from '../../types';
-import { Calendar, ArrowRight, MapPin, Sparkles, MessageSquareQuote } from 'lucide-react';
+import { Calendar, ArrowRight, MapPin, Sparkles, MessageSquareQuote, Camera } from 'lucide-react';
 import { BookingStatusSelect, STATUS_CONFIG } from './BookingStatusSelect';
 import { BookingFinancialCard } from './BookingFinancialCard';
 
 interface Props {
   events: CalendarEvent[];
   onStatusChange?: (eventId: string, newStatus: BookingStatus) => void;
+  onSelectBooking?: (booking: CalendarEvent) => void;
   onOpenDebtReminder?: (booking: CalendarEvent) => void;
 }
 
@@ -46,6 +47,7 @@ const NEXT_STATUS_MAP: Partial<Record<BookingStatus, BookingStatus>> = {
 export const KanbanView: React.FC<Props> = ({
   events,
   onStatusChange,
+  onSelectBooking,
   onOpenDebtReminder,
 }) => {
   return (
@@ -130,15 +132,27 @@ export const KanbanView: React.FC<Props> = ({
                         key={item.id}
                         className={`p-3.5 rounded-2xl border transition-all duration-200 shadow-lg space-y-3 text-xs ${statusTheme.cardBg} ${statusTheme.cardBorder}`}
                       >
-                        {/* Card Header: Client Name & Session Tag */}
                         <div className="flex items-start justify-between gap-1.5">
-                          <div>
-                            <h4 className="font-bold text-white text-sm leading-snug">
+                          <div className="space-y-0.5">
+                            <button
+                              type="button"
+                              onClick={() => onSelectBooking && onSelectBooking(item)}
+                              className="font-bold text-white text-sm leading-snug hover:text-amber-400 hover:underline text-left transition-colors"
+                              title="Xem chi tiết & Gán thiết bị"
+                            >
                               {item.clientName}
-                            </h4>
-                            <span className="text-[10px] uppercase font-bold text-amber-400">
-                              {item.sessionType}
-                            </span>
+                            </button>
+                            <div className="flex items-center gap-1.5 flex-wrap">
+                              <span className="text-[10px] uppercase font-bold text-amber-400">
+                                {item.sessionType}
+                              </span>
+                              {item.assignedGears && item.assignedGears.length > 0 && (
+                                <span className="text-[9px] px-1.5 py-0.5 rounded font-bold border bg-sky-950/80 border-sky-500/40 text-sky-300 flex items-center gap-1">
+                                  <Camera className="w-2.5 h-2.5" />
+                                  <span>{item.assignedGears.length} máy</span>
+                                </span>
+                              )}
+                            </div>
                           </div>
 
                           {/* Quick Status Dropdown */}

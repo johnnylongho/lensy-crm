@@ -1,6 +1,7 @@
 import React from 'react';
-import { CreditCard, CheckCircle2, Shield, ArrowRight } from 'lucide-react';
+import { CreditCard, CheckCircle2, Shield, ArrowRight, Calendar, Download } from 'lucide-react';
 import { QuoteData } from '../../types';
+import { generateGoogleCalendarUrl, downloadIcsFile } from '../../lib/calendarIntegration';
 
 interface Props {
   quote: QuoteData;
@@ -9,6 +10,39 @@ interface Props {
 
 export const QuotePriceSummary: React.FC<Props> = ({ quote, onOpenDepositModal }) => {
   const isConfirmed = quote.status === 'da_chot' || quote.status === 'hoan_thanh';
+
+  const handleOpenGoogleCalendar = () => {
+    const url = generateGoogleCalendarUrl({
+      title: `[Mirmia] Show Chụp ${quote.sessionType} - ${quote.clientName}`,
+      clientName: quote.clientName,
+      sessionType: quote.sessionType,
+      eventDate: quote.eventDate,
+      startTime: quote.startTime || '08:00',
+      endTime: quote.endTime || '12:00',
+      location: quote.location || 'Tại Studio Mirmia',
+      quoteToken: quote.quoteToken,
+      quoteUrl: window.location.href,
+      photographerName: quote.photographerName,
+      photographerPhone: quote.photographerPhone,
+    });
+    window.open(url, '_blank');
+  };
+
+  const handleDownloadIcs = () => {
+    downloadIcsFile({
+      title: `[Mirmia] Show Chụp ${quote.sessionType} - ${quote.clientName}`,
+      clientName: quote.clientName,
+      sessionType: quote.sessionType,
+      eventDate: quote.eventDate,
+      startTime: quote.startTime || '08:00',
+      endTime: quote.endTime || '12:00',
+      location: quote.location || 'Tại Studio Mirmia',
+      quoteToken: quote.quoteToken,
+      quoteUrl: window.location.href,
+      photographerName: quote.photographerName,
+      photographerPhone: quote.photographerPhone,
+    });
+  };
 
   return (
     <div className="rounded-3xl bg-gradient-to-b from-slate-900 via-slate-900 to-[#0c121e] border border-amber-500/30 p-5 sm:p-7 shadow-2xl space-y-6 gold-glow">
@@ -63,7 +97,7 @@ export const QuotePriceSummary: React.FC<Props> = ({ quote, onOpenDepositModal }
 
       {/* Main Action Button */}
       {isConfirmed ? (
-        <div className="w-full py-4 px-6 rounded-2xl bg-emerald-500/20 border border-emerald-500/40 text-center space-y-1">
+        <div className="w-full p-4 rounded-2xl bg-emerald-500/15 border border-emerald-500/40 text-center space-y-3">
           <div className="flex items-center justify-center gap-2 text-emerald-400 font-bold text-sm">
             <CheckCircle2 className="w-5 h-5" />
             Lịch Chụp Đã Được Chốt Thành Công!
@@ -71,6 +105,26 @@ export const QuotePriceSummary: React.FC<Props> = ({ quote, onOpenDepositModal }
           <p className="text-[11px] text-emerald-300/80">
             Ekip sẽ liên hệ trực tiếp trước ngày chụp để chốt trang phục và timeline chi tiết.
           </p>
+
+          {/* Quick Calendar Sync Buttons */}
+          <div className="pt-2 border-t border-emerald-500/20 grid grid-cols-2 gap-2 text-xs">
+            <button
+              type="button"
+              onClick={handleOpenGoogleCalendar}
+              className="py-2.5 px-3 rounded-xl bg-slate-900/90 hover:bg-slate-850 border border-slate-700/80 text-white font-bold flex items-center justify-center gap-1.5 transition-all hover:scale-[1.02]"
+            >
+              <Calendar className="w-3.5 h-3.5 text-amber-400" />
+              <span>Google Calendar</span>
+            </button>
+            <button
+              type="button"
+              onClick={handleDownloadIcs}
+              className="py-2.5 px-3 rounded-xl bg-slate-900/90 hover:bg-slate-850 border border-slate-700/80 text-white font-bold flex items-center justify-center gap-1.5 transition-all hover:scale-[1.02]"
+            >
+              <Download className="w-3.5 h-3.5 text-indigo-400" />
+              <span>Lịch iPhone (.ics)</span>
+            </button>
+          </div>
         </div>
       ) : (
         <button
@@ -80,7 +134,7 @@ export const QuotePriceSummary: React.FC<Props> = ({ quote, onOpenDepositModal }
         >
           <CreditCard className="w-5 h-5 text-slate-950" />
           <span>Xác Nhận & Cọc Tiền ({quote.depositAmount.toLocaleString('vi-VN')} đ)</span>
-          <ArrowRight className="w-4 h-4 text-slate-950" />
+          <ArrowRight className="w-5 h-5 text-slate-950" />
         </button>
       )}
     </div>

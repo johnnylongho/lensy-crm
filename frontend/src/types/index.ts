@@ -1,4 +1,4 @@
-export type BookingStatus = 'cho_coc' | 'da_chot' | 'da_tra_file' | 'hoan_thanh' | 'da_huy';
+export type BookingStatus = 'cho_coc' | 'cho_xac_nhan_coc' | 'da_chot' | 'da_tra_file' | 'hoan_thanh' | 'da_huy';
 
 export type SessionType = 'wedding' | 'prewedding' | 'portrait' | 'lookbook' | 'event' | 'commercial';
 
@@ -40,6 +40,8 @@ export interface QuoteData {
     accountNumber: string;
     accountName: string;
   };
+  receiptUrl?: string;
+  depositTransferredAt?: string;
 }
 
 export interface CalendarEvent {
@@ -57,4 +59,20 @@ export interface CalendarEvent {
   remainingAmount?: number;
   quoteToken?: string;
   notes?: string;
+  receiptUrl?: string;
+  depositTransferredAt?: string;
+  assignedGears?: string[]; // Danh sách UUID thiết bị đã gắn
 }
+
+export type GearType = 'camera' | 'lens' | 'lighting' | 'audio' | 'accessory' | 'other';
+export type GearStatus = 'active' | 'maintenance' | 'retired';
+
+export interface GearItem {
+  id: string;
+  photographer_id?: string;
+  name: string;
+  type: GearType;
+  status: GearStatus;
+  created_at?: string;
+}
+

@@ -7,11 +7,29 @@ import { QuoteView } from './components/quote/QuoteView';
 import { PhotographerDashboard } from './components/dashboard/PhotographerDashboard';
 import { MOCK_QUOTE, MOCK_CALENDAR_EVENTS } from './data/mockData';
 import { CalendarEvent, QuoteData } from './types';
-import { Calendar, Smartphone, LogIn, LogOut, User as UserIcon } from 'lucide-react';
+import { supabase } from './lib/supabase';
+import { SettingsPage } from './components/dashboard/SettingsPage';
+import { GearsManagementPage } from './components/dashboard/GearsManagementPage';
+import { Calendar, Smartphone, LogIn, LogOut, User as UserIcon, Settings, Camera } from 'lucide-react';
 
 function AppLayout({ children }: { children: React.ReactNode }) {
   const { user, signOut } = useAuth();
   const location = useLocation();
+  const [currentUsername, setCurrentUsername] = useState<string>('johnnylongho');
+
+  React.useEffect(() => {
+    if (!user) return;
+    supabase
+      .from('users')
+      .select('username')
+      .eq('id', user.id)
+      .maybeSingle()
+      .then(({ data }) => {
+        if (data?.username) {
+          setCurrentUsername(data.username);
+        }
+      });
+  }, [user]);
 
   // Ẩn thanh top nav nếu đang ở trang login
   const isLoginPage = location.pathname === '/login';
@@ -50,15 +68,15 @@ function AppLayout({ children }: { children: React.ReactNode }) {
             {/* Navigation Tabs */}
             <div className="flex items-center bg-slate-900 p-1 rounded-2xl border border-slate-800 text-xs">
               <Link
-                to="/"
+                to={`/book/${currentUsername}`}
                 className={`flex items-center gap-2 px-3 sm:px-4 py-1.5 rounded-xl font-bold transition-all ${
-                  location.pathname === '/' || location.pathname.startsWith('/quote')
+                  location.pathname.startsWith('/book') || location.pathname === '/' || location.pathname.startsWith('/quote')
                     ? 'bg-amber-500 text-slate-950 shadow-md shadow-amber-500/20'
                     : 'text-slate-400 hover:text-white'
                 }`}
               >
                 <Smartphone className="w-4 h-4" />
-                <span>Link Báo Giá Khách Hàng (Public)</span>
+                <span>Link Đặt Lịch (@{currentUsername})</span>
               </Link>
 
               <Link
@@ -70,7 +88,31 @@ function AppLayout({ children }: { children: React.ReactNode }) {
                 }`}
               >
                 <Calendar className="w-4 h-4" />
-                <span>Lịch Chụp Thợ Ảnh (Dashboard)</span>
+                <span>Lịch Chụp</span>
+              </Link>
+
+              <Link
+                to="/dashboard/gears"
+                className={`flex items-center gap-2 px-3 sm:px-4 py-1.5 rounded-xl font-bold transition-all ${
+                  location.pathname.startsWith('/dashboard/gears')
+                    ? 'bg-amber-500 text-slate-950 shadow-md shadow-amber-500/20'
+                    : 'text-slate-400 hover:text-white'
+                }`}
+              >
+                <Camera className="w-4 h-4" />
+                <span>Thiết Bị</span>
+              </Link>
+
+              <Link
+                to="/dashboard/settings"
+                className={`flex items-center gap-2 px-3 sm:px-4 py-1.5 rounded-xl font-bold transition-all ${
+                  location.pathname.startsWith('/dashboard/settings')
+                    ? 'bg-amber-500 text-slate-950 shadow-md shadow-amber-500/20'
+                    : 'text-slate-400 hover:text-white'
+                }`}
+              >
+                <Settings className="w-4 h-4" />
+                <span>Cài Đặt</span>
               </Link>
             </div>
 
@@ -154,7 +196,17 @@ export function App() {
       <BrowserRouter>
         <AppLayout>
           <Routes>
-            {/* 1. Trang Báo Giá (Quote Link) - Hoàn toàn PUBLIC cho khách hàng */}
+            {/* 1. Trang Báo Giá & Đặt Lịch (Quote Link / Dynamic Booking Link) */}
+            <Route
+              path="/book/:username"
+              element={
+                <QuoteView
+                  initialQuote={quote}
+                  onQuoteStatusChange={handleQuoteStatusChange}
+                  onBookingSubmit={handleNewBooking}
+                />
+              }
+            />
             <Route
               path="/"
               element={
@@ -202,6 +254,34 @@ export function App() {
                   />
                 </PrivateRoute>
               }
+            />
+
+            {/* 4. Trang Cài Đặt (Settings) - BẢO VỆ CHẶT CHẼ */}
+            <Route
+              path="/dashboard/settings"
+              element={
+                <PrivateRoute>
+                  <SettingsPage />
+                </PrivateRoute>
+              }
+            />
+            <Route
+              path="/settings"
+              element={<Navigate to="/dashboard/settings" replace />}
+            />
+
+            {/* 5. Trang Quản Lý Thiết Bị (Gears) - BẢO VỆ CHẶT CHẼ */}
+            <Route
+              path="/dashboard/gears"
+              element={
+                <PrivateRoute>
+                  <GearsManagementPage />
+                </PrivateRoute>
+              }
+            />
+            <Route
+              path="/gears"
+              element={<Navigate to="/dashboard/gears" replace />}
             />
 
             {/* Fallback điều hướng về trang chủ */}

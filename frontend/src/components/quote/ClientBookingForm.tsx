@@ -7,6 +7,7 @@ interface Props {
   defaultSessionType?: SessionType;
   defaultPrice?: number;
   defaultDeposit?: number;
+  photographerId?: string | null;
   onBookingCreated?: (newBooking: any) => void;
 }
 
@@ -14,6 +15,7 @@ export const ClientBookingForm: React.FC<Props> = ({
   defaultSessionType = 'wedding',
   defaultPrice = 18000000,
   defaultDeposit = 5400000,
+  photographerId,
   onBookingCreated
 }) => {
   const [clientName, setClientName] = useState('');
@@ -44,15 +46,15 @@ export const ClientBookingForm: React.FC<Props> = ({
     setToastMessage(null);
 
     const quoteToken = `q-${Date.now()}-${Math.random().toString(36).substring(2, 6)}`;
-    const newRecord = {
+    const newRecord: any = {
       client_name: clientName,
       client_phone: clientPhone,
       client_email: clientEmail || null,
       session_type: sessionType,
       session_title: `Gói Chụp ${sessionType.toUpperCase()}`,
       event_date: eventDate,
-      start_time: startTime,
-      end_time: endTime,
+      start_time: startTime ? (startTime.length === 5 ? `${startTime}:00` : startTime) : '08:00:00',
+      end_time: endTime ? (endTime.length === 5 ? `${endTime}:00` : endTime) : '12:00:00',
       location: location || 'Tại Studio / Địa điểm khách yêu cầu',
       package_price: defaultPrice,
       deposit_amount: defaultDeposit,
@@ -62,22 +64,24 @@ export const ClientBookingForm: React.FC<Props> = ({
       notes: notes || null,
     };
 
+    if (photographerId) {
+      newRecord.photographer_id = photographerId;
+    }
+
     try {
       if (isSupabaseConfigured) {
-        // Thực thi lệnh insert vào Supabase
-        const { data, error } = await supabase
+        // Thực thi lệnh insert vào Supabase (không chain .select() để tương thích RLS anon)
+        const { error } = await supabase
           .from('bookings')
-          .insert([newRecord])
-          .select()
-          .single();
+          .insert([newRecord]);
 
         if (error) throw error;
 
         setToastMessage({
           type: 'success',
-          text: '🎉 Gửi yêu cầu đặt lịch thành công! Mirmia Studio đã ghi nhận lịch của bạn.'
+          text: '🎉 Gửi yêu cầu đặt lịch thành công! Studio đã ghi nhận lịch của bạn.'
         });
-        if (onBookingCreated) onBookingCreated(data);
+        if (onBookingCreated) onBookingCreated(newRecord);
       } else {
         // Fallback mô phỏng khi chưa kết nối URL Supabase thật
         console.log('[Supabase Demo Insert]:', newRecord);

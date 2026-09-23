@@ -122,14 +122,80 @@ export const QuoteView: React.FC<Props> = ({
   onQuoteStatusChange,
   onBookingSubmit,
 }) => {
-  const { token } = useParams<{ token?: string }>();
+  const { token, username } = useParams<{ token?: string; username?: string }>();
   const [quote, setQuote] = useState<QuoteData>(initialQuote);
-  const [isLoading, setIsLoading] = useState(Boolean(token));
+  const [photographerId, setPhotographerId] = useState<string | null>(null);
+  const [isLoading, setIsLoading] = useState(Boolean(token || username));
   const [isNotFound, setIsNotFound] = useState(false);
+  const [isStudioNotFound, setIsStudioNotFound] = useState(false);
   const [isDepositModalOpen, setIsDepositModalOpen] = useState(false);
+
+  // Fetch dynamic studio profile by username (/book/:username)
+  useEffect(() => {
+    if (!username) return;
+
+    const fetchStudioByUsername = async () => {
+      setIsLoading(true);
+      setIsStudioNotFound(false);
+      setIsNotFound(false);
+
+      try {
+        if (isSupabaseConfigured) {
+          const { data: userData, error: userError } = await supabase
+            .from('users')
+            .select('*')
+            .eq('username', username)
+            .maybeSingle();
+
+          if (userError || !userData) {
+            console.warn('Không tìm thấy Studio với username:', username, userError);
+            setIsStudioNotFound(true);
+            setIsLoading(false);
+            return;
+          }
+
+          setPhotographerId(userData.id);
+
+          setQuote(prev => ({
+            ...prev,
+            studioName: userData.studio_name || 'MIRMIA STUDIO & ACADEMY',
+            photographerName: userData.full_name || 'Nhiếp Ảnh Gia',
+            photographerPhone: userData.phone || '0901234567',
+            photographerEmail: userData.email || 'contact@mirmia.vn',
+            bankInfo: {
+              bankName: userData.bank_name || 'MB Bank',
+              accountNumber: userData.bank_account_number || '0901234567',
+              accountName: userData.bank_account_name || userData.full_name || 'MIRMIA STUDIO',
+            },
+          }));
+        } else {
+          // Demo fallback
+          if (username === 'johnnylongho') {
+            setPhotographerId('87239d64-5964-47b1-a146-f12f3d41de9e');
+            setQuote(prev => ({
+              ...prev,
+              studioName: 'MIRMIA STUDIO & ACADEMY',
+              photographerName: 'Johnny Long Hồ',
+            }));
+          } else {
+            setIsStudioNotFound(true);
+          }
+        }
+      } catch (err) {
+        console.error('Lỗi truy vấn Studio:', err);
+        setIsStudioNotFound(true);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    fetchStudioByUsername();
+  }, [username]);
 
   // Fetch dynamic quote from Supabase by token
   useEffect(() => {
+    if (username) return; // Nếu đang ở link /book/:username thì không fetch theo token
+
     if (!token) {
       setQuote(initialQuote);
       setIsLoading(false);
@@ -271,6 +337,34 @@ export const QuoteView: React.FC<Props> = ({
     );
   }
 
+  // Màn hình 404 Không tìm thấy Studio (/book/:username)
+  if (isStudioNotFound) {
+    return (
+      <div className="min-h-screen bg-[#070b13] text-slate-100 flex flex-col items-center justify-center p-4">
+        <div className="w-full max-w-md mx-auto text-center space-y-5 p-6 sm:p-8 rounded-3xl bg-slate-900/70 border border-rose-500/30 shadow-2xl animate-scaleUp">
+          <div className="w-16 h-16 rounded-full bg-rose-500/10 border border-rose-500/30 text-rose-400 flex items-center justify-center mx-auto shadow-lg shadow-rose-950/50">
+            <AlertCircle className="w-8 h-8" />
+          </div>
+          <div className="space-y-2">
+            <h3 className="text-xl font-extrabold text-white">Không Tìm Thấy Studio Này</h3>
+            <p className="text-xs text-slate-400 leading-relaxed">
+              Tên định danh Studio / Nhiếp ảnh gia{' '}
+              <strong className="text-amber-400 font-mono">@{username}</strong> không tồn tại trong hệ thống Lensy CRM. Quý khách vui lòng kiểm tra lại đường dẫn từ thợ ảnh.
+            </p>
+          </div>
+          <div className="pt-2 flex flex-wrap items-center justify-center gap-3">
+            <Link
+              to="/book/johnnylongho"
+              className="px-4 py-2.5 rounded-xl bg-gradient-to-r from-amber-500 to-yellow-500 hover:from-amber-400 hover:to-yellow-400 text-slate-950 text-xs font-extrabold inline-flex items-center gap-1.5 shadow-md shadow-amber-500/20 transition-all hover:scale-[1.02]"
+            >
+              <span>Xem Studio Chính (@johnnylongho)</span>
+            </Link>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   // Màn hình 404 Không tìm thấy báo giá
   if (isNotFound) {
     return (
@@ -336,6 +430,7 @@ export const QuoteView: React.FC<Props> = ({
           defaultSessionType={quote.sessionType}
           defaultPrice={quote.packagePrice}
           defaultDeposit={quote.depositAmount}
+          photographerId={photographerId}
           onBookingCreated={newBooking => {
             if (onBookingSubmit) onBookingSubmit(newBooking);
           }}

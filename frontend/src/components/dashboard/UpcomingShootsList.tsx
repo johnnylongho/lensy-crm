@@ -1,21 +1,26 @@
 import React from 'react';
-import { Calendar, Clock, MapPin, ArrowRight, MessageSquareQuote } from 'lucide-react';
+import { Calendar, Clock, MapPin, ArrowRight, MessageSquareQuote, Camera } from 'lucide-react';
 import { CalendarEvent, BookingStatus } from '../../types';
 import { BookingStatusSelect, STATUS_CONFIG } from './BookingStatusSelect';
 import { BookingFinancialCard } from './BookingFinancialCard';
+import { generateGoogleCalendarUrl } from '../../lib/calendarIntegration';
 
 interface Props {
   events: CalendarEvent[];
   onSelectEventDate: (dateStr: string) => void;
+  onSelectBooking?: (booking: CalendarEvent) => void;
   onStatusChange?: (eventId: string, newStatus: BookingStatus) => void;
   onOpenDebtReminder?: (booking: CalendarEvent) => void;
+  onOpenReceiptReview?: (booking: CalendarEvent) => void;
 }
 
 export const UpcomingShootsList: React.FC<Props> = ({
   events,
   onSelectEventDate,
+  onSelectBooking,
   onStatusChange,
   onOpenDebtReminder,
+  onOpenReceiptReview,
 }) => {
   const sorted = [...events].sort(
     (a, b) => new Date(a.eventDate).getTime() - new Date(b.eventDate).getTime()
@@ -77,10 +82,23 @@ export const UpcomingShootsList: React.FC<Props> = ({
 
                   <div className="space-y-1 min-w-0 flex-1">
                     <div className="flex flex-wrap items-center gap-2">
-                      <h4 className="font-bold text-white text-sm truncate">{ev.clientName}</h4>
+                      <button
+                        type="button"
+                        onClick={() => onSelectBooking && onSelectBooking(ev)}
+                        className="font-bold text-white text-sm truncate hover:text-amber-400 hover:underline text-left transition-colors"
+                        title="Nhấn để xem chi tiết & Gắn thiết bị"
+                      >
+                        {ev.clientName}
+                      </button>
                       <span className="text-[10px] px-2 py-0.5 rounded font-bold uppercase border bg-slate-900/90 border-slate-700 text-amber-300">
                         {ev.sessionType}
                       </span>
+                      {ev.assignedGears && ev.assignedGears.length > 0 && (
+                        <span className="text-[10px] px-2 py-0.5 rounded font-bold border bg-sky-950/80 border-sky-500/40 text-sky-300 flex items-center gap-1">
+                          <Camera className="w-3 h-3" />
+                          <span>{ev.assignedGears.length} máy/lens</span>
+                        </span>
+                      )}
                     </div>
 
                     <div className="flex flex-wrap items-center gap-3 text-slate-300 text-[11px]">
@@ -107,6 +125,17 @@ export const UpcomingShootsList: React.FC<Props> = ({
 
                 {/* Right column: Status Selector Dropdown */}
                 <div className="flex items-center justify-between sm:justify-end gap-2 pt-2 sm:pt-0 border-t sm:border-t-0 border-slate-800">
+                  {onSelectBooking && (
+                    <button
+                      type="button"
+                      onClick={() => onSelectBooking(ev)}
+                      className="px-2.5 py-1.5 rounded-xl bg-slate-800/80 hover:bg-slate-700 border border-slate-700 text-slate-200 hover:text-amber-400 text-xs font-bold transition-all flex items-center gap-1.5"
+                      title="Xem chi tiết & Quản lý thiết bị cho show này"
+                    >
+                      <Camera className="w-3.5 h-3.5 text-amber-400" />
+                      <span className="hidden md:inline">Gắn Thiết Bị</span>
+                    </button>
+                  )}
                   {onStatusChange && (
                     <BookingStatusSelect
                       status={ev.status}
@@ -114,6 +143,28 @@ export const UpcomingShootsList: React.FC<Props> = ({
                       size="md"
                     />
                   )}
+                  <button
+                    type="button"
+                    onClick={() => {
+                      const url = generateGoogleCalendarUrl({
+                        title: `[Mirmia] Show Chụp ${ev.sessionType} - ${ev.clientName}`,
+                        clientName: ev.clientName,
+                        sessionType: ev.sessionType,
+                        eventDate: ev.eventDate,
+                        startTime: ev.startTime,
+                        endTime: ev.endTime,
+                        location: ev.location,
+                        notes: ev.notes,
+                        quoteToken: ev.quoteToken,
+                        quoteUrl: `${window.location.origin}/quote/${ev.quoteToken || ''}`,
+                      });
+                      window.open(url, '_blank');
+                    }}
+                    className="p-1.5 rounded-xl bg-slate-800/80 hover:bg-slate-700 text-slate-300 hover:text-amber-400 transition-colors"
+                    title="Đồng bộ show này lên Google Calendar"
+                  >
+                    <Calendar className="w-4 h-4" />
+                  </button>
                   <button
                     type="button"
                     onClick={() => onSelectEventDate(ev.eventDate)}
@@ -124,6 +175,23 @@ export const UpcomingShootsList: React.FC<Props> = ({
                   </button>
                 </div>
               </div>
+
+              {/* Nút "Duyệt Biên Lai Cọc" nổi bật khi khách đã nộp bill */}
+              {ev.status === 'cho_xac_nhan_coc' && onOpenReceiptReview && (
+                <div className="pt-2 border-t border-slate-800/80 flex items-center justify-between gap-3">
+                  <span className="text-[11px] text-orange-300 font-semibold flex items-center gap-1.5">
+                    <span className="w-2 h-2 rounded-full bg-orange-400 animate-pulse" />
+                    Khách đã gửi ảnh bill cọc ({ev.depositAmount.toLocaleString('vi-VN')} đ):
+                  </span>
+                  <button
+                    type="button"
+                    onClick={() => onOpenReceiptReview(ev)}
+                    className="py-1.5 px-3.5 rounded-xl bg-gradient-to-r from-orange-600 to-amber-600 hover:from-orange-500 hover:to-amber-500 text-white font-extrabold text-xs flex items-center gap-1.5 shadow-lg shadow-orange-950/60 transition-all hover:scale-[1.02] active:scale-[0.98]"
+                  >
+                    <span>🔎 Xem & Duyệt Bill Cọc</span>
+                  </button>
+                </div>
+              )}
 
               {/* USP 1: Nút "Nhắc thanh toán" nổi bật khi Đã trả file & còn nợ */}
               {isDebtReminderEligible && onOpenDebtReminder && (

@@ -16,13 +16,17 @@ import { BookingStatusSelect, STATUS_CONFIG } from './BookingStatusSelect';
 import {
   DndContext,
   DragOverlay,
-  closestCorners,
+  pointerWithin,
+  rectIntersection,
+  closestCenter,
+  CollisionDetection,
   KeyboardSensor,
   PointerSensor,
   useSensor,
   useSensors,
   DragStartEvent,
   DragEndEvent,
+  DragOverEvent,
   useDroppable,
 } from '@dnd-kit/core';
 import {
@@ -128,18 +132,32 @@ function calculateDebt(item: CalendarEvent) {
   return { effectiveDeposit, effectivePaid, remainingDebt };
 }
 
+// Thuật toán nhận diện va chạm tối ưu cho Kanban
+const kanbanCollisionDetection: CollisionDetection = (args) => {
+  // 1. Kiểm tra trực tiếp vị trí con trỏ chuột (pointerWithin)
+  const pointerCollisions = pointerWithin(args);
+  if (pointerCollisions.length > 0) {
+    return pointerCollisions;
+  }
+  // 2. Va chạm hình học chữ nhật nếu kéo sát mép (rectIntersection)
+  const rectCollisions = rectIntersection(args);
+  if (rectCollisions.length > 0) {
+    return rectCollisions;
+  }
+  // 3. Fallback theo khoảng cách tâm gần nhất
+  return closestCenter(args);
+};
+
 // Nội dung thẻ Booking Card
 const KanbanCardContent: React.FC<{
   item: CalendarEvent;
   isOverlay?: boolean;
-  dragHandleProps?: Record<string, any>;
   onSelectBooking?: (booking: CalendarEvent) => void;
   onOpenDebtReminder?: (booking: CalendarEvent) => void;
   onStatusChange?: (eventId: string, newStatus: BookingStatus) => void;
 }> = ({
   item,
   isOverlay = false,
-  dragHandleProps,
   onSelectBooking,
   onOpenDebtReminder,
   onStatusChange,
@@ -153,21 +171,22 @@ const KanbanCardContent: React.FC<{
 
   return (
     <div
-      className={`p-3.5 rounded-2xl border transition-all duration-200 shadow-md space-y-3 text-xs ${
+      className={`p-3.5 rounded-2xl border select-none transition-colors duration-150 shadow-md space-y-3 text-xs ${
         statusTheme.cardBg
       } ${statusTheme.cardBorder} ${
         isOverlay
-          ? 'rotate-1 scale-105 shadow-2xl shadow-amber-500/20 ring-2 ring-amber-400 bg-slate-900 border-amber-400'
-          : 'hover:border-slate-600'
+          ? 'rotate-2 scale-105 shadow-2xl shadow-amber-500/25 ring-2 ring-amber-400 bg-slate-900 border-amber-400 cursor-grabbing'
+          : 'hover:border-slate-500 cursor-grab active:cursor-grabbing'
       }`}
     >
-      {/* Header: Client Name, Session Type & Drag Handle */}
+      {/* Header: Client Name, Session Type & Grip */}
       <div className="flex items-start justify-between gap-1.5">
         <div className="space-y-0.5 flex-1 min-w-0">
           <button
             type="button"
+            onPointerDown={(e) => e.stopPropagation()}
             onClick={() => onSelectBooking && onSelectBooking(item)}
-            className="font-bold text-white text-sm leading-snug hover:text-amber-400 hover:underline text-left transition-colors truncate block max-w-full"
+            className="font-bold text-white text-sm leading-snug hover:text-amber-400 hover:underline text-left transition-colors truncate block max-w-full cursor-pointer"
             title="Xem chi tiết & Gán thiết bị"
           >
             {item.clientName}
@@ -185,18 +204,19 @@ const KanbanCardContent: React.FC<{
           </div>
         </div>
 
-        {/* Drag handle & Quick Status */}
+        {/* Quick Status Dropdown & Grip Icon */}
         <div className="flex items-center gap-1">
           {onStatusChange && (
-            <BookingStatusSelect
-              status={item.status}
-              onChange={newStatus => onStatusChange(item.id, newStatus)}
-              size="sm"
-            />
+            <div onPointerDown={(e) => e.stopPropagation()}>
+              <BookingStatusSelect
+                status={item.status}
+                onChange={newStatus => onStatusChange(item.id, newStatus)}
+                size="sm"
+              />
+            </div>
           )}
           <div
-            {...dragHandleProps}
-            className="p-1 rounded-lg hover:bg-slate-800 text-slate-400 hover:text-amber-400 cursor-grab active:cursor-grabbing transition-colors"
+            className="p-1 rounded-lg text-slate-500 hover:text-amber-400 transition-colors pointer-events-none"
             title="Kéo thả thẻ để chuyển trạng thái"
           >
             <GripVertical className="w-4 h-4" />
@@ -256,11 +276,11 @@ const KanbanCardContent: React.FC<{
 
       {/* USP 1: Nút "Nhắc thanh toán" nổi bật khi Hậu kỳ / Hoàn tất & Còn nợ */}
       {isDebtReminderEligible && onOpenDebtReminder && (
-        <div className="pt-0.5">
+        <div className="pt-0.5" onPointerDown={(e) => e.stopPropagation()}>
           <button
             type="button"
             onClick={() => onOpenDebtReminder(item)}
-            className="w-full py-2 px-3 rounded-xl bg-gradient-to-r from-amber-500 via-rose-500 to-pink-500 hover:from-amber-400 hover:to-rose-400 text-slate-950 font-extrabold text-xs flex items-center justify-center gap-1.5 shadow-lg shadow-rose-950/60 hover:shadow-amber-500/25 transition-all hover:scale-[1.02] active:scale-[0.98]"
+            className="w-full py-2 px-3 rounded-xl bg-gradient-to-r from-amber-500 via-rose-500 to-pink-500 hover:from-amber-400 hover:to-rose-400 text-slate-950 font-extrabold text-xs flex items-center justify-center gap-1.5 shadow-lg shadow-rose-950/60 hover:shadow-amber-500/25 transition-all hover:scale-[1.02] active:scale-[0.98] cursor-pointer"
           >
             <MessageSquareQuote className="w-4 h-4" />
             <span>Nhắc thanh toán ({remainingDebt.toLocaleString('vi-VN')} đ)</span>
@@ -270,12 +290,15 @@ const KanbanCardContent: React.FC<{
 
       {/* Quick 1-click Forward Step Button */}
       {nextStatus && onStatusChange && (
-        <div className="pt-2 border-t border-slate-800/80 flex items-center justify-between">
+        <div
+          className="pt-2 border-t border-slate-800/80 flex items-center justify-between"
+          onPointerDown={(e) => e.stopPropagation()}
+        >
           <span className="text-[10px] text-slate-400">Bước tiếp theo:</span>
           <button
             type="button"
             onClick={() => onStatusChange(item.id, nextStatus)}
-            className="px-2.5 py-1 rounded-lg bg-slate-900/90 hover:bg-amber-500 hover:text-slate-950 border border-slate-700 text-slate-200 text-[10px] font-bold transition-all flex items-center gap-1 shadow-sm"
+            className="px-2.5 py-1 rounded-lg bg-slate-900/90 hover:bg-amber-500 hover:text-slate-950 border border-slate-700 text-slate-200 text-[10px] font-bold transition-all flex items-center gap-1 shadow-sm cursor-pointer"
           >
             <span>{STATUS_CONFIG[nextStatus].label}</span>
             <ArrowRight className="w-3 h-3" />
@@ -310,17 +333,27 @@ const SortableCard: React.FC<{
     },
   });
 
-  const style = {
+  const style: React.CSSProperties = {
     transform: CSS.Translate.toString(transform),
-    transition,
-    opacity: isDragging ? 0.3 : 1,
+    // Khi đang kéo, tắt transition để transform bám sát chuột 100% không có độ trễ
+    transition: isDragging ? undefined : transition,
+    touchAction: 'none',
   };
 
+  if (isDragging) {
+    return (
+      <div
+        ref={setNodeRef}
+        style={style}
+        className="rounded-2xl border-2 border-dashed border-amber-500/40 bg-amber-500/5 min-h-[160px] opacity-40 transition-none"
+      />
+    );
+  }
+
   return (
-    <div ref={setNodeRef} style={style}>
+    <div ref={setNodeRef} style={style} {...attributes} {...listeners}>
       <KanbanCardContent
         item={item}
-        dragHandleProps={{ ...attributes, ...listeners }}
         onSelectBooking={onSelectBooking}
         onOpenDebtReminder={onOpenDebtReminder}
         onStatusChange={onStatusChange}
@@ -333,10 +366,11 @@ const SortableCard: React.FC<{
 const KanbanColumn: React.FC<{
   column: ColumnDef;
   events: CalendarEvent[];
+  isHighlighted?: boolean;
   onSelectBooking?: (booking: CalendarEvent) => void;
   onOpenDebtReminder?: (booking: CalendarEvent) => void;
   onStatusChange?: (eventId: string, newStatus: BookingStatus) => void;
-}> = ({ column, events, onSelectBooking, onOpenDebtReminder, onStatusChange }) => {
+}> = ({ column, events, isHighlighted = false, onSelectBooking, onOpenDebtReminder, onStatusChange }) => {
   const { setNodeRef, isOver } = useDroppable({
     id: column.status,
     data: {
@@ -346,12 +380,13 @@ const KanbanColumn: React.FC<{
   });
 
   const totalRevenue = events.reduce((acc, e) => acc + e.packagePrice, 0);
+  const activeHover = isOver || isHighlighted;
 
   return (
     <div
       ref={setNodeRef}
-      className={`rounded-2xl border p-3 flex flex-col h-full min-w-[250px] transition-all duration-200 ${
-        isOver
+      className={`rounded-2xl border p-3 flex flex-col h-full min-w-[250px] transition-colors duration-150 ${
+        activeHover
           ? 'border-amber-400 bg-amber-950/20 shadow-xl shadow-amber-500/10 ring-2 ring-amber-400/40'
           : column.color
       }`}
@@ -385,12 +420,12 @@ const KanbanColumn: React.FC<{
           {events.length === 0 ? (
             <div
               className={`text-center py-10 px-2 text-xs border border-dashed rounded-xl transition-colors ${
-                isOver
+                activeHover
                   ? 'border-amber-400 bg-amber-500/10 text-amber-300 font-bold'
                   : 'border-slate-800 text-slate-500'
               }`}
             >
-              {isOver ? 'Thả vào đây để đổi trạng thái' : 'Kéo thả show chụp vào đây'}
+              {activeHover ? 'Thả vào đây để đổi trạng thái' : 'Kéo thả show chụp vào đây'}
             </div>
           ) : (
             events.map(item => (
@@ -417,12 +452,13 @@ export const KanbanView: React.FC<Props> = ({
   onOpenDebtReminder,
 }) => {
   const [activeId, setActiveId] = useState<string | null>(null);
+  const [overId, setOverId] = useState<string | null>(null);
 
-  // Cấu hình PointerSensor để tránh kéo thả nhầm khi bấm vào nút
+  // Cấu hình PointerSensor để phân biệt click nhanh vs kéo thả mượt mà
   const sensors = useSensors(
     useSensor(PointerSensor, {
       activationConstraint: {
-        distance: 8, // Di chuyển ít nhất 8px mới bắt đầu kéo
+        distance: 5, // 5px là điểm vàng: bấm click không bị trôi, kéo thả phản hồi tức thì
       },
     }),
     useSensor(KeyboardSensor, {
@@ -434,9 +470,14 @@ export const KanbanView: React.FC<Props> = ({
     setActiveId(String(event.active.id));
   };
 
+  const handleDragOver = (event: DragOverEvent) => {
+    setOverId(event.over?.id ? String(event.over.id) : null);
+  };
+
   const handleDragEnd = (event: DragEndEvent) => {
     const { active, over } = event;
     setActiveId(null);
+    setOverId(null);
 
     if (!over) return;
 
@@ -447,12 +488,24 @@ export const KanbanView: React.FC<Props> = ({
     // Xác định target status
     let targetStatus: BookingStatus | null = null;
 
-    // 1. Nếu thả thẳng lên cột (id của column là status: 'lead', 'deposited', etc.)
-    const directCol = COLUMNS.find(c => c.status === over.id);
-    if (directCol) {
-      targetStatus = directCol.status;
-    } else {
-      // 2. Nếu thả lên một thẻ khác nằm trong cột
+    // 1. Kiểm tra data gắn trên droppable
+    const overData = over.data?.current;
+    if (overData?.columnStatus) {
+      targetStatus = overData.columnStatus;
+    } else if (overData?.status) {
+      targetStatus = overData.status;
+    }
+
+    // 2. Nếu thả thẳng lên cột (id của column là status: 'lead', 'deposited', etc.)
+    if (!targetStatus) {
+      const directCol = COLUMNS.find(c => c.status === over.id);
+      if (directCol) {
+        targetStatus = directCol.status;
+      }
+    }
+
+    // 3. Nếu thả lên một thẻ khác nằm trong cột
+    if (!targetStatus) {
       const overBooking = events.find(e => e.id === over.id);
       if (overBooking) {
         const parentCol = COLUMNS.find(c =>
@@ -464,7 +517,7 @@ export const KanbanView: React.FC<Props> = ({
       }
     }
 
-    // 3. Nếu targetStatus hợp lệ và khác với status hiện tại của booking
+    // 4. Nếu targetStatus hợp lệ và khác với status hiện tại của booking
     if (targetStatus && targetStatus !== activeBooking.status) {
       if (onStatusChange) {
         onStatusChange(activeBooking.id, targetStatus);
@@ -489,7 +542,7 @@ export const KanbanView: React.FC<Props> = ({
         <div className="flex items-center gap-3 text-xs text-slate-400">
           <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-slate-900 border border-slate-800 text-[11px]">
             <GripVertical className="w-3.5 h-3.5 text-amber-400" />
-            <span>Kéo & Thả để chuyển trạng thái</span>
+            <span>Kéo bất kỳ thẻ nào để đổi cột</span>
           </div>
           <div className="flex items-center gap-1 text-[11px] text-emerald-400">
             <Sparkles className="w-3.5 h-3.5" />
@@ -501,8 +554,9 @@ export const KanbanView: React.FC<Props> = ({
       {/* 5 Kanban Columns: Mới hỏi ➔ Đã cọc ➔ Đã chụp ➔ Đang sửa ảnh ➔ Hoàn tất */}
       <DndContext
         sensors={sensors}
-        collisionDetection={closestCorners}
+        collisionDetection={kanbanCollisionDetection}
         onDragStart={handleDragStart}
+        onDragOver={handleDragOver}
         onDragEnd={handleDragEnd}
       >
         <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 xl:grid-cols-5 gap-3.5 overflow-x-auto pb-4">
@@ -511,11 +565,19 @@ export const KanbanView: React.FC<Props> = ({
               e => col.matchStatuses.includes(e.status) || e.status === col.status
             );
 
+            // Kiểm tra xem con trỏ chuột có đang hover lên cột này hoặc bất kỳ thẻ nào trong cột không
+            const isColHighlighted = Boolean(
+              overId &&
+                (col.status === overId ||
+                  colEvents.some(e => e.id === overId))
+            );
+
             return (
               <KanbanColumn
                 key={col.status}
                 column={col}
                 events={colEvents}
+                isHighlighted={isColHighlighted}
                 onSelectBooking={onSelectBooking}
                 onOpenDebtReminder={onOpenDebtReminder}
                 onStatusChange={onStatusChange}
@@ -524,10 +586,17 @@ export const KanbanView: React.FC<Props> = ({
           })}
         </div>
 
-        {/* Drag Overlay: Hiển thị thẻ nổi khi đang kéo thả */}
-        <DragOverlay>
+        {/* Drag Overlay: Hiển thị thẻ nổi khi đang kéo thả (Độ trễ 0ms, đổ bóng mềm) */}
+        <DragOverlay
+          dropAnimation={{
+            duration: 150,
+            easing: 'cubic-bezier(0.18, 0.67, 0.6, 1.22)',
+          }}
+        >
           {activeBooking ? (
-            <KanbanCardContent item={activeBooking} isOverlay={true} />
+            <div className="w-[280px] max-w-full cursor-grabbing pointer-events-none">
+              <KanbanCardContent item={activeBooking} isOverlay={true} />
+            </div>
           ) : null}
         </DragOverlay>
       </DndContext>

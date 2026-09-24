@@ -119,24 +119,24 @@ export const LoginPage: React.FC = () => {
       </div>
 
       {/* Main Login Card */}
-      <div className="w-full max-w-md rounded-3xl bg-slate-900/90 border border-slate-800 p-6 sm:p-8 shadow-2xl backdrop-blur-xl relative z-10 space-y-6">
-        {/* Brand Header */}
-        <div className="text-center space-y-2">
-          <div className="w-14 h-14 mx-auto rounded-2xl overflow-hidden border border-red-500/30 bg-black shadow-lg shadow-red-950/40 p-0.5 flex items-center justify-center">
+      <div className="w-full max-w-md rounded-3xl bg-white/70 dark:bg-white/5 backdrop-blur-xl border border-white/60 dark:border-white/10 p-6 sm:p-8 shadow-[0_8px_32px_0_rgba(0,0,0,0.35)] relative z-10 space-y-6">
+        {/* Brand Header: Lensy Logo H-16 W-16 */}
+        <div className="text-center space-y-3">
+          <div className="w-16 h-16 mx-auto flex items-center justify-center">
             <img
-              src="/mirmia-logo.png"
-              alt="Mirmia Studio & Academy"
-              className="w-full h-full object-cover rounded-[14px]"
+              src="/lensy-logo.png"
+              alt="Lensy Logo"
+              className="w-16 h-16 object-contain drop-shadow-md"
             />
           </div>
           <div>
-            <h2 className="text-xl sm:text-2xl font-extrabold text-white tracking-tight flex items-center justify-center gap-2">
+            <h2 className="text-xl sm:text-2xl font-extrabold text-slate-900 dark:text-white tracking-tight flex items-center justify-center gap-2">
               <span>Đăng nhập Lensy</span>
-              <span className="text-[10px] uppercase font-bold px-2 py-0.5 rounded-full bg-red-950/70 border border-red-500/30 text-red-300">
+              <span className="text-[10px] uppercase font-bold px-2 py-0.5 rounded-full bg-amber-500/10 dark:bg-amber-500/20 border border-amber-500/30 text-amber-600 dark:text-amber-300">
                 PRO
               </span>
             </h2>
-            <p className="text-xs text-slate-400 mt-1">
+            <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
               Hệ thống trợ lý số độc quyền cho Thợ ảnh & Boutique Studio
             </p>
           </div>
@@ -298,6 +298,11 @@ export const LoginPage: React.FC = () => {
           </button>
         </div>
       </div>
+
+      {/* Footer Branding */}
+      <footer className="mt-8 text-center text-xs text-gray-500 z-10">
+        <p>Phát triển bởi Mirmia Studio & Academy</p>
+      </footer>
     </div>
   );
 };

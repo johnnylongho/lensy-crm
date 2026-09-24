@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, Link } from 'react-router-dom';
+import { Helmet } from 'react-helmet-async';
 import { QuoteHeader } from './QuoteHeader';
 import { QuoteSessionInfo } from './QuoteSessionInfo';
 import { QuoteInclusions } from './QuoteInclusions';
@@ -159,6 +160,8 @@ export const QuoteView: React.FC<Props> = ({
           setQuote(prev => ({
             ...prev,
             studioName: userData.studio_name || 'MIRMIA STUDIO & ACADEMY',
+            studioAvatarUrl: userData.avatar_url || '/mirmia-logo.png',
+            studioCoverUrl: userData.cover_image || userData.cover_url || 'https://images.unsplash.com/photo-1492691527719-9d1e07e534b4?auto=format&fit=crop&w=1200&q=80',
             photographerName: userData.full_name || 'Nhiếp Ảnh Gia',
             photographerPhone: userData.phone || '0901234567',
             photographerEmail: userData.email || 'contact@mirmia.vn',
@@ -175,7 +178,10 @@ export const QuoteView: React.FC<Props> = ({
             setQuote(prev => ({
               ...prev,
               studioName: 'MIRMIA STUDIO & ACADEMY',
+              studioAvatarUrl: '/mirmia-logo.png',
+              studioCoverUrl: 'https://images.unsplash.com/photo-1492691527719-9d1e07e534b4?auto=format&fit=crop&w=1200&q=80',
               photographerName: 'Johnny Long Hồ',
+              photographerPhone: '0901234567',
             }));
           } else {
             setIsStudioNotFound(true);
@@ -429,6 +435,11 @@ export const QuoteView: React.FC<Props> = ({
     );
   }
 
+  const isBookingPage = Boolean(username);
+  const studioCoverUrl =
+    quote.studioCoverUrl ||
+    'https://images.unsplash.com/photo-1492691527719-9d1e07e534b4?auto=format&fit=crop&w=1200&q=80';
+  const studioAvatarUrl = quote.studioAvatarUrl || '/mirmia-logo.png';
   const studioPhone = quote.photographerPhone || '0901234567';
   const cleanStudioPhone = studioPhone.replace(/[^0-9]/g, '');
   const zaloUrl = `https://zalo.me/${cleanStudioPhone}`;
@@ -436,35 +447,126 @@ export const QuoteView: React.FC<Props> = ({
 
   return (
     <div className="min-h-screen bg-[#070b13] text-slate-100 flex flex-col luxury-gradient relative">
+      {/* Dynamic SEO & Open Graph Meta Tags cho Zalo, Facebook, Telegram Preview */}
+      {isBookingPage ? (
+        <Helmet>
+          <title>{`Đặt lịch chụp ảnh | ${quote.studioName}`}</title>
+          <meta property="og:title" content={`Báo giá & Đặt lịch - ${quote.studioName}`} />
+          <meta
+            property="og:description"
+            content={`Khám phá các gói dịch vụ và đặt lịch chụp ngay với ${quote.studioName}. Nền tảng được cung cấp bởi Lensy.`}
+          />
+          <meta property="og:image" content={studioCoverUrl || studioAvatarUrl || '/lensy-logo.png'} />
+          <meta
+            name="description"
+            content={`Khám phá các gói dịch vụ và đặt lịch chụp ngay với ${quote.studioName}. Nền tảng được cung cấp bởi Lensy.`}
+          />
+          <meta property="og:type" content="website" />
+          <meta name="twitter:card" content="summary_large_image" />
+          <meta name="twitter:title" content={`Báo giá & Đặt lịch - ${quote.studioName}`} />
+          <meta
+            name="twitter:description"
+            content={`Khám phá các gói dịch vụ và đặt lịch chụp ngay với ${quote.studioName}. Nền tảng được cung cấp bởi Lensy.`}
+          />
+          <meta name="twitter:image" content={studioCoverUrl || studioAvatarUrl || '/lensy-logo.png'} />
+        </Helmet>
+      ) : (
+        <Helmet>
+          <title>{`Báo giá chụp ảnh | ${quote.clientName || 'Khách hàng'} - ${quote.studioName}`}</title>
+          <meta property="og:title" content={`Báo giá & Đặt lịch - ${quote.studioName}`} />
+          <meta
+            property="og:description"
+            content={`Chi tiết báo giá chụp ảnh và lịch chụp dành cho ${quote.clientName || 'quý khách'}.`}
+          />
+          <meta property="og:image" content={studioCoverUrl || studioAvatarUrl || '/lensy-logo.png'} />
+        </Helmet>
+      )}
+
       {/* Container - Mobile-first width */}
       <div className="w-full max-w-xl mx-auto px-4 py-4 sm:py-8 space-y-6 flex-1 pb-24">
-        {/* Quote Header */}
-        <QuoteHeader quote={quote} />
+        {isBookingPage ? (
+          /* Dynamic Studio Banner, Title & Dynamic Greeting */
+          <div className="relative rounded-3xl overflow-hidden border border-slate-800 shadow-2xl bg-slate-900/90 backdrop-blur-sm animate-fadeIn">
+            {/* Studio Cover Image */}
+            <div className="h-44 sm:h-52 w-full relative overflow-hidden bg-slate-950">
+              <img
+                src={studioCoverUrl}
+                alt={quote.studioName}
+                className="w-full h-full object-cover brightness-[0.7] transform hover:scale-105 transition-transform duration-700"
+              />
+              <div className="absolute inset-0 bg-gradient-to-t from-slate-950 via-slate-950/60 to-transparent" />
+            </div>
 
-        {/* Session Primary Info */}
-        <QuoteSessionInfo quote={quote} />
+            {/* Studio Logo & Title */}
+            <div className="relative px-5 sm:px-7 pb-4 pt-0 -mt-14 sm:-mt-16 flex flex-col sm:flex-row items-center sm:items-end gap-4 text-center sm:text-left">
+              <div className="w-24 h-24 sm:w-28 sm:h-28 rounded-2xl overflow-hidden border-2 border-amber-500/50 shadow-2xl bg-slate-950 p-1 flex-shrink-0">
+                <img
+                  src={studioAvatarUrl}
+                  alt={quote.studioName}
+                  className="w-full h-full object-cover rounded-xl"
+                  onError={e => {
+                    (e.target as HTMLImageElement).src = '/mirmia-logo.png';
+                  }}
+                />
+              </div>
+              <div className="space-y-1 flex-1">
+                <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-amber-500/10 border border-amber-500/30 text-amber-400 text-[11px] font-bold tracking-wide uppercase">
+                  <Sparkles className="w-3.5 h-3.5 text-amber-400" />
+                  <span>Lensy Studio Profile</span>
+                </div>
+                <h1 className="text-2xl sm:text-3xl font-extrabold text-white tracking-tight">
+                  {quote.studioName}
+                </h1>
+                {quote.photographerName && (
+                  <p className="text-xs text-slate-400">
+                    Nhiếp ảnh gia chính: <span className="text-slate-200 font-semibold">{quote.photographerName}</span>
+                  </p>
+                )}
+              </div>
+            </div>
 
-        {/* Package Inclusions & Deliverables */}
-        <QuoteInclusions
-          inclusions={quote.inclusions}
-          deliverables={quote.deliverables}
-        />
+            {/* Dynamic Standard Greeting */}
+            <div className="px-5 sm:px-7 pb-6 pt-2">
+              <div className="p-4 sm:p-5 rounded-2xl bg-gradient-to-r from-amber-500/15 via-amber-500/10 to-amber-500/5 border border-amber-500/30 text-slate-200 text-xs sm:text-sm leading-relaxed shadow-inner">
+                Chào mừng bạn đến với <strong className="text-amber-400 font-bold">{quote.studioName}</strong>. Vui lòng để lại thông tin, chúng tôi sẽ liên hệ tư vấn gói chụp phù hợp nhất cho bạn.
+              </div>
+            </div>
+          </div>
+        ) : (
+          <>
+            {/* Quote Header */}
+            <QuoteHeader quote={quote} />
 
-        {/* Equipment Guarantee */}
-        <QuoteEquipment equipmentList={quote.equipmentList} />
+            {/* Session Primary Info */}
+            <QuoteSessionInfo quote={quote} />
 
-        {/* Price Breakdown & Deposit Trigger */}
-        <QuotePriceSummary
-          quote={quote}
-          onOpenDepositModal={() => setIsDepositModalOpen(true)}
-        />
+            {/* Package Inclusions & Deliverables */}
+            <QuoteInclusions
+              inclusions={quote.inclusions}
+              deliverables={quote.deliverables}
+            />
 
-        {/* Client Booking Submission Form (Direct Supabase Insert) */}
+            {/* Equipment Guarantee */}
+            <QuoteEquipment equipmentList={quote.equipmentList} />
+
+            {/* Price Breakdown & Deposit Trigger */}
+            <QuotePriceSummary
+              quote={quote}
+              onOpenDepositModal={() => setIsDepositModalOpen(true)}
+            />
+          </>
+        )}
+
+        {/* Client Booking Submission Form (Direct Supabase Insert & VietQR Payment) */}
         <ClientBookingForm
+          studioName={quote.studioName}
           defaultSessionType={quote.sessionType}
           defaultPrice={quote.packagePrice}
           defaultDeposit={quote.depositAmount}
           photographerId={photographerId}
+          bankInfo={quote.bankInfo}
+          studioPhone={quote.photographerPhone}
+          isDynamicBookingPage={isBookingPage}
           onBookingCreated={newBooking => {
             if (onBookingSubmit) onBookingSubmit(newBooking);
           }}
@@ -507,8 +609,15 @@ export const QuoteView: React.FC<Props> = ({
         </div>
       </div>
 
+      {/* Sticky Bottom Watermark (Dấu chìm dính đáy) */}
+      <footer className="sticky bottom-0 z-30 w-full py-2.5 px-4 bg-slate-950/85 backdrop-blur-md border-t border-slate-800/50 text-center">
+        <div className="text-xs sm:text-[11px] text-slate-400 opacity-50 hover:opacity-100 transition-opacity duration-300 inline-flex items-center justify-center gap-1 cursor-default select-none">
+          <span>⚡ Powered by Lensy - Developed by Mirmia Studio & Academy</span>
+        </div>
+      </footer>
+
       {/* Floating Action Buttons: Chat Zalo & Gọi Điện Nhanh (Góc dưới cùng màn hình) */}
-      <div className="fixed bottom-4 right-4 sm:bottom-6 sm:right-6 z-40 flex items-center gap-2.5 sm:gap-3 drop-shadow-2xl animate-fadeIn">
+      <div className="fixed bottom-12 right-4 sm:bottom-14 sm:right-6 z-40 flex items-center gap-2.5 sm:gap-3 drop-shadow-2xl animate-fadeIn">
         {/* Nút Chat Zalo (#0068FF) */}
         <a
           href={zaloUrl}

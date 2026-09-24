@@ -28,17 +28,17 @@ export const DayShootsModal: React.FC<Props> = ({
   const formattedDate = format(selectedDate, 'EEEE, dd/MM/yyyy', { locale: vi });
 
   return (
-    <div className="rounded-3xl bg-slate-900/80 border border-slate-800 p-4 sm:p-5 shadow-xl space-y-4">
-      <div className="flex items-center justify-between pb-3 border-b border-slate-800">
+    <div className="rounded-3xl bg-white/60 dark:bg-white/5 backdrop-blur-xl border border-white/60 dark:border-white/10 shadow-[0_8px_32px_0_rgba(0,0,0,0.06)] dark:shadow-[0_8px_32px_0_rgba(0,0,0,0.3)] p-5 sm:p-6 space-y-4 transition-all duration-300">
+      <div className="flex items-center justify-between pb-3 border-b border-white/40 dark:border-white/10">
         <div>
-          <span className="text-[10px] font-bold uppercase tracking-wider text-amber-400 block">
+          <span className="text-[10px] font-bold uppercase tracking-wider text-amber-500 dark:text-amber-400 block mb-0.5">
             Lịch Chi Tiết Theo Ngày
           </span>
-          <h3 className="text-sm sm:text-base font-bold text-white capitalize">
+          <h3 className="text-sm sm:text-base font-bold text-slate-900 dark:text-white capitalize">
             {formattedDate}
           </h3>
         </div>
-        <span className="px-2.5 py-1 rounded-full bg-slate-800 text-xs font-mono font-bold text-slate-300">
+        <span className="px-2.5 py-1 rounded-full bg-white/40 dark:bg-white/5 border border-white/40 dark:border-white/10 text-xs font-mono font-bold text-slate-700 dark:text-white/80">
           {dayEvents.length} show
         </span>
       </div>

@@ -73,6 +73,7 @@ export const MOCK_CALENDAR_EVENTS: CalendarEvent[] = [
   {
     id: 'ev-1',
     clientName: 'Hoàng Oanh Lookbook',
+    clientPhone: '0901234567',
     sessionType: 'lookbook',
     eventDate: '2026-09-22',
     startTime: '13:30',
@@ -91,6 +92,7 @@ export const MOCK_CALENDAR_EVENTS: CalendarEvent[] = [
   {
     id: 'ev-2',
     clientName: 'Anh Tuấn & Chị Mai',
+    clientPhone: '0987654321',
     sessionType: 'wedding',
     eventDate: '2026-09-25',
     startTime: '07:30',
@@ -109,6 +111,7 @@ export const MOCK_CALENDAR_EVENTS: CalendarEvent[] = [
   {
     id: 'ev-3',
     clientName: 'Khai Trương Showroom BrandX',
+    clientPhone: '0912345678',
     sessionType: 'event',
     eventDate: '2026-09-28',
     startTime: '09:00',
@@ -127,6 +130,7 @@ export const MOCK_CALENDAR_EVENTS: CalendarEvent[] = [
   {
     id: 'ev-4',
     clientName: 'Cặp Đôi Bảo & Ngọc',
+    clientPhone: '0933445566',
     sessionType: 'prewedding',
     eventDate: '2026-10-04',
     startTime: '05:30',
@@ -146,6 +150,7 @@ export const MOCK_CALENDAR_EVENTS: CalendarEvent[] = [
   {
     id: 'ev-5',
     clientName: 'Chân Dung Profile Doanh Nhân',
+    clientPhone: '0977889900',
     sessionType: 'portrait',
     eventDate: '2026-10-10',
     startTime: '10:00',
@@ -163,6 +168,7 @@ export const MOCK_CALENDAR_EVENTS: CalendarEvent[] = [
   {
     id: 'ev-6',
     clientName: 'Minh & Thảo (Quote Đang Gửi)',
+    clientPhone: '0987654321',
     sessionType: 'wedding',
     eventDate: '2026-10-18',
     startTime: '07:00',
@@ -178,6 +184,7 @@ export const MOCK_CALENDAR_EVENTS: CalendarEvent[] = [
   {
     id: 'ev-7',
     clientName: 'Thời Trang Thu Đông ChicMode',
+    clientPhone: '0944556677',
     sessionType: 'commercial',
     eventDate: '2026-10-24',
     startTime: '08:00',

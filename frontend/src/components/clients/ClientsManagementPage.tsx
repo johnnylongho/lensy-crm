@@ -392,25 +392,25 @@ export const ClientsManagementPage: React.FC = () => {
   };
 
   return (
-    <div className="max-w-6xl mx-auto px-4 py-6 sm:py-8 space-y-6">
+    <div className="max-w-7xl mx-auto px-4 sm:px-6 py-6 sm:py-8 space-y-7 animate-fadeIn">
       {/* Page Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
           <div className="flex items-center gap-2 mb-1">
-            <span className="text-[10px] uppercase font-bold tracking-wider px-2.5 py-0.5 rounded-full bg-amber-500/20 text-amber-300 border border-amber-500/30">
+            <span className="text-[10px] uppercase font-bold tracking-wider px-2.5 py-0.5 rounded-full bg-amber-500/20 text-amber-500 dark:text-amber-300 border border-amber-500/30">
               Hồ Sơ Khách Hàng (Client CRM & LTV)
             </span>
-            <span className="text-[10px] text-slate-400 font-medium">
+            <span className="text-[10px] text-slate-500 dark:text-white/50 font-medium">
               Gamification Tiering
             </span>
           </div>
-          <h1 className="text-xl sm:text-2xl font-black text-white flex items-center gap-2">
+          <h1 className="text-xl sm:text-2xl font-black text-slate-900 dark:text-white flex items-center gap-2">
             <span>Danh Sách Khách Hàng Studio</span>
-            <span className="text-xs px-2 py-0.5 rounded-full bg-slate-800 text-slate-300 font-mono">
+            <span className="text-xs px-2.5 py-0.5 rounded-full bg-white/40 dark:bg-white/10 text-slate-700 dark:text-white/80 font-mono border border-white/40 dark:border-white/10">
               {clients.length} khách
             </span>
           </h1>
-          <p className="text-xs text-slate-400 mt-1">
+          <p className="text-xs text-slate-500 dark:text-white/50 mt-1">
             Theo dõi giá trị trọn đời (LTV), số lần chụp và tự động gắn nhãn VIP 👑 cho khách quen.
           </p>
         </div>
@@ -419,67 +419,67 @@ export const ClientsManagementPage: React.FC = () => {
           type="button"
           onClick={fetchClientsFromSupabase}
           disabled={isLoading}
-          className="self-start sm:self-auto px-4 py-2 rounded-xl bg-slate-900 hover:bg-slate-800 border border-slate-800 hover:border-slate-700 text-slate-200 text-xs font-bold transition-all flex items-center gap-2 disabled:opacity-50"
+          className="self-start sm:self-auto px-4 py-2.5 rounded-2xl bg-white/30 dark:bg-white/5 hover:bg-white/50 dark:hover:bg-white/10 border border-white/40 dark:border-white/10 text-slate-700 dark:text-white/80 text-xs font-bold transition-all flex items-center gap-2 disabled:opacity-50 backdrop-blur-md shadow-sm active:scale-95"
         >
           <RefreshCw className={`w-3.5 h-3.5 ${isLoading ? 'animate-spin text-amber-400' : ''}`} />
           <span>Làm Mới</span>
         </button>
       </div>
 
-      {/* 4 Thẻ Thống Kê Tổng Quan (KPIs) */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
+      {/* 4 Thẻ Thống Kê Tổng Quan (KPIs) - Liquid Glass */}
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6">
         {/* Tổng Khách */}
-        <div className="p-4 rounded-2xl bg-slate-900/80 border border-slate-800 space-y-1 shadow-md">
-          <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400 flex items-center gap-1.5">
-            <Users className="w-3.5 h-3.5 text-blue-400" />
+        <div className="p-5 sm:p-6 rounded-3xl bg-white/60 dark:bg-white/5 backdrop-blur-xl border border-white/60 dark:border-white/10 shadow-[0_8px_32px_0_rgba(0,0,0,0.06)] dark:shadow-[0_8px_32px_0_rgba(0,0,0,0.3)] space-y-1.5 hover:shadow-md hover:-translate-y-0.5 transition-all duration-300">
+          <span className="text-xs font-medium text-slate-500 dark:text-white/50 flex items-center gap-1.5">
+            <Users className="w-3.5 h-3.5 text-blue-500 dark:text-blue-400" />
             <span>Tổng Khách Hàng</span>
           </span>
-          <p className="text-xl sm:text-2xl font-black font-mono text-white">
-            {kpiStats.totalClients} <span className="text-xs font-normal text-slate-400">người</span>
+          <p className="text-2xl sm:text-3xl font-light font-mono text-slate-900 dark:text-white tracking-tight">
+            {kpiStats.totalClients} <span className="text-xs font-normal text-slate-500 dark:text-white/50">người</span>
           </p>
         </div>
 
         {/* Khách VIP */}
-        <div className="p-4 rounded-2xl bg-gradient-to-br from-amber-950/40 via-slate-900 to-slate-900 border border-amber-500/40 space-y-1 shadow-md">
-          <span className="text-[10px] font-bold uppercase tracking-wider text-amber-400 flex items-center gap-1.5">
-            <Crown className="w-3.5 h-3.5 text-amber-400" />
+        <div className="p-5 sm:p-6 rounded-3xl bg-gradient-to-br from-amber-500/10 via-white/60 to-amber-500/5 dark:from-amber-950/40 dark:via-white/5 dark:to-transparent backdrop-blur-xl border border-amber-400/40 dark:border-amber-500/30 shadow-[0_8px_32px_0_rgba(0,0,0,0.06)] dark:shadow-[0_8px_32px_0_rgba(0,0,0,0.3)] space-y-1.5 hover:shadow-md hover:-translate-y-0.5 transition-all duration-300">
+          <span className="text-xs font-medium text-amber-600 dark:text-amber-400 flex items-center gap-1.5">
+            <Crown className="w-3.5 h-3.5 text-amber-500" />
             <span>Khách Hàng VIP (👑)</span>
           </span>
           <div className="flex items-baseline gap-2">
-            <p className="text-xl sm:text-2xl font-black font-mono text-amber-300">
+            <p className="text-2xl sm:text-3xl font-light font-mono text-amber-600 dark:text-amber-300 tracking-tight">
               {kpiStats.vipCount}
             </p>
-            <span className="text-[11px] text-amber-400/80 font-medium">
+            <span className="text-xs text-amber-600/80 dark:text-amber-400/80 font-medium">
               ({kpiStats.totalClients > 0 ? Math.round((kpiStats.vipCount / kpiStats.totalClients) * 100) : 0}% tệp khách)
             </span>
           </div>
         </div>
 
-        {/* Tổng Doanh Thu Trọn Đời (LTV) */}
-        <div className="p-4 rounded-2xl bg-slate-900/80 border border-slate-800 space-y-1 shadow-md">
-          <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400 flex items-center gap-1.5">
-            <DollarSign className="w-3.5 h-3.5 text-emerald-400" />
+        {/* Tổng Doanh Thu LTV */}
+        <div className="p-5 sm:p-6 rounded-3xl bg-white/60 dark:bg-white/5 backdrop-blur-xl border border-white/60 dark:border-white/10 shadow-[0_8px_32px_0_rgba(0,0,0,0.06)] dark:shadow-[0_8px_32px_0_rgba(0,0,0,0.3)] space-y-1.5 hover:shadow-md hover:-translate-y-0.5 transition-all duration-300">
+          <span className="text-xs font-medium text-slate-500 dark:text-white/50 flex items-center gap-1.5">
+            <DollarSign className="w-3.5 h-3.5 text-emerald-500 dark:text-emerald-400" />
             <span>Tổng Doanh Thu LTV</span>
           </span>
-          <p className="text-lg sm:text-xl font-black font-mono text-emerald-400 truncate">
+          <p className="text-xl sm:text-2xl font-light font-mono text-emerald-600 dark:text-emerald-400 truncate tracking-tight">
             {kpiStats.totalLtvRevenue.toLocaleString('vi-VN')} đ
           </p>
         </div>
 
         {/* AOV */}
-        <div className="p-4 rounded-2xl bg-slate-900/80 border border-slate-800 space-y-1 shadow-md">
-          <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400 flex items-center gap-1.5">
-            <TrendingUp className="w-3.5 h-3.5 text-purple-400" />
+        <div className="p-5 sm:p-6 rounded-3xl bg-white/60 dark:bg-white/5 backdrop-blur-xl border border-white/60 dark:border-white/10 shadow-[0_8px_32px_0_rgba(0,0,0,0.06)] dark:shadow-[0_8px_32px_0_rgba(0,0,0,0.3)] space-y-1.5 hover:shadow-md hover:-translate-y-0.5 transition-all duration-300">
+          <span className="text-xs font-medium text-slate-500 dark:text-white/50 flex items-center gap-1.5">
+            <TrendingUp className="w-3.5 h-3.5 text-purple-500 dark:text-purple-400" />
             <span>Giá Trị Trung Bình / Khách</span>
           </span>
-          <p className="text-lg sm:text-xl font-black font-mono text-purple-300 truncate">
+          <p className="text-xl sm:text-2xl font-light font-mono text-purple-600 dark:text-purple-300 truncate tracking-tight">
             {kpiStats.avgOrderValue.toLocaleString('vi-VN')} đ
           </p>
         </div>
       </div>
 
       {/* Toolbar: Tìm kiếm & Bộ lọc Tab */}
-      <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 bg-slate-900/90 p-3 rounded-2xl border border-slate-800">
+      <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3.5 p-3.5 rounded-3xl bg-white/60 dark:bg-white/5 backdrop-blur-xl border border-white/60 dark:border-white/10 shadow-[0_8px_32px_0_rgba(0,0,0,0.06)] dark:shadow-[0_8px_32px_0_rgba(0,0,0,0.3)]">
         {/* Search Input */}
         <div className="relative flex-1 max-w-md">
           <Search className="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
@@ -544,8 +544,8 @@ export const ClientsManagementPage: React.FC = () => {
         </div>
       </div>
 
-      {/* Bảng Dữ Liệu Danh Sách Khách Hàng (Data Table) */}
-      <div className="rounded-2xl border border-slate-800 bg-slate-900/60 overflow-hidden shadow-xl">
+      {/* 1. MÀN HÌNH DESKTOP: BẢNG DỮ LIỆU TẬN DỤNG TOÀN DIỆN CHIỀU NGANG */}
+      <div className="hidden md:block rounded-2xl border border-slate-800 bg-slate-900/60 overflow-hidden shadow-xl">
         <div className="overflow-x-auto">
           <table className="w-full text-left text-xs border-collapse">
             <thead>
@@ -712,6 +712,128 @@ export const ClientsManagementPage: React.FC = () => {
             </tbody>
           </table>
         </div>
+      </div>
+
+      {/* 2. MÀN HÌNH MOBILE: DANH SÁCH THẺ (LIST CARDS) GỌN GÀNG, KHÔNG CẦN CUỘN NGANG */}
+      <div className="md:hidden space-y-3">
+        {filteredClients.length === 0 ? (
+          <div className="p-8 text-center text-slate-500 rounded-2xl bg-white/40 dark:bg-white/5 border border-white/40 dark:border-white/10">
+            Không tìm thấy khách hàng nào khớp với tìm kiếm hoặc bộ lọc.
+          </div>
+        ) : (
+          filteredClients.map(client => {
+            const initials = client.name
+              .split(' ')
+              .filter(Boolean)
+              .slice(-2)
+              .map(w => w[0]?.toUpperCase())
+              .join('') || 'KH';
+
+            const cleanPhone = client.phone.replace(/[^0-9]/g, '');
+
+            return (
+              <div
+                key={client.id}
+                onClick={() => handleOpenClientProfile(client)}
+                className="p-4 rounded-2xl bg-white/70 dark:bg-slate-900/80 border border-slate-200/80 dark:border-slate-800 shadow-md space-y-3 cursor-pointer active:scale-[0.99] transition-all"
+              >
+                {/* Header Thẻ: Avatar, Tên, Hạng Khách */}
+                <div className="flex items-start justify-between gap-3">
+                  <div className="flex items-center gap-3 min-w-0">
+                    <div
+                      className={`w-10 h-10 rounded-xl flex items-center justify-center font-bold text-xs flex-shrink-0 ${
+                        client.isVip
+                          ? 'bg-gradient-to-br from-amber-400 to-yellow-600 text-slate-950 shadow-md ring-2 ring-amber-500/30'
+                          : 'bg-slate-800 border border-slate-700 text-slate-200'
+                      }`}
+                    >
+                      {initials}
+                    </div>
+                    <div className="min-w-0">
+                      <h3 className="font-bold text-slate-900 dark:text-white text-sm truncate">
+                        {client.name}
+                      </h3>
+                      <p className="text-[11px] text-slate-500 dark:text-slate-400 truncate">
+                        {client.email || 'Chưa có email'}
+                      </p>
+                    </div>
+                  </div>
+
+                  {/* Badge Hạng */}
+                  {client.isVip ? (
+                    <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-black bg-gradient-to-r from-amber-500/20 via-yellow-500/20 to-amber-500/20 border border-amber-500/50 text-amber-500 dark:text-amber-300 flex-shrink-0">
+                      <span>👑 VIP</span>
+                    </span>
+                  ) : client.tier === 'regular' ? (
+                    <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300 flex-shrink-0">
+                      <span>🥈 Thân Thiết</span>
+                    </span>
+                  ) : (
+                    <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-medium bg-slate-100 dark:bg-slate-800/40 text-slate-500 dark:text-slate-400 border border-slate-200 dark:border-slate-800 flex-shrink-0">
+                      <span>🥉 Mới</span>
+                    </span>
+                  )}
+                </div>
+
+                {/* Metrics 2 Cột: LTV & Số Lần Chụp */}
+                <div className="grid grid-cols-2 gap-2 p-2.5 rounded-xl bg-slate-50 dark:bg-slate-950/60 border border-slate-200/60 dark:border-slate-800/60 text-xs">
+                  <div>
+                    <span className="text-[10px] text-slate-400 block font-medium">Tổng LTV Chi Tiêu:</span>
+                    <span className="font-mono font-bold text-emerald-600 dark:text-emerald-400 text-xs">
+                      {client.totalSpent.toLocaleString('vi-VN')} đ
+                    </span>
+                  </div>
+                  <div>
+                    <span className="text-[10px] text-slate-400 block font-medium">Số Lần Chụp:</span>
+                    <span className="font-mono font-bold text-slate-800 dark:text-white text-xs">
+                      {client.totalBookings} show
+                    </span>
+                  </div>
+                </div>
+
+                {/* Footer Thẻ: Số Điện Thoại & Thao Tác Nhanh */}
+                <div className="flex items-center justify-between gap-2 pt-1 border-t border-slate-100 dark:border-slate-800/60">
+                  <div className="flex items-center gap-1.5 text-xs font-mono text-slate-600 dark:text-slate-300">
+                    <Phone className="w-3.5 h-3.5 text-slate-400" />
+                    <span>{client.phone}</span>
+                    <button
+                      type="button"
+                      onClick={e => handleCopyPhone(client.phone, e)}
+                      className="p-1 rounded hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-400 hover:text-slate-800 dark:hover:text-white"
+                      title="Sao chép số"
+                    >
+                      {copiedPhone === client.phone ? (
+                        <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400" />
+                      ) : (
+                        <Copy className="w-3.5 h-3.5" />
+                      )}
+                    </button>
+                  </div>
+
+                  <div className="flex items-center gap-1.5" onClick={e => e.stopPropagation()}>
+                    <a
+                      href={`https://zalo.me/${cleanPhone}`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="p-1.5 rounded-lg bg-blue-600/10 hover:bg-blue-600/20 text-blue-500 border border-blue-500/30 flex items-center gap-1 text-[11px] font-bold"
+                    >
+                      <MessageCircle className="w-3.5 h-3.5" />
+                      <span>Zalo</span>
+                    </a>
+                    <button
+                      type="button"
+                      onClick={() => handleOpenClientProfile(client)}
+                      className="px-2.5 py-1.5 rounded-lg bg-amber-500 text-slate-950 font-bold text-[11px] flex items-center gap-1 shadow-sm"
+                    >
+                      <span>Chi tiết</span>
+                      <ChevronRight className="w-3 h-3" />
+                    </button>
+                  </div>
+                </div>
+              </div>
+            );
+          })
+        )}
       </div>
 
       {/* Drawer / Modal Chi Tiết Khách Hàng (Client Profile) */}

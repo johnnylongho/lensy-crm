@@ -1,14 +1,10 @@
 import React from 'react';
-import { Link } from 'react-router-dom';
+import { motion, type Variants } from 'framer-motion';
+import CountUp from 'react-countup';
 import {
-  Calendar,
   DollarSign,
   Camera,
   CheckCircle2,
-  TrendingUp,
-  LogOut,
-  User,
-  Settings,
   Wallet,
   Receipt,
   Sparkles,
@@ -24,18 +20,38 @@ interface Props {
   onOpenReceiptReview?: (booking: CalendarEvent) => void;
 }
 
+const containerVariants: Variants = {
+  hidden: { opacity: 0 },
+  visible: {
+    opacity: 1,
+    transition: {
+      staggerChildren: 0.1,
+      delayChildren: 0.05,
+    },
+  },
+};
+
+const cardVariants: Variants = {
+  hidden: { opacity: 0, y: 18 },
+  visible: {
+    opacity: 1,
+    y: 0,
+    transition: { duration: 0.45, ease: 'easeOut' },
+  },
+};
+
 export const DashboardHeader: React.FC<Props> = ({
   events,
   onOpenCreateQuote,
   onOpenWebhookSimulator,
   onOpenReceiptReview,
 }) => {
-  const { user, signOut } = useAuth();
+  const { user } = useAuth();
   const bookedEvents = events.filter(e => e.status === 'da_chot' || e.status === 'da_tra_file' || e.status === 'hoan_thanh');
   const pendingEvents = events.filter(e => e.status === 'cho_coc');
   const pendingReceipts = events.filter(e => e.status === 'cho_xac_nhan_coc');
 
-  // Logic Tài chính mới tách rõ Gross và Net Profit
+  // Logic Tài chính tách rõ Gross và Net Profit
   const totalRevenue = events.reduce((sum, e) => sum + (Number(e.packagePrice) || 0), 0); // Tổng giá trị hợp đồng
   const totalDepositCollected = events.reduce((sum, e) => sum + (Number(e.depositAmount) || 0), 0); // Đã thu cọc
   const totalGrossCollected = events.reduce((sum, e) => sum + (Number(e.paidAmount) || Number(e.depositAmount) || 0), 0); // Tổng Doanh Thu Đã Thu (Gross)
@@ -44,11 +60,19 @@ export const DashboardHeader: React.FC<Props> = ({
   const netMargin = totalGrossCollected > 0 ? Math.round((totalNetProfit / totalGrossCollected) * 100) : 0;
 
   return (
-    <div className="space-y-4">
-      {/* Title & Profile Bar */}
-      <div className="flex flex-wrap items-center justify-between gap-3 bg-slate-900/60 p-4 sm:p-5 rounded-3xl border border-slate-800">
-        <div className="flex items-center gap-3">
-          <div className="w-12 h-12 rounded-2xl overflow-hidden border border-red-500/30 bg-black shadow-lg shadow-red-950/40 flex-shrink-0">
+    <motion.div
+      initial="hidden"
+      animate="visible"
+      variants={containerVariants}
+      className="space-y-6"
+    >
+      {/* Title & Studio Profile Liquid Glass Bar */}
+      <motion.div
+        variants={cardVariants}
+        className="flex flex-wrap items-center justify-between gap-4 p-5 sm:p-6 rounded-3xl bg-white/60 dark:bg-white/5 backdrop-blur-xl border border-white/60 dark:border-white/10 shadow-[0_8px_32px_0_rgba(0,0,0,0.06)] dark:shadow-[0_8px_32px_0_rgba(0,0,0,0.3)] transition-all duration-300"
+      >
+        <div className="flex items-center gap-3.5">
+          <div className="w-12 h-12 rounded-2xl overflow-hidden border border-white/20 dark:border-white/10 bg-black shadow-md flex-shrink-0">
             <img
               src="/mirmia-logo.png"
               alt="Mirmia Studio & Academy"
@@ -57,155 +81,165 @@ export const DashboardHeader: React.FC<Props> = ({
           </div>
           <div>
             <div className="flex items-center gap-2">
-              <h2 className="text-base sm:text-lg font-bold text-white">MIRMIA STUDIO & ACADEMY</h2>
-              <span className="px-2 py-0.5 text-[10px] font-bold bg-red-950/60 border border-red-500/30 text-red-300 rounded-full">
+              <h2 className="text-base sm:text-lg font-bold text-slate-900 dark:text-white/95 tracking-tight">
+                MIRMIA STUDIO & ACADEMY
+              </h2>
+              <span className="px-2 py-0.5 text-[10px] font-bold bg-amber-500/10 dark:bg-amber-500/20 border border-amber-500/20 text-amber-600 dark:text-amber-300 rounded-full">
                 Lensy CRM
               </span>
             </div>
-            <p className="text-xs text-slate-400">
+            <p className="text-xs text-slate-500 dark:text-white/50">
               {user ? (
-                <span>Tài khoản: <strong className="text-amber-400 font-mono">{user.email}</strong></span>
+                <span>Tài khoản: <strong className="text-slate-700 dark:text-white/80 font-mono">{user.email}</strong></span>
               ) : (
-                'Hệ thống trợ lý số quản lý lịch trình & nhận show cho Mirmia'
+                'Hệ thống quản lý lịch trình & nhận show nhiếp ảnh chuyên nghiệp'
               )}
             </p>
           </div>
         </div>
 
+        {/* Action Controls: Ghost Buttons & Shimmer Accent Primary Button */}
         <div className="flex flex-wrap items-center gap-2.5">
           {pendingReceipts.length > 0 && onOpenReceiptReview && (
             <button
               type="button"
               onClick={() => onOpenReceiptReview(pendingReceipts[0])}
-              className="px-3.5 py-2 rounded-xl bg-gradient-to-r from-orange-600 to-amber-600 hover:from-orange-500 hover:to-amber-500 text-white text-xs font-extrabold flex items-center gap-1.5 transition-all shadow-lg shadow-orange-950/60 animate-pulse hover:scale-[1.02]"
+              className="px-3.5 py-2 rounded-2xl bg-orange-500/15 hover:bg-orange-500/25 border border-orange-500/30 text-orange-400 text-xs font-semibold backdrop-blur-md transition-all active:scale-95 shadow-sm"
               title="Có khách hàng vừa gửi ảnh biên lai cọc cần duyệt"
             >
               <span>🔔 {pendingReceipts.length} Biên Lai Cần Duyệt</span>
             </button>
           )}
+
           {onOpenWebhookSimulator && (
             <button
               type="button"
               onClick={onOpenWebhookSimulator}
-              className="px-3 py-2 rounded-xl bg-slate-800 hover:bg-amber-500/20 border border-slate-700 hover:border-amber-500/50 text-amber-300 text-xs font-bold flex items-center gap-1.5 transition-all shadow-sm"
+              className="px-3.5 py-2 rounded-2xl bg-white/20 dark:bg-white/5 hover:bg-white/30 dark:hover:bg-white/10 border border-white/40 dark:border-white/10 text-amber-600 dark:text-amber-400 text-xs font-medium backdrop-blur-md transition-all active:scale-95 shadow-sm ghost-btn"
               title="Mô phỏng nhận tiền cọc qua SePAY/VietQR để test tự động hóa"
             >
               <span>⚡ Test Cọc (SePAY)</span>
             </button>
           )}
 
+          {/* Nút Tạo Báo Giá: Accent Button với hiệu ứng Shimmer Sweep lướt tuần hoàn */}
           {onOpenCreateQuote && (
             <button
               type="button"
               onClick={onOpenCreateQuote}
-              className="px-3.5 py-2 rounded-xl bg-gradient-to-r from-amber-500 to-yellow-500 hover:from-amber-400 hover:to-yellow-400 text-slate-950 text-xs font-extrabold flex items-center gap-1.5 shadow-md shadow-amber-500/25 transition-all hover:scale-[1.02]"
+              className="relative overflow-hidden px-4 py-2.5 rounded-2xl bg-gradient-to-r from-amber-500/90 via-amber-400 to-yellow-500/90 hover:from-amber-400 hover:to-yellow-400 text-slate-950 text-xs font-extrabold flex items-center gap-1.5 shadow-lg shadow-amber-500/20 active:scale-95 transition-all group"
             >
-              <Camera className="w-3.5 h-3.5" />
-              <span>+ Tạo Báo Giá Mới</span>
+              {/* Shimmer sweep light overlay */}
+              <div className="absolute inset-0 w-1/2 h-full bg-gradient-to-r from-transparent via-white/50 to-transparent opacity-75 pointer-events-none animate-shimmer-sweep" />
+              <Camera className="w-3.5 h-3.5 relative z-10" />
+              <span className="relative z-10">+ Tạo Báo Giá Mới</span>
             </button>
           )}
-
-          <Link
-            to="/dashboard/gears"
-            className="px-3.5 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 border border-slate-700 hover:border-sky-500/50 text-slate-200 hover:text-sky-300 text-xs font-bold flex items-center gap-1.5 transition-all shadow-sm"
-            title="Quản lý kho thiết bị Camera, Lens, Đèn"
-          >
-            <Camera className="w-3.5 h-3.5 text-sky-400" />
-            <span>Kho Thiết Bị</span>
-          </Link>
-
-          <Link
-            to="/dashboard/settings"
-            className="px-3.5 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 border border-slate-700 hover:border-amber-500/50 text-slate-200 hover:text-amber-400 text-xs font-bold flex items-center gap-1.5 transition-all shadow-sm"
-            title="Cài đặt thông tin Studio, Username và Số tài khoản ngân hàng"
-          >
-            <Settings className="w-3.5 h-3.5 text-amber-400" />
-            <span>Cài Đặt</span>
-          </Link>
 
           <InstallPwaButton />
-          <div className="px-3 py-1.5 rounded-xl bg-slate-950/80 border border-slate-800 text-xs">
-            <span className="text-slate-400 block text-[10px]">Đã Thu Cọc</span>
-            <span className="font-mono font-bold text-emerald-400">
-              {totalDepositCollected.toLocaleString('vi-VN')} đ
+
+          {/* Pill Đã Thu Cọc (Ghost Style) */}
+          <div className="px-3.5 py-2 rounded-2xl bg-emerald-500/10 dark:bg-emerald-500/5 border border-emerald-500/20 text-xs backdrop-blur-md ghost-btn">
+            <span className="text-slate-500 dark:text-white/50 block text-[10px]">Đã Thu Cọc</span>
+            <span className="font-mono font-medium text-emerald-600 dark:text-emerald-400">
+              <CountUp start={0} end={totalDepositCollected} duration={1.5} separator="." suffix=" đ" />
             </span>
           </div>
-
-          {user && (
-            <button
-              type="button"
-              onClick={() => signOut()}
-              className="px-3 py-1.5 rounded-xl bg-slate-800 hover:bg-rose-950/80 border border-slate-700 hover:border-rose-500/50 text-slate-300 hover:text-rose-300 text-xs font-bold transition-all flex items-center gap-1.5 shadow-sm"
-              title="Đăng xuất khỏi Lensy"
-            >
-              <LogOut className="w-3.5 h-3.5" />
-              <span>Đăng xuất</span>
-            </button>
-          )}
         </div>
-      </div>
+      </motion.div>
 
-      {/* 4 Thẻ Tổng Quan (Summary Cards) - Tách Rõ Gross & Net Profit Theo Yêu Cầu */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+      {/* 4 Thẻ Tổng Quan (Summary Cards) - Entrance Animations & Number Ticker */}
+      <motion.div
+        variants={containerVariants}
+        className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5 sm:gap-6"
+      >
         {/* Card 1: Số Lượng Show */}
-        <div className="p-4 rounded-2xl bg-slate-900/80 border border-slate-800 space-y-1">
-          <div className="flex items-center justify-between text-slate-400">
-            <span className="text-xs font-semibold">Show Đã Chốt</span>
-            <CheckCircle2 className="w-4 h-4 text-emerald-400" />
+        <motion.div
+          variants={cardVariants}
+          className="p-6 sm:p-7 rounded-3xl bg-white/60 dark:bg-white/5 backdrop-blur-xl border border-white/60 dark:border-white/10 shadow-[0_8px_32px_0_rgba(0,0,0,0.06)] dark:shadow-[0_8px_32px_0_rgba(0,0,0,0.3)] hover:shadow-md hover:-translate-y-0.5 transition-all duration-300 space-y-2.5"
+        >
+          <div className="flex items-center justify-between">
+            <span className="text-xs font-medium text-slate-500 dark:text-white/50">Show Đã Chốt</span>
+            <div className="w-8 h-8 rounded-xl bg-emerald-500/10 flex items-center justify-center text-emerald-500 dark:text-emerald-400">
+              <CheckCircle2 className="w-4 h-4" />
+            </div>
           </div>
-          <div className="text-2xl font-extrabold text-white font-mono">{bookedEvents.length}</div>
-          <div className="text-[11px] text-slate-400 font-medium flex items-center justify-between">
+          <div className="text-3xl sm:text-4xl font-light text-slate-900 dark:text-white/90 font-mono tracking-tight">
+            <CountUp start={0} end={bookedEvents.length} duration={1.2} />
+          </div>
+          <div className="text-[11px] text-slate-500 dark:text-white/50 flex items-center justify-between pt-1">
             <span>+{pendingEvents.length} đang chờ cọc</span>
-            <span className="text-indigo-400 font-bold">{Math.round((bookedEvents.length / (events.length || 1)) * 100)}% chốt</span>
+            <span className="text-indigo-600 dark:text-indigo-400 font-medium">
+              {Math.round((bookedEvents.length / (events.length || 1)) * 100)}% chốt
+            </span>
           </div>
-        </div>
+        </motion.div>
 
         {/* Card 2: Tổng Doanh Thu (Gross) */}
-        <div className="p-4 rounded-2xl bg-slate-900/80 border border-slate-800 space-y-1">
-          <div className="flex items-center justify-between text-slate-400">
-            <span className="text-xs font-semibold">Tổng Doanh Thu (Gross)</span>
-            <DollarSign className="w-4 h-4 text-sky-400" />
+        <motion.div
+          variants={cardVariants}
+          className="p-6 sm:p-7 rounded-3xl bg-white/60 dark:bg-white/5 backdrop-blur-xl border border-white/60 dark:border-white/10 shadow-[0_8px_32px_0_rgba(0,0,0,0.06)] dark:shadow-[0_8px_32px_0_rgba(0,0,0,0.3)] hover:shadow-md hover:-translate-y-0.5 transition-all duration-300 space-y-2.5"
+        >
+          <div className="flex items-center justify-between">
+            <span className="text-xs font-medium text-slate-500 dark:text-white/50">Tổng Doanh Thu (Gross)</span>
+            <div className="w-8 h-8 rounded-xl bg-sky-500/10 flex items-center justify-center text-sky-500 dark:text-sky-400">
+              <DollarSign className="w-4 h-4" />
+            </div>
           </div>
-          <div className="text-lg sm:text-xl font-extrabold text-sky-300 font-mono">
-            {totalGrossCollected.toLocaleString('vi-VN')} đ
+          <div className="text-2xl sm:text-3xl font-light text-sky-600 dark:text-sky-300 font-mono tracking-tight">
+            <CountUp start={0} end={totalGrossCollected} duration={1.5} separator="." suffix=" đ" />
           </div>
-          <div className="text-[11px] text-slate-400 truncate">
+          <div className="text-[11px] text-slate-500 dark:text-white/50 truncate pt-1">
             Tổng hợp đồng: {totalRevenue.toLocaleString('vi-VN')} đ
           </div>
-        </div>
+        </motion.div>
 
         {/* Card 3: Tổng Chi Phí (Job Expenses) */}
-        <div className="p-4 rounded-2xl bg-slate-900/80 border border-slate-800 space-y-1">
-          <div className="flex items-center justify-between text-slate-400">
-            <span className="text-xs font-semibold">Tổng Chi Phí (Expenses)</span>
-            <Receipt className="w-4 h-4 text-rose-400" />
+        <motion.div
+          variants={cardVariants}
+          className="p-6 sm:p-7 rounded-3xl bg-white/60 dark:bg-white/5 backdrop-blur-xl border border-white/60 dark:border-white/10 shadow-[0_8px_32px_0_rgba(0,0,0,0.06)] dark:shadow-[0_8px_32px_0_rgba(0,0,0,0.3)] hover:shadow-md hover:-translate-y-0.5 transition-all duration-300 space-y-2.5"
+        >
+          <div className="flex items-center justify-between">
+            <span className="text-xs font-medium text-slate-500 dark:text-white/50">Tổng Chi Phí (Expenses)</span>
+            <div className="w-8 h-8 rounded-xl bg-rose-500/10 flex items-center justify-center text-rose-500 dark:text-rose-400">
+              <Receipt className="w-4 h-4" />
+            </div>
           </div>
-          <div className="text-lg sm:text-xl font-extrabold text-rose-400 font-mono">
-            -{totalExpenses.toLocaleString('vi-VN')} đ
+          <div className="text-2xl sm:text-3xl font-light text-rose-500 dark:text-rose-400 font-mono tracking-tight">
+            -<CountUp start={0} end={totalExpenses} duration={1.5} separator="." suffix=" đ" />
           </div>
-          <div className="text-[11px] text-slate-400">Makeup, studio, trợ lý...</div>
-        </div>
+          <div className="text-[11px] text-slate-500 dark:text-white/50 pt-1">
+            Makeup, studio, trợ lý...
+          </div>
+        </motion.div>
 
         {/* Card 4: LỢI NHUẬN RÒNG (Net Profit) - Hero Highlight Card (Tiền thật bỏ túi) */}
-        <div className="p-4 rounded-2xl bg-gradient-to-br from-emerald-950/50 via-slate-900/90 to-slate-900/90 border border-emerald-500/40 shadow-lg shadow-emerald-950/20 space-y-1 relative overflow-hidden">
+        <motion.div
+          variants={cardVariants}
+          className="p-6 sm:p-7 rounded-3xl bg-gradient-to-br from-emerald-500/10 via-white/60 to-emerald-500/5 dark:from-emerald-950/40 dark:via-white/5 dark:to-transparent backdrop-blur-xl border border-emerald-400/40 dark:border-emerald-500/30 shadow-[0_8px_32px_0_rgba(0,0,0,0.06)] dark:shadow-[0_8px_32px_0_rgba(0,0,0,0.3)] hover:shadow-md hover:-translate-y-0.5 transition-all duration-300 space-y-2.5 relative overflow-hidden"
+        >
           <div className="flex items-center justify-between">
-            <span className="text-xs font-bold text-emerald-300 flex items-center gap-1">
+            <span className="text-xs font-medium text-emerald-600 dark:text-emerald-400 flex items-center gap-1.5">
               <span>Lợi Nhuận Ròng (Net)</span>
-              <Sparkles className="w-3 h-3 text-emerald-400" />
+              <Sparkles className="w-3.5 h-3.5 text-emerald-500" />
             </span>
-            <Wallet className="w-4 h-4 text-emerald-400" />
+            <div className="w-8 h-8 rounded-xl bg-emerald-500/15 flex items-center justify-center text-emerald-600 dark:text-emerald-400">
+              <Wallet className="w-4 h-4" />
+            </div>
           </div>
-          <div className="text-lg sm:text-xl font-black text-emerald-400 font-mono">
-            {totalNetProfit.toLocaleString('vi-VN')} đ
+          <div className="text-2xl sm:text-3xl font-light text-emerald-600 dark:text-emerald-400 font-mono tracking-tight">
+            <CountUp start={0} end={totalNetProfit} duration={1.5} separator="." suffix=" đ" />
           </div>
-          <div className="text-[11px] text-emerald-300/80 font-semibold flex items-center justify-between">
+          <div className="text-[11px] text-emerald-700/90 dark:text-emerald-300/80 font-medium flex items-center justify-between pt-1">
             <span>Tiền thật bỏ túi</span>
-            <span className="bg-emerald-500/20 px-1.5 py-0.5 rounded text-[10px] font-mono text-emerald-300">
+            <span className="bg-emerald-500/15 text-emerald-700 dark:text-emerald-300 px-2 py-0.5 rounded-full text-[10px] font-mono border border-emerald-500/20">
               Lãi: {netMargin}%
             </span>
           </div>
-        </div>
-      </div>
-    </div>
+        </motion.div>
+      </motion.div>
+    </motion.div>
   );
 };
+
+export default DashboardHeader;

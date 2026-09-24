@@ -1,4 +1,7 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
+import { motion } from 'framer-motion';
+import CountUp from 'react-countup';
+import confetti from 'canvas-confetti';
 import { Link } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import { supabase, isSupabaseConfigured } from '../../lib/supabase';
@@ -25,6 +28,7 @@ export const RoiProgressBar: React.FC<Props> = ({ events, className = '' }) => {
   const [gears, setGears] = useState<GearItem[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [animatedPercent, setAnimatedPercent] = useState(0);
+  const hasCelebratedRoi = useRef(false);
 
   // 1. Fetch toàn bộ thiết bị của studio để tính "Tổng Đầu Tư"
   const fetchStudioGears = async () => {
@@ -110,6 +114,40 @@ export const RoiProgressBar: React.FC<Props> = ({ events, className = '' }) => {
     return () => clearTimeout(timer);
   }, [roiPercentage]);
 
+  // Hiệu ứng Cảm xúc - Ăn mừng (Gamification Scenario 2):
+  // Bắn pháo hoa giấy toàn màn hình khi Tiến độ Hoàn vốn (ROI) chạm hoặc vượt mốc 100%
+  useEffect(() => {
+    if (roiPercentage >= 100 && !hasCelebratedRoi.current && !isLoading) {
+      hasCelebratedRoi.current = true;
+      try {
+        confetti({
+          particleCount: 100,
+          spread: 70,
+          origin: { y: 0.6 },
+          colors: ['#10b981', '#34d399', '#6ee7b7', '#f59e0b', '#fbbf24'],
+        });
+        setTimeout(() => {
+          confetti({
+            particleCount: 60,
+            angle: 60,
+            spread: 55,
+            origin: { x: 0 },
+            colors: ['#10b981', '#fbbf24', '#38bdf8'],
+          });
+          confetti({
+            particleCount: 60,
+            angle: 120,
+            spread: 55,
+            origin: { x: 1 },
+            colors: ['#10b981', '#fbbf24', '#38bdf8'],
+          });
+        }, 280);
+      } catch (err) {
+        console.warn('Confetti trigger error:', err);
+      }
+    }
+  }, [roiPercentage, isLoading]);
+
   // 3. Hệ thống phân tầng màu thông minh:
   // - Dưới 50%: Màu Cam (Thu hồi giai đoạn đầu)
   // - 50% đến 99%: Màu Xanh dương (Sắp hoàn vốn)
@@ -148,8 +186,11 @@ export const RoiProgressBar: React.FC<Props> = ({ events, className = '' }) => {
       };
 
   return (
-    <div
-      className={`relative overflow-hidden rounded-3xl bg-gradient-to-b from-slate-900/90 via-slate-900/80 to-slate-950/90 border border-slate-800 shadow-2xl p-5 sm:p-6 transition-all hover:border-slate-700/80 ${className}`}
+    <motion.div
+      initial={{ opacity: 0, y: 18 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.45, ease: 'easeOut', delay: 0.15 }}
+      className={`relative overflow-hidden rounded-3xl bg-white/60 dark:bg-white/5 backdrop-blur-xl border border-white/60 dark:border-white/10 shadow-[0_8px_32px_0_rgba(0,0,0,0.06)] dark:shadow-[0_8px_32px_0_rgba(0,0,0,0.3)] p-6 sm:p-7 transition-all duration-300 hover:shadow-md hover:-translate-y-0.5 ${className}`}
     >
       {/* Background Ambient Glow */}
       <div
@@ -158,12 +199,12 @@ export const RoiProgressBar: React.FC<Props> = ({ events, className = '' }) => {
         }`}
       />
 
-      <div className="relative space-y-4">
+      <div className="relative space-y-5">
         {/* Top Header: Badge, Title & Link to Gears */}
         <div className="flex flex-wrap items-center justify-between gap-3">
-          <div className="flex items-center gap-2.5">
+          <div className="flex items-center gap-3">
             <div
-              className={`w-9 h-9 rounded-2xl flex items-center justify-center border shadow-md transition-colors ${
+              className={`w-10 h-10 rounded-2xl flex items-center justify-center border shadow-md transition-colors ${
                 isOver100
                   ? 'bg-emerald-500/10 border-emerald-500/30 text-emerald-400'
                   : isOver50
@@ -171,12 +212,12 @@ export const RoiProgressBar: React.FC<Props> = ({ events, className = '' }) => {
                   : 'bg-amber-500/10 border-amber-500/30 text-amber-400'
               }`}
             >
-              <TrendingUp className="w-4 h-4" />
+              <TrendingUp className="w-5 h-5" />
             </div>
 
             <div>
               <div className="flex items-center gap-2">
-                <h3 className="text-sm font-extrabold text-white tracking-tight flex items-center gap-1.5">
+                <h3 className="text-sm sm:text-base font-bold text-slate-900 dark:text-white/95 tracking-tight flex items-center gap-1.5">
                   Tiến Độ Hoàn Vốn Đầu Tư (ROI - Net Profit Based)
                 </h3>
                 <span
@@ -186,7 +227,7 @@ export const RoiProgressBar: React.FC<Props> = ({ events, className = '' }) => {
                   <span>{colorConfig.label}</span>
                 </span>
               </div>
-              <p className="text-[11px] text-slate-400">
+              <p className="text-xs text-slate-500 dark:text-white/50">
                 % Hoàn vốn = (Tổng Lợi Nhuận Ròng / Tổng Đầu Tư) × 100
               </p>
             </div>
@@ -194,57 +235,57 @@ export const RoiProgressBar: React.FC<Props> = ({ events, className = '' }) => {
 
           <Link
             to="/dashboard/gears"
-            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-slate-800/80 hover:bg-slate-700 border border-slate-700 text-slate-300 hover:text-white text-xs font-semibold transition-all hover:scale-[1.02] shadow-sm"
+            className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-2xl bg-white/20 dark:bg-white/5 hover:bg-white/30 dark:hover:bg-white/10 border border-white/40 dark:border-white/10 text-slate-700 dark:text-white/80 hover:text-slate-950 dark:hover:text-white text-xs font-semibold backdrop-blur-md transition-all active:scale-95 shadow-sm"
           >
-            <Camera className="w-3.5 h-3.5 text-amber-400" />
+            <Camera className="w-3.5 h-3.5 text-amber-500" />
             <span>Quản Lý Kho ({gears.length} Thiết Bị)</span>
             <ArrowRight className="w-3 h-3 text-slate-400" />
           </Link>
         </div>
 
         {/* Text trực quan: Tách rõ Doanh thu Gross, Chi phí và Lợi nhuận ròng thu hồi vốn */}
-        <div className="p-3.5 sm:p-4 rounded-2xl bg-slate-950/80 border border-slate-800/90 flex flex-wrap items-center justify-between gap-3 text-xs sm:text-sm">
-          <div className="flex flex-wrap items-center gap-x-2.5 gap-y-1.5 font-medium text-slate-300">
-            <div className="flex items-center gap-1">
-              <span className="text-slate-400">Vốn thiết bị:</span>
-              <strong className="text-white font-mono font-bold text-sm">
+        <div className="p-4 sm:p-5 rounded-2xl bg-white/40 dark:bg-white/5 backdrop-blur-md border border-white/40 dark:border-white/10 flex flex-wrap items-center justify-between gap-3 text-xs sm:text-sm">
+          <div className="flex flex-wrap items-center gap-x-3 gap-y-2 font-medium text-slate-700 dark:text-slate-200">
+            <div className="flex items-center gap-1.5">
+              <span className="text-slate-500 dark:text-white/50">Vốn thiết bị:</span>
+              <strong className="text-slate-900 dark:text-white font-mono font-bold text-sm">
                 {totalInvestment.toLocaleString('vi-VN')} đ
               </strong>
             </div>
 
-            <span className="text-slate-600 font-bold hidden sm:inline">•</span>
+            <span className="text-slate-400 dark:text-white/30 font-bold hidden sm:inline">•</span>
 
-            <div className="flex items-center gap-1">
-              <span className="text-slate-400">Doanh thu đã thu:</span>
-              <strong className="text-blue-400 font-mono font-semibold text-xs sm:text-sm">
+            <div className="flex items-center gap-1.5">
+              <span className="text-slate-500 dark:text-white/50">Doanh thu đã thu:</span>
+              <strong className="text-sky-600 dark:text-sky-300 font-mono font-semibold text-xs sm:text-sm">
                 {totalCollected.toLocaleString('vi-VN')} đ
               </strong>
             </div>
 
-            <span className="text-slate-600 font-bold hidden sm:inline">-</span>
+            <span className="text-slate-400 dark:text-white/30 font-bold hidden sm:inline">-</span>
 
-            <div className="flex items-center gap-1">
-              <span className="text-slate-400">Chi phí:</span>
-              <strong className="text-rose-400 font-mono font-semibold text-xs sm:text-sm">
+            <div className="flex items-center gap-1.5">
+              <span className="text-slate-500 dark:text-white/50">Chi phí:</span>
+              <strong className="text-rose-500 dark:text-rose-400 font-mono font-semibold text-xs sm:text-sm">
                 {totalExpenses.toLocaleString('vi-VN')} đ
               </strong>
             </div>
 
-            <span className="text-slate-600 font-bold hidden sm:inline">=</span>
+            <span className="text-slate-400 dark:text-white/30 font-bold hidden sm:inline">=</span>
 
-            <div className="flex items-center gap-1">
-              <span className="text-slate-300 font-bold">Lợi Nhuận Ròng:</span>
+            <div className="flex items-center gap-1.5">
+              <span className="text-slate-700 dark:text-white/80 font-bold">Lợi Nhuận Ròng:</span>
               <strong className={`font-mono font-black text-sm sm:text-base ${colorConfig.textColor}`}>
                 {totalNetProfit.toLocaleString('vi-VN')} đ
               </strong>
             </div>
 
-            <span className={`font-mono font-black text-sm sm:text-base px-2 py-0.5 rounded-lg border ml-1 ${colorConfig.tagBg}`}>
-              ({roundedPercent}%)
+            <span className={`font-mono font-black text-sm sm:text-base px-2.5 py-0.5 rounded-xl border ml-1 ${colorConfig.tagBg}`}>
+              (<CountUp start={0} end={roundedPercent} decimals={1} duration={1.5} suffix="%" />)
             </span>
           </div>
 
-          <div className="text-[11px] font-medium text-slate-400">
+          <div className="text-[11px] font-medium text-slate-500 dark:text-white/50">
             {colorConfig.subtext}
           </div>
         </div>
@@ -296,6 +337,6 @@ export const RoiProgressBar: React.FC<Props> = ({ events, className = '' }) => {
           </div>
         )}
       </div>
-    </div>
+    </motion.div>
   );
 };

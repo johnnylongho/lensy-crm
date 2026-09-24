@@ -44,28 +44,28 @@ export const BookingFinancialCard: React.FC<Props> = ({
 
   if (compact) {
     return (
-      <div className="space-y-1 font-mono text-[11px] pt-1.5 border-t border-slate-800/80">
-        <div className="flex items-center justify-between text-slate-300">
-          <span className="text-slate-400">Tổng gói:</span>
-          <span className="font-bold text-white">
+      <div className="space-y-1 font-mono text-xs">
+        <div className="flex items-center justify-between gap-2 text-slate-300">
+          <span className="text-gray-400 text-xs font-sans">Tổng gói:</span>
+          <span className="font-bold text-white text-right">
             {packagePrice.toLocaleString('vi-VN')} đ
           </span>
         </div>
-        <div className="flex items-center justify-between text-emerald-400">
-          <span className="text-slate-400">Đã cọc:</span>
-          <span className="font-bold flex items-center gap-1">
+        <div className="flex items-center justify-between gap-2 text-emerald-400">
+          <span className="text-gray-400 text-xs font-sans">Đã cọc:</span>
+          <span className="font-bold text-right flex items-center justify-end gap-1">
             <span>{effectiveDeposit.toLocaleString('vi-VN')} đ</span>
             {isDeposit30 && (
-              <span className="text-[9px] px-1 py-0.2 rounded bg-emerald-950 text-emerald-300 border border-emerald-500/30">
+              <span className="text-[9px] px-1 py-0.2 rounded bg-emerald-950 text-emerald-300 border border-emerald-500/30 font-sans">
                 30%
               </span>
             )}
           </span>
         </div>
-        <div className="flex items-center justify-between">
-          <span className="text-slate-400">Nợ đọng:</span>
-          <span className={`font-bold ${remainingDebt > 0 ? 'text-amber-400' : 'text-emerald-400'}`}>
-            {remainingDebt === 0 ? '0 đ (Xong)' : `${remainingDebt.toLocaleString('vi-VN')} đ`}
+        <div className="flex items-center justify-between gap-2">
+          <span className="text-gray-400 text-xs font-sans">Nợ đọng:</span>
+          <span className={`font-bold text-right ${remainingDebt > 0 ? 'text-amber-400' : 'text-emerald-400'}`}>
+            {remainingDebt === 0 ? '0 đ' : `${remainingDebt.toLocaleString('vi-VN')} đ`}
           </span>
         </div>
       </div>

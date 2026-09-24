@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { AuthProvider } from './context/AuthContext';
+import { ThemeProvider } from './context/ThemeContext';
 import { PrivateRoute } from './components/auth/PrivateRoute';
 import { DashboardLayout } from './layouts/DashboardLayout';
 import { PublicLayout } from './layouts/PublicLayout';
@@ -48,7 +49,8 @@ export function App() {
   };
 
   return (
-    <AuthProvider>
+    <ThemeProvider>
+      <AuthProvider>
       <BrowserRouter>
         <Routes>
           {/* ==================================================================== */}
@@ -141,6 +143,7 @@ export function App() {
         </Routes>
       </BrowserRouter>
     </AuthProvider>
+  </ThemeProvider>
   );
 }
 

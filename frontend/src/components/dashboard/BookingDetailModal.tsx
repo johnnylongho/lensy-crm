@@ -264,63 +264,75 @@ export const BookingDetailModal: React.FC<Props> = ({
   const remainingDebt = Math.max(0, booking.packagePrice - (booking.paidAmount || booking.depositAmount));
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/85 backdrop-blur-md animate-fadeIn">
-      <div className="relative w-full max-w-2xl rounded-3xl bg-slate-900 border border-slate-700/80 shadow-2xl p-6 sm:p-7 space-y-6 text-slate-100 max-h-[92vh] overflow-y-auto">
-        {/* Toast Alert */}
-        {toastMessage && (
-          <div
-            className={`p-3.5 rounded-2xl text-xs font-semibold flex items-center gap-3 animate-fadeIn ${
-              toastMessage.type === 'success'
-                ? 'bg-emerald-950/90 border border-emerald-500/40 text-emerald-200'
-                : 'bg-rose-950/90 border border-rose-500/40 text-rose-200'
-            }`}
+    <div className="fixed inset-0 z-50 overflow-hidden animate-fadeIn">
+      {/* Backdrop kính mờ */}
+      <div
+        className="fixed inset-0 bg-black/60 backdrop-blur-sm transition-opacity"
+        onClick={onClose}
+      />
+
+      {/* Drawer Panel: Slide-over từ bên phải trên Desktop (w-[580px] lg:w-[640px]), Bottom Sheet trên Mobile */}
+      <div className="fixed inset-x-0 bottom-0 md:inset-y-0 md:left-auto md:right-0 w-full md:w-[580px] lg:w-[640px] max-h-[92vh] md:max-h-full h-auto md:h-full bg-slate-900 border-t md:border-t-0 md:border-l border-slate-700/80 shadow-[-16px_0_48px_0_rgba(0,0,0,0.6)] flex flex-col z-50 overflow-hidden rounded-t-3xl md:rounded-t-none md:rounded-l-3xl">
+        {/* Drawer Header (Cố định trên cùng) */}
+        <div className="p-5 sm:p-6 border-b border-slate-800 bg-slate-900/95 backdrop-blur-md flex-shrink-0 flex items-start justify-between gap-3">
+          <div className="space-y-1.5 flex-1 min-w-0 pr-2">
+            <div className="flex flex-wrap items-center gap-2">
+              <span className="text-[10px] uppercase font-bold px-2 py-0.5 rounded bg-amber-500/10 border border-amber-500/30 text-amber-300">
+                Chi Tiết Lịch Chụp
+              </span>
+              <span className="text-[10px] uppercase font-bold px-2 py-0.5 rounded bg-slate-800 border border-slate-700 text-slate-300">
+                {booking.sessionType.toUpperCase()}
+              </span>
+            </div>
+            <h2 className="text-xl sm:text-2xl font-black text-white tracking-tight truncate">
+              {booking.clientName}
+            </h2>
+            <div className="flex flex-wrap items-center gap-3 text-xs text-slate-400">
+              <span className="flex items-center gap-1.5 text-amber-400 font-medium">
+                <Calendar className="w-3.5 h-3.5" />
+                <span>{booking.eventDate}</span>
+              </span>
+              <span className="flex items-center gap-1.5">
+                <Clock className="w-3.5 h-3.5" />
+                <span>{booking.startTime} - {booking.endTime}</span>
+              </span>
+              <span className="flex items-center gap-1.5 truncate max-w-[200px]" title={booking.location}>
+                <MapPin className="w-3.5 h-3.5 flex-shrink-0" />
+                <span className="truncate">{booking.location}</span>
+              </span>
+            </div>
+          </div>
+
+          {/* Close Button */}
+          <button
+            type="button"
+            onClick={onClose}
+            className="p-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-400 hover:text-white transition-colors flex-shrink-0"
+            title="Đóng bảng chi tiết"
           >
-            {toastMessage.type === 'success' ? (
-              <CheckCircle2 className="w-5 h-5 text-emerald-400 flex-shrink-0" />
-            ) : (
-              <AlertTriangle className="w-5 h-5 text-rose-400 flex-shrink-0" />
-            )}
-            <span>{toastMessage.text}</span>
-          </div>
-        )}
-
-        {/* Close Button */}
-        <button
-          type="button"
-          onClick={onClose}
-          className="absolute top-5 right-5 p-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-400 hover:text-white transition-colors"
-        >
-          <X className="w-5 h-5" />
-        </button>
-
-        {/* Modal Header */}
-        <div className="pr-8 space-y-1.5">
-          <div className="flex flex-wrap items-center gap-2">
-            <span className="text-[10px] uppercase font-bold px-2 py-0.5 rounded bg-amber-500/10 border border-amber-500/30 text-amber-300">
-              Chi Tiết Lịch Chụp
-            </span>
-            <span className="text-[10px] uppercase font-bold px-2 py-0.5 rounded bg-slate-800 border border-slate-700 text-slate-300">
-              {booking.sessionType.toUpperCase()}
-            </span>
-          </div>
-          <h2 className="text-xl sm:text-2xl font-black text-white tracking-tight">
-            {booking.clientName}
-          </h2>
-          <div className="flex flex-wrap items-center gap-3 text-xs text-slate-400">
-            <span className="flex items-center gap-1.5 text-amber-400 font-medium">
-              <Calendar className="w-3.5 h-3.5" />
-              <span>{booking.eventDate}</span>
-            </span>
-            <span className="flex items-center gap-1.5">
-              <Clock className="w-3.5 h-3.5" />
-              <span>{booking.startTime} - {booking.endTime}</span>
-            </span>
-            <span className="flex items-center gap-1.5">
-              <MapPin className="w-3.5 h-3.5" />
-              <span>{booking.location}</span>
-            </span>
-          </div>
+            <X className="w-5 h-5" />
+          </button>
         </div>
+
+        {/* Drawer Body (Cuộn mượt mà bên dưới) */}
+        <div className="flex-1 overflow-y-auto p-5 sm:p-6 space-y-6">
+          {/* Toast Alert */}
+          {toastMessage && (
+            <div
+              className={`p-3.5 rounded-2xl text-xs font-semibold flex items-center gap-3 animate-fadeIn ${
+                toastMessage.type === 'success'
+                  ? 'bg-emerald-950/90 border border-emerald-500/40 text-emerald-200'
+                  : 'bg-rose-950/90 border border-rose-500/40 text-rose-200'
+              }`}
+            >
+              {toastMessage.type === 'success' ? (
+                <CheckCircle2 className="w-5 h-5 text-emerald-400 flex-shrink-0" />
+              ) : (
+                <AlertTriangle className="w-5 h-5 text-rose-400 flex-shrink-0" />
+              )}
+              <span>{toastMessage.text}</span>
+            </div>
+          )}
 
         {/* Financial Metrics Summary - 4 Cột Rõ Ràng: Tổng Gói, Khách Trả, Chi Phí, Lợi Nhuận Ròng */}
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5 p-3.5 rounded-2xl bg-slate-950/70 border border-slate-800 text-xs">
@@ -822,9 +834,10 @@ export const BookingDetailModal: React.FC<Props> = ({
         </div>
       </div>
     )}
+        </div>
 
-    {/* Modal Actions */}
-    <div className="flex flex-col sm:flex-row items-center justify-between gap-3 pt-3 border-t border-slate-800">
+        {/* Drawer Sticky Footer */}
+        <div className="p-4 sm:p-5 border-t border-slate-800 bg-slate-950/90 backdrop-blur-md flex flex-col sm:flex-row items-center justify-between gap-3 flex-shrink-0">
       <div>
         {remainingDebt > 0 && onOpenDebtReminder && (
           <button

@@ -521,6 +521,488 @@ if (fs.existsSync(quoteViewFile)) {
 }
 
 // --------------------------------------------------------------------
+// 13. KIỂM TRA MÀN HÌNH CẢM ƠN & THANH TOÁN 1-CHẠM VIETQR ĐỘNG
+// --------------------------------------------------------------------
+console.log('▶ 13. Kiểm tra Màn Hình Cảm Ơn & Thanh Toán 1-Chạm VietQR Động...');
+
+const paymentSuccessFile = path.join(__dirname, 'frontend', 'src', 'components', 'quote', 'PaymentSuccess.tsx');
+assert(fs.existsSync(paymentSuccessFile), 'Component PaymentSuccess (PaymentSuccess.tsx) tồn tại');
+
+if (fs.existsSync(paymentSuccessFile)) {
+  const psContent = fs.readFileSync(paymentSuccessFile, 'utf8');
+  assert(psContent.includes('img.vietqr.io/image') && psContent.includes('compact2.png'), 'Tích hợp endpoint VietQR động (img.vietqr.io/image/{bank_code}-{bank_account}-compact2.png)');
+  assert(psContent.includes('Cảm ơn bạn! Lịch chụp của bạn đã được ghi nhận.') && psContent.includes('Vui lòng quét mã QR dưới đây để tiến hành đặt cọc và giữ lịch.'), 'Hiển thị chính xác câu thông điệp hướng dẫn cọc');
+  assert(psContent.includes('Studio sẽ liên hệ với bạn qua Số điện thoại/Zalo để hướng dẫn đặt cọc.'), 'Xử lý Fallback khi thợ ảnh chưa cập nhật thông tin ngân hàng trong Settings');
+  assert(psContent.includes('Coc lich chup'), 'Nội dung chuyển khoản khởi tạo động theo cú pháp "Coc lich chup " + SĐT khách');
+  assert(psContent.includes('mx-auto') && (psContent.includes('max-w-[280px]') || psContent.includes('max-w-[320px]')), 'Mã VietQR nằm căn giữa màn hình, rõ nét và tối ưu cho di động');
+}
+
+if (fs.existsSync(bookingFormFile)) {
+  const bfContent = fs.readFileSync(bookingFormFile, 'utf8');
+  assert(bfContent.includes('PaymentSuccess') && bfContent.includes('submittedBooking'), 'ClientBookingForm tự động thay thế form bằng PaymentSuccess sau khi submit thành công');
+}
+
+// --------------------------------------------------------------------
+// 14. KIỂM TRA HỆ THỐNG CHĂM SÓC KHÁCH HÀNG TỰ ĐỘNG QUA ZALO (KANBAN PIPELINE)
+// --------------------------------------------------------------------
+console.log('▶ 14. Kiểm tra Hệ Thống Chăm Sóc Khách Hàng Tự Động Qua Zalo Trên Bảng Kanban...');
+
+const zaloModalFile = path.join(__dirname, 'frontend', 'src', 'components', 'dashboard', 'ZaloNotificationModal.tsx');
+assert(fs.existsSync(zaloModalFile), 'Component ZaloNotificationModal (ZaloNotificationModal.tsx) tồn tại');
+
+if (fs.existsSync(zaloModalFile)) {
+  const zmContent = fs.readFileSync(zaloModalFile, 'utf8');
+  assert(zmContent.includes('Thông báo cho khách hàng qua Zalo?'), 'Modal có tiêu đề chính xác: "Thông báo cho khách hàng qua Zalo?"');
+  assert(zmContent.includes('Chào ${clientName}, ${sName} đã nhận được cọc và xác nhận giữ lịch chụp cho bạn vào ngày ${eventDate}. Hẹn gặp bạn nhé!'), 'Logic sinh tin nhắn chuẩn xác khi chuyển sang cột deposited (Đã cọc)');
+  assert(zmContent.includes('Chào ${clientName}, ${sName} đã hoàn thiện bộ ảnh của bạn. Cảm ơn bạn đã tin tưởng lựa chọn studio. Chúc bạn một ngày vui vẻ!'), 'Logic sinh tin nhắn chuẩn xác khi chuyển sang cột done (Hoàn tất)');
+  assert(zmContent.includes('Bỏ qua'), 'Có Nút 1: "Bỏ qua" để đóng modal');
+  assert(zmContent.includes('Copy Tin nhắn') && zmContent.includes('Đã copy!'), 'Có Nút 2: "Copy Tin nhắn" và hiển thị Toast "Đã copy!"');
+  assert(zmContent.includes('Mở Zalo ngay') && zmContent.includes('#0068FF'), 'Có Nút 3: "Mở Zalo ngay" với màu xanh Zalo chuẩn thương hiệu (#0068FF)');
+  assert(zmContent.includes('https://zalo.me/') && zmContent.includes('_blank'), 'Mở trực tiếp Zalo bằng URL https://zalo.me/[Số_điện_thoại_khách_hàng] sang tab mới');
+}
+
+// Kiểm tra KanbanView tích hợp Modal Zalo khi kéo thả
+const kanbanViewFile = path.join(__dirname, 'frontend', 'src', 'components', 'dashboard', 'KanbanView.tsx');
+if (fs.existsSync(kanbanViewFile)) {
+  const kvContent = fs.readFileSync(kanbanViewFile, 'utf8');
+  assert(kvContent.includes('ZaloNotificationModal'), 'KanbanView đã import và tích hợp ZaloNotificationModal');
+  assert(
+    (kvContent.includes("'deposited'") || kvContent.includes("'da_chot'")) &&
+    (kvContent.includes("'done'") || kvContent.includes("'hoan_thanh'")) &&
+    kvContent.includes('setZaloNotification'),
+    'Kích hoạt Modal Zalo khi thợ ảnh kéo thả thẻ Booking sang cột deposited hoặc done'
+  );
+}
+
+// Kiểm tra types CalendarEvent có clientPhone
+if (fs.existsSync(typesFile)) {
+  const tfContent = fs.readFileSync(typesFile, 'utf8');
+  assert(tfContent.includes('clientPhone?: string;'), 'Interface CalendarEvent hỗ trợ trường clientPhone để trỏ SĐT khách hàng vào Zalo');
+}
+
+// --------------------------------------------------------------------
+// 15. KIỂM TRA TÁI CẤU TRÚC UI/UX SAAS QUỐC TẾ & TÍCH HỢP DARK/LIGHT MODE
+// --------------------------------------------------------------------
+console.log('▶ 15. Kiểm tra Tái Cấu Trúc UI/UX SaaS & Dark/Light Mode...');
+
+// 15.1 Cấu hình Tailwind darkMode: 'class'
+const tailwindConfigFile = path.join(__dirname, 'frontend', 'tailwind.config.js');
+if (fs.existsSync(tailwindConfigFile)) {
+  const twContent = fs.readFileSync(tailwindConfigFile, 'utf8');
+  assert(twContent.includes("darkMode: 'class'"), "Tailwind CSS đã cấu hình darkMode: 'class'");
+  assert(twContent.includes('Plus Jakarta Sans') || twContent.includes('Inter'), 'Tailwind CSS cấu hình font chữ Sans-serif hiện đại (Plus Jakarta Sans/Inter)');
+}
+
+// 15.2 ThemeContext & Custom Hook useTheme
+const themeContextFile = path.join(__dirname, 'frontend', 'src', 'context', 'ThemeContext.tsx');
+assert(fs.existsSync(themeContextFile), 'Module ThemeContext (ThemeContext.tsx) tồn tại');
+
+if (fs.existsSync(themeContextFile)) {
+  const tcContent = fs.readFileSync(themeContextFile, 'utf8');
+  assert(tcContent.includes('useTheme') && tcContent.includes('ThemeProvider'), 'ThemeContext cung cấp ThemeProvider và custom hook useTheme');
+  assert(tcContent.includes("'light'") && tcContent.includes("'dark'") && tcContent.includes("'system'"), 'Hỗ trợ đầy đủ 3 chế độ: Light, Dark, System');
+  assert(tcContent.includes('localStorage.setItem') && tcContent.includes('classList.add'), 'Lưu trạng thái Theme vào localStorage và đồng bộ class dark lên document');
+}
+
+// 15.3 Component ThemeToggle với Transition xoay mượt mà
+const themeToggleFile = path.join(__dirname, 'frontend', 'src', 'components', 'common', 'ThemeToggle.tsx');
+assert(fs.existsSync(themeToggleFile), 'Component ThemeToggle (ThemeToggle.tsx) tồn tại');
+
+if (fs.existsSync(themeToggleFile)) {
+  const ttContent = fs.readFileSync(themeToggleFile, 'utf8');
+  assert(ttContent.includes('Sun') && ttContent.includes('Moon'), 'Nút Toggle có đủ icon Mặt trời (Sun) và Mặt trăng (Moon)');
+  assert(ttContent.includes('rotate') && ttContent.includes('transition'), 'Nút Toggle tích hợp hiệu ứng xoay và chuyển động transition mượt mà');
+}
+
+// 15.4 Tích hợp ThemeToggle vào Dashboard Layout & Header
+const dashLayoutFile = path.join(__dirname, 'frontend', 'src', 'layouts', 'DashboardLayout.tsx');
+if (fs.existsSync(dashLayoutFile)) {
+  const dlContent = fs.readFileSync(dashLayoutFile, 'utf8');
+  assert(dlContent.includes('ThemeToggle'), 'DashboardLayout đã tích hợp ThemeToggle trên thanh điều hướng chính');
+  assert(dlContent.includes('dark:bg-') && dlContent.includes('bg-slate-50'), 'DashboardLayout chuẩn hóa nền Light (bg-slate-50) và Dark Mode');
+}
+
+const dashHeaderFile = path.join(__dirname, 'frontend', 'src', 'components', 'dashboard', 'DashboardHeader.tsx');
+if (fs.existsSync(dashHeaderFile)) {
+  const dhContent = fs.readFileSync(dashHeaderFile, 'utf8');
+  assert(!dhContent.includes('ThemeToggle'), 'DashboardHeader đã xóa nút ThemeToggle thừa theo đúng yêu cầu');
+  assert(dhContent.includes('hover:-translate-y-0.5') && dhContent.includes('hover:shadow-md'), 'Các thẻ (Cards) tích hợp Micro-interactions nổi lên nhẹ khi hover');
+}
+
+// --------------------------------------------------------------------
+// 16. KIỂM TRA TÁI CẤU TRÚC TRANG ĐẶT LỊCH ĐỘNG (/book/:username)
+// --------------------------------------------------------------------
+console.log('▶ 16. Kiểm tra Tái Cấu Trúc Trang Đặt Lịch Động (/book/:username)...');
+
+if (fs.existsSync(quoteViewFile)) {
+  const qvContent = fs.readFileSync(quoteViewFile, 'utf8');
+  assert(qvContent.includes('isBookingPage') && qvContent.includes('Boolean(username)'), 'QuoteView phân định chính xác giữa trang đặt lịch studio (/book/:username) và báo giá cá nhân');
+  assert(
+    qvContent.includes('{isBookingPage ?') &&
+    qvContent.includes('<QuoteHeader quote={quote} />') &&
+    qvContent.includes('<QuoteSessionInfo quote={quote} />'),
+    'Trang /book/:username loại bỏ dữ liệu mẫu cố định (QuoteHeader, QuoteSessionInfo, QuoteInclusions, QuoteEquipment, QuotePriceSummary)'
+  );
+  assert(
+    qvContent.includes('Chào mừng bạn đến với') &&
+    qvContent.includes('Vui lòng để lại thông tin, chúng tôi sẽ liên hệ tư vấn gói chụp phù hợp nhất cho bạn.'),
+    'Hiển thị chính xác lời chào tiêu chuẩn: "Chào mừng bạn đến với [Tên Studio]. Vui lòng để lại thông tin, chúng tôi sẽ liên hệ tư vấn gói chụp phù hợp nhất cho bạn."'
+  );
+  assert(qvContent.includes('studioCoverUrl') && qvContent.includes('studioAvatarUrl'), 'Giữ lại logo và ảnh cover của Studio trên header trang đặt lịch');
+  assert(qvContent.includes('{quote.studioName}'), 'Tiêu đề trang sử dụng tên Studio động lấy từ cơ sở dữ liệu');
+}
+
+if (fs.existsSync(bookingFormFile)) {
+  const bfContent = fs.readFileSync(bookingFormFile, 'utf8');
+  assert(
+    bfContent.includes('Chụp Cưới') &&
+    bfContent.includes('Chụp Pre-Wedding') &&
+    bfContent.includes('Chụp Gia đình') &&
+    bfContent.includes('Sự kiện') &&
+    bfContent.includes('Khác'),
+    'Dropdown Nhu cầu chụp hỗ trợ đầy đủ các lựa chọn: Chụp Cưới, Chụp Pre-Wedding, Chụp Gia đình, Sự kiện, Khác'
+  );
+  assert(bfContent.includes('type="date"') && bfContent.includes('eventDate'), 'Form tích hợp Date Picker cho khách chọn ngày chụp dự kiến');
+  assert(bfContent.includes('Ví dụ: Mình muốn chụp phong cách vintage'), 'Textarea ghi chú có placeholder chuẩn: "Ví dụ: Mình muốn chụp phong cách vintage"');
+  assert(bfContent.includes('[Nhu cầu: ${shootRequirement}]'), 'Lưu nhu cầu chụp và ghi chú vào cột notes của bảng bookings');
+  assert(bfContent.includes("status: 'lead'"), 'Bản ghi đặt lịch tạo mới có status mặc định là lead (Mới hỏi)');
+}
+
+// --------------------------------------------------------------------
+// 17. KIỂM TRA THIẾT KẾ LIQUID GLASS (GLASSMORPHISM) TỐI GIẢN & HIỆN ĐẠI
+// --------------------------------------------------------------------
+console.log('▶ 17. Kiểm tra Thiết Kế Liquid Glass (Glassmorphism) Tối Giản & Hiện Đại...');
+
+if (fs.existsSync(dashLayoutFile)) {
+  const dlContent = fs.readFileSync(dashLayoutFile, 'utf8');
+  assert(dlContent.includes('bg-[#0a0a0a]'), 'Nền Dark Mode sử dụng màu đen sâu bg-[#0a0a0a]');
+  assert(dlContent.includes('blur-[120px]') && (dlContent.includes('opacity-30') || dlContent.includes('opacity-35')), 'Tạo Mesh Gradient với các khối tròn lớn mờ ảo blur-[120px] và opacity-30');
+  assert(dlContent.includes('isMobileMenuOpen') || dlContent.includes('Menu') || dlContent.includes('X'), 'Menu điều hướng hỗ trợ Hamburger menu trên thiết bị di động');
+  assert(dlContent.includes('Thiết Bị') && dlContent.includes('Cài Đặt'), 'Thanh điều hướng chứa đầy đủ liên kết Thiết Bị và Cài Đặt');
+}
+
+if (fs.existsSync(dashHeaderFile)) {
+  const dhContent = fs.readFileSync(dashHeaderFile, 'utf8');
+  assert(
+    dhContent.includes('backdrop-blur-xl') &&
+    (dhContent.includes('dark:bg-white/5') || dhContent.includes('bg-white/5') || dhContent.includes('dark:bg-black/20')),
+    'Các thẻ thống kê áp dụng hiệu ứng Liquid Glass: backdrop-blur-xl và dark:bg-white/5'
+  );
+  assert(
+    dhContent.includes('border-white/10') || dhContent.includes('dark:border-white/10'),
+    'Viền siêu mảnh theo phong cách kính mờ: border-white/10'
+  );
+  assert(
+    dhContent.includes('shadow-[0_8px_32px_0_rgba(0,0,0,0.3)]') || dhContent.includes('shadow-[0_8px_32px_0_rgba(0,0,0,0.25)]'),
+    'Đổ bóng kính mờ có chiều sâu: shadow-[0_8px_32px_0_rgba(0,0,0,0.3)]'
+  );
+  assert(
+    dhContent.includes('rounded-3xl') || dhContent.includes('rounded-2xl'),
+    'Bo góc mềm mại sang trọng: rounded-2xl hoặc rounded-3xl'
+  );
+  assert(
+    dhContent.includes('text-slate-500') && (dhContent.includes('dark:text-white/50') || dhContent.includes('text-white/50')),
+    'Typography: Làm mờ các nhãn phụ bằng màu text-white/50'
+  );
+  assert(
+    dhContent.includes('dark:text-white/90') || dhContent.includes('text-white/90'),
+    'Typography: Số doanh thu màu text-white/90 font thanh mảnh, sang trọng'
+  );
+  assert(
+    dhContent.includes('ghost-btn') || dhContent.includes('border-white/10') || dhContent.includes('hover:bg-white/10'),
+    'Chuyển các nút phụ sang dạng Ghost Button tinh tế trên nền kính trong suốt'
+  );
+  assert(
+    dhContent.includes('bg-gradient-to-r') && (dhContent.includes('amber') || dhContent.includes('yellow')),
+    'Nút CTA quan trọng nhất (+ Tạo Báo Giá Mới) sử dụng màu nhấn Gradient tinh tế'
+  );
+}
+
+const indexCssFile = path.join(__dirname, 'frontend', 'src', 'index.css');
+if (fs.existsSync(indexCssFile)) {
+  const cssContent = fs.readFileSync(indexCssFile, 'utf8');
+  assert(cssContent.includes('.glass-panel') && cssContent.includes('.glass-card'), 'index.css định nghĩa các Utility Classes chuẩn hóa: .glass-panel, .glass-card');
+  assert(cssContent.includes('.ghost-btn'), 'index.css hỗ trợ utility .ghost-btn cho các nút tương tác kính mờ');
+}
+
+// --------------------------------------------------------------------
+// 18. KIỂM TRA HIỆU ỨNG CHUYỂN ĐỘNG & VI TƯƠNG TÁC CAO CẤP (ANIMATIONS & GAMIFICATION)
+// --------------------------------------------------------------------
+console.log('▶ 18. Kiểm tra Hiệu Ứng Chuyển Động & Vi Tương Tác Cao Cấp...');
+
+const pkgJsonFile = path.join(__dirname, 'frontend', 'package.json');
+if (fs.existsSync(pkgJsonFile)) {
+  const pkg = JSON.parse(fs.readFileSync(pkgJsonFile, 'utf8'));
+  const deps = { ...pkg.dependencies, ...pkg.devDependencies };
+  assert(deps['framer-motion'], 'Đã cài đặt thư viện framer-motion cho hiệu ứng UI mượt mà');
+  assert(deps['react-countup'], 'Đã cài đặt thư viện react-countup cho hiệu ứng số nhảy');
+  assert(deps['canvas-confetti'], 'Đã cài đặt thư viện canvas-confetti cho hiệu ứng pháo hoa');
+}
+
+if (fs.existsSync(dashHeaderFile)) {
+  const dhContent = fs.readFileSync(dashHeaderFile, 'utf8');
+  assert(dhContent.includes('motion.div') || dhContent.includes('motion.'), 'Chuyển đổi các khối thẻ (Cards) trên Dashboard thành motion.div');
+  assert(dhContent.includes('staggerChildren'), 'Áp dụng hiệu ứng xuất hiện lần lượt (stagger children) khi load trang');
+  assert(dhContent.includes('CountUp'), 'Tích hợp CountUp tạo hiệu ứng số nhảy (Number Ticker) cho doanh thu và lợi nhuận');
+  assert(dhContent.includes('animate-shimmer-sweep') || dhContent.includes('shimmer'), 'Thêm hiệu ứng ánh sáng lướt qua (Shimmer Sweep) chạy tuần hoàn trên nút Tạo Báo Giá Mới');
+}
+
+const roiProgressFile = path.join(__dirname, 'frontend', 'src', 'components', 'dashboard', 'RoiProgressBar.tsx');
+if (fs.existsSync(roiProgressFile)) {
+  const roiContent = fs.readFileSync(roiProgressFile, 'utf8');
+  assert(roiContent.includes('CountUp'), 'Thanh Tiến độ Hoàn vốn (ROI) tích hợp CountUp cho số % hoàn vốn');
+  assert(roiContent.includes('confetti') && roiContent.includes('roiPercentage >= 100'), 'Gamification Kịch bản 2: Bắn pháo hoa giấy toàn màn hình khi ROI chạm hoặc vượt 100%');
+}
+
+if (fs.existsSync(kanbanViewFile)) {
+  const kvContent = fs.readFileSync(kanbanViewFile, 'utf8');
+  assert(
+    kvContent.includes('hover:scale-[1.02]') || kvContent.includes('scale-[1.02]') || kvContent.includes('scale: 1.02'),
+    'Phản hồi vật lý thẻ Kanban khi hover: Hơi phóng to 2% (scale: 1.02)'
+  );
+  assert(
+    kvContent.includes('confetti') && (kvContent.includes("targetStatus === 'done'") || kvContent.includes('triggerDoneConfetti')),
+    'Gamification Kịch bản 1: Bắn pháo hoa giấy khi kéo thả thành công thẻ Booking sang cột Hoàn tất (Done)'
+  );
+}
+
+// --------------------------------------------------------------------
+// 19. KIỂM TRA LOGO CHÍNH THỨC & BỘ NHẬN DIỆN THƯƠNG HIỆU (BRANDING)
+// --------------------------------------------------------------------
+console.log('▶ 19. Kiểm tra Logo Chính Thức & Bộ Nhận Diện Thương Hiệu (Branding)...');
+
+const lensyLogoPublicFile = path.join(__dirname, 'frontend', 'public', 'lensy-logo.png');
+assert(fs.existsSync(lensyLogoPublicFile), 'File logo chính thức lensy-logo.png tồn tại trong frontend/public/');
+
+const indexHtmlFile = path.join(__dirname, 'frontend', 'index.html');
+if (fs.existsSync(indexHtmlFile)) {
+  const htmlContent = fs.readFileSync(indexHtmlFile, 'utf8');
+  assert(htmlContent.includes('rel="icon"') && htmlContent.includes('/lensy-logo.png'), 'Sử dụng lensy-logo.png làm favicon trên tab trình duyệt');
+  assert(htmlContent.includes('<title>Lensy - CRM for Photographers</title>'), 'Cập nhật thẻ <title> trong index.html thành "Lensy - CRM for Photographers"');
+}
+
+if (fs.existsSync(dashLayoutFile)) {
+  const dlContent = fs.readFileSync(dashLayoutFile, 'utf8');
+  assert(dlContent.includes('lensy-logo.png') && dlContent.includes('h-8 w-auto'), 'Header Dashboard hiển thị logo lensy-logo.png với kích thước h-8 w-auto');
+  assert(dlContent.includes('by Mirmia Studio') && dlContent.includes('text-[10px]') && dlContent.includes('text-gray-400'), 'Dấu ấn bản quyền "by Mirmia Studio" kích thước text-[10px] màu text-gray-400');
+}
+
+const loginPageFile = path.join(__dirname, 'frontend', 'src', 'components', 'auth', 'LoginPage.tsx');
+if (fs.existsSync(loginPageFile)) {
+  const lpContent = fs.readFileSync(loginPageFile, 'utf8');
+  assert(lpContent.includes('lensy-logo.png') && (lpContent.includes('w-16 h-16') || lpContent.includes('h-16 w-16')), 'Form Đăng nhập đặt logo Lensy kích thước lớn (h-16 w-16) làm điểm nhấn chính');
+  assert(lpContent.includes('Phát triển bởi Mirmia Studio & Academy') && lpContent.includes('text-xs') && lpContent.includes('text-gray-500'), 'Footer màn hình Đăng nhập đặt dòng chữ "Phát triển bởi Mirmia Studio & Academy" text-xs text-gray-500');
+}
+
+if (fs.existsSync(quoteViewFile)) {
+  const qvContent = fs.readFileSync(quoteViewFile, 'utf8');
+  assert(
+    qvContent.includes('⚡ Powered by Lensy - Developed by Mirmia Studio & Academy') &&
+    qvContent.includes('sticky bottom-0'),
+    'Trang /book/:username đặt Watermark dính đáy "⚡ Powered by Lensy - Developed by Mirmia Studio & Academy"'
+  );
+  assert(
+    qvContent.includes('opacity-50') && qvContent.includes('hover:opacity-100'),
+    'Watermark có độ trong suốt thấp (opacity-50) và sáng lên khi hover (hover:opacity-100)'
+  );
+}
+
+// --------------------------------------------------------------------
+// 20. KIỂM TRA BỐ CỤC & FIX LỖI CHỒNG CHÉO "TOÀN BỘ LỊCH CHỤP SẮP TỚI"
+// --------------------------------------------------------------------
+console.log('▶ 20. Kiểm tra Tối Ưu Bố Cục Danh Sách "Toàn Bộ Lịch Chụp Sắp Tới"...');
+
+const upcomingShootsFile = path.join(__dirname, 'frontend', 'src', 'components', 'dashboard', 'UpcomingShootsList.tsx');
+if (fs.existsSync(upcomingShootsFile)) {
+  const shootContent = fs.readFileSync(upcomingShootsFile, 'utf8');
+  assert(
+    shootContent.includes('flex flex-col md:flex-row items-start md:items-center justify-between gap-6 w-full p-5'),
+    'Thẻ Booking áp dụng Flexbox blueprint: flex flex-col md:flex-row items-start md:items-center justify-between gap-6 w-full p-5'
+  );
+  assert(
+    !shootContent.includes('absolute') && !shootContent.includes('-ml-') && !shootContent.includes('z-10'),
+    'Xóa bỏ hoàn toàn định vị tuyệt đối (absolute, -ml-, -mt-, z-10) khỏi khối Tài chính'
+  );
+  assert(
+    shootContent.includes('flex-shrink-0 w-16'),
+    'Cột 1 (Ngày tháng): flex-shrink-0 w-16'
+  );
+  assert(
+    shootContent.includes('flex-1 min-w-[200px]') && shootContent.includes('truncate'),
+    'Cột 2 (Thông tin Khách hàng & Giờ giấc): flex-1 min-w-[200px] và truncate cho phép tên khách hàng hiển thị đầy đủ'
+  );
+  assert(
+    shootContent.includes('flex-shrink-0 w-64 bg-white/5 p-3 rounded-lg') && shootContent.includes('flex justify-between'),
+    'Cột 3 (Tài chính tĩnh): flex-shrink-0 w-64 bg-white/5 p-3 rounded-lg dạng flex justify-between'
+  );
+  assert(
+    shootContent.includes('flex-shrink-0 flex items-center gap-3') && shootContent.includes('Gắn Thiết Bị'),
+    'Cột 4 (Thao tác): flex-shrink-0 flex items-center gap-3 gom nút Gắn thiết bị và Dropdown'
+  );
+  assert(
+    shootContent.includes('w-full max-w-7xl mx-auto'),
+    'UpcomingShootsList Container dùng w-full max-w-7xl mx-auto để dàn trải đều ra giữa màn hình'
+  );
+}
+
+const photoDashboardFile = path.join(__dirname, 'frontend', 'src', 'components', 'dashboard', 'PhotographerDashboard.tsx');
+if (fs.existsSync(photoDashboardFile)) {
+  const dashContent = fs.readFileSync(photoDashboardFile, 'utf8');
+  assert(
+    dashContent.includes('w-full max-w-7xl mx-auto') && dashContent.includes('<UpcomingShootsList'),
+    'Container chứa danh sách UpcomingShootsList trong PhotographerDashboard có class w-full max-w-7xl mx-auto'
+  );
+}
+
+// --------------------------------------------------------------------
+// 21. KIỂM TRA DESKTOP-OPTIMIZED POWER USER & MOBILE RESPONSIVE UI/UX
+// --------------------------------------------------------------------
+console.log('▶ 21. Kiểm tra Kiến Trúc Desktop-Optimized & Mobile Responsive...');
+
+if (fs.existsSync(dashLayoutFile)) {
+  const dlContent = fs.readFileSync(dashLayoutFile, 'utf8');
+  assert(
+    dlContent.includes('hidden md:flex') && (dlContent.includes('gap-4') || dlContent.includes('gap-6')),
+    'DashboardLayout hiển thị dàn trải toàn bộ menu trên Desktop/Tablet (hidden md:flex gap-4 hoặc gap-6)'
+  );
+  assert(
+    dlContent.includes('md:hidden') && (dlContent.includes('isMobileMenuOpen') || dlContent.includes('Menu')),
+    'Màn hình Mobile (< md) tự động cuộn vào Hamburger menu'
+  );
+}
+
+const bookingDetailFile = path.join(__dirname, 'frontend', 'src', 'components', 'dashboard', 'BookingDetailModal.tsx');
+if (fs.existsSync(bookingDetailFile)) {
+  const bdContent = fs.readFileSync(bookingDetailFile, 'utf8');
+  assert(
+    bdContent.includes('md:right-0') && bdContent.includes('backdrop-blur-sm'),
+    'Chi tiết Booking chuyển thành Slide-over Drawer từ cạnh phải màn hình với nền kính mờ backdrop-blur-sm'
+  );
+  assert(
+    bdContent.includes('rounded-t-3xl') && bdContent.includes('bottom-0'),
+    'Chi tiết Booking trên Mobile tự động thích ứng thành Bottom Sheet trượt từ đáy'
+  );
+}
+
+const clientProfileFile = path.join(__dirname, 'frontend', 'src', 'components', 'clients', 'ClientProfileModal.tsx');
+if (fs.existsSync(clientProfileFile)) {
+  const cpContent = fs.readFileSync(clientProfileFile, 'utf8');
+  assert(
+    cpContent.includes('md:right-0') && cpContent.includes('backdrop-blur-sm'),
+    'Chi tiết Khách Hàng chuyển thành Slide-over Drawer trượt ra từ bên phải màn hình'
+  );
+}
+
+const clientMgmtFile = path.join(__dirname, 'frontend', 'src', 'components', 'clients', 'ClientsManagementPage.tsx');
+if (fs.existsSync(clientMgmtFile)) {
+  const cmContent = fs.readFileSync(clientMgmtFile, 'utf8');
+  assert(
+    cmContent.includes('hidden md:block') && cmContent.includes('<table'),
+    'Trang Khách Hàng: Hiển thị Data Table đầy đủ các cột trên Desktop (hidden md:block)'
+  );
+  assert(
+    cmContent.includes('md:hidden space-y-3'),
+    'Trang Khách Hàng: Tự động chuyển đổi thành List Cards trên Mobile (md:hidden) tránh cuộn ngang'
+  );
+}
+
+const gearsMgmtFile = path.join(__dirname, 'frontend', 'src', 'components', 'dashboard', 'GearsManagementPage.tsx');
+if (fs.existsSync(gearsMgmtFile)) {
+  const gmContent = fs.readFileSync(gearsMgmtFile, 'utf8');
+  assert(
+    gmContent.includes('hidden md:block') && gmContent.includes('<table'),
+    'Trang Thiết Bị: Tận dụng chiều ngang Desktop với Data Table'
+  );
+  assert(
+    gmContent.includes('md:hidden space-y-3'),
+    'Trang Thiết Bị: Tự động chuyển đổi thành List Cards trên Mobile'
+  );
+}
+
+// --------------------------------------------------------------------
+// 22. KIỂM TRA BUNG THANH NAVIGATION DESKTOP & XÓA THEME TOGGLE THỪA
+// --------------------------------------------------------------------
+console.log('▶ 22. Kiểm tra Bung thanh Navigation Desktop & Xóa Theme Toggle Thừa...');
+
+if (fs.existsSync(dashLayoutFile)) {
+  const dlContent = fs.readFileSync(dashLayoutFile, 'utf8');
+  assert(
+    dlContent.includes('Lịch Chụp') &&
+    dlContent.includes('Khách Hàng') &&
+    dlContent.includes('Thiết Bị') &&
+    dlContent.includes('Cài Đặt') &&
+    dlContent.includes('Link Đặt Lịch'),
+    'Hiển thị dàn trải toàn bộ 5 menu chính: Lịch Chụp, Khách Hàng, Thiết Bị, Cài Đặt, Link Đặt Lịch'
+  );
+  assert(
+    dlContent.includes('flex items-center gap-4') || dlContent.includes('flex items-center gap-6') || dlContent.includes('items-center gap-4 lg:gap-6'),
+    'Menu chính sử dụng flex items-center gap-4 hoặc gap-6 nằm ngang hàng'
+  );
+  assert(
+    dlContent.includes('hidden md:flex') && dlContent.includes('md:hidden'),
+    'Menu hiển thị đầy đủ trên màn hình từ md (tablet) hoặc lg (desktop) trở lên, chỉ cuộn vào Hamburger khi ở mobile'
+  );
+  assert(
+    dlContent.includes('<ThemeToggle') && dlContent.includes('signOut'),
+    'Giữ lại duy nhất 1 nút ThemeToggle trên thanh Header nằm cạnh User và Nút Đăng xuất'
+  );
+}
+
+if (fs.existsSync(dashHeaderFile)) {
+  const dhContent = fs.readFileSync(dashHeaderFile, 'utf8');
+  assert(
+    !dhContent.includes('ThemeToggle'),
+    'Đã xóa bỏ hoàn toàn nút ThemeToggle thừa thứ 2 bên trong Thẻ Thông tin Studio (DashboardHeader)'
+  );
+}
+
+// --------------------------------------------------------------------
+// 23. KIỂM TRA SEO & DYNAMIC OPEN GRAPH (OG TAGS) CHO TRANG ĐẶT LỊCH CHUNG
+// --------------------------------------------------------------------
+console.log('▶ 23. Kiểm tra Cấu hình SEO & Dynamic Open Graph (OG Tags)...');
+
+if (fs.existsSync(pkgJsonFile)) {
+  const pkg = JSON.parse(fs.readFileSync(pkgJsonFile, 'utf8'));
+  const allDeps = { ...pkg.dependencies, ...pkg.devDependencies };
+  assert(allDeps['react-helmet-async'], 'Đã cài đặt thư viện react-helmet-async');
+}
+
+const mainTsxFile = path.join(__dirname, 'frontend', 'src', 'main.tsx');
+if (fs.existsSync(mainTsxFile)) {
+  const mainContent = fs.readFileSync(mainTsxFile, 'utf8');
+  assert(
+    mainContent.includes('HelmetProvider') && mainContent.includes('<HelmetProvider>'),
+    'Ứng dụng được bọc bởi <HelmetProvider> tại main.tsx'
+  );
+}
+
+if (fs.existsSync(quoteViewFile)) {
+  const qvContent = fs.readFileSync(quoteViewFile, 'utf8');
+  assert(
+    qvContent.includes('react-helmet-async') && qvContent.includes('<Helmet>'),
+    'QuoteView tích hợp component <Helmet> từ react-helmet-async'
+  );
+  assert(
+    qvContent.includes('Đặt lịch chụp ảnh | ${quote.studioName}'),
+    'Dynamic <title>: "Đặt lịch chụp ảnh | [Tên Studio]"'
+  );
+  assert(
+    qvContent.includes('og:title') && qvContent.includes('Báo giá & Đặt lịch - ${quote.studioName}'),
+    'Dynamic og:title: "Báo giá & Đặt lịch - [Tên Studio]"'
+  );
+  assert(
+    qvContent.includes('og:description') &&
+    qvContent.includes('Khám phá các gói dịch vụ và đặt lịch chụp ngay với ${quote.studioName}. Nền tảng được cung cấp bởi Lensy.'),
+    'Dynamic og:description: "Khám phá các gói dịch vụ và đặt lịch chụp ngay với [Tên Studio]. Nền tảng được cung cấp bởi Lensy."'
+  );
+  assert(
+    qvContent.includes('og:image') &&
+    (qvContent.includes('studioCoverUrl') || qvContent.includes('studioAvatarUrl')),
+    'Dynamic og:image chứa ảnh cover của studio hoặc logo Lensy'
+  );
+}
+
+// --------------------------------------------------------------------
 // TỔNG KẾT
 // --------------------------------------------------------------------
 console.log('\n====================================================================');
@@ -529,5 +1011,8 @@ if (warnings > 0) {
   console.log(`   ⚠️  CẢNH BÁO: ${warnings} mục cần chú ý (Xem chi tiết bên trên)`);
 }
 console.log('====================================================================\n');
+
+
+
 
 

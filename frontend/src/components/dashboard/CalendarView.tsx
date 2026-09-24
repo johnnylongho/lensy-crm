@@ -58,18 +58,18 @@ export const CalendarView: React.FC<Props> = ({ events, selectedDate, onSelectDa
   const weekDayNames = ['T2', 'T3', 'T4', 'T5', 'T6', 'T7', 'CN'];
 
   return (
-    <div className="rounded-3xl bg-slate-900/80 border border-slate-800 p-4 sm:p-6 shadow-xl space-y-4">
+    <div className="rounded-3xl bg-white/60 dark:bg-white/5 backdrop-blur-xl border border-white/60 dark:border-white/10 shadow-[0_8px_32px_0_rgba(0,0,0,0.06)] dark:shadow-[0_8px_32px_0_rgba(0,0,0,0.3)] p-5 sm:p-7 space-y-5 transition-all duration-300">
       {/* Month Switcher Header */}
       <div className="flex items-center justify-between">
-        <div className="flex items-center gap-2.5">
-          <div className="p-2 rounded-xl bg-amber-500/10 text-amber-400">
+        <div className="flex items-center gap-3">
+          <div className="p-2.5 rounded-2xl bg-amber-500/10 border border-amber-500/20 text-amber-500 dark:text-amber-400">
             <CalendarIcon className="w-5 h-5" />
           </div>
           <div>
-            <h3 className="text-base sm:text-lg font-bold text-white capitalize">
+            <h3 className="text-base sm:text-lg font-bold text-slate-900 dark:text-white capitalize">
               {format(currentMonth, 'MMMM yyyy', { locale: vi })}
             </h3>
-            <span className="text-[11px] text-slate-400">
+            <span className="text-xs text-slate-500 dark:text-white/50">
               Nhấn vào ngày để xem chi tiết lịch chụp & trang thiết bị
             </span>
           </div>
@@ -79,7 +79,7 @@ export const CalendarView: React.FC<Props> = ({ events, selectedDate, onSelectDa
           <button
             type="button"
             onClick={prevMonth}
-            className="p-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 transition-colors"
+            className="p-2 rounded-xl bg-white/40 dark:bg-white/5 hover:bg-white/60 dark:hover:bg-white/10 border border-white/40 dark:border-white/10 text-slate-700 dark:text-white/80 transition-all active:scale-95 shadow-sm"
             title="Tháng trước"
           >
             <ChevronLeft className="w-4 h-4" />
@@ -87,14 +87,14 @@ export const CalendarView: React.FC<Props> = ({ events, selectedDate, onSelectDa
           <button
             type="button"
             onClick={() => setCurrentMonth(new Date())}
-            className="px-2.5 py-1.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-semibold transition-colors"
+            className="px-3 py-1.5 rounded-xl bg-white/40 dark:bg-white/5 hover:bg-white/60 dark:hover:bg-white/10 border border-white/40 dark:border-white/10 text-slate-700 dark:text-white/80 text-xs font-semibold transition-all active:scale-95 shadow-sm"
           >
             Hôm nay
           </button>
           <button
             type="button"
             onClick={nextMonth}
-            className="p-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 transition-colors"
+            className="p-2 rounded-xl bg-white/40 dark:bg-white/5 hover:bg-white/60 dark:hover:bg-white/10 border border-white/40 dark:border-white/10 text-slate-700 dark:text-white/80 transition-all active:scale-95 shadow-sm"
             title="Tháng sau"
           >
             <ChevronRight className="w-4 h-4" />
@@ -103,7 +103,7 @@ export const CalendarView: React.FC<Props> = ({ events, selectedDate, onSelectDa
       </div>
 
       {/* Weekday labels */}
-      <div className="grid grid-cols-7 gap-1 text-center text-xs font-bold text-slate-400 py-1 border-b border-slate-800">
+      <div className="grid grid-cols-7 gap-1 text-center text-xs font-bold text-slate-500 dark:text-white/50 py-1 border-b border-white/40 dark:border-white/10">
         {weekDayNames.map(name => (
           <div key={name} className="py-1">{name}</div>
         ))}
@@ -122,13 +122,15 @@ export const CalendarView: React.FC<Props> = ({ events, selectedDate, onSelectDa
               key={idx}
               onClick={() => onSelectDate(day)}
               className={`min-h-[75px] sm:min-h-[95px] p-1.5 sm:p-2 rounded-2xl border transition-all cursor-pointer flex flex-col justify-between ${
-                !isCurrentMonth ? 'opacity-30 border-transparent bg-slate-950/20' : 'bg-slate-950/60'
+                !isCurrentMonth
+                  ? 'opacity-25 border-transparent bg-slate-900/5 dark:bg-white/[0.01]'
+                  : 'bg-white/50 dark:bg-white/[0.03] backdrop-blur-sm'
               } ${
                 isSelected
                   ? 'border-amber-500/80 ring-2 ring-amber-500/30 bg-amber-500/10'
                   : hasShows
-                  ? 'border-slate-700/80 hover:border-slate-600'
-                  : 'border-slate-800/60 hover:border-slate-700'
+                  ? 'border-white/60 dark:border-white/15 hover:border-amber-400/50'
+                  : 'border-white/30 dark:border-white/5 hover:border-white/50 dark:hover:border-white/10'
               }`}
             >
               {/* Day Number + Dots */}

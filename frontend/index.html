@@ -1,26 +1,41 @@
 <!doctype html>
-<html lang="vi" class="dark">
+<html lang="vi">
   <head>
     <meta charset="UTF-8" />
-    <link rel="icon" type="image/png" href="/mirmia-logo.png" />
+    <link rel="icon" type="image/png" href="/lensy-logo.png" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
-    <title>Lensy - All-in-one CRM cho Thợ Ảnh & Boutique Studio</title>
+    <title>Lensy - CRM for Photographers</title>
+
+    <!-- Theme Initialization Script (Prevent FOUC) -->
+    <script>
+      (function() {
+        try {
+          var stored = localStorage.getItem('lensy-theme');
+          var prefersDark = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
+          if (stored === 'dark' || (!stored && prefersDark) || (stored === 'system' && prefersDark)) {
+            document.documentElement.classList.add('dark');
+          } else {
+            document.documentElement.classList.remove('dark');
+          }
+        } catch (e) {}
+      })();
+    </script>
 
     <!-- PWA Primary Meta Tags -->
-    <meta name="theme-color" content="#ffffff" />
+    <meta name="theme-color" content="#121212" />
     <meta name="application-name" content="Lensy" />
     <meta name="apple-mobile-web-app-title" content="Lensy" />
     <meta name="apple-mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-status-bar-style" content="default" />
     <meta name="description" content="Lensy - Trợ lý số thông minh quản lý lịch chụp, báo giá và dòng tiền cho Freelance Photographers & Boutique Studios" />
-    <link rel="apple-touch-icon" href="/mirmia-logo.png" />
+    <link rel="apple-touch-icon" href="/lensy-logo.png" />
 
-    <!-- Google Fonts -->
+    <!-- Google Fonts: Plus Jakarta Sans & Playfair Display -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,500;0,600;0,700;1,400&family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,500;0,600;0,700;1,400&family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
   </head>
-  <body class="bg-[#080c14] text-slate-100 antialiased selection:bg-amber-500 selection:text-black">
+  <body class="bg-slate-50 dark:bg-[#121212] text-slate-800 dark:text-slate-100 antialiased selection:bg-amber-500 selection:text-black min-h-screen transition-colors duration-200">
     <div id="root"></div>
     <script type="module" src="/src/main.tsx"></script>
   </body>

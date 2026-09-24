@@ -83,7 +83,7 @@ export const GearsManagementPage: React.FC = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedCategory, setSelectedCategory] = useState<string>('all');
-  const [viewMode, setViewMode] = useState<'grid' | 'table'>('grid');
+  const [viewMode, setViewMode] = useState<'grid' | 'table'>('table');
 
   // Modal State
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -313,7 +313,7 @@ export const GearsManagementPage: React.FC = () => {
           <div className="flex items-center gap-2 mb-1">
             <Link
               to="/dashboard"
-              className="text-xs font-bold text-slate-400 hover:text-amber-400 flex items-center gap-1 transition-colors"
+              className="text-xs font-bold text-slate-500 dark:text-white/60 hover:text-amber-500 dark:hover:text-amber-400 flex items-center gap-1 transition-colors"
             >
               <ArrowLeft className="w-3.5 h-3.5" />
               <span>Quay lại Dashboard</span>
@@ -321,20 +321,20 @@ export const GearsManagementPage: React.FC = () => {
           </div>
           <div className="flex items-center gap-3">
             <div className="w-10 h-10 rounded-2xl bg-gradient-to-tr from-sky-500 to-indigo-500 p-0.5 shadow-lg shadow-sky-950/40">
-              <div className="w-full h-full bg-slate-950 rounded-[14px] flex items-center justify-center">
-                <Camera className="w-5 h-5 text-sky-400" />
+              <div className="w-full h-full bg-white dark:bg-black/60 rounded-[14px] flex items-center justify-center">
+                <Camera className="w-5 h-5 text-sky-500 dark:text-sky-400" />
               </div>
             </div>
             <div>
               <div className="flex items-center gap-2">
-                <h1 className="text-xl sm:text-2xl font-black text-white tracking-tight">
+                <h1 className="text-xl sm:text-2xl font-light text-slate-900 dark:text-white/90 tracking-tight">
                   Quản Lý Thiết Bị Studio
                 </h1>
-                <span className="text-[10px] uppercase font-bold px-2 py-0.5 rounded bg-sky-950 border border-sky-500/30 text-sky-300">
+                <span className="text-[10px] uppercase font-bold px-2 py-0.5 rounded bg-sky-500/10 border border-sky-500/30 text-sky-600 dark:text-sky-300">
                   USP 2 • Conflict Engine
                 </span>
               </div>
-              <p className="text-xs text-slate-400">
+              <p className="text-xs text-slate-500 dark:text-white/50">
                 Kho thiết bị Camera, Lens, Đèn chụp phục vụ gán thiết bị vào từng show và chống trùng lịch
               </p>
             </div>
@@ -344,7 +344,7 @@ export const GearsManagementPage: React.FC = () => {
         <button
           type="button"
           onClick={handleOpenAddModal}
-          className="px-4 py-2.5 rounded-xl bg-gradient-to-r from-amber-500 to-yellow-500 hover:from-amber-400 hover:to-yellow-400 text-slate-950 text-xs font-extrabold flex items-center gap-2 shadow-lg shadow-amber-500/20 transition-all hover:scale-[1.02]"
+          className="px-4 py-2.5 rounded-xl bg-gradient-to-r from-amber-500 via-amber-400 to-yellow-500 text-slate-950 text-xs font-bold flex items-center gap-2 shadow-lg shadow-amber-500/20 transition-all hover:scale-[1.02]"
         >
           <Plus className="w-4 h-4" />
           <span>+ Thêm Thiết Bị Mới</span>
@@ -353,48 +353,48 @@ export const GearsManagementPage: React.FC = () => {
 
       {/* Metrics Row */}
       <div className="grid grid-cols-2 sm:grid-cols-6 gap-3">
-        <div className="p-3.5 rounded-2xl bg-slate-900/80 border border-slate-800 space-y-1">
-          <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Tổng Thiết Bị</span>
-          <div className="text-2xl font-black font-mono text-white">{totalCount}</div>
+        <div className="p-4 rounded-2xl bg-white/60 dark:bg-white/5 backdrop-blur-xl border border-white/60 dark:border-white/10 shadow-[0_8px_32px_0_rgba(0,0,0,0.15)] space-y-1">
+          <span className="text-[10px] font-bold text-slate-500 dark:text-white/50 uppercase tracking-wider">Tổng Thiết Bị</span>
+          <div className="text-2xl font-light font-mono text-slate-900 dark:text-white/90">{totalCount}</div>
         </div>
-        <div className="p-3.5 rounded-2xl bg-slate-900/80 border border-slate-800 space-y-1">
-          <span className="text-[10px] font-bold text-sky-400 uppercase tracking-wider">Body Máy Ảnh</span>
-          <div className="text-2xl font-black font-mono text-sky-300">{cameraCount}</div>
+        <div className="p-4 rounded-2xl bg-white/60 dark:bg-white/5 backdrop-blur-xl border border-white/60 dark:border-white/10 shadow-[0_8px_32px_0_rgba(0,0,0,0.15)] space-y-1">
+          <span className="text-[10px] font-bold text-sky-500 dark:text-sky-400 uppercase tracking-wider">Body Máy Ảnh</span>
+          <div className="text-2xl font-light font-mono text-sky-600 dark:text-sky-300">{cameraCount}</div>
         </div>
-        <div className="p-3.5 rounded-2xl bg-slate-900/80 border border-slate-800 space-y-1">
-          <span className="text-[10px] font-bold text-purple-400 uppercase tracking-wider">Ống Kính (Lens)</span>
-          <div className="text-2xl font-black font-mono text-purple-300">{lensCount}</div>
+        <div className="p-4 rounded-2xl bg-white/60 dark:bg-white/5 backdrop-blur-xl border border-white/60 dark:border-white/10 shadow-[0_8px_32px_0_rgba(0,0,0,0.15)] space-y-1">
+          <span className="text-[10px] font-bold text-purple-500 dark:text-purple-400 uppercase tracking-wider">Ống Kính (Lens)</span>
+          <div className="text-2xl font-light font-mono text-purple-600 dark:text-purple-300">{lensCount}</div>
         </div>
-        <div className="p-3.5 rounded-2xl bg-slate-900/80 border border-slate-800 space-y-1">
-          <span className="text-[10px] font-bold text-amber-400 uppercase tracking-wider">Đèn Studio</span>
-          <div className="text-2xl font-black font-mono text-amber-300">{lightingCount}</div>
+        <div className="p-4 rounded-2xl bg-white/60 dark:bg-white/5 backdrop-blur-xl border border-white/60 dark:border-white/10 shadow-[0_8px_32px_0_rgba(0,0,0,0.15)] space-y-1">
+          <span className="text-[10px] font-bold text-amber-500 dark:text-amber-400 uppercase tracking-wider">Đèn Studio</span>
+          <div className="text-2xl font-light font-mono text-amber-600 dark:text-amber-300">{lightingCount}</div>
         </div>
-        <div className="p-3.5 rounded-2xl bg-slate-900/80 border border-slate-800 space-y-1">
-          <span className="text-[10px] font-bold text-emerald-400 uppercase tracking-wider">Sẵn Sàng</span>
-          <div className="text-2xl font-black font-mono text-emerald-300">{activeCount} / {totalCount}</div>
+        <div className="p-4 rounded-2xl bg-white/60 dark:bg-white/5 backdrop-blur-xl border border-white/60 dark:border-white/10 shadow-[0_8px_32px_0_rgba(0,0,0,0.15)] space-y-1">
+          <span className="text-[10px] font-bold text-emerald-500 dark:text-emerald-400 uppercase tracking-wider">Sẵn Sàng</span>
+          <div className="text-2xl font-light font-mono text-emerald-600 dark:text-emerald-300">{activeCount} / {totalCount}</div>
         </div>
-        <div className="p-3.5 rounded-2xl bg-gradient-to-br from-amber-500/10 to-yellow-500/5 border border-amber-500/30 space-y-1 col-span-2 sm:col-span-1">
-          <span className="text-[10px] font-bold text-amber-400 uppercase tracking-wider flex items-center gap-1">
-            <Coins className="w-3 h-3 text-amber-400" />
+        <div className="p-4 rounded-2xl bg-gradient-to-br from-amber-500/10 to-yellow-500/5 backdrop-blur-xl border border-amber-500/30 space-y-1 col-span-2 sm:col-span-1 shadow-[0_8px_32px_0_rgba(0,0,0,0.15)]">
+          <span className="text-[10px] font-bold text-amber-500 dark:text-amber-400 uppercase tracking-wider flex items-center gap-1">
+            <Coins className="w-3 h-3 text-amber-500 dark:text-amber-400" />
             <span>Tổng Tài Sản Kho</span>
           </span>
-          <div className="text-base sm:text-lg font-black font-mono text-amber-300 truncate" title={`${totalInvestment.toLocaleString('vi-VN')} đ`}>
+          <div className="text-base sm:text-lg font-light font-mono text-amber-600 dark:text-amber-300 truncate" title={`${totalInvestment.toLocaleString('vi-VN')} đ`}>
             {totalInvestment.toLocaleString('vi-VN')} đ
           </div>
         </div>
       </div>
 
       {/* Filter, Search, and View Mode Bar */}
-      <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 p-3 rounded-2xl bg-slate-900/60 border border-slate-800">
+      <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 p-3.5 rounded-2xl bg-white/60 dark:bg-white/5 backdrop-blur-xl border border-white/60 dark:border-white/10 shadow-[0_8px_32px_0_rgba(0,0,0,0.15)]">
         {/* Search */}
         <div className="relative flex-1 max-w-md">
-          <Search className="w-4 h-4 text-slate-500 absolute left-3 top-3" />
+          <Search className="w-4 h-4 text-slate-400 dark:text-slate-500 absolute left-3 top-3" />
           <input
             type="text"
             value={searchTerm}
             onChange={e => setSearchTerm(e.target.value)}
             placeholder="Tìm theo tên máy, lens, đèn, gimbal..."
-            className="w-full pl-9 pr-4 py-2 rounded-xl bg-slate-950 border border-slate-800 focus:border-amber-400 text-xs text-white placeholder-slate-600 transition-all outline-none"
+            className="w-full pl-9 pr-4 py-2 rounded-xl bg-slate-100/90 dark:bg-black/40 border border-slate-200 dark:border-white/10 focus:border-amber-400 text-xs text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-slate-600 transition-all outline-none"
           />
         </div>
 
@@ -415,7 +415,7 @@ export const GearsManagementPage: React.FC = () => {
                 className={`px-3 py-1.5 rounded-xl font-bold transition-all whitespace-nowrap ${
                   selectedCategory === c.id
                     ? 'bg-amber-500 text-slate-950 shadow-sm'
-                    : 'bg-slate-950 border border-slate-800 text-slate-400 hover:text-white'
+                    : 'bg-white/50 dark:bg-black/30 border border-slate-200 dark:border-white/10 text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
                 }`}
               >
                 {c.label}
@@ -424,14 +424,14 @@ export const GearsManagementPage: React.FC = () => {
           </div>
 
           {/* View Mode Toggle: Grid vs Table */}
-          <div className="flex items-center bg-slate-950 p-1 rounded-xl border border-slate-800 flex-shrink-0 ml-1">
+          <div className="flex items-center bg-slate-100/80 dark:bg-black/40 p-1 rounded-xl border border-slate-200 dark:border-white/10 flex-shrink-0 ml-1">
             <button
               type="button"
               onClick={() => setViewMode('grid')}
               className={`p-1.5 rounded-lg transition-all ${
                 viewMode === 'grid'
                   ? 'bg-amber-500 text-slate-950 font-bold shadow-sm'
-                  : 'text-slate-400 hover:text-white'
+                  : 'text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
               }`}
               title="Xem dạng lưới (Grid)"
             >
@@ -443,7 +443,7 @@ export const GearsManagementPage: React.FC = () => {
               className={`p-1.5 rounded-lg transition-all ${
                 viewMode === 'table'
                   ? 'bg-amber-500 text-slate-950 font-bold shadow-sm'
-                  : 'text-slate-400 hover:text-white'
+                  : 'text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
               }`}
               title="Xem dạng bảng (Table)"
             >
@@ -456,115 +456,181 @@ export const GearsManagementPage: React.FC = () => {
       {/* Gears List Grid or Table */}
       {isLoading ? (
         <div className="min-h-[300px] flex flex-col items-center justify-center space-y-3">
-          <Loader2 className="w-7 h-7 text-amber-400 animate-spin" />
-          <p className="text-xs text-slate-400">Đang tải kho thiết bị của bạn...</p>
+          <Loader2 className="w-7 h-7 text-amber-500 dark:text-amber-400 animate-spin" />
+          <p className="text-xs text-slate-500 dark:text-slate-400">Đang tải kho thiết bị của bạn...</p>
         </div>
       ) : filteredGears.length === 0 ? (
-        <div className="p-12 text-center rounded-3xl bg-slate-900/40 border border-dashed border-slate-800 space-y-3">
-          <Camera className="w-10 h-10 text-slate-600 mx-auto" />
-          <h3 className="text-sm font-bold text-slate-300">Chưa có thiết bị nào</h3>
+        <div className="p-12 text-center rounded-3xl bg-white/60 dark:bg-white/5 backdrop-blur-xl border border-dashed border-slate-300 dark:border-white/10 space-y-3">
+          <Camera className="w-10 h-10 text-slate-400 dark:text-slate-600 mx-auto" />
+          <h3 className="text-sm font-bold text-slate-800 dark:text-slate-300">Chưa có thiết bị nào</h3>
           <p className="text-xs text-slate-500 max-w-sm mx-auto">
             Hãy bấm nút "Thêm Thiết Bị Mới" để khai báo các Body máy, Ống kính, Đèn Studio bạn đang sở hữu.
           </p>
           <button
             type="button"
             onClick={handleOpenAddModal}
-            className="px-4 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-amber-400 text-xs font-bold inline-flex items-center gap-1.5 transition-colors"
+            className="px-4 py-2 rounded-xl bg-white/80 dark:bg-white/10 hover:bg-white dark:hover:bg-white/20 text-amber-600 dark:text-amber-400 text-xs font-bold inline-flex items-center gap-1.5 transition-colors"
           >
             <Plus className="w-4 h-4" />
             <span>Thêm Thiết Bị Đầu Tiên</span>
           </button>
         </div>
       ) : viewMode === 'table' ? (
-        /* DẠNG BẢNG (TABLE VIEW) */
-        <div className="rounded-2xl border border-slate-800 bg-slate-900/70 overflow-hidden shadow-xl">
-          <div className="overflow-x-auto">
-            <table className="w-full text-left text-xs text-slate-300 border-collapse">
-              <thead>
-                <tr className="border-b border-slate-800 bg-slate-950/80 text-[11px] uppercase tracking-wider text-slate-400 font-bold">
-                  <th className="py-3.5 px-4">Thiết Bị</th>
-                  <th className="py-3.5 px-4">Phân Loại</th>
-                  <th className="py-3.5 px-4">Trạng Thái Khả Dụng</th>
-                  <th className="py-3.5 px-4 text-right">Giá Mua (VNĐ)</th>
-                  <th className="py-3.5 px-4 hidden md:table-cell">Mã Thiết Bị</th>
-                  <th className="py-3.5 px-4 text-right">Thao Tác</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-slate-800/60">
-                {filteredGears.map(gear => {
-                  const typeConfig = GEAR_TYPE_LABELS[gear.type] || GEAR_TYPE_LABELS.other;
-                  const statusConfig = GEAR_STATUS_LABELS[gear.status] || GEAR_STATUS_LABELS.active;
-                  const price = Number(gear.purchase_price) || 0;
+        /* DẠNG BẢNG (TABLE VIEW TRÊN DESKTOP & AUTO-WRAP THÀNH CARDS TRÊN MOBILE) */
+        <div className="space-y-4">
+          {/* 1. Màn hình Desktop: Table đầy đủ các cột */}
+          <div className="hidden md:block rounded-3xl border border-white/60 dark:border-white/10 bg-white/60 dark:bg-white/5 backdrop-blur-xl overflow-hidden shadow-[0_8px_32px_0_rgba(0,0,0,0.25)]">
+            <div className="overflow-x-auto">
+              <table className="w-full text-left text-xs text-slate-300 border-collapse">
+                <thead>
+                  <tr className="border-b border-slate-800 bg-slate-950/80 text-[11px] uppercase tracking-wider text-slate-400 font-bold">
+                    <th className="py-3.5 px-4">Thiết Bị</th>
+                    <th className="py-3.5 px-4">Phân Loại</th>
+                    <th className="py-3.5 px-4">Trạng Thái Khả Dụng</th>
+                    <th className="py-3.5 px-4 text-right">Giá Mua (VNĐ)</th>
+                    <th className="py-3.5 px-4 hidden md:table-cell">Mã Thiết Bị</th>
+                    <th className="py-3.5 px-4 text-right">Thao Tác</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-slate-800/60">
+                  {filteredGears.map(gear => {
+                    const typeConfig = GEAR_TYPE_LABELS[gear.type] || GEAR_TYPE_LABELS.other;
+                    const statusConfig = GEAR_STATUS_LABELS[gear.status] || GEAR_STATUS_LABELS.active;
+                    const price = Number(gear.purchase_price) || 0;
 
-                  return (
-                    <tr
-                      key={gear.id}
-                      className="hover:bg-slate-800/40 transition-colors group"
-                    >
-                      <td className="py-3 px-4">
-                        <div className="flex items-center gap-3">
-                          <div className="p-2 rounded-xl bg-slate-950 border border-slate-800 text-slate-300 group-hover:text-amber-400 group-hover:border-amber-500/30 transition-colors">
-                            {typeConfig.icon}
+                    return (
+                      <tr
+                        key={gear.id}
+                        className="hover:bg-slate-800/40 transition-colors group"
+                      >
+                        <td className="py-3 px-4">
+                          <div className="flex items-center gap-3">
+                            <div className="p-2 rounded-xl bg-slate-950 border border-slate-800 text-slate-300 group-hover:text-amber-400 group-hover:border-amber-500/30 transition-colors">
+                              {typeConfig.icon}
+                            </div>
+                            <div>
+                              <span className="font-bold text-white text-xs block group-hover:text-amber-300 transition-colors">
+                                {gear.name}
+                              </span>
+                              <span className="text-[10px] text-slate-500 md:hidden font-mono">
+                                {gear.id.substring(0, 8)}...
+                              </span>
+                            </div>
                           </div>
-                          <div>
-                            <span className="font-bold text-white text-xs block group-hover:text-amber-300 transition-colors">
-                              {gear.name}
-                            </span>
-                            <span className="text-[10px] text-slate-500 md:hidden font-mono">
-                              {gear.id.substring(0, 8)}...
-                            </span>
+                        </td>
+
+                        <td className="py-3 px-4">
+                          <span className={`px-2 py-0.5 rounded-md text-[10px] font-bold border inline-flex items-center gap-1 ${typeConfig.color}`}>
+                            {typeConfig.label.split(' ')[0]}
+                          </span>
+                        </td>
+
+                        <td className="py-3 px-4">
+                          <span className={`px-2.5 py-0.5 rounded-full text-[10px] font-bold border inline-flex items-center gap-1.5 ${statusConfig.color}`}>
+                            <span className={`w-1.5 h-1.5 rounded-full ${gear.status === 'active' ? 'bg-emerald-400' : gear.status === 'maintenance' ? 'bg-amber-400' : 'bg-slate-400'}`} />
+                            {statusConfig.label}
+                          </span>
+                        </td>
+
+                        <td className="py-3 px-4 text-right">
+                          <span className="font-mono font-bold text-amber-300 text-xs">
+                            {price > 0 ? `${price.toLocaleString('vi-VN')} đ` : <span className="text-slate-600 font-normal">Chưa nhập</span>}
+                          </span>
+                        </td>
+
+                        <td className="py-3 px-4 hidden md:table-cell font-mono text-[11px] text-slate-500">
+                          {gear.id}
+                        </td>
+
+                        <td className="py-3 px-4 text-right">
+                          <div className="inline-flex items-center gap-1.5">
+                            <button
+                              type="button"
+                              onClick={() => handleOpenEditModal(gear)}
+                              className="p-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white transition-colors"
+                              title="Sửa thiết bị"
+                            >
+                              <Edit2 className="w-3.5 h-3.5" />
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => handleDeleteGear(gear)}
+                              className="p-1.5 rounded-lg bg-slate-800 hover:bg-rose-950 text-slate-400 hover:text-rose-300 transition-colors"
+                              title="Xóa thiết bị"
+                            >
+                              <Trash2 className="w-3.5 h-3.5" />
+                            </button>
                           </div>
-                        </div>
-                      </td>
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
+          </div>
 
-                      <td className="py-3 px-4">
-                        <span className={`px-2 py-0.5 rounded-md text-[10px] font-bold border inline-flex items-center gap-1 ${typeConfig.color}`}>
-                          {typeConfig.label.split(' ')[0]}
+          {/* 2. Màn hình Mobile: Danh sách thẻ tự động wrap gọn gàng */}
+          <div className="md:hidden space-y-3">
+            {filteredGears.map(gear => {
+              const typeConfig = GEAR_TYPE_LABELS[gear.type] || GEAR_TYPE_LABELS.other;
+              const statusConfig = GEAR_STATUS_LABELS[gear.status] || GEAR_STATUS_LABELS.active;
+              const price = Number(gear.purchase_price) || 0;
+
+              return (
+                <div
+                  key={gear.id}
+                  className="p-4 rounded-2xl bg-white/70 dark:bg-slate-900/80 border border-slate-200/80 dark:border-slate-800 shadow-md space-y-3"
+                >
+                  <div className="flex items-start justify-between gap-2">
+                    <div className="flex items-center gap-2.5 min-w-0">
+                      <div className="p-2 rounded-xl bg-slate-950 border border-slate-800 text-slate-300 flex-shrink-0">
+                        {typeConfig.icon}
+                      </div>
+                      <div className="min-w-0">
+                        <h4 className="font-bold text-slate-900 dark:text-white text-sm truncate">
+                          {gear.name}
+                        </h4>
+                        <span className={`px-2 py-0.5 rounded text-[10px] font-bold border inline-block mt-0.5 ${typeConfig.color}`}>
+                          {typeConfig.label}
                         </span>
-                      </td>
+                      </div>
+                    </div>
 
-                      <td className="py-3 px-4">
-                        <span className={`px-2.5 py-0.5 rounded-full text-[10px] font-bold border inline-flex items-center gap-1.5 ${statusConfig.color}`}>
-                          <span className={`w-1.5 h-1.5 rounded-full ${gear.status === 'active' ? 'bg-emerald-400' : gear.status === 'maintenance' ? 'bg-amber-400' : 'bg-slate-400'}`} />
-                          {statusConfig.label}
-                        </span>
-                      </td>
+                    <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold border flex-shrink-0 ${statusConfig.color}`}>
+                      {statusConfig.label}
+                    </span>
+                  </div>
 
-                      <td className="py-3 px-4 text-right">
-                        <span className="font-mono font-bold text-amber-300 text-xs">
-                          {price > 0 ? `${price.toLocaleString('vi-VN')} đ` : <span className="text-slate-600 font-normal">Chưa nhập</span>}
-                        </span>
-                      </td>
+                  <div className="flex items-center justify-between pt-2 border-t border-slate-100 dark:border-slate-800/60 text-xs">
+                    <div>
+                      <span className="text-[10px] text-slate-400 block font-medium">Giá Trị Mua:</span>
+                      <span className="font-mono font-bold text-amber-500 dark:text-amber-300">
+                        {price > 0 ? `${price.toLocaleString('vi-VN')} đ` : 'Chưa nhập'}
+                      </span>
+                    </div>
 
-                      <td className="py-3 px-4 hidden md:table-cell font-mono text-[11px] text-slate-500">
-                        {gear.id}
-                      </td>
-
-                      <td className="py-3 px-4 text-right">
-                        <div className="inline-flex items-center gap-1.5">
-                          <button
-                            type="button"
-                            onClick={() => handleOpenEditModal(gear)}
-                            className="p-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white transition-colors"
-                            title="Sửa thiết bị"
-                          >
-                            <Edit2 className="w-3.5 h-3.5" />
-                          </button>
-                          <button
-                            type="button"
-                            onClick={() => handleDeleteGear(gear)}
-                            className="p-1.5 rounded-lg bg-slate-800 hover:bg-rose-950 text-slate-400 hover:text-rose-300 transition-colors"
-                            title="Xóa thiết bị"
-                          >
-                            <Trash2 className="w-3.5 h-3.5" />
-                          </button>
-                        </div>
-                      </td>
-                    </tr>
-                  );
-                })}
-              </tbody>
-            </table>
+                    <div className="flex items-center gap-1.5">
+                      <button
+                        type="button"
+                        onClick={() => handleOpenEditModal(gear)}
+                        className="px-2.5 py-1.5 rounded-lg bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 text-xs font-bold hover:bg-slate-200 dark:hover:bg-slate-700"
+                      >
+                        Sửa
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => handleDeleteGear(gear)}
+                        className="p-1.5 rounded-lg bg-rose-500/10 text-rose-500 hover:bg-rose-500/20"
+                        title="Xóa thiết bị"
+                      >
+                        <Trash2 className="w-3.5 h-3.5" />
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              );
+            })}
           </div>
         </div>
       ) : (
@@ -578,7 +644,7 @@ export const GearsManagementPage: React.FC = () => {
             return (
               <div
                 key={gear.id}
-                className="p-4 rounded-2xl bg-slate-900/80 border border-slate-800/80 hover:border-slate-700 transition-all shadow-md space-y-3 flex flex-col justify-between group"
+                className="p-5 rounded-3xl bg-white/60 dark:bg-white/5 backdrop-blur-xl border border-white/60 dark:border-white/10 hover:border-amber-500/40 transition-all shadow-[0_8px_32px_0_rgba(0,0,0,0.12)] space-y-3 flex flex-col justify-between group hover:-translate-y-0.5"
               >
                 <div className="space-y-2">
                   <div className="flex items-start justify-between gap-2">
@@ -592,23 +658,23 @@ export const GearsManagementPage: React.FC = () => {
                     </span>
                   </div>
 
-                  <h3 className="text-sm font-bold text-white group-hover:text-amber-300 transition-colors">
+                  <h3 className="text-sm font-bold text-slate-800 dark:text-white group-hover:text-amber-500 dark:group-hover:text-amber-300 transition-colors">
                     {gear.name}
                   </h3>
 
-                  <div className="pt-2 flex items-center justify-between text-xs border-t border-slate-800/60">
-                    <span className="text-[11px] text-slate-400 flex items-center gap-1">
-                      <Coins className="w-3 h-3 text-amber-400" />
+                  <div className="pt-2 flex items-center justify-between text-xs border-t border-slate-200/60 dark:border-white/10">
+                    <span className="text-[11px] text-slate-500 dark:text-slate-400 flex items-center gap-1">
+                      <Coins className="w-3 h-3 text-amber-500 dark:text-amber-400" />
                       <span>Giá mua:</span>
                     </span>
-                    <span className="font-mono font-bold text-amber-300 text-xs">
-                      {price > 0 ? `${price.toLocaleString('vi-VN')} đ` : <span className="text-slate-600 font-normal">Chưa nhập</span>}
+                    <span className="font-mono font-bold text-amber-600 dark:text-amber-300 text-xs">
+                      {price > 0 ? `${price.toLocaleString('vi-VN')} đ` : <span className="text-slate-400 dark:text-slate-600 font-normal">Chưa nhập</span>}
                     </span>
                   </div>
                 </div>
 
-                <div className="pt-2 border-t border-slate-800 flex items-center justify-between text-xs">
-                  <span className="text-[11px] text-slate-500 font-mono">
+                <div className="pt-2 border-t border-slate-200/60 dark:border-white/10 flex items-center justify-between text-xs">
+                  <span className="text-[11px] text-slate-400 dark:text-slate-500 font-mono">
                     ID: {gear.id.substring(0, 8)}...
                   </span>
 
@@ -616,7 +682,7 @@ export const GearsManagementPage: React.FC = () => {
                     <button
                       type="button"
                       onClick={() => handleOpenEditModal(gear)}
-                      className="p-1.5 rounded-lg bg-slate-800/80 hover:bg-slate-700 text-slate-300 hover:text-white transition-colors"
+                      className="p-1.5 rounded-lg bg-white/80 dark:bg-white/10 hover:bg-white dark:hover:bg-white/20 text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white transition-colors"
                       title="Sửa thiết bị"
                     >
                       <Edit2 className="w-3.5 h-3.5" />
@@ -624,7 +690,7 @@ export const GearsManagementPage: React.FC = () => {
                     <button
                       type="button"
                       onClick={() => handleDeleteGear(gear)}
-                      className="p-1.5 rounded-lg bg-slate-800/80 hover:bg-rose-950 hover:text-rose-300 text-slate-400 transition-colors"
+                      className="p-1.5 rounded-lg bg-white/80 dark:bg-white/10 hover:bg-rose-100 dark:hover:bg-rose-950/80 hover:text-rose-600 dark:hover:text-rose-300 text-slate-400 transition-colors"
                       title="Xóa thiết bị"
                     >
                       <Trash2 className="w-3.5 h-3.5" />

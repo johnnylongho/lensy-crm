@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { motion } from 'framer-motion';
 import { parseISO } from 'date-fns';
 import { DashboardHeader } from './DashboardHeader';
 import { CalendarView } from './CalendarView';
@@ -93,6 +94,7 @@ export const PhotographerDashboard: React.FC<Props> = ({
             return {
               id: b.id,
               clientName: b.client_name,
+              clientPhone: b.client_phone || '',
               sessionType: b.session_type,
               eventDate: b.event_date,
               startTime: b.start_time?.substring(0, 5) || '08:00',
@@ -241,7 +243,7 @@ export const PhotographerDashboard: React.FC<Props> = ({
   };
 
   return (
-    <div className="w-full max-w-6xl mx-auto px-4 py-6 space-y-6">
+    <div className="w-full max-w-7xl mx-auto px-4 sm:px-6 py-6 sm:py-8 space-y-7 sm:space-y-8 animate-fadeIn">
       {/* Top Floating Toast Notification */}
       {toastNotification && (
         <div className="fixed bottom-5 right-5 z-50 animate-bounce">
@@ -380,16 +382,21 @@ export const PhotographerDashboard: React.FC<Props> = ({
       {/* Biểu Đồ Xu Hướng Lợi Nhuận Ròng (Ưu tiên hiển thị Net Profit - Tiền thật bỏ túi) */}
       <ProfitTrendChart events={events} />
 
-      {/* Control Bar: View Switcher (Calendar vs Kanban) & Realtime Status */}
-      <div className="flex flex-wrap items-center justify-between gap-3 bg-slate-900/60 p-3 rounded-2xl border border-slate-800">
-        <div className="flex items-center gap-1 bg-slate-950 p-1 rounded-xl border border-slate-800 text-xs">
+      {/* Control Bar: View Switcher (Calendar vs Kanban) & Realtime Status (Liquid Glass) */}
+      <motion.div
+        initial={{ opacity: 0, y: 18 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.45, ease: 'easeOut', delay: 0.3 }}
+        className="flex flex-wrap items-center justify-between gap-4 p-3.5 sm:p-4 rounded-3xl bg-white/60 dark:bg-white/5 backdrop-blur-xl border border-white/60 dark:border-white/10 shadow-[0_8px_32px_0_rgba(0,0,0,0.06)] dark:shadow-[0_8px_32px_0_rgba(0,0,0,0.3)] transition-all duration-300"
+      >
+        <div className="flex items-center gap-1.5 p-1 rounded-2xl bg-white/40 dark:bg-white/5 backdrop-blur-md border border-white/40 dark:border-white/10 text-xs">
           <button
             type="button"
             onClick={() => setViewMode('calendar')}
-            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg font-bold transition-all ${
+            className={`flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl font-bold transition-all duration-200 ${
               viewMode === 'calendar'
-                ? 'bg-amber-500 text-slate-950 shadow'
-                : 'text-slate-400 hover:text-white'
+                ? 'bg-gradient-to-r from-amber-500 to-yellow-500 text-slate-950 shadow-md shadow-amber-500/20'
+                : 'text-slate-600 dark:text-white/60 hover:text-slate-950 dark:hover:text-white hover:bg-white/40 dark:hover:bg-white/10'
             }`}
           >
             <Calendar className="w-3.5 h-3.5" />
@@ -399,10 +406,10 @@ export const PhotographerDashboard: React.FC<Props> = ({
           <button
             type="button"
             onClick={() => setViewMode('kanban')}
-            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg font-bold transition-all ${
+            className={`flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl font-bold transition-all duration-200 ${
               viewMode === 'kanban'
-                ? 'bg-amber-500 text-slate-950 shadow'
-                : 'text-slate-400 hover:text-white'
+                ? 'bg-gradient-to-r from-amber-500 to-yellow-500 text-slate-950 shadow-md shadow-amber-500/20'
+                : 'text-slate-600 dark:text-white/60 hover:text-slate-950 dark:hover:text-white hover:bg-white/40 dark:hover:bg-white/10'
             }`}
           >
             <Kanban className="w-3.5 h-3.5" />
@@ -411,14 +418,14 @@ export const PhotographerDashboard: React.FC<Props> = ({
         </div>
 
         {/* Realtime Connection Indicator & Refresh Button */}
-        <div className="flex items-center gap-2 text-xs">
+        <div className="flex items-center gap-2.5 text-xs">
           {isSupabaseConfigured ? (
-            <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 text-[11px] font-medium">
-              <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
+            <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-emerald-500/10 dark:bg-emerald-500/5 border border-emerald-500/20 text-emerald-600 dark:text-emerald-400 text-[11px] font-medium backdrop-blur-md">
+              <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
               <span>Supabase Realtime: Đang Kết Nối</span>
             </span>
           ) : (
-            <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-amber-500/10 border border-amber-500/20 text-amber-400 text-[11px] font-medium">
+            <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-amber-500/10 dark:bg-amber-500/5 border border-amber-500/20 text-amber-600 dark:text-amber-400 text-[11px] font-medium backdrop-blur-md">
               <AlertCircle className="w-3.5 h-3.5" />
               <span>Chế độ Demo Mock Store</span>
             </span>
@@ -428,57 +435,68 @@ export const PhotographerDashboard: React.FC<Props> = ({
             type="button"
             onClick={fetchBookingsFromSupabase}
             disabled={isLoading}
-            className="p-1.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white transition-colors"
+            className="p-2 rounded-xl bg-white/30 dark:bg-white/5 hover:bg-white/50 dark:hover:bg-white/10 text-slate-600 dark:text-white/70 hover:text-slate-900 dark:hover:text-white transition-all border border-white/40 dark:border-white/10 backdrop-blur-md shadow-sm active:scale-95"
             title="Làm mới dữ liệu từ Supabase"
           >
-            <RefreshCw className={`w-4 h-4 ${isLoading ? 'animate-spin text-amber-400' : ''}`} />
+            <RefreshCw className={`w-4 h-4 ${isLoading ? 'animate-spin text-amber-500' : ''}`} />
           </button>
         </div>
-      </div>
+      </motion.div>
 
       {/* Main Display: Calendar Mode vs Kanban Mode */}
-      {viewMode === 'calendar' ? (
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 animate-fadeIn">
-          <div className="lg:col-span-2 space-y-6">
-            <CalendarView
-              events={events}
-              selectedDate={selectedDate}
-              onSelectDate={setSelectedDate}
-            />
+      <motion.div
+        initial={{ opacity: 0, y: 18 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.45, ease: 'easeOut', delay: 0.35 }}
+      >
+        {viewMode === 'calendar' ? (
+          <div className="space-y-8 animate-fadeIn">
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+              <div className="lg:col-span-2 space-y-6">
+                <CalendarView
+                  events={events}
+                  selectedDate={selectedDate}
+                  onSelectDate={setSelectedDate}
+                />
+              </div>
 
-            <UpcomingShootsList
-              events={events}
-              onSelectEventDate={handleSelectEventDate}
-              onSelectBooking={setActiveDetailBooking}
-              onStatusChange={handleStatusChange}
-              onOpenDebtReminder={setActiveDebtReminderBooking}
-              onOpenReceiptReview={booking => setActiveReviewBooking(booking)}
-            />
-          </div>
+              <div className="lg:col-span-1">
+                <div className="sticky top-20">
+                  <DayShootsModal
+                    selectedDate={selectedDate}
+                    events={events}
+                    onViewQuote={handleOpenQuote}
+                    onStatusChange={handleStatusChange}
+                    onSelectBooking={setActiveDetailBooking}
+                    onOpenDebtReminder={setActiveDebtReminderBooking}
+                  />
+                </div>
+              </div>
+            </div>
 
-          <div className="lg:col-span-1">
-            <div className="sticky top-20">
-              <DayShootsModal
-                selectedDate={selectedDate}
+            {/* Toàn Bộ Lịch Chụp Sắp Tới: Container w-full max-w-7xl mx-auto dàn trải đều ra giữa màn hình */}
+            <div className="w-full max-w-7xl mx-auto">
+              <UpcomingShootsList
                 events={events}
-                onViewQuote={handleOpenQuote}
-                onStatusChange={handleStatusChange}
+                onSelectEventDate={handleSelectEventDate}
                 onSelectBooking={setActiveDetailBooking}
+                onStatusChange={handleStatusChange}
                 onOpenDebtReminder={setActiveDebtReminderBooking}
+                onOpenReceiptReview={booking => setActiveReviewBooking(booking)}
               />
             </div>
           </div>
-        </div>
-      ) : (
-        <div className="animate-fadeIn">
-          <KanbanView
-            events={events}
-            onStatusChange={handleStatusChange}
-            onSelectBooking={setActiveDetailBooking}
-            onOpenDebtReminder={setActiveDebtReminderBooking}
-          />
-        </div>
-      )}
+        ) : (
+          <div className="animate-fadeIn">
+            <KanbanView
+              events={events}
+              onStatusChange={handleStatusChange}
+              onSelectBooking={setActiveDetailBooking}
+              onOpenDebtReminder={setActiveDebtReminderBooking}
+            />
+          </div>
+        )}
+      </motion.div>
     </div>
   );
 };

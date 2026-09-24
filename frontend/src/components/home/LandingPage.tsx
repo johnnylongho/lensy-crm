@@ -44,23 +44,23 @@ export const LandingPage: React.FC = () => {
         <div className="max-w-6xl mx-auto flex items-center justify-between">
           {/* Logo Brand */}
           <Link to="/" className="flex items-center gap-2.5 group">
-            <div className="w-9 h-9 rounded-xl overflow-hidden border border-red-500/30 bg-black shadow-md flex-shrink-0 group-hover:border-amber-400 transition-colors">
+            <div className="h-8 w-auto flex-shrink-0 group-hover:scale-105 transition-transform duration-200 flex items-center justify-center">
               <img
-                src="/mirmia-logo.png"
-                alt="Mirmia Studio & Academy"
-                className="w-full h-full object-cover"
+                src="/lensy-logo.png"
+                alt="Lensy Logo"
+                className="h-8 w-auto object-contain"
               />
             </div>
             <div>
               <div className="flex items-center gap-2">
-                <span className="font-extrabold text-sm text-white tracking-tight">
+                <span className="font-extrabold text-sm sm:text-base text-white tracking-tight">
                   Lensy
                 </span>
-                <span className="text-[10px] text-slate-400 font-medium hidden sm:inline">
+                <span className="text-[10px] text-gray-400 font-medium italic hidden sm:inline">
                   by Mirmia Studio
                 </span>
-                <span className="text-[9px] uppercase font-bold px-1.5 py-0.5 rounded bg-red-950/70 text-red-300 border border-red-500/30">
-                  SAAS
+                <span className="text-[9px] uppercase font-bold px-1.5 py-0.5 rounded bg-amber-500/10 text-amber-300 border border-amber-500/30">
+                  CRM
                 </span>
               </div>
             </div>

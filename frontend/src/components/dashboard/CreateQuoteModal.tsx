@@ -264,6 +264,7 @@ export const CreateQuoteModal: React.FC<Props> = ({
       const newCalendarEvent: CalendarEvent = {
         id: createdId,
         clientName: newBookingRecord.client_name,
+        clientPhone: newBookingRecord.client_phone,
         sessionType: newBookingRecord.session_type,
         eventDate: newBookingRecord.event_date,
         startTime: newBookingRecord.start_time.substring(0, 5),

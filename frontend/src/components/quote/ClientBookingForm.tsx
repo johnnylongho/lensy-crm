@@ -1,32 +1,50 @@
 import React, { useState } from 'react';
 import { supabase, isSupabaseConfigured } from '../../lib/supabase';
 import { QuoteData, SessionType } from '../../types';
-import { Calendar, Clock, MapPin, User, Phone, Mail, FileText, Send, Loader2, CheckCircle2, AlertTriangle } from 'lucide-react';
+import { Calendar, Clock, MapPin, User, Phone, Mail, FileText, Send, Loader2, CheckCircle2, AlertTriangle, Sparkles } from 'lucide-react';
+import { PaymentSuccess } from './PaymentSuccess';
 
 interface Props {
+  studioName?: string;
   defaultSessionType?: SessionType;
   defaultPrice?: number;
   defaultDeposit?: number;
   photographerId?: string | null;
+  bankInfo?: {
+    bankName?: string;
+    accountNumber?: string;
+    accountName?: string;
+  };
+  studioPhone?: string;
   onBookingCreated?: (newBooking: any) => void;
+  isDynamicBookingPage?: boolean;
 }
 
 export const ClientBookingForm: React.FC<Props> = ({
+  studioName,
   defaultSessionType = 'wedding',
   defaultPrice = 18000000,
   defaultDeposit = 5400000,
   photographerId,
-  onBookingCreated
+  bankInfo,
+  studioPhone,
+  onBookingCreated,
+  isDynamicBookingPage = false
 }) => {
   const [clientName, setClientName] = useState('');
   const [clientPhone, setClientPhone] = useState('');
   const [clientEmail, setClientEmail] = useState('');
-  const [sessionType, setSessionType] = useState<SessionType>(defaultSessionType);
-  const [eventDate, setEventDate] = useState('2026-10-25');
-  const [startTime, setStartTime] = useState('07:30');
-  const [endTime, setEndTime] = useState('13:30');
-  const [location, setLocation] = useState('');
+  const [shootRequirement, setShootRequirement] = useState('Chụp Cưới');
+  const [eventDate, setEventDate] = useState('');
   const [notes, setNotes] = useState('');
+
+  // Trạng thái đã gửi thành công để hiển thị màn hình Cảm ơn & Thanh toán 1-chạm VietQR
+  const [submittedBooking, setSubmittedBooking] = useState<{
+    clientName: string;
+    clientPhone: string;
+    depositAmount: number;
+    sessionTitle?: string;
+  } | null>(null);
 
   // Loading and Notification state
   const [isLoading, setIsLoading] = useState(false);
@@ -36,7 +54,8 @@ export const ClientBookingForm: React.FC<Props> = ({
     setClientName('');
     setClientPhone('');
     setClientEmail('');
-    setLocation('');
+    setShootRequirement('Chụp Cưới');
+    setEventDate('');
     setNotes('');
   };
 
@@ -51,6 +70,15 @@ export const ClientBookingForm: React.FC<Props> = ({
     const cleanEmail = clientEmail.trim() || null;
     let resolvedClientId: string | null = null;
 
+    if (!cleanName) {
+      setToastMessage({
+        type: 'error',
+        text: 'Vui lòng nhập Tên của bạn để studio tiện liên hệ tư vấn.'
+      });
+      setIsLoading(false);
+      return;
+    }
+
     if (!cleanPhone) {
       setToastMessage({
         type: 'error',
@@ -59,6 +87,24 @@ export const ClientBookingForm: React.FC<Props> = ({
       setIsLoading(false);
       return;
     }
+
+    // Mapping nhu cầu chụp sang session_type chuẩn
+    const requirementMap: Record<string, SessionType> = {
+      'Chụp Cưới': 'wedding',
+      'Chụp Pre-Wedding': 'prewedding',
+      'Chụp Gia đình': 'portrait',
+      'Sự kiện': 'event',
+      'Khác': 'commercial',
+    };
+    const sessionType: SessionType = requirementMap[shootRequirement] || 'wedding';
+
+    // Lưu nhu cầu chụp và ghi chú vào cột notes
+    const cleanNotes = notes.trim();
+    const formattedNotes = cleanNotes
+      ? `[Nhu cầu: ${shootRequirement}] ${cleanNotes}`
+      : `[Nhu cầu: ${shootRequirement}]`;
+
+    const chosenDate = eventDate || new Date().toISOString().split('T')[0];
 
     try {
       if (isSupabaseConfigured) {
@@ -130,17 +176,17 @@ export const ClientBookingForm: React.FC<Props> = ({
           client_phone: cleanPhone,
           client_email: cleanEmail,
           session_type: sessionType,
-          session_title: `Gói Chụp ${sessionType.toUpperCase()}`,
-          event_date: eventDate,
-          start_time: startTime ? (startTime.length === 5 ? `${startTime}:00` : startTime) : '08:00:00',
-          end_time: endTime ? (endTime.length === 5 ? `${endTime}:00` : endTime) : '12:00:00',
-          location: location || 'Tại Studio / Địa điểm khách yêu cầu',
+          session_title: `Gói ${shootRequirement}`,
+          event_date: chosenDate,
+          start_time: '08:00:00',
+          end_time: '12:00:00',
+          location: 'Tại Studio / Địa điểm khách yêu cầu',
           package_price: defaultPrice,
           deposit_amount: defaultDeposit,
           paid_amount: 0,
           status: 'lead',
           quote_token: quoteToken,
-          notes: notes || null,
+          notes: formattedNotes,
         };
 
         if (photographerId) {
@@ -158,9 +204,11 @@ export const ClientBookingForm: React.FC<Props> = ({
 
         if (error) throw error;
 
-        setToastMessage({
-          type: 'success',
-          text: '🎉 Gửi yêu cầu đặt lịch thành công! Studio đã ghi nhận lịch của bạn.'
+        setSubmittedBooking({
+          clientName: cleanName,
+          clientPhone: cleanPhone,
+          depositAmount: defaultDeposit || 1000000,
+          sessionTitle: `Gói ${shootRequirement}`,
         });
         if (onBookingCreated) onBookingCreated(newRecord);
       } else {
@@ -170,17 +218,17 @@ export const ClientBookingForm: React.FC<Props> = ({
           client_phone: cleanPhone,
           client_email: cleanEmail,
           session_type: sessionType,
-          session_title: `Gói Chụp ${sessionType.toUpperCase()}`,
-          event_date: eventDate,
-          start_time: startTime ? (startTime.length === 5 ? `${startTime}:00` : startTime) : '08:00:00',
-          end_time: endTime ? (endTime.length === 5 ? `${endTime}:00` : endTime) : '12:00:00',
-          location: location || 'Tại Studio / Địa điểm khách yêu cầu',
+          session_title: `Gói ${shootRequirement}`,
+          event_date: chosenDate,
+          start_time: '08:00:00',
+          end_time: '12:00:00',
+          location: 'Tại Studio / Địa điểm khách yêu cầu',
           package_price: defaultPrice,
           deposit_amount: defaultDeposit,
           paid_amount: 0,
           status: 'lead',
           quote_token: quoteToken,
-          notes: notes || null,
+          notes: formattedNotes,
           client_id: `client-demo-${cleanPhone}`,
         };
 
@@ -190,9 +238,12 @@ export const ClientBookingForm: React.FC<Props> = ({
 
         console.log('[Supabase Demo Insert with Client CRM]:', demoRecord);
         await new Promise(resolve => setTimeout(resolve, 800));
-        setToastMessage({
-          type: 'success',
-          text: '🎉 Gửi yêu cầu đặt lịch thành công! (Dữ liệu đã được lưu trữ an toàn)'
+
+        setSubmittedBooking({
+          clientName: cleanName,
+          clientPhone: cleanPhone,
+          depositAmount: defaultDeposit || 1000000,
+          sessionTitle: `Gói ${shootRequirement}`,
         });
         if (onBookingCreated) onBookingCreated(demoRecord);
       }
@@ -213,6 +264,27 @@ export const ClientBookingForm: React.FC<Props> = ({
       }, 5000);
     }
   };
+
+  // Nếu khách hàng đã gửi form thành công, thay thế toàn bộ form bằng màn hình PaymentSuccess
+  if (submittedBooking) {
+    return (
+      <PaymentSuccess
+        clientName={submittedBooking.clientName}
+        clientPhone={submittedBooking.clientPhone}
+        depositAmount={submittedBooking.depositAmount}
+        sessionTitle={submittedBooking.sessionTitle}
+        bankInfo={bankInfo}
+        studioPhone={studioPhone}
+        onReset={() => {
+          setSubmittedBooking(null);
+          resetForm();
+        }}
+      />
+    );
+  }
+
+  // Ngày hiện tại định dạng YYYY-MM-DD để đặt thuộc tính min cho date input
+  const todayStr = new Date().toISOString().split('T')[0];
 
   return (
     <div className="rounded-3xl bg-slate-900/90 border border-slate-800 p-5 sm:p-7 shadow-2xl space-y-5">
@@ -241,13 +313,15 @@ export const ClientBookingForm: React.FC<Props> = ({
 
       <div>
         <span className="text-[11px] font-bold uppercase tracking-wider text-amber-400 block mb-1">
-          Đăng Ký & Chốt Lịch Chụp
+          {isDynamicBookingPage ? 'Đăng Ký Đặt Lịch & Nhận Tư Vấn' : 'Đăng Ký & Chốt Lịch Chụp'}
         </span>
         <h3 className="text-lg font-bold text-white">
-          Gửi Yêu Cầu Chốt Lịch Tới Mirmia Studio
+          {studioName ? `Gửi Yêu Cầu Đặt Lịch Tới ${studioName}` : 'Gửi Yêu Cầu Đặt Lịch Chụp'}
         </h3>
         <p className="text-xs text-slate-400 mt-1">
-          Điền thông tin buổi chụp của bạn. Dữ liệu sẽ được ghi nhận tức thì vào hệ thống quản lý lịch trình của ekip.
+          {studioName
+            ? `Điền thông tin buổi chụp của bạn. Ekip ${studioName} sẽ liên hệ tư vấn gói chụp phù hợp nhất.`
+            : 'Điền thông tin buổi chụp của bạn. Chúng tôi sẽ liên hệ tư vấn gói chụp phù hợp nhất cho bạn.'}
         </p>
       </div>
 
@@ -255,8 +329,14 @@ export const ClientBookingForm: React.FC<Props> = ({
         {/* Client Name & Phone */}
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
           <div>
-            <label className="block text-slate-300 font-medium mb-1.5 flex items-center gap-1.5">
-              <User className="w-3.5 h-3.5 text-slate-400" /> Tên Khách Hàng / Cặp Đôi *
+            <label className="block text-slate-300 font-medium mb-1.5 flex items-center justify-between">
+              <span className="flex items-center gap-1.5">
+                <User className="w-3.5 h-3.5 text-slate-400" />
+                <span>Tên Khách Hàng / Cặp Đôi</span>
+              </span>
+              <span className="text-[10px] text-amber-400 font-bold uppercase tracking-wider">
+                (Bắt buộc)
+              </span>
             </label>
             <input
               type="text"
@@ -289,7 +369,7 @@ export const ClientBookingForm: React.FC<Props> = ({
           </div>
         </div>
 
-        {/* Email & Session Type */}
+        {/* Email & Nhu cầu chụp */}
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
           <div>
             <label className="block text-slate-300 font-medium mb-1.5 flex items-center justify-between">
@@ -311,90 +391,62 @@ export const ClientBookingForm: React.FC<Props> = ({
           </div>
 
           <div>
-            <label className="block text-slate-300 font-medium mb-1.5">
-              Gói Dịch Vụ
+            <label className="block text-slate-300 font-medium mb-1.5 flex items-center justify-between">
+              <span className="flex items-center gap-1.5">
+                <Sparkles className="w-3.5 h-3.5 text-amber-400" />
+                <span>Nhu Cầu Chụp</span>
+              </span>
+              <span className="text-[10px] text-amber-400 font-bold uppercase tracking-wider">
+                (Bắt buộc)
+              </span>
             </label>
             <select
-              value={sessionType}
-              onChange={e => setSessionType(e.target.value as SessionType)}
+              value={shootRequirement}
+              onChange={e => setShootRequirement(e.target.value)}
               className="w-full bg-slate-950 border border-slate-800 focus:border-amber-500 rounded-xl px-3.5 py-2.5 text-white focus:outline-none transition-colors"
             >
-              <option value="wedding">Phóng sự cưới (Wedding)</option>
-              <option value="prewedding">Pre-wedding</option>
-              <option value="portrait">Chân dung (Portrait)</option>
-              <option value="lookbook">Thời trang (Lookbook)</option>
-              <option value="event">Sự kiện (Event)</option>
-              <option value="commercial">Quảng cáo (Commercial)</option>
+              <option value="Chụp Cưới">Chụp Cưới</option>
+              <option value="Chụp Pre-Wedding">Chụp Pre-Wedding</option>
+              <option value="Chụp Gia đình">Chụp Gia đình</option>
+              <option value="Sự kiện">Sự kiện</option>
+              <option value="Khác">Khác</option>
             </select>
           </div>
         </div>
 
-        {/* Date and Time */}
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-          <div>
-            <label className="block text-slate-300 font-medium mb-1.5 flex items-center gap-1.5">
-              <Calendar className="w-3.5 h-3.5 text-slate-400" /> Ngày Chụp *
-            </label>
-            <input
-              type="date"
-              required
-              value={eventDate}
-              onChange={e => setEventDate(e.target.value)}
-              className="w-full bg-slate-950 border border-slate-800 focus:border-amber-500 rounded-xl px-3.5 py-2.5 text-white focus:outline-none transition-colors"
-            />
-          </div>
-
-          <div>
-            <label className="block text-slate-300 font-medium mb-1.5 flex items-center gap-1.5">
-              <Clock className="w-3.5 h-3.5 text-slate-400" /> Giờ Bắt Đầu
-            </label>
-            <input
-              type="time"
-              value={startTime}
-              onChange={e => setStartTime(e.target.value)}
-              className="w-full bg-slate-950 border border-slate-800 focus:border-amber-500 rounded-xl px-3.5 py-2.5 text-white focus:outline-none transition-colors"
-            />
-          </div>
-
-          <div>
-            <label className="block text-slate-300 font-medium mb-1.5 flex items-center gap-1.5">
-              <Clock className="w-3.5 h-3.5 text-slate-400" /> Giờ Kết Thúc
-            </label>
-            <input
-              type="time"
-              value={endTime}
-              onChange={e => setEndTime(e.target.value)}
-              className="w-full bg-slate-950 border border-slate-800 focus:border-amber-500 rounded-xl px-3.5 py-2.5 text-white focus:outline-none transition-colors"
-            />
-          </div>
-        </div>
-
-        {/* Location */}
+        {/* Ngày dự kiến (Date Picker) */}
         <div>
-          <label className="block text-slate-300 font-medium mb-1.5 flex items-center gap-1.5">
-            <MapPin className="w-3.5 h-3.5 text-slate-400" /> Địa Điểm Chụp *
+          <label className="block text-slate-300 font-medium mb-1.5 flex items-center justify-between">
+            <span className="flex items-center gap-1.5">
+              <Calendar className="w-3.5 h-3.5 text-amber-400" />
+              <span>Ngày Dự Kiến Chụp</span>
+            </span>
+            <span className="text-[10px] text-amber-400 font-bold uppercase tracking-wider">
+              (Bắt buộc)
+            </span>
           </label>
           <input
-            type="text"
+            type="date"
             required
-            value={location}
-            onChange={e => setLocation(e.target.value)}
-            placeholder="VD: Khách sạn Park Hyatt, Q.1, TP.HCM"
+            value={eventDate}
+            min={todayStr}
+            onChange={e => setEventDate(e.target.value)}
             className="w-full bg-slate-950 border border-slate-800 focus:border-amber-500 rounded-xl px-3.5 py-2.5 text-white focus:outline-none transition-colors"
           />
         </div>
 
-        {/* Notes */}
+        {/* Ghi chú thêm (Textarea) */}
         <div>
           <label className="block text-slate-300 font-medium mb-1.5 flex items-center gap-1.5">
-            <FileText className="w-3.5 h-3.5 text-slate-400" /> Ghi Chú Concept / Yêu Cầu Đặc Biệt
+            <FileText className="w-3.5 h-3.5 text-slate-400" />
+            <span>Ghi Chú Thêm (Concept, Yêu Cầu Riêng)</span>
           </label>
           <textarea
-            rows={2}
+            rows={3}
             value={notes}
             onChange={e => setNotes(e.target.value)}
-            placeholder="VD: Cần 2 tone màu sáng tự nhiên và retro..."
-            className="w-full bg-slate-950 border border-slate-800 focus:border-amber-500 rounded-xl px-3.5 py-2.5 text-white focus:outline-none transition-colors resize-none"
+            placeholder="Ví dụ: Mình muốn chụp phong cách vintage"
+            className="w-full bg-slate-950 border border-slate-800 focus:border-amber-500 rounded-xl px-3.5 py-2.5 text-white focus:outline-none transition-colors resize-none placeholder-slate-600"
           />
         </div>
 
@@ -407,12 +459,12 @@ export const ClientBookingForm: React.FC<Props> = ({
           {isLoading ? (
             <>
               <Loader2 className="w-4 h-4 animate-spin text-slate-950" />
-              <span>Đang gửi yêu cầu tới Supabase...</span>
+              <span>Đang gửi thông tin đặt lịch...</span>
             </>
           ) : (
             <>
               <Send className="w-4 h-4 text-slate-950" />
-              <span>Gửi Yêu Cầu & Chốt Lịch Chụp</span>
+              <span>Gửi Yêu Cầu Đặt Lịch</span>
             </>
           )}
         </button>

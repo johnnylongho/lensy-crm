@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import confetti from 'canvas-confetti';
 import { CalendarEvent, BookingStatus } from '../../types';
 import {
   Calendar,
@@ -13,6 +14,38 @@ import {
   Clock,
 } from 'lucide-react';
 import { BookingStatusSelect, STATUS_CONFIG } from './BookingStatusSelect';
+import { ZaloNotificationModal } from './ZaloNotificationModal';
+
+// Hiệu ứng Cảm xúc - Ăn mừng (Gamification Scenario 1):
+// Bắn pháo hoa giấy toàn màn hình khi kéo thả thành công vào cột Hoàn tất (Done)
+export const triggerDoneConfetti = () => {
+  try {
+    confetti({
+      particleCount: 90,
+      spread: 75,
+      origin: { y: 0.6 },
+      colors: ['#a855f7', '#c084fc', '#3b82f6', '#10b981', '#f59e0b', '#ec4899'],
+    });
+    setTimeout(() => {
+      confetti({
+        particleCount: 50,
+        angle: 60,
+        spread: 55,
+        origin: { x: 0 },
+        colors: ['#a855f7', '#3b82f6', '#10b981'],
+      });
+      confetti({
+        particleCount: 50,
+        angle: 120,
+        spread: 55,
+        origin: { x: 1 },
+        colors: ['#a855f7', '#ec4899', '#f59e0b'],
+      });
+    }, 250);
+  } catch (err) {
+    console.warn('Confetti error:', err);
+  }
+};
 import {
   DndContext,
   DragOverlay,
@@ -42,6 +75,7 @@ interface Props {
   onStatusChange?: (eventId: string, newStatus: BookingStatus) => void;
   onSelectBooking?: (booking: CalendarEvent) => void;
   onOpenDebtReminder?: (booking: CalendarEvent) => void;
+  studioName?: string;
 }
 
 interface ColumnDef {
@@ -59,45 +93,45 @@ const COLUMNS: ColumnDef[] = [
     status: 'lead',
     stepNum: '1',
     title: 'Mới hỏi',
-    color: 'border-amber-700/40 bg-slate-900/50',
-    headerBg: 'bg-amber-500/10 border-amber-500/30 text-amber-300',
-    badge: 'bg-amber-500/20 text-amber-300 border-amber-500/40',
+    color: 'border-amber-200/80 bg-amber-50/40 dark:border-amber-700/40 dark:bg-slate-900/50',
+    headerBg: 'bg-amber-100/70 border-amber-200 dark:bg-amber-500/10 dark:border-amber-500/30 text-amber-800 dark:text-amber-300',
+    badge: 'bg-amber-200/60 text-amber-900 dark:bg-amber-500/20 dark:text-amber-300 border-amber-300 dark:border-amber-500/40',
     matchStatuses: ['lead', 'cho_coc', 'cho_xac_nhan_coc'],
   },
   {
     status: 'deposited',
     stepNum: '2',
     title: 'Đã cọc',
-    color: 'border-emerald-700/40 bg-slate-900/50',
-    headerBg: 'bg-emerald-500/10 border-emerald-500/30 text-emerald-300',
-    badge: 'bg-emerald-500/20 text-emerald-300 border-emerald-500/40',
+    color: 'border-emerald-200/80 bg-emerald-50/40 dark:border-emerald-700/40 dark:bg-slate-900/50',
+    headerBg: 'bg-emerald-100/70 border-emerald-200 dark:bg-emerald-500/10 dark:border-emerald-500/30 text-emerald-800 dark:text-emerald-300',
+    badge: 'bg-emerald-200/60 text-emerald-900 dark:bg-emerald-500/20 dark:text-emerald-300 border-emerald-300 dark:border-emerald-500/40',
     matchStatuses: ['deposited', 'da_chot'],
   },
   {
     status: 'shot',
     stepNum: '3',
     title: 'Đã chụp',
-    color: 'border-blue-700/40 bg-slate-900/50',
-    headerBg: 'bg-blue-500/10 border-blue-500/30 text-blue-300',
-    badge: 'bg-blue-500/20 text-blue-300 border-blue-500/40',
+    color: 'border-blue-200/80 bg-blue-50/40 dark:border-blue-700/40 dark:bg-slate-900/50',
+    headerBg: 'bg-blue-100/70 border-blue-200 dark:bg-blue-500/10 dark:border-blue-500/30 text-blue-800 dark:text-blue-300',
+    badge: 'bg-blue-200/60 text-blue-900 dark:bg-blue-500/20 dark:text-blue-300 border-blue-300 dark:border-blue-500/40',
     matchStatuses: ['shot'],
   },
   {
     status: 'editing',
     stepNum: '4',
     title: 'Đang sửa ảnh',
-    color: 'border-indigo-700/40 bg-slate-900/50',
-    headerBg: 'bg-indigo-500/10 border-indigo-500/30 text-indigo-300',
-    badge: 'bg-indigo-500/20 text-indigo-300 border-indigo-500/40',
+    color: 'border-indigo-200/80 bg-indigo-50/40 dark:border-indigo-700/40 dark:bg-slate-900/50',
+    headerBg: 'bg-indigo-100/70 border-indigo-200 dark:bg-indigo-500/10 dark:border-indigo-500/30 text-indigo-800 dark:text-indigo-300',
+    badge: 'bg-indigo-200/60 text-indigo-900 dark:bg-indigo-500/20 dark:text-indigo-300 border-indigo-300 dark:border-indigo-500/40',
     matchStatuses: ['editing', 'da_tra_file'],
   },
   {
     status: 'done',
     stepNum: '5',
     title: 'Hoàn tất',
-    color: 'border-purple-700/40 bg-slate-900/50',
-    headerBg: 'bg-purple-500/10 border-purple-500/30 text-purple-300',
-    badge: 'bg-purple-500/20 text-purple-300 border-purple-500/40',
+    color: 'border-purple-200/80 bg-purple-50/40 dark:border-purple-700/40 dark:bg-slate-900/50',
+    headerBg: 'bg-purple-100/70 border-purple-200 dark:bg-purple-500/10 dark:border-purple-500/30 text-purple-800 dark:text-purple-300',
+    badge: 'bg-purple-200/60 text-purple-900 dark:bg-purple-500/20 dark:text-purple-300 border-purple-300 dark:border-purple-500/40',
     matchStatuses: ['done', 'hoan_thanh'],
   },
 ];
@@ -171,12 +205,10 @@ const KanbanCardContent: React.FC<{
 
   return (
     <div
-      className={`p-3.5 rounded-2xl border select-none transition-colors duration-150 shadow-md space-y-3 text-xs ${
-        statusTheme.cardBg
-      } ${statusTheme.cardBorder} ${
+      className={`p-4 rounded-2xl border select-none transition-all duration-300 shadow-sm space-y-3 text-xs bg-white/70 dark:bg-white/5 backdrop-blur-xl border-white/60 dark:border-white/10 shadow-[0_4px_20px_0_rgba(0,0,0,0.04)] dark:shadow-[0_4px_20px_0_rgba(0,0,0,0.25)] ${
         isOverlay
-          ? 'rotate-2 scale-105 shadow-2xl shadow-amber-500/25 ring-2 ring-amber-400 bg-slate-900 border-amber-400 cursor-grabbing'
-          : 'hover:border-slate-500 cursor-grab active:cursor-grabbing'
+          ? 'rotate-2 scale-105 shadow-2xl shadow-amber-500/25 ring-2 ring-amber-400 bg-white/90 dark:bg-slate-900 border-amber-400 cursor-grabbing'
+          : 'hover:scale-[1.02] hover:border-amber-400/60 dark:hover:border-white/30 hover:shadow-[0_12px_40px_0_rgba(0,0,0,0.12)] dark:hover:shadow-[0_12px_40px_0_rgba(0,0,0,0.45)] cursor-grab active:cursor-grabbing transform-gpu'
       }`}
     >
       {/* Header: Client Name, Session Type & Grip */}
@@ -186,17 +218,17 @@ const KanbanCardContent: React.FC<{
             type="button"
             onPointerDown={(e) => e.stopPropagation()}
             onClick={() => onSelectBooking && onSelectBooking(item)}
-            className="font-bold text-white text-sm leading-snug hover:text-amber-400 hover:underline text-left transition-colors truncate block max-w-full cursor-pointer"
+            className="font-bold text-slate-900 dark:text-white text-sm leading-snug hover:text-amber-500 dark:hover:text-amber-400 hover:underline text-left transition-colors truncate block max-w-full cursor-pointer"
             title="Xem chi tiết & Gán thiết bị"
           >
             {item.clientName}
           </button>
           <div className="flex items-center gap-1.5 flex-wrap">
-            <span className="text-[10px] uppercase font-bold text-amber-400">
+            <span className="text-[10px] uppercase font-bold text-amber-600 dark:text-amber-400">
               {item.sessionType}
             </span>
             {item.assignedGears && item.assignedGears.length > 0 && (
-              <span className="text-[9px] px-1.5 py-0.5 rounded font-bold border bg-sky-950/80 border-sky-500/40 text-sky-300 flex items-center gap-1">
+              <span className="text-[9px] px-1.5 py-0.5 rounded font-bold border bg-sky-50 dark:bg-sky-950/80 border-sky-300 dark:border-sky-500/40 text-sky-700 dark:text-sky-300 flex items-center gap-1">
                 <Camera className="w-2.5 h-2.5" />
                 <span>{item.assignedGears.length} máy</span>
               </span>
@@ -210,13 +242,18 @@ const KanbanCardContent: React.FC<{
             <div onPointerDown={(e) => e.stopPropagation()}>
               <BookingStatusSelect
                 status={item.status}
-                onChange={newStatus => onStatusChange(item.id, newStatus)}
+                onChange={newStatus => {
+                  if (newStatus === 'done' || newStatus === 'hoan_thanh') {
+                    triggerDoneConfetti();
+                  }
+                  onStatusChange(item.id, newStatus);
+                }}
                 size="sm"
               />
             </div>
           )}
           <div
-            className="p-1 rounded-lg text-slate-500 hover:text-amber-400 transition-colors pointer-events-none"
+            className="p-1 rounded-lg text-slate-400 dark:text-slate-500 hover:text-amber-500 dark:hover:text-amber-400 transition-colors pointer-events-none"
             title="Kéo thả thẻ để chuyển trạng thái"
           >
             <GripVertical className="w-4 h-4" />
@@ -225,27 +262,27 @@ const KanbanCardContent: React.FC<{
       </div>
 
       {/* Date & Location */}
-      <div className="space-y-1 text-slate-300 text-[11px] bg-slate-950/40 p-2 rounded-xl border border-slate-800/60">
+      <div className="space-y-1 text-slate-600 dark:text-slate-300 text-[11px] bg-slate-50 dark:bg-slate-950/40 p-2 rounded-xl border border-slate-200/60 dark:border-slate-800/60">
         <div className="flex items-center gap-1.5">
-          <Calendar className="w-3.5 h-3.5 text-amber-400 flex-shrink-0" />
-          <span className="font-medium text-slate-200">{item.eventDate}</span>
-          <span className="text-slate-500">|</span>
+          <Calendar className="w-3.5 h-3.5 text-amber-500 dark:text-amber-400 flex-shrink-0" />
+          <span className="font-medium text-slate-800 dark:text-slate-200">{item.eventDate}</span>
+          <span className="text-slate-400 dark:text-slate-500">|</span>
           <Clock className="w-3 h-3 text-slate-400 flex-shrink-0" />
-          <span className="text-slate-400 font-mono text-[10px]">
+          <span className="text-slate-500 dark:text-slate-400 font-mono text-[10px]">
             {item.startTime} - {item.endTime}
           </span>
         </div>
         <div className="flex items-center gap-1.5 truncate">
           <MapPin className="w-3.5 h-3.5 text-slate-400 flex-shrink-0" />
-          <span className="truncate text-slate-300">{item.location}</span>
+          <span className="truncate text-slate-600 dark:text-slate-300">{item.location}</span>
         </div>
       </div>
 
       {/* Financial Info & Highlighted Remaining Debt */}
       <div className="space-y-1.5">
-        <div className="flex items-center justify-between text-[11px] text-slate-400 font-mono px-0.5">
+        <div className="flex items-center justify-between text-[11px] text-slate-500 dark:text-slate-400 font-mono px-0.5">
           <span>Tổng giá trị gói:</span>
-          <span className="text-slate-200 font-bold">
+          <span className="text-slate-900 dark:text-slate-200 font-bold">
             {item.packagePrice.toLocaleString('vi-VN')} đ
           </span>
         </div>
@@ -297,7 +334,12 @@ const KanbanCardContent: React.FC<{
           <span className="text-[10px] text-slate-400">Bước tiếp theo:</span>
           <button
             type="button"
-            onClick={() => onStatusChange(item.id, nextStatus)}
+            onClick={() => {
+              if (nextStatus === 'done' || nextStatus === 'hoan_thanh') {
+                triggerDoneConfetti();
+              }
+              onStatusChange(item.id, nextStatus);
+            }}
             className="px-2.5 py-1 rounded-lg bg-slate-900/90 hover:bg-amber-500 hover:text-slate-950 border border-slate-700 text-slate-200 text-[10px] font-bold transition-all flex items-center gap-1 shadow-sm cursor-pointer"
           >
             <span>{STATUS_CONFIG[nextStatus].label}</span>
@@ -394,22 +436,22 @@ const KanbanColumn: React.FC<{
       {/* Column Header */}
       <div className={`p-2.5 rounded-xl border mb-3 flex items-center justify-between ${column.headerBg}`}>
         <div className="flex items-center gap-2">
-          <span className="w-5 h-5 rounded-full bg-slate-950/80 border border-slate-700 text-slate-300 text-[10px] font-bold flex items-center justify-center font-mono">
+          <span className="w-5 h-5 rounded-full bg-white dark:bg-slate-950/80 border border-slate-300 dark:border-slate-700 text-slate-700 dark:text-slate-300 text-[10px] font-bold flex items-center justify-center font-mono shadow-sm">
             {column.stepNum}
           </span>
           <span className="text-xs font-extrabold uppercase tracking-wide">
             {column.title}
           </span>
         </div>
-        <span className="px-2 py-0.5 text-xs font-mono font-bold rounded-full bg-slate-950/80 border border-slate-700/80">
+        <span className="px-2 py-0.5 text-xs font-mono font-bold rounded-full bg-white dark:bg-slate-950/80 border border-slate-300 dark:border-slate-700/80 text-slate-700 dark:text-slate-300 shadow-sm">
           {events.length}
         </span>
       </div>
 
       {/* Subtotal of column */}
-      <div className="mb-2.5 px-1 text-[10px] text-slate-400 font-mono flex items-center justify-between">
+      <div className="mb-2.5 px-1 text-[10px] text-slate-500 dark:text-slate-400 font-mono flex items-center justify-between">
         <span>Tổng giá trị cột:</span>
-        <span className="font-bold text-slate-200">
+        <span className="font-bold text-slate-800 dark:text-slate-200">
           {totalRevenue.toLocaleString('vi-VN')} đ
         </span>
       </div>
@@ -450,9 +492,19 @@ export const KanbanView: React.FC<Props> = ({
   onStatusChange,
   onSelectBooking,
   onOpenDebtReminder,
+  studioName,
 }) => {
   const [activeId, setActiveId] = useState<string | null>(null);
   const [overId, setOverId] = useState<string | null>(null);
+  const [zaloNotification, setZaloNotification] = useState<{
+    isOpen: boolean;
+    booking: CalendarEvent | null;
+    targetStatus: BookingStatus | null;
+  }>({
+    isOpen: false,
+    booking: null,
+    targetStatus: null,
+  });
 
   // Cấu hình PointerSensor để phân biệt click nhanh vs kéo thả mượt mà
   const sensors = useSensors(
@@ -522,6 +574,26 @@ export const KanbanView: React.FC<Props> = ({
       if (onStatusChange) {
         onStatusChange(activeBooking.id, targetStatus);
       }
+
+      // Hiệu ứng Cảm xúc - Ăn mừng (Gamification Scenario 1):
+      // Bắn pháo hoa giấy toàn màn hình khi kéo thả thành công vào cột Hoàn tất (Done)
+      if (targetStatus === 'done' || targetStatus === 'hoan_thanh') {
+        triggerDoneConfetti();
+      }
+
+      // Kích hoạt Modal Gửi thông báo Zalo khi kéo sang cột deposited (Đã cọc) hoặc done (Hoàn tất)
+      if (
+        targetStatus === 'deposited' ||
+        targetStatus === 'da_chot' ||
+        targetStatus === 'done' ||
+        targetStatus === 'hoan_thanh'
+      ) {
+        setZaloNotification({
+          isOpen: true,
+          booking: { ...activeBooking, status: targetStatus },
+          targetStatus: targetStatus,
+        });
+      }
     }
   };
 
@@ -532,19 +604,19 @@ export const KanbanView: React.FC<Props> = ({
       {/* Title & Pipeline View Header */}
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
-          <span className="text-[10px] font-bold uppercase tracking-wider text-amber-400 block mb-0.5">
+          <span className="text-[10px] font-bold uppercase tracking-wider text-amber-600 dark:text-amber-400 block mb-0.5">
             Quy Trình 5 Bước Chuẩn Nhiếp Ảnh (Photography Kanban Pipeline)
           </span>
-          <h3 className="text-base sm:text-lg font-bold text-white flex items-center gap-2">
+          <h3 className="text-base sm:text-lg font-bold text-slate-900 dark:text-white flex items-center gap-2">
             Bảng Kanban Tiến Độ Show
           </h3>
         </div>
-        <div className="flex items-center gap-3 text-xs text-slate-400">
-          <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-slate-900 border border-slate-800 text-[11px]">
-            <GripVertical className="w-3.5 h-3.5 text-amber-400" />
+        <div className="flex items-center gap-3 text-xs text-slate-500 dark:text-slate-400">
+          <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-[11px] shadow-sm">
+            <GripVertical className="w-3.5 h-3.5 text-amber-500" />
             <span>Kéo bất kỳ thẻ nào để đổi cột</span>
           </div>
-          <div className="flex items-center gap-1 text-[11px] text-emerald-400">
+          <div className="flex items-center gap-1 text-[11px] text-emerald-600 dark:text-emerald-400 font-medium">
             <Sparkles className="w-3.5 h-3.5" />
             <span>Realtime Supabase Sync</span>
           </div>
@@ -600,6 +672,17 @@ export const KanbanView: React.FC<Props> = ({
           ) : null}
         </DragOverlay>
       </DndContext>
+
+      {/* Modal Gửi thông báo Zalo tự động chăm sóc khách hàng */}
+      <ZaloNotificationModal
+        isOpen={zaloNotification.isOpen}
+        booking={zaloNotification.booking}
+        targetStatus={zaloNotification.targetStatus}
+        studioName={studioName}
+        onClose={() =>
+          setZaloNotification({ isOpen: false, booking: null, targetStatus: null })
+        }
+      />
     </div>
   );
 };

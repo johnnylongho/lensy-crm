@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { motion } from 'framer-motion';
 import { CalendarEvent } from '../../types';
 import { TrendingUp, Wallet, Receipt, DollarSign, Sparkles, Filter } from 'lucide-react';
 
@@ -92,38 +93,43 @@ export const ProfitTrendChart: React.FC<Props> = ({ events, className = '' }) =>
   const netAreaPath = makeAreaPath();
 
   return (
-    <div className={`rounded-3xl bg-gradient-to-b from-slate-900/90 via-slate-900/80 to-slate-950/90 border border-slate-800 shadow-2xl p-5 sm:p-6 space-y-4 ${className}`}>
+    <motion.div
+      initial={{ opacity: 0, y: 18 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.45, ease: 'easeOut', delay: 0.25 }}
+      className={`rounded-3xl bg-white/60 dark:bg-white/5 backdrop-blur-xl border border-white/60 dark:border-white/10 shadow-[0_8px_32px_0_rgba(0,0,0,0.06)] dark:shadow-[0_8px_32px_0_rgba(0,0,0,0.3)] p-6 sm:p-7 space-y-5 transition-all duration-300 hover:shadow-md hover:-translate-y-0.5 ${className}`}
+    >
       {/* Chart Header & Summary Metrics */}
-      <div className="flex flex-wrap items-center justify-between gap-3 border-b border-slate-800 pb-3">
-        <div className="flex items-center gap-2.5">
-          <div className="w-9 h-9 rounded-2xl bg-emerald-500/10 border border-emerald-500/30 flex items-center justify-center text-emerald-400 shadow-md">
-            <Wallet className="w-4 h-4" />
+      <div className="flex flex-wrap items-center justify-between gap-3 border-b border-white/40 dark:border-white/10 pb-4">
+        <div className="flex items-center gap-3">
+          <div className="w-10 h-10 rounded-2xl bg-emerald-500/10 border border-emerald-500/30 flex items-center justify-center text-emerald-500 dark:text-emerald-400 shadow-md">
+            <Wallet className="w-5 h-5" />
           </div>
           <div>
             <div className="flex items-center gap-2">
-              <h3 className="text-sm font-extrabold text-white tracking-tight flex items-center gap-1.5">
+              <h3 className="text-sm sm:text-base font-bold text-slate-900 dark:text-white/95 tracking-tight flex items-center gap-1.5">
                 Biểu Đồ Lợi Nhuận Ròng Theo Show (Net Profit Stream)
               </h3>
-              <span className="px-2 py-0.5 rounded-full text-[10px] font-black bg-emerald-950/80 border border-emerald-500/40 text-emerald-300 shadow-sm flex items-center gap-1">
-                <Sparkles className="w-3 h-3 text-emerald-400" />
+              <span className="px-2.5 py-0.5 rounded-full text-[10px] font-black bg-emerald-100 dark:bg-emerald-950/80 border border-emerald-300 dark:border-emerald-500/40 text-emerald-800 dark:text-emerald-300 shadow-sm flex items-center gap-1">
+                <Sparkles className="w-3 h-3 text-emerald-600 dark:text-emerald-400" />
                 <span>Tiền Thật Bỏ Túi</span>
               </span>
             </div>
-            <p className="text-[11px] text-slate-400">
+            <p className="text-xs text-slate-500 dark:text-white/50">
               Đường xanh lá cây phản ánh lợi nhuận thực tế sau khi trừ toàn bộ chi phí makeup, studio, trợ lý...
             </p>
           </div>
         </div>
 
-        {/* View Filter Switcher */}
-        <div className="flex items-center gap-1.5 p-1 rounded-xl bg-slate-950/80 border border-slate-800 text-xs">
+        {/* View Filter Switcher: Liquid Glass Ghost Tabs */}
+        <div className="flex items-center gap-1.5 p-1 rounded-2xl bg-white/40 dark:bg-white/5 backdrop-blur-md border border-white/40 dark:border-white/10 text-xs">
           <button
             type="button"
             onClick={() => setFilterMode('recent')}
-            className={`px-3 py-1 rounded-lg font-bold transition-all ${
+            className={`px-3.5 py-1.5 rounded-xl font-bold transition-all duration-200 ${
               filterMode === 'recent'
-                ? 'bg-emerald-500 text-slate-950 shadow-sm'
-                : 'text-slate-400 hover:text-white'
+                ? 'bg-gradient-to-r from-emerald-500 to-teal-500 text-slate-950 shadow-md shadow-emerald-500/20'
+                : 'text-slate-600 dark:text-white/60 hover:text-slate-950 dark:hover:text-white'
             }`}
           >
             7 Show Gần Nhất
@@ -131,10 +137,10 @@ export const ProfitTrendChart: React.FC<Props> = ({ events, className = '' }) =>
           <button
             type="button"
             onClick={() => setFilterMode('all')}
-            className={`px-3 py-1 rounded-lg font-bold transition-all ${
+            className={`px-3.5 py-1.5 rounded-xl font-bold transition-all duration-200 ${
               filterMode === 'all'
-                ? 'bg-emerald-500 text-slate-950 shadow-sm'
-                : 'text-slate-400 hover:text-white'
+                ? 'bg-gradient-to-r from-emerald-500 to-teal-500 text-slate-950 shadow-md shadow-emerald-500/20'
+                : 'text-slate-600 dark:text-white/60 hover:text-slate-950 dark:hover:text-white'
             }`}
           >
             Tất Cả ({validEvents.length})
@@ -142,46 +148,46 @@ export const ProfitTrendChart: React.FC<Props> = ({ events, className = '' }) =>
         </div>
       </div>
 
-      {/* KPI Cards Strip */}
-      <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5">
-        <div className="p-3 rounded-2xl bg-emerald-950/30 border border-emerald-500/30">
-          <span className="text-[10px] font-bold text-emerald-400 uppercase block tracking-wider">
+      {/* KPI Cards Strip: Liquid Glass Cards */}
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3.5">
+        <div className="p-3.5 rounded-2xl bg-emerald-500/10 dark:bg-emerald-500/5 backdrop-blur-md border border-emerald-500/20">
+          <span className="text-[10px] font-bold text-emerald-700 dark:text-emerald-400 uppercase block tracking-wider">
             Tổng Lợi Nhuận Ròng
           </span>
-          <span className="text-base sm:text-lg font-extrabold text-emerald-400 font-mono">
+          <span className="text-base sm:text-lg font-light text-emerald-600 dark:text-emerald-400 font-mono">
             {totalNetProfit.toLocaleString('vi-VN')} đ
           </span>
-          <span className="text-[10px] text-slate-400 block">Thực thu sau chi phí</span>
+          <span className="text-[10px] text-slate-500 dark:text-white/50 block">Thực thu sau chi phí</span>
         </div>
 
-        <div className="p-3 rounded-2xl bg-slate-950/60 border border-slate-800">
-          <span className="text-[10px] font-bold text-sky-400 uppercase block tracking-wider">
+        <div className="p-3.5 rounded-2xl bg-white/40 dark:bg-white/5 backdrop-blur-md border border-white/40 dark:border-white/10">
+          <span className="text-[10px] font-bold text-sky-600 dark:text-sky-400 uppercase block tracking-wider">
             Doanh Thu (Gross)
           </span>
-          <span className="text-base sm:text-lg font-extrabold text-sky-300 font-mono">
+          <span className="text-base sm:text-lg font-extrabold text-sky-600 dark:text-sky-300 font-mono">
             {totalGross.toLocaleString('vi-VN')} đ
           </span>
-          <span className="text-[10px] text-slate-400 block">Số tiền khách đã trả</span>
+          <span className="text-[10px] text-slate-500 dark:text-slate-400 block">Số tiền khách đã trả</span>
         </div>
 
-        <div className="p-3 rounded-2xl bg-slate-950/60 border border-slate-800">
-          <span className="text-[10px] font-bold text-rose-400 uppercase block tracking-wider">
+        <div className="p-3 rounded-2xl bg-slate-50 dark:bg-zinc-900/60 border border-slate-200/80 dark:border-zinc-800">
+          <span className="text-[10px] font-bold text-rose-600 dark:text-rose-400 uppercase block tracking-wider">
             Chi Phí Show
           </span>
-          <span className="text-base sm:text-lg font-extrabold text-rose-400 font-mono">
+          <span className="text-base sm:text-lg font-extrabold text-rose-600 dark:text-rose-400 font-mono">
             -{totalExpenses.toLocaleString('vi-VN')} đ
           </span>
-          <span className="text-[10px] text-slate-400 block">Tổng các khoản chi</span>
+          <span className="text-[10px] text-slate-500 dark:text-slate-400 block">Tổng các khoản chi</span>
         </div>
 
-        <div className="p-3 rounded-2xl bg-slate-950/60 border border-slate-800">
-          <span className="text-[10px] font-bold text-amber-400 uppercase block tracking-wider">
+        <div className="p-3 rounded-2xl bg-slate-50 dark:bg-zinc-900/60 border border-slate-200/80 dark:border-zinc-800">
+          <span className="text-[10px] font-bold text-amber-600 dark:text-amber-400 uppercase block tracking-wider">
             Tỷ Suất Lợi Nhuận
           </span>
-          <span className="text-base sm:text-lg font-extrabold text-amber-300 font-mono">
+          <span className="text-base sm:text-lg font-extrabold text-amber-600 dark:text-amber-300 font-mono">
             {netMargin}%
           </span>
-          <span className="text-[10px] text-slate-400 block">TB: {avgNetPerShow.toLocaleString('vi-VN')} đ/show</span>
+          <span className="text-[10px] text-slate-500 dark:text-slate-400 block">TB: {avgNetPerShow.toLocaleString('vi-VN')} đ/show</span>
         </div>
       </div>
 
@@ -408,6 +414,6 @@ export const ProfitTrendChart: React.FC<Props> = ({ events, className = '' }) =>
           <span>Chi Phí Show</span>
         </div>
       </div>
-    </div>
+    </motion.div>
   );
 };

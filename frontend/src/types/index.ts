@@ -12,7 +12,7 @@ export type BookingStatus =
   | 'da_huy'
   | 'cancelled';
 
-export type SessionType = 'wedding' | 'prewedding' | 'portrait' | 'lookbook' | 'event' | 'commercial';
+export type SessionType = 'wedding' | 'prewedding' | 'portrait' | 'lookbook' | 'event' | 'commercial' | 'family' | 'other';
 
 export interface PackageInclusion {
   id: string;
@@ -25,6 +25,8 @@ export interface QuoteData {
   quoteToken: string;
   studioName: string;
   studioLogoText: string;
+  studioAvatarUrl?: string;
+  studioCoverUrl?: string;
   photographerName: string;
   photographerPhone: string;
   photographerEmail: string;
@@ -65,6 +67,7 @@ export interface ExpenseItem {
 export interface CalendarEvent {
   id: string;
   clientName: string;
+  clientPhone?: string;
   sessionType: SessionType;
   eventDate: string; // YYYY-MM-DD
   startTime: string;

@@ -54,31 +54,24 @@ export const ClientProfileModal: React.FC<Props> = ({ isOpen, onClose, client })
   const cleanPhone = client.phone.replace(/[^0-9]/g, '');
 
   return (
-    <div className="fixed inset-0 z-50 overflow-y-auto">
-      {/* Backdrop */}
+    <div className="fixed inset-0 z-50 overflow-hidden animate-fadeIn">
+      {/* Backdrop kính mờ */}
       <div
-        className="fixed inset-0 bg-slate-950/80 backdrop-blur-sm transition-opacity"
+        className="fixed inset-0 bg-slate-950/70 backdrop-blur-sm transition-opacity"
         onClick={onClose}
       />
 
-      <div className="flex min-h-full items-center justify-center p-3 sm:p-4 text-center">
-        <div
-          className="w-full max-w-2xl transform overflow-hidden rounded-3xl bg-slate-900 border border-slate-800 p-5 sm:p-7 text-left shadow-2xl transition-all space-y-6 relative animate-fadeIn"
-          onClick={e => e.stopPropagation()}
-        >
-          {/* Nút đóng */}
-          <button
-            type="button"
-            onClick={onClose}
-            className="absolute top-5 right-5 p-2 rounded-xl bg-slate-800/80 hover:bg-slate-700 text-slate-400 hover:text-white transition-colors"
-          >
-            <X className="w-5 h-5" />
-          </button>
-
+      {/* Drawer Panel: Slide-over từ bên phải trên Desktop (w-[540px] lg:w-[600px]), Bottom Sheet trên Mobile */}
+      <div
+        className="fixed inset-x-0 bottom-0 md:inset-y-0 md:left-auto md:right-0 w-full md:w-[540px] lg:w-[600px] max-h-[92vh] md:max-h-full h-auto md:h-full bg-slate-900 border-t md:border-t-0 md:border-l border-slate-800 shadow-[-16px_0_48px_0_rgba(0,0,0,0.6)] flex flex-col z-50 overflow-hidden rounded-t-3xl md:rounded-t-none md:rounded-l-3xl"
+        onClick={e => e.stopPropagation()}
+      >
+        {/* Drawer Header (Cố định trên cùng) */}
+        <div className="p-5 sm:p-6 border-b border-slate-800 bg-slate-900/95 backdrop-blur-md flex items-start justify-between gap-3 flex-shrink-0">
           {/* Profile Header: Avatar, Name, VIP Badge, Contact Links */}
-          <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4 border-b border-slate-800 pb-5">
+          <div className="flex items-center gap-3.5 flex-1 min-w-0">
             <div
-              className={`w-16 h-16 rounded-2xl flex items-center justify-center text-xl font-black shadow-lg flex-shrink-0 ${
+              className={`w-14 h-14 rounded-2xl flex items-center justify-center text-lg font-black shadow-lg flex-shrink-0 ${
                 client.isVip
                   ? 'bg-gradient-to-br from-amber-400 via-amber-500 to-yellow-600 text-slate-950 ring-4 ring-amber-500/20'
                   : 'bg-slate-800 border border-slate-700 text-slate-200'
@@ -147,6 +140,19 @@ export const ClientProfileModal: React.FC<Props> = ({ isOpen, onClose, client })
             </div>
           </div>
 
+          {/* Close button in header */}
+          <button
+            type="button"
+            onClick={onClose}
+            className="p-2 rounded-xl bg-slate-800/80 hover:bg-slate-700 text-slate-400 hover:text-white transition-colors flex-shrink-0"
+            title="Đóng hồ sơ"
+          >
+            <X className="w-5 h-5" />
+          </button>
+        </div>
+
+        {/* Drawer Body (Scrollable) */}
+        <div className="flex-1 overflow-y-auto p-5 sm:p-6 space-y-6">
           {/* 4 Thẻ KPI Khách Hàng (Lifetime Metrics) */}
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
             {/* LTV */}
@@ -304,16 +310,20 @@ export const ClientProfileModal: React.FC<Props> = ({ isOpen, onClose, client })
             )}
           </div>
 
-          {/* Modal Footer */}
-          <div className="pt-2 border-t border-slate-800 flex justify-end">
-            <button
-              type="button"
-              onClick={onClose}
-              className="px-5 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 font-bold text-xs transition-colors"
-            >
-              Đóng Hồ Sơ
-            </button>
-          </div>
+        </div>
+
+        {/* Drawer Sticky Footer */}
+        <div className="p-4 sm:p-5 border-t border-slate-800 bg-slate-950/90 backdrop-blur-md flex items-center justify-between flex-shrink-0">
+          <span className="text-xs text-slate-400">
+            Hồ sơ khách hàng Lensy CRM
+          </span>
+          <button
+            type="button"
+            onClick={onClose}
+            className="px-5 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 font-bold text-xs transition-colors"
+          >
+            Đóng Hồ Sơ
+          </button>
         </div>
       </div>
     </div>

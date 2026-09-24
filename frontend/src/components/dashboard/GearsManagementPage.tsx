@@ -25,6 +25,8 @@ import {
   LayoutGrid,
   List,
   Sparkle,
+  Coins,
+  DollarSign,
 } from 'lucide-react';
 
 const GEAR_TYPE_LABELS: Record<GearType, { label: string; icon: React.ReactNode; color: string }> = {
@@ -89,20 +91,21 @@ export const GearsManagementPage: React.FC = () => {
   const [gearName, setGearName] = useState('');
   const [gearType, setGearType] = useState<GearType>('camera');
   const [gearStatus, setGearStatus] = useState<GearStatus>('active');
+  const [purchasePrice, setPurchasePrice] = useState<number | string>('');
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  // Quick Preset Templates for Freelancers & Studio
-  const STUDIO_PRESETS: Array<{ name: string; type: GearType }> = [
-    { name: 'Sony Alpha 7 IV (Chính)', type: 'camera' },
-    { name: 'Sony Alpha 7R V (High-Res)', type: 'camera' },
-    { name: 'Canon EOS R6 Mark II', type: 'camera' },
-    { name: 'Sony FE 24-70mm f/2.8 GM II', type: 'lens' },
-    { name: 'Sony FE 70-200mm f/2.8 GM OSS II', type: 'lens' },
-    { name: 'Sony FE 50mm f/1.2 GM', type: 'lens' },
-    { name: 'Đèn Studio Godox AD600 Pro', type: 'lighting' },
-    { name: 'Đèn Flash Godox V1 Sony', type: 'lighting' },
-    { name: 'Gimbal DJI RS3 Pro', type: 'accessory' },
-    { name: 'Micro Thu Âm DJI Mic 2', type: 'audio' },
+  // Quick Preset Templates for Freelancers & Studio (Kèm giá tham khảo thị trường)
+  const STUDIO_PRESETS: Array<{ name: string; type: GearType; price: number }> = [
+    { name: 'Sony Alpha 7 IV (Chính)', type: 'camera', price: 48000000 },
+    { name: 'Sony Alpha 7R V (High-Res)', type: 'camera', price: 75000000 },
+    { name: 'Canon EOS R6 Mark II', type: 'camera', price: 52000000 },
+    { name: 'Sony FE 24-70mm f/2.8 GM II', type: 'lens', price: 49000000 },
+    { name: 'Sony FE 70-200mm f/2.8 GM OSS II', type: 'lens', price: 62000000 },
+    { name: 'Sony FE 50mm f/1.2 GM', type: 'lens', price: 42000000 },
+    { name: 'Đèn Studio Godox AD600 Pro', type: 'lighting', price: 16500000 },
+    { name: 'Đèn Flash Godox V1 Sony', type: 'lighting', price: 6500000 },
+    { name: 'Gimbal DJI RS3 Pro', type: 'accessory', price: 18000000 },
+    { name: 'Micro Thu Âm DJI Mic 2', type: 'audio', price: 7500000 },
   ];
 
   // Toast
@@ -136,11 +139,11 @@ export const GearsManagementPage: React.FC = () => {
         if (error) throw error;
         setGears(data || []);
       } else {
-        // Mock fallback
+        // Mock fallback với purchase_price đầy đủ
         setGears([
-          { id: '1', name: 'Sony Alpha 7 IV', type: 'camera', status: 'active' },
-          { id: '2', name: 'Sony FE 24-70mm f/2.8 GM II', type: 'lens', status: 'active' },
-          { id: '3', name: 'Đèn Studio Godox AD600 Pro', type: 'lighting', status: 'active' },
+          { id: '1', name: 'Sony Alpha 7 IV', type: 'camera', status: 'active', purchase_price: 48000000 },
+          { id: '2', name: 'Sony FE 24-70mm f/2.8 GM II', type: 'lens', status: 'active', purchase_price: 49000000 },
+          { id: '3', name: 'Đèn Studio Godox AD600 Pro', type: 'lighting', status: 'active', purchase_price: 16500000 },
         ]);
       }
     } catch (err: any) {
@@ -161,6 +164,7 @@ export const GearsManagementPage: React.FC = () => {
     setGearName('');
     setGearType('camera');
     setGearStatus('active');
+    setPurchasePrice('');
     setIsModalOpen(true);
   };
 
@@ -170,6 +174,7 @@ export const GearsManagementPage: React.FC = () => {
     setGearName(gear.name);
     setGearType(gear.type);
     setGearStatus(gear.status);
+    setPurchasePrice(gear.purchase_price !== undefined ? gear.purchase_price : '');
     setIsModalOpen(true);
   };
 
@@ -180,6 +185,8 @@ export const GearsManagementPage: React.FC = () => {
       setToast({ type: 'error', message: 'Vui lòng nhập tên thiết bị.' });
       return;
     }
+
+    const numericPrice = Number(purchasePrice) || 0;
 
     setIsSubmitting(true);
     try {
@@ -192,6 +199,7 @@ export const GearsManagementPage: React.FC = () => {
               name: gearName.trim(),
               type: gearType,
               status: gearStatus,
+              purchase_price: numericPrice,
             })
             .eq('id', editingGear.id);
 
@@ -203,6 +211,7 @@ export const GearsManagementPage: React.FC = () => {
             name: gearName.trim(),
             type: gearType,
             status: gearStatus,
+            purchase_price: numericPrice,
             photographer_id: user?.id || '87239d64-5964-47b1-a146-f12f3d41de9e',
           };
           const { error } = await supabase.from('gears').insert([newGearPayload]);
@@ -215,7 +224,7 @@ export const GearsManagementPage: React.FC = () => {
           setGears(prev =>
             prev.map(g =>
               g.id === editingGear.id
-                ? { ...g, name: gearName.trim(), type: gearType, status: gearStatus }
+                ? { ...g, name: gearName.trim(), type: gearType, status: gearStatus, purchase_price: numericPrice }
                 : g
             )
           );
@@ -225,6 +234,7 @@ export const GearsManagementPage: React.FC = () => {
             name: gearName.trim(),
             type: gearType,
             status: gearStatus,
+            purchase_price: numericPrice,
           };
           setGears(prev => [newG, ...prev]);
         }
@@ -273,6 +283,7 @@ export const GearsManagementPage: React.FC = () => {
   const lensCount = gears.filter(g => g.type === 'lens').length;
   const lightingCount = gears.filter(g => g.type === 'lighting').length;
   const activeCount = gears.filter(g => g.status === 'active').length;
+  const totalInvestment = gears.reduce((sum, g) => sum + (Number(g.purchase_price) || 0), 0);
 
   return (
     <div className="max-w-6xl mx-auto px-4 py-6 sm:py-8 space-y-6 text-slate-100">
@@ -341,7 +352,7 @@ export const GearsManagementPage: React.FC = () => {
       </div>
 
       {/* Metrics Row */}
-      <div className="grid grid-cols-2 sm:grid-cols-5 gap-3">
+      <div className="grid grid-cols-2 sm:grid-cols-6 gap-3">
         <div className="p-3.5 rounded-2xl bg-slate-900/80 border border-slate-800 space-y-1">
           <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Tổng Thiết Bị</span>
           <div className="text-2xl font-black font-mono text-white">{totalCount}</div>
@@ -358,9 +369,18 @@ export const GearsManagementPage: React.FC = () => {
           <span className="text-[10px] font-bold text-amber-400 uppercase tracking-wider">Đèn Studio</span>
           <div className="text-2xl font-black font-mono text-amber-300">{lightingCount}</div>
         </div>
-        <div className="p-3.5 rounded-2xl bg-slate-900/80 border border-slate-800 space-y-1 col-span-2 sm:col-span-1">
+        <div className="p-3.5 rounded-2xl bg-slate-900/80 border border-slate-800 space-y-1">
           <span className="text-[10px] font-bold text-emerald-400 uppercase tracking-wider">Sẵn Sàng</span>
           <div className="text-2xl font-black font-mono text-emerald-300">{activeCount} / {totalCount}</div>
+        </div>
+        <div className="p-3.5 rounded-2xl bg-gradient-to-br from-amber-500/10 to-yellow-500/5 border border-amber-500/30 space-y-1 col-span-2 sm:col-span-1">
+          <span className="text-[10px] font-bold text-amber-400 uppercase tracking-wider flex items-center gap-1">
+            <Coins className="w-3 h-3 text-amber-400" />
+            <span>Tổng Tài Sản Kho</span>
+          </span>
+          <div className="text-base sm:text-lg font-black font-mono text-amber-300 truncate" title={`${totalInvestment.toLocaleString('vi-VN')} đ`}>
+            {totalInvestment.toLocaleString('vi-VN')} đ
+          </div>
         </div>
       </div>
 
@@ -465,6 +485,7 @@ export const GearsManagementPage: React.FC = () => {
                   <th className="py-3.5 px-4">Thiết Bị</th>
                   <th className="py-3.5 px-4">Phân Loại</th>
                   <th className="py-3.5 px-4">Trạng Thái Khả Dụng</th>
+                  <th className="py-3.5 px-4 text-right">Giá Mua (VNĐ)</th>
                   <th className="py-3.5 px-4 hidden md:table-cell">Mã Thiết Bị</th>
                   <th className="py-3.5 px-4 text-right">Thao Tác</th>
                 </tr>
@@ -473,6 +494,7 @@ export const GearsManagementPage: React.FC = () => {
                 {filteredGears.map(gear => {
                   const typeConfig = GEAR_TYPE_LABELS[gear.type] || GEAR_TYPE_LABELS.other;
                   const statusConfig = GEAR_STATUS_LABELS[gear.status] || GEAR_STATUS_LABELS.active;
+                  const price = Number(gear.purchase_price) || 0;
 
                   return (
                     <tr
@@ -505,6 +527,12 @@ export const GearsManagementPage: React.FC = () => {
                         <span className={`px-2.5 py-0.5 rounded-full text-[10px] font-bold border inline-flex items-center gap-1.5 ${statusConfig.color}`}>
                           <span className={`w-1.5 h-1.5 rounded-full ${gear.status === 'active' ? 'bg-emerald-400' : gear.status === 'maintenance' ? 'bg-amber-400' : 'bg-slate-400'}`} />
                           {statusConfig.label}
+                        </span>
+                      </td>
+
+                      <td className="py-3 px-4 text-right">
+                        <span className="font-mono font-bold text-amber-300 text-xs">
+                          {price > 0 ? `${price.toLocaleString('vi-VN')} đ` : <span className="text-slate-600 font-normal">Chưa nhập</span>}
                         </span>
                       </td>
 
@@ -545,6 +573,7 @@ export const GearsManagementPage: React.FC = () => {
           {filteredGears.map(gear => {
             const typeConfig = GEAR_TYPE_LABELS[gear.type] || GEAR_TYPE_LABELS.other;
             const statusConfig = GEAR_STATUS_LABELS[gear.status] || GEAR_STATUS_LABELS.active;
+            const price = Number(gear.purchase_price) || 0;
 
             return (
               <div
@@ -566,6 +595,16 @@ export const GearsManagementPage: React.FC = () => {
                   <h3 className="text-sm font-bold text-white group-hover:text-amber-300 transition-colors">
                     {gear.name}
                   </h3>
+
+                  <div className="pt-2 flex items-center justify-between text-xs border-t border-slate-800/60">
+                    <span className="text-[11px] text-slate-400 flex items-center gap-1">
+                      <Coins className="w-3 h-3 text-amber-400" />
+                      <span>Giá mua:</span>
+                    </span>
+                    <span className="font-mono font-bold text-amber-300 text-xs">
+                      {price > 0 ? `${price.toLocaleString('vi-VN')} đ` : <span className="text-slate-600 font-normal">Chưa nhập</span>}
+                    </span>
+                  </div>
                 </div>
 
                 <div className="pt-2 border-t border-slate-800 flex items-center justify-between text-xs">
@@ -641,6 +680,7 @@ export const GearsManagementPage: React.FC = () => {
                         onClick={() => {
                           setGearName(preset.name);
                           setGearType(preset.type);
+                          setPurchasePrice(preset.price);
                         }}
                         className="px-2 py-1 rounded-lg text-[10px] font-medium bg-slate-900 hover:bg-amber-500/20 hover:text-amber-300 border border-slate-800 text-slate-300 transition-colors"
                       >
@@ -683,6 +723,38 @@ export const GearsManagementPage: React.FC = () => {
                   <option value="accessory">🎬 Phụ kiện / Gimbal / Chân máy</option>
                   <option value="other">🔧 Khác</option>
                 </select>
+              </div>
+
+              {/* Giá Mua Thiết Bị (VNĐ) - Dành cho tính ROI */}
+              <div className="space-y-1.5">
+                <div className="flex items-center justify-between">
+                  <label className="text-xs font-bold text-slate-300 flex items-center gap-1.5">
+                    <Coins className="w-3.5 h-3.5 text-amber-400" />
+                    <span>Giá Mua Thiết Bị (VNĐ)</span>
+                  </label>
+                  {Number(purchasePrice) > 0 && (
+                    <span className="text-[11px] font-mono text-amber-300 font-bold bg-amber-500/10 px-2 py-0.5 rounded-lg border border-amber-500/20">
+                      {Number(purchasePrice).toLocaleString('vi-VN')} đ
+                    </span>
+                  )}
+                </div>
+                <div className="relative">
+                  <input
+                    type="number"
+                    min="0"
+                    step="100000"
+                    value={purchasePrice}
+                    onChange={e => setPurchasePrice(e.target.value)}
+                    placeholder="VD: 48000000 (48 triệu VNĐ)"
+                    className="w-full pl-3.5 pr-14 py-2.5 rounded-xl bg-slate-950 border border-slate-800 focus:border-amber-400 text-xs text-white placeholder-slate-600 transition-all outline-none font-mono"
+                  />
+                  <span className="absolute right-3.5 top-2.5 text-xs text-slate-500 font-bold">
+                    VNĐ
+                  </span>
+                </div>
+                <p className="text-[11px] text-slate-500">
+                  Dùng để tính toán Tiến độ Hoàn Vốn (ROI Progress Bar) trên Dashboard.
+                </p>
               </div>
 
               {/* Trạng Thái */}

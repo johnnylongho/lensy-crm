@@ -14,6 +14,7 @@ CREATE TABLE IF NOT EXISTS gears (
     model VARCHAR(255) NOT NULL,
     serial_number VARCHAR(100),
     estimated_rental_cost NUMERIC(12, 2) DEFAULT 0,
+    purchase_price NUMERIC(15, 2) DEFAULT 0,
     status VARCHAR(50) DEFAULT 'available' CHECK (status IN ('available', 'in_use', 'maintenance')),
     created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );

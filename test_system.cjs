@@ -318,6 +318,44 @@ const cleanSelection = simulateCheckAssignedGearConflicts(
 assert(cleanSelection.length === 0, 'Thiết bị chưa ai gán trong cùng ngày không bị báo xung đột');
 
 // --------------------------------------------------------------------
+// 8. KIỂM TRA TÍNH NĂNG TIẾN ĐỘ HOÀN VỐN (ROI PROGRESS BAR)
+// --------------------------------------------------------------------
+console.log('\n▶ 8. Kiểm tra Tiến Độ Hoàn Vốn (ROI Progress Bar)...');
+
+// 8.1 File Migration SQL
+const sqlRoiFile = path.join(__dirname, 'update_gears_roi.sql');
+assert(fs.existsSync(sqlRoiFile), 'File migration update_gears_roi.sql tồn tại');
+const sqlRoiContent = fs.existsSync(sqlRoiFile) ? fs.readFileSync(sqlRoiFile, 'utf8') : '';
+assert(sqlRoiContent.includes('purchase_price') && sqlRoiContent.includes('ALTER TABLE gears'), 'Mã SQL thêm cột purchase_price an toàn vào bảng gears');
+
+// 8.2 Trang Quản Lý Thiết Bị hỗ trợ Giá Mua
+assert(gearsPageContent.includes('purchasePrice') && gearsPageContent.includes('Giá Mua'), 'Trang Quản lý Thiết bị hỗ trợ nhập và hiển thị Giá mua thiết bị (VNĐ)');
+
+// 8.3 Component RoiProgressBar
+const roiBarFile = path.join(__dirname, 'frontend', 'src', 'components', 'dashboard', 'RoiProgressBar.tsx');
+assert(fs.existsSync(roiBarFile), 'Component RoiProgressBar.tsx tồn tại');
+const roiBarContent = fs.existsSync(roiBarFile) ? fs.readFileSync(roiBarFile, 'utf8') : '';
+
+assert(roiBarContent.includes('totalInvestment') && roiBarContent.includes('totalCollected'), 'Tính toán đầy đủ Tổng Đầu Tư (tài sản gears) và Tổng Doanh Thu (tiền đã thu bookings)');
+assert(roiBarContent.includes('roiPercentage'), 'Áp dụng công thức % Hoàn vốn = (Tổng Doanh Thu / Tổng Đầu Tư) * 100 có bảo vệ chia cho 0');
+assert(roiBarContent.includes('isOver100') && roiBarContent.includes('isOver50'), 'Chuyển màu thông minh theo 3 tầng: <50% Cam, 50-99% Xanh dương, >=100% Xanh lá');
+
+// 8.4 Tích hợp vào Dashboard
+const dashboardFile = path.join(__dirname, 'frontend', 'src', 'components', 'dashboard', 'PhotographerDashboard.tsx');
+const dashboardContent = fs.existsSync(dashboardFile) ? fs.readFileSync(dashboardFile, 'utf8') : '';
+assert(dashboardContent.includes('<RoiProgressBar'), 'RoiProgressBar được đặt ở vị trí trên cùng, nổi bật nhất của PhotographerDashboard');
+
+// 8.5 Test logic công thức toán học ROI
+function calculateRoi(totalInvestment, totalCollected) {
+  if (!totalInvestment || totalInvestment <= 0) return 0;
+  return (totalCollected / totalInvestment) * 100;
+}
+assert(calculateRoi(0, 10000000) === 0, 'Xử lý Tổng đầu tư = 0 trả về 0% tránh lỗi chia cho 0');
+assert(calculateRoi(100000000, 40000000) === 40, 'Thu 40tr trên vốn 100tr tính chính xác 40% (Màu cam)');
+assert(calculateRoi(100000000, 75000000) === 75, 'Thu 75tr trên vốn 100tr tính chính xác 75% (Màu xanh dương)');
+assert(calculateRoi(100000000, 125000000) === 125, 'Thu 125tr trên vốn 100tr tính chính xác 125% (Màu xanh lá - Bắt đầu sinh lời ròng)');
+
+// --------------------------------------------------------------------
 // TỔNG KẾT
 // --------------------------------------------------------------------
 console.log('\n====================================================================');

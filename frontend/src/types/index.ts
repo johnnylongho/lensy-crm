@@ -73,6 +73,7 @@ export interface GearItem {
   name: string;
   type: GearType;
   status: GearStatus;
+  purchase_price?: number;
   created_at?: string;
 }
 

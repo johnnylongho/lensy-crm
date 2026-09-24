@@ -10,6 +10,7 @@ import { CreateQuoteModal } from './CreateQuoteModal';
 import { WebhookSimulatorModal } from './WebhookSimulatorModal';
 import { ReceiptReviewModal } from './ReceiptReviewModal';
 import { BookingDetailModal } from './BookingDetailModal';
+import { RoiProgressBar } from './RoiProgressBar';
 import { CalendarEvent, BookingStatus } from '../../types';
 import { supabase, isSupabaseConfigured } from '../../lib/supabase';
 import { STATUS_CONFIG } from './BookingStatusSelect';
@@ -369,6 +370,9 @@ export const PhotographerDashboard: React.FC<Props> = ({
         onOpenWebhookSimulator={() => setIsWebhookSimulatorOpen(true)}
         onOpenReceiptReview={booking => setActiveReviewBooking(booking)}
       />
+
+      {/* ROI Progress Bar - Tiến Độ Hoàn Vốn Đầu Tư (Vị trí trên cùng nổi bật) */}
+      <RoiProgressBar events={events} />
 
       {/* Control Bar: View Switcher (Calendar vs Kanban) & Realtime Status */}
       <div className="flex flex-wrap items-center justify-between gap-3 bg-slate-900/60 p-3 rounded-2xl border border-slate-800">

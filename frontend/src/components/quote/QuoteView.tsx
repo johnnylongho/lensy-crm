@@ -257,14 +257,47 @@ export const QuoteView: React.FC<Props> = ({
             }
           }
 
+          let studioName = 'MIRMIA STUDIO & ACADEMY';
+          let photogName = 'Mirmia Creative Team (Lead Photographer)';
+          let photogPhone = '0901234567';
+          let photogEmail = 'contact@mirmia.vn';
+          let bankInfo = {
+            bankName: 'MB Bank (Ngân Hàng Quân Đội)',
+            accountNumber: '0901234567',
+            accountName: 'MIRMIA STUDIO',
+          };
+
+          if (data.photographer_id) {
+            setPhotographerId(data.photographer_id);
+            try {
+              const { data: userData } = await supabase
+                .from('users')
+                .select('*')
+                .eq('id', data.photographer_id)
+                .maybeSingle();
+
+              if (userData) {
+                if (userData.phone) photogPhone = userData.phone;
+                if (userData.studio_name) studioName = userData.studio_name;
+                if (userData.full_name) photogName = userData.full_name;
+                if (userData.email) photogEmail = userData.email;
+                if (userData.bank_name) bankInfo.bankName = userData.bank_name;
+                if (userData.bank_account_number) bankInfo.accountNumber = userData.bank_account_number;
+                if (userData.bank_account_name) bankInfo.accountName = userData.bank_account_name;
+              }
+            } catch (userErr) {
+              console.warn('Không thể tải thông tin thợ ảnh:', userErr);
+            }
+          }
+
           const dynamicQuote: QuoteData = {
             id: data.id,
             quoteToken: data.quote_token,
-            studioName: 'MIRMIA STUDIO & ACADEMY',
+            studioName: studioName,
             studioLogoText: 'MIRMIA',
-            photographerName: 'Mirmia Creative Team (Lead Photographer)',
-            photographerPhone: '0901234567',
-            photographerEmail: 'contact@mirmia.vn',
+            photographerName: photogName,
+            photographerPhone: photogPhone,
+            photographerEmail: photogEmail,
             clientName: data.client_name,
             clientPhone: data.client_phone,
             clientEmail: data.client_email || undefined,
@@ -284,11 +317,7 @@ export const QuoteView: React.FC<Props> = ({
             deliverables: deliverables,
             specialNotes: data.notes?.replace(/\[Gears:[^\]]+\]\s*/, '') || undefined,
             validUntil: '2026-11-15',
-            bankInfo: {
-              bankName: 'MB Bank (Ngân Hàng Quân Đội)',
-              accountNumber: '0901234567',
-              accountName: 'MIRMIA STUDIO',
-            },
+            bankInfo: bankInfo,
           };
 
           setQuote(dynamicQuote);
@@ -400,10 +429,15 @@ export const QuoteView: React.FC<Props> = ({
     );
   }
 
+  const studioPhone = quote.photographerPhone || '0901234567';
+  const cleanStudioPhone = studioPhone.replace(/[^0-9]/g, '');
+  const zaloUrl = `https://zalo.me/${cleanStudioPhone}`;
+  const phoneUrl = `tel:${cleanStudioPhone}`;
+
   return (
-    <div className="min-h-screen bg-[#070b13] text-slate-100 flex flex-col luxury-gradient">
+    <div className="min-h-screen bg-[#070b13] text-slate-100 flex flex-col luxury-gradient relative">
       {/* Container - Mobile-first width */}
-      <div className="w-full max-w-xl mx-auto px-4 py-4 sm:py-8 space-y-6 flex-1">
+      <div className="w-full max-w-xl mx-auto px-4 py-4 sm:py-8 space-y-6 flex-1 pb-24">
         {/* Quote Header */}
         <QuoteHeader quote={quote} />
 
@@ -446,14 +480,14 @@ export const QuoteView: React.FC<Props> = ({
           </p>
           <div className="flex flex-wrap items-center justify-center gap-2 pt-1 text-xs">
             <a
-              href={`tel:${quote.photographerPhone}`}
+              href={phoneUrl}
               className="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl bg-slate-800/80 hover:bg-slate-700 text-slate-200"
             >
               <Phone className="w-3.5 h-3.5 text-amber-400" />
-              <span>{quote.photographerPhone}</span>
+              <span>{studioPhone}</span>
             </a>
             <a
-              href={`https://zalo.me/${quote.photographerPhone.replace(/^0/, '84')}`}
+              href={zaloUrl}
               target="_blank"
               rel="noreferrer"
               className="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl bg-blue-600/30 hover:bg-blue-600/50 border border-blue-500/30 text-blue-200"
@@ -471,6 +505,35 @@ export const QuoteView: React.FC<Props> = ({
           </span>
           <Heart className="w-3 h-3 text-rose-500 inline fill-rose-500" />
         </div>
+      </div>
+
+      {/* Floating Action Buttons: Chat Zalo & Gọi Điện Nhanh (Góc dưới cùng màn hình) */}
+      <div className="fixed bottom-4 right-4 sm:bottom-6 sm:right-6 z-40 flex items-center gap-2.5 sm:gap-3 drop-shadow-2xl animate-fadeIn">
+        {/* Nút Chat Zalo (#0068FF) */}
+        <a
+          href={zaloUrl}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="flex items-center gap-2 px-3.5 sm:px-4 py-2.5 rounded-full bg-[#0068FF] hover:bg-[#0057d9] text-white text-xs sm:text-sm font-bold shadow-lg shadow-blue-500/40 hover:shadow-blue-500/60 transition-all transform hover:scale-105 active:scale-95 group"
+          title={`Chat Zalo với ${quote.photographerName || 'Studio'} (${studioPhone})`}
+        >
+          <span className="w-5 h-5 rounded-full bg-white text-[#0068FF] font-black text-[11px] flex items-center justify-center tracking-tighter shadow-sm">
+            Z
+          </span>
+          <span className="tracking-wide">Chat Zalo</span>
+        </a>
+
+        {/* Nút Gọi Điện (Màu xanh lá) */}
+        <a
+          href={phoneUrl}
+          className="flex items-center gap-2 px-3.5 sm:px-4 py-2.5 rounded-full bg-emerald-600 hover:bg-emerald-500 text-white text-xs sm:text-sm font-bold shadow-lg shadow-emerald-600/40 hover:shadow-emerald-600/60 transition-all transform hover:scale-105 active:scale-95 group"
+          title={`Gọi hotline Studio: ${studioPhone}`}
+        >
+          <div className="w-5 h-5 rounded-full bg-white/20 flex items-center justify-center">
+            <Phone className="w-3.5 h-3.5 text-white" />
+          </div>
+          <span className="tracking-wide">Gọi Điện</span>
+        </a>
       </div>
 
       {/* Deposit QR & Transfer Modal */}

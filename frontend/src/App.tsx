@@ -10,6 +10,7 @@ import { QuoteView } from './components/quote/QuoteView';
 import { PhotographerDashboard } from './components/dashboard/PhotographerDashboard';
 import { SettingsPage } from './components/dashboard/SettingsPage';
 import { GearsManagementPage } from './components/dashboard/GearsManagementPage';
+import { ClientsManagementPage } from './components/clients/ClientsManagementPage';
 import { MOCK_QUOTE, MOCK_CALENDAR_EVENTS } from './data/mockData';
 import { CalendarEvent, QuoteData } from './types';
 
@@ -120,6 +121,9 @@ export function App() {
               }
             />
 
+            {/* Trang Quản Lý Hồ Sơ Khách Hàng (Client CRM & LTV) */}
+            <Route path="/dashboard/clients" element={<ClientsManagementPage />} />
+
             {/* Trang Quản Lý Thiết Bị Studio */}
             <Route path="/dashboard/gears" element={<GearsManagementPage />} />
 
@@ -130,6 +134,7 @@ export function App() {
           {/* ==================================================================== */}
           {/* 3. ALIAS & FALLBACK ROUTES                                           */}
           {/* ==================================================================== */}
+          <Route path="/clients" element={<Navigate to="/dashboard/clients" replace />} />
           <Route path="/settings" element={<Navigate to="/dashboard/settings" replace />} />
           <Route path="/gears" element={<Navigate to="/dashboard/gears" replace />} />
           <Route path="*" element={<Navigate to="/" replace />} />

@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Outlet, Link, useLocation } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { supabase } from '../lib/supabase';
-import { Calendar, Camera, Settings, ExternalLink, LogOut } from 'lucide-react';
+import { Calendar, Camera, Settings, ExternalLink, LogOut, Users } from 'lucide-react';
 
 export const DashboardLayout: React.FC = () => {
   const { user, signOut } = useAuth();
@@ -66,6 +66,18 @@ export const DashboardLayout: React.FC = () => {
             >
               <Calendar className="w-4 h-4" />
               <span>Lịch Chụp</span>
+            </Link>
+
+            <Link
+              to="/dashboard/clients"
+              className={`flex items-center gap-2 px-3 sm:px-4 py-1.5 rounded-xl font-bold transition-all ${
+                location.pathname.startsWith('/dashboard/clients')
+                  ? 'bg-amber-500 text-slate-950 shadow-md shadow-amber-500/20'
+                  : 'text-slate-400 hover:text-white'
+              }`}
+            >
+              <Users className="w-4 h-4" />
+              <span>Khách Hàng</span>
             </Link>
 
             <Link

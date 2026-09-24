@@ -197,6 +197,60 @@ export const CreateQuoteModal: React.FC<Props> = ({
       let createdId = `ev-${Date.now()}`;
 
       if (isSupabaseConfigured) {
+        // Tự động gán photographer_id & upsert client_id vào Client CRM
+        try {
+          const { data: authData } = await supabase.auth.getUser();
+          const photographerId = authData?.user?.id;
+
+          if (photographerId) {
+            newBookingRecord.photographer_id = photographerId;
+
+            const { data: rpcClientId, error: rpcError } = await supabase.rpc(
+              'upsert_client_for_booking',
+              {
+                p_photographer_id: photographerId,
+                p_name: newBookingRecord.client_name,
+                p_phone: newBookingRecord.client_phone,
+                p_email: newBookingRecord.client_email,
+              }
+            );
+
+            if (!rpcError && rpcClientId) {
+              newBookingRecord.client_id = rpcClientId;
+            } else {
+              const { data: existingClient } = await supabase
+                .from('clients')
+                .select('id')
+                .eq('photographer_id', photographerId)
+                .eq('phone', newBookingRecord.client_phone)
+                .maybeSingle();
+
+              if (existingClient?.id) {
+                newBookingRecord.client_id = existingClient.id;
+              } else {
+                const { data: newClient } = await supabase
+                  .from('clients')
+                  .insert([
+                    {
+                      photographer_id: photographerId,
+                      name: newBookingRecord.client_name,
+                      phone: newBookingRecord.client_phone,
+                      email: newBookingRecord.client_email,
+                    },
+                  ])
+                  .select('id')
+                  .single();
+
+                if (newClient?.id) {
+                  newBookingRecord.client_id = newClient.id;
+                }
+              }
+            }
+          }
+        } catch (crmErr) {
+          console.warn('[CreateQuoteModal]: Bỏ qua bước Client CRM do lỗi:', crmErr);
+        }
+
         const { data, error } = await supabase
           .from('bookings')
           .insert([newBookingRecord])

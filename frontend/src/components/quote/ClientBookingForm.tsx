@@ -46,31 +46,112 @@ export const ClientBookingForm: React.FC<Props> = ({
     setToastMessage(null);
 
     const quoteToken = `q-${Date.now()}-${Math.random().toString(36).substring(2, 6)}`;
-    const newRecord: any = {
-      client_name: clientName,
-      client_phone: clientPhone,
-      client_email: clientEmail || null,
-      session_type: sessionType,
-      session_title: `Gói Chụp ${sessionType.toUpperCase()}`,
-      event_date: eventDate,
-      start_time: startTime ? (startTime.length === 5 ? `${startTime}:00` : startTime) : '08:00:00',
-      end_time: endTime ? (endTime.length === 5 ? `${endTime}:00` : endTime) : '12:00:00',
-      location: location || 'Tại Studio / Địa điểm khách yêu cầu',
-      package_price: defaultPrice,
-      deposit_amount: defaultDeposit,
-      paid_amount: 0,
-      status: 'lead',
-      quote_token: quoteToken,
-      notes: notes || null,
-    };
+    const cleanPhone = clientPhone.trim();
+    const cleanName = clientName.trim();
+    const cleanEmail = clientEmail.trim() || null;
+    let resolvedClientId: string | null = null;
 
-    if (photographerId) {
-      newRecord.photographer_id = photographerId;
+    if (!cleanPhone) {
+      setToastMessage({
+        type: 'error',
+        text: 'Vui lòng cung cấp Số điện thoại liên hệ (Zalo) để studio liên hệ tư vấn.'
+      });
+      setIsLoading(false);
+      return;
     }
 
     try {
       if (isSupabaseConfigured) {
-        // Thực thi lệnh insert vào Supabase (không chain .select() để tương thích RLS anon)
+        // 1. Logic kiểm tra (upsert) Client CRM:
+        // Nếu số điện thoại này đã tồn tại trong danh sách khách của thợ ảnh -> lấy client_id cũ.
+        // Nếu chưa -> tạo Client mới.
+        if (photographerId) {
+          try {
+            // Cách A: Thử gọi hàm RPC upsert_client_for_booking (nhanh & nguyên tử)
+            const { data: rpcClientId, error: rpcError } = await supabase.rpc(
+              'upsert_client_for_booking',
+              {
+                p_photographer_id: photographerId,
+                p_name: cleanName,
+                p_phone: cleanPhone,
+                p_email: cleanEmail,
+              }
+            );
+
+            if (!rpcError && rpcClientId) {
+              resolvedClientId = rpcClientId;
+            } else {
+              // Cách B: Fallback truy vấn trực tiếp bảng clients
+              const { data: existingClient } = await supabase
+                .from('clients')
+                .select('id')
+                .eq('photographer_id', photographerId)
+                .eq('phone', cleanPhone)
+                .maybeSingle();
+
+              if (existingClient?.id) {
+                resolvedClientId = existingClient.id;
+                // Cập nhật thông tin mới nhất nếu khách thay đổi tên hoặc email
+                await supabase
+                  .from('clients')
+                  .update({
+                    name: cleanName,
+                    email: cleanEmail,
+                  })
+                  .eq('id', existingClient.id);
+              } else {
+                // Tạo mới Client trong CRM của thợ ảnh
+                const { data: newClient } = await supabase
+                  .from('clients')
+                  .insert([
+                    {
+                      photographer_id: photographerId,
+                      name: cleanName,
+                      phone: cleanPhone,
+                      email: cleanEmail,
+                    },
+                  ])
+                  .select('id')
+                  .single();
+
+                if (newClient?.id) {
+                  resolvedClientId = newClient.id;
+                }
+              }
+            }
+          } catch (clientErr) {
+            console.warn('[Client CRM]: Không thể upsert client_id, tiếp tục lưu booking:', clientErr);
+          }
+        }
+
+        // 2. Chuẩn bị bản ghi Booking gắn kèm client_id
+        const newRecord: any = {
+          client_name: cleanName,
+          client_phone: cleanPhone,
+          client_email: cleanEmail,
+          session_type: sessionType,
+          session_title: `Gói Chụp ${sessionType.toUpperCase()}`,
+          event_date: eventDate,
+          start_time: startTime ? (startTime.length === 5 ? `${startTime}:00` : startTime) : '08:00:00',
+          end_time: endTime ? (endTime.length === 5 ? `${endTime}:00` : endTime) : '12:00:00',
+          location: location || 'Tại Studio / Địa điểm khách yêu cầu',
+          package_price: defaultPrice,
+          deposit_amount: defaultDeposit,
+          paid_amount: 0,
+          status: 'lead',
+          quote_token: quoteToken,
+          notes: notes || null,
+        };
+
+        if (photographerId) {
+          newRecord.photographer_id = photographerId;
+        }
+
+        if (resolvedClientId) {
+          newRecord.client_id = resolvedClientId;
+        }
+
+        // 3. Thực thi lệnh insert vào Supabase
         const { error } = await supabase
           .from('bookings')
           .insert([newRecord]);
@@ -84,13 +165,36 @@ export const ClientBookingForm: React.FC<Props> = ({
         if (onBookingCreated) onBookingCreated(newRecord);
       } else {
         // Fallback mô phỏng khi chưa kết nối URL Supabase thật
-        console.log('[Supabase Demo Insert]:', newRecord);
+        const demoRecord: any = {
+          client_name: cleanName,
+          client_phone: cleanPhone,
+          client_email: cleanEmail,
+          session_type: sessionType,
+          session_title: `Gói Chụp ${sessionType.toUpperCase()}`,
+          event_date: eventDate,
+          start_time: startTime ? (startTime.length === 5 ? `${startTime}:00` : startTime) : '08:00:00',
+          end_time: endTime ? (endTime.length === 5 ? `${endTime}:00` : endTime) : '12:00:00',
+          location: location || 'Tại Studio / Địa điểm khách yêu cầu',
+          package_price: defaultPrice,
+          deposit_amount: defaultDeposit,
+          paid_amount: 0,
+          status: 'lead',
+          quote_token: quoteToken,
+          notes: notes || null,
+          client_id: `client-demo-${cleanPhone}`,
+        };
+
+        if (photographerId) {
+          demoRecord.photographer_id = photographerId;
+        }
+
+        console.log('[Supabase Demo Insert with Client CRM]:', demoRecord);
         await new Promise(resolve => setTimeout(resolve, 800));
         setToastMessage({
           type: 'success',
           text: '🎉 Gửi yêu cầu đặt lịch thành công! (Dữ liệu đã được lưu trữ an toàn)'
         });
-        if (onBookingCreated) onBookingCreated(newRecord);
+        if (onBookingCreated) onBookingCreated(demoRecord);
       }
 
       // Làm trống form sau khi gửi thành công
@@ -165,8 +269,14 @@ export const ClientBookingForm: React.FC<Props> = ({
           </div>
 
           <div>
-            <label className="block text-slate-300 font-medium mb-1.5 flex items-center gap-1.5">
-              <Phone className="w-3.5 h-3.5 text-slate-400" /> Số Điện Thoại (Zalo) *
+            <label className="block text-slate-300 font-medium mb-1.5 flex items-center justify-between">
+              <span className="flex items-center gap-1.5">
+                <Phone className="w-3.5 h-3.5 text-amber-400" />
+                <span>Số Điện Thoại (Zalo)</span>
+              </span>
+              <span className="text-[10px] text-amber-400 font-bold uppercase tracking-wider">
+                (Bắt buộc)
+              </span>
             </label>
             <input
               type="tel"
@@ -182,15 +292,21 @@ export const ClientBookingForm: React.FC<Props> = ({
         {/* Email & Session Type */}
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
           <div>
-            <label className="block text-slate-300 font-medium mb-1.5 flex items-center gap-1.5">
-              <Mail className="w-3.5 h-3.5 text-slate-400" /> Email Nhận File Ảnh
+            <label className="block text-slate-300 font-medium mb-1.5 flex items-center justify-between">
+              <span className="flex items-center gap-1.5">
+                <Mail className="w-3.5 h-3.5 text-slate-400" />
+                <span>Email Nhận File Ảnh</span>
+              </span>
+              <span className="text-[10px] text-slate-500 font-normal">
+                (Không bắt buộc)
+              </span>
             </label>
             <input
               type="email"
               value={clientEmail}
               onChange={e => setClientEmail(e.target.value)}
-              placeholder="khachhang@gmail.com"
-              className="w-full bg-slate-950 border border-slate-800 focus:border-amber-500 rounded-xl px-3.5 py-2.5 text-white focus:outline-none transition-colors"
+              placeholder="khachhang@gmail.com (Tùy chọn)"
+              className="w-full bg-slate-950 border border-slate-800 focus:border-amber-500 rounded-xl px-3.5 py-2.5 text-white placeholder-slate-600 focus:outline-none transition-colors"
             />
           </div>
 

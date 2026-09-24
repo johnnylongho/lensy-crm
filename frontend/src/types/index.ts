@@ -82,6 +82,17 @@ export interface CalendarEvent {
   assignedGears?: string[]; // Danh sách UUID thiết bị đã gắn
   expenses?: number; // Tổng chi phí phát sinh (Job Costing)
   expenseDetails?: ExpenseItem[]; // Chi tiết các khoản chi
+  client_id?: string; // UUID khách hàng trong bảng clients
+}
+
+export interface Client {
+  id: string;
+  photographer_id?: string;
+  name: string;
+  phone: string;
+  email?: string;
+  created_at?: string;
+  updated_at?: string;
 }
 
 export type GearType = 'camera' | 'lens' | 'lighting' | 'audio' | 'accessory' | 'other';
@@ -96,4 +107,5 @@ export interface GearItem {
   purchase_price?: number;
   created_at?: string;
 }
+
 

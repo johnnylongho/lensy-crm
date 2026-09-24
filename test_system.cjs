@@ -448,6 +448,79 @@ assert(dashboardContent.includes('handleStatusChange') && dashboardContent.inclu
 assert(dashboardContent.includes(".from('bookings')") && dashboardContent.includes('.update(updatePayload)') && dashboardContent.includes(".eq('id', eventId)"), 'Hàm handleStatusChange tự động gọi API Supabase cập nhật cột status của Booking');
 
 // --------------------------------------------------------------------
+// 11. KIỂM TRA HỒ SƠ KHÁCH HÀNG (CLIENT CRM)
+// --------------------------------------------------------------------
+console.log('▶ 11. Kiểm tra Hồ Sơ Khách Hàng (Client CRM) & Tích Hợp Đặt Lịch...');
+const clientsSqlFile = path.join(__dirname, 'create_clients.sql');
+assert(fs.existsSync(clientsSqlFile), 'File migration create_clients.sql tồn tại');
+
+if (fs.existsSync(clientsSqlFile)) {
+  const cSql = fs.readFileSync(clientsSqlFile, 'utf8');
+  assert(cSql.includes('CREATE TABLE IF NOT EXISTS clients'), 'create_clients.sql tạo bảng clients');
+  assert(cSql.includes('photographer_id UUID REFERENCES users(id)') && cSql.includes('phone VARCHAR') && cSql.includes('email VARCHAR'), 'Bảng clients có đủ các cột: id, photographer_id, name, phone, email, created_at');
+  assert(cSql.includes('ALTER TABLE bookings') && cSql.includes('client_id UUID REFERENCES clients(id)'), 'Cập nhật bảng bookings thêm cột client_id tham chiếu tới clients');
+  assert(cSql.includes('ALTER TABLE clients ENABLE ROW LEVEL SECURITY'), 'Bảng clients đã được kích hoạt Row Level Security (RLS)');
+  assert(cSql.includes('photographer_id = auth.uid()'), 'RLS thợ ảnh (auth.uid() = photographer_id) có toàn quyền thao tác dữ liệu');
+  assert(cSql.includes('upsert_client_for_booking'), 'Định nghĩa hàm RPC upsert_client_for_booking xử lý an toàn cho public form');
+}
+
+const bookingFormFile = path.join(__dirname, 'frontend', 'src', 'components', 'quote', 'ClientBookingForm.tsx');
+if (fs.existsSync(bookingFormFile)) {
+  const bfContent = fs.readFileSync(bookingFormFile, 'utf8');
+  assert(bfContent.includes("from('clients')") || bfContent.includes('upsert_client_for_booking'), 'ClientBookingForm có logic kiểm tra / upsert Client CRM');
+  assert(bfContent.includes('client_id'), 'ClientBookingForm gắn client_id vào bản ghi đặt lịch mới');
+}
+
+// 11.2 Frontend UI Client CRM
+const clientsPageFile = path.join(__dirname, 'frontend', 'src', 'components', 'clients', 'ClientsManagementPage.tsx');
+assert(fs.existsSync(clientsPageFile), 'Trang Quản lý Khách Hàng (ClientsManagementPage.tsx) tồn tại');
+
+if (fs.existsSync(clientsPageFile)) {
+  const cpContent = fs.readFileSync(clientsPageFile, 'utf8');
+  assert(cpContent.includes('totalSpent') && cpContent.includes('totalBookings'), 'Tính toán Giá trị trọn đời (LTV) và Tổng số lần chụp');
+  assert(cpContent.includes('isVip') && cpContent.includes('👑') && cpContent.includes('VIP'), 'Gắn nhãn Khách VIP (Gamification) với icon 👑 VIP màu vàng');
+  assert(cpContent.includes('ClientProfileModal'), 'Tích hợp Drawer / Modal xem chi tiết lịch sử gói chụp của khách hàng');
+}
+
+const clientProfileModalFile = path.join(__dirname, 'frontend', 'src', 'components', 'clients', 'ClientProfileModal.tsx');
+assert(fs.existsSync(clientProfileModalFile), 'Modal Hồ Sơ Khách Hàng (ClientProfileModal.tsx) tồn tại');
+
+const appRoutesContent = fs.readFileSync(appFile, 'utf8');
+assert(appRoutesContent.includes('/dashboard/clients') && appRoutesContent.includes('ClientsManagementPage'), 'Đã đăng ký route /dashboard/clients trong App.tsx');
+
+const layoutFile = path.join(__dirname, 'frontend', 'src', 'layouts', 'DashboardLayout.tsx');
+const layoutContent = fs.readFileSync(layoutFile, 'utf8');
+assert(layoutContent.includes('/dashboard/clients') && layoutContent.includes('Khách Hàng'), 'Menu thanh điều hướng có tab Khách Hàng');
+
+// --------------------------------------------------------------------
+// 12. KIỂM TRA TỐI ƯU TRẢI NGHIỆM KHÁCH HÀNG (CX) & PHỄU ĐẶT LỊCH (/book/:username)
+// --------------------------------------------------------------------
+console.log('▶ 12. Kiểm tra Tối Ưu CX & Phễu Chuyển Đổi Trang Báo Giá...');
+
+// 12.1 Validation Form Đặt Lịch
+if (fs.existsSync(bookingFormFile)) {
+  const bfContent = fs.readFileSync(bookingFormFile, 'utf8');
+  assert(bfContent.includes('(Bắt buộc)') && bfContent.includes('(Không bắt buộc)'), 'ClientBookingForm hiển thị rõ nhãn (Bắt buộc) ở ô SĐT và (Không bắt buộc) ở ô Email');
+  assert(bfContent.includes('if (!cleanPhone)') && !bfContent.includes('required\n              value={clientEmail}'), 'Số điện thoại là trường liên hệ bắt buộc duy nhất, email không bắt buộc');
+}
+
+// 12.2 Hotline trong Settings
+const settingsFile = path.join(__dirname, 'frontend', 'src', 'components', 'dashboard', 'SettingsPage.tsx');
+if (fs.existsSync(settingsFile)) {
+  const sfContent = fs.readFileSync(settingsFile, 'utf8');
+  assert(sfContent.includes('phone') && (sfContent.includes('Hotline') || sfContent.includes('Số Điện Thoại')), 'Trang Cài đặt có trường nhập Hotline/Số điện thoại thợ ảnh');
+}
+
+// 12.3 Floating Action Buttons trong QuoteView
+const quoteViewFile = path.join(__dirname, 'frontend', 'src', 'components', 'quote', 'QuoteView.tsx');
+if (fs.existsSync(quoteViewFile)) {
+  const qvContent = fs.readFileSync(quoteViewFile, 'utf8');
+  assert(qvContent.includes('userData.phone') && qvContent.includes('photographerPhone'), 'Truy xuất số điện thoại studio từ bảng users theo username');
+  assert(qvContent.includes('https://zalo.me/') && qvContent.includes('tel:'), 'Nút hành động trôi nổi (Floating Buttons) liên kết chính xác tới Zalo và Hotline');
+  assert(qvContent.includes('#0068FF') && qvContent.includes('Chat Zalo') && qvContent.includes('Gọi Điện'), 'Cụm Floating Buttons có đủ nút Chat Zalo (#0068FF) và Gọi điện');
+}
+
+// --------------------------------------------------------------------
 // TỔNG KẾT
 // --------------------------------------------------------------------
 console.log('\n====================================================================');

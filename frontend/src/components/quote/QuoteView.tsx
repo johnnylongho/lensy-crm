@@ -381,7 +381,7 @@ export const QuoteView: React.FC<Props> = ({
           </div>
           <div className="pt-2 flex flex-wrap items-center justify-center gap-3">
             <Link
-              to="/"
+              to="/quote"
               className="px-4 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-bold inline-flex items-center gap-1.5 transition-colors"
             >
               <ArrowLeft className="w-3.5 h-3.5" />

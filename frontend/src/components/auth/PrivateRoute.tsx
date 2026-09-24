@@ -1,9 +1,9 @@
 import React from 'react';
-import { Navigate, useLocation } from 'react-router-dom';
+import { Navigate, useLocation, Outlet } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 
 interface Props {
-  children: React.ReactElement;
+  children?: React.ReactElement;
 }
 
 export const PrivateRoute: React.FC<Props> = ({ children }) => {
@@ -24,5 +24,6 @@ export const PrivateRoute: React.FC<Props> = ({ children }) => {
     return <Navigate to="/login" state={{ from: location }} replace />;
   }
 
-  return children;
+  return children ? children : <Outlet />;
 };
+

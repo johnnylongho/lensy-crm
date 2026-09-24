@@ -22,6 +22,9 @@ import {
   SlidersHorizontal,
   Wrench,
   ShieldCheck,
+  LayoutGrid,
+  List,
+  Sparkle,
 } from 'lucide-react';
 
 const GEAR_TYPE_LABELS: Record<GearType, { label: string; icon: React.ReactNode; color: string }> = {
@@ -78,6 +81,7 @@ export const GearsManagementPage: React.FC = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedCategory, setSelectedCategory] = useState<string>('all');
+  const [viewMode, setViewMode] = useState<'grid' | 'table'>('grid');
 
   // Modal State
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -86,6 +90,20 @@ export const GearsManagementPage: React.FC = () => {
   const [gearType, setGearType] = useState<GearType>('camera');
   const [gearStatus, setGearStatus] = useState<GearStatus>('active');
   const [isSubmitting, setIsSubmitting] = useState(false);
+
+  // Quick Preset Templates for Freelancers & Studio
+  const STUDIO_PRESETS: Array<{ name: string; type: GearType }> = [
+    { name: 'Sony Alpha 7 IV (Chính)', type: 'camera' },
+    { name: 'Sony Alpha 7R V (High-Res)', type: 'camera' },
+    { name: 'Canon EOS R6 Mark II', type: 'camera' },
+    { name: 'Sony FE 24-70mm f/2.8 GM II', type: 'lens' },
+    { name: 'Sony FE 70-200mm f/2.8 GM OSS II', type: 'lens' },
+    { name: 'Sony FE 50mm f/1.2 GM', type: 'lens' },
+    { name: 'Đèn Studio Godox AD600 Pro', type: 'lighting' },
+    { name: 'Đèn Flash Godox V1 Sony', type: 'lighting' },
+    { name: 'Gimbal DJI RS3 Pro', type: 'accessory' },
+    { name: 'Micro Thu Âm DJI Mic 2', type: 'audio' },
+  ];
 
   // Toast
   const [toast, setToast] = useState<{
@@ -346,7 +364,7 @@ export const GearsManagementPage: React.FC = () => {
         </div>
       </div>
 
-      {/* Filter and Search Bar */}
+      {/* Filter, Search, and View Mode Bar */}
       <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 p-3 rounded-2xl bg-slate-900/60 border border-slate-800">
         {/* Search */}
         <div className="relative flex-1 max-w-md">
@@ -355,37 +373,67 @@ export const GearsManagementPage: React.FC = () => {
             type="text"
             value={searchTerm}
             onChange={e => setSearchTerm(e.target.value)}
-            placeholder="Tìm theo tên máy, lens, đèn..."
+            placeholder="Tìm theo tên máy, lens, đèn, gimbal..."
             className="w-full pl-9 pr-4 py-2 rounded-xl bg-slate-950 border border-slate-800 focus:border-amber-400 text-xs text-white placeholder-slate-600 transition-all outline-none"
           />
         </div>
 
-        {/* Category Pills */}
-        <div className="flex items-center gap-1.5 overflow-x-auto pb-1 sm:pb-0 text-xs">
-          {[
-            { id: 'all', label: 'Tất cả' },
-            { id: 'camera', label: '📷 Máy ảnh' },
-            { id: 'lens', label: '🔍 Ống kính' },
-            { id: 'lighting', label: '💡 Đèn' },
-            { id: 'accessory', label: '🎬 Phụ kiện' },
-          ].map(c => (
+        {/* Category Pills & View Switcher */}
+        <div className="flex items-center justify-between sm:justify-end gap-2 overflow-x-auto pb-1 sm:pb-0 text-xs">
+          <div className="flex items-center gap-1.5 overflow-x-auto">
+            {[
+              { id: 'all', label: 'Tất cả' },
+              { id: 'camera', label: '📷 Máy ảnh' },
+              { id: 'lens', label: '🔍 Ống kính' },
+              { id: 'lighting', label: '💡 Đèn' },
+              { id: 'accessory', label: '🎬 Phụ kiện' },
+            ].map(c => (
+              <button
+                key={c.id}
+                type="button"
+                onClick={() => setSelectedCategory(c.id)}
+                className={`px-3 py-1.5 rounded-xl font-bold transition-all whitespace-nowrap ${
+                  selectedCategory === c.id
+                    ? 'bg-amber-500 text-slate-950 shadow-sm'
+                    : 'bg-slate-950 border border-slate-800 text-slate-400 hover:text-white'
+                }`}
+              >
+                {c.label}
+              </button>
+            ))}
+          </div>
+
+          {/* View Mode Toggle: Grid vs Table */}
+          <div className="flex items-center bg-slate-950 p-1 rounded-xl border border-slate-800 flex-shrink-0 ml-1">
             <button
-              key={c.id}
               type="button"
-              onClick={() => setSelectedCategory(c.id)}
-              className={`px-3 py-1.5 rounded-xl font-bold transition-all whitespace-nowrap ${
-                selectedCategory === c.id
-                  ? 'bg-amber-500 text-slate-950 shadow-sm'
-                  : 'bg-slate-950 border border-slate-800 text-slate-400 hover:text-white'
+              onClick={() => setViewMode('grid')}
+              className={`p-1.5 rounded-lg transition-all ${
+                viewMode === 'grid'
+                  ? 'bg-amber-500 text-slate-950 font-bold shadow-sm'
+                  : 'text-slate-400 hover:text-white'
               }`}
+              title="Xem dạng lưới (Grid)"
             >
-              {c.label}
+              <LayoutGrid className="w-4 h-4" />
             </button>
-          ))}
+            <button
+              type="button"
+              onClick={() => setViewMode('table')}
+              className={`p-1.5 rounded-lg transition-all ${
+                viewMode === 'table'
+                  ? 'bg-amber-500 text-slate-950 font-bold shadow-sm'
+                  : 'text-slate-400 hover:text-white'
+              }`}
+              title="Xem dạng bảng (Table)"
+            >
+              <List className="w-4 h-4" />
+            </button>
+          </div>
         </div>
       </div>
 
-      {/* Gears List Grid */}
+      {/* Gears List Grid or Table */}
       {isLoading ? (
         <div className="min-h-[300px] flex flex-col items-center justify-center space-y-3">
           <Loader2 className="w-7 h-7 text-amber-400 animate-spin" />
@@ -407,7 +455,92 @@ export const GearsManagementPage: React.FC = () => {
             <span>Thêm Thiết Bị Đầu Tiên</span>
           </button>
         </div>
+      ) : viewMode === 'table' ? (
+        /* DẠNG BẢNG (TABLE VIEW) */
+        <div className="rounded-2xl border border-slate-800 bg-slate-900/70 overflow-hidden shadow-xl">
+          <div className="overflow-x-auto">
+            <table className="w-full text-left text-xs text-slate-300 border-collapse">
+              <thead>
+                <tr className="border-b border-slate-800 bg-slate-950/80 text-[11px] uppercase tracking-wider text-slate-400 font-bold">
+                  <th className="py-3.5 px-4">Thiết Bị</th>
+                  <th className="py-3.5 px-4">Phân Loại</th>
+                  <th className="py-3.5 px-4">Trạng Thái Khả Dụng</th>
+                  <th className="py-3.5 px-4 hidden md:table-cell">Mã Thiết Bị</th>
+                  <th className="py-3.5 px-4 text-right">Thao Tác</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-slate-800/60">
+                {filteredGears.map(gear => {
+                  const typeConfig = GEAR_TYPE_LABELS[gear.type] || GEAR_TYPE_LABELS.other;
+                  const statusConfig = GEAR_STATUS_LABELS[gear.status] || GEAR_STATUS_LABELS.active;
+
+                  return (
+                    <tr
+                      key={gear.id}
+                      className="hover:bg-slate-800/40 transition-colors group"
+                    >
+                      <td className="py-3 px-4">
+                        <div className="flex items-center gap-3">
+                          <div className="p-2 rounded-xl bg-slate-950 border border-slate-800 text-slate-300 group-hover:text-amber-400 group-hover:border-amber-500/30 transition-colors">
+                            {typeConfig.icon}
+                          </div>
+                          <div>
+                            <span className="font-bold text-white text-xs block group-hover:text-amber-300 transition-colors">
+                              {gear.name}
+                            </span>
+                            <span className="text-[10px] text-slate-500 md:hidden font-mono">
+                              {gear.id.substring(0, 8)}...
+                            </span>
+                          </div>
+                        </div>
+                      </td>
+
+                      <td className="py-3 px-4">
+                        <span className={`px-2 py-0.5 rounded-md text-[10px] font-bold border inline-flex items-center gap-1 ${typeConfig.color}`}>
+                          {typeConfig.label.split(' ')[0]}
+                        </span>
+                      </td>
+
+                      <td className="py-3 px-4">
+                        <span className={`px-2.5 py-0.5 rounded-full text-[10px] font-bold border inline-flex items-center gap-1.5 ${statusConfig.color}`}>
+                          <span className={`w-1.5 h-1.5 rounded-full ${gear.status === 'active' ? 'bg-emerald-400' : gear.status === 'maintenance' ? 'bg-amber-400' : 'bg-slate-400'}`} />
+                          {statusConfig.label}
+                        </span>
+                      </td>
+
+                      <td className="py-3 px-4 hidden md:table-cell font-mono text-[11px] text-slate-500">
+                        {gear.id}
+                      </td>
+
+                      <td className="py-3 px-4 text-right">
+                        <div className="inline-flex items-center gap-1.5">
+                          <button
+                            type="button"
+                            onClick={() => handleOpenEditModal(gear)}
+                            className="p-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white transition-colors"
+                            title="Sửa thiết bị"
+                          >
+                            <Edit2 className="w-3.5 h-3.5" />
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => handleDeleteGear(gear)}
+                            className="p-1.5 rounded-lg bg-slate-800 hover:bg-rose-950 text-slate-400 hover:text-rose-300 transition-colors"
+                            title="Xóa thiết bị"
+                          >
+                            <Trash2 className="w-3.5 h-3.5" />
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+        </div>
       ) : (
+        /* DẠNG LƯỚI (GRID VIEW) */
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3.5">
           {filteredGears.map(gear => {
             const typeConfig = GEAR_TYPE_LABELS[gear.type] || GEAR_TYPE_LABELS.other;
@@ -465,6 +598,7 @@ export const GearsManagementPage: React.FC = () => {
         </div>
       )}
 
+
       {/* Add / Edit Gear Modal */}
       {isModalOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-md animate-fadeIn">
@@ -492,6 +626,31 @@ export const GearsManagementPage: React.FC = () => {
             </div>
 
             <form onSubmit={handleSubmit} className="space-y-4">
+              {/* Quick Presets for New Gear */}
+              {!editingGear && (
+                <div className="space-y-1.5">
+                  <label className="text-[11px] font-bold text-amber-400 flex items-center gap-1">
+                    <Sparkles className="w-3.5 h-3.5" />
+                    <span>Chọn Nhanh Thiết Bị Phổ Biến (Mirmia Presets):</span>
+                  </label>
+                  <div className="flex flex-wrap gap-1.5 max-h-24 overflow-y-auto p-1.5 rounded-xl bg-slate-950/80 border border-slate-800">
+                    {STUDIO_PRESETS.map((preset, idx) => (
+                      <button
+                        key={idx}
+                        type="button"
+                        onClick={() => {
+                          setGearName(preset.name);
+                          setGearType(preset.type);
+                        }}
+                        className="px-2 py-1 rounded-lg text-[10px] font-medium bg-slate-900 hover:bg-amber-500/20 hover:text-amber-300 border border-slate-800 text-slate-300 transition-colors"
+                      >
+                        + {preset.name}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
+
               {/* Tên Thiết Bị */}
               <div className="space-y-1.5">
                 <label className="text-xs font-bold text-slate-300">

@@ -113,7 +113,7 @@ export const LoginPage: React.FC = () => {
           className="inline-flex items-center gap-1.5 text-xs text-slate-400 hover:text-white transition-colors"
         >
           <ChevronLeft className="w-4 h-4" />
-          <span>Về trang Link Báo Giá (Khách hàng)</span>
+          <span>Về Trang Chủ Lensy</span>
         </Link>
         <span className="text-[10px] text-slate-500 font-mono">Lensy v1.0 • SaaS Ready</span>
       </div>

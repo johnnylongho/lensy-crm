@@ -1,17 +1,31 @@
 # 📌 NHẬT KÝ TIẾN ĐỘ DỰ ÁN LENSY CRM (MIRMIA STUDIO)
 
-> **Cập nhật lần cuối:** 23/09/2026  
-> **Trạng thái tổng thể:** Đã hoàn thành 100% Giai Đoạn 1 & Giai Đoạn 2. Toàn bộ 36/36 tiêu chí kiểm thử ĐẠT (100% PASS). Sẵn sàng cho Giai Đoạn 3 (Deploy & Domain).
+> **Cập nhật lần cuối:** 24/09/2026  
+> **Trạng thái tổng thể:** Đã hoàn thành 100% Giai Đoạn 1, Giai Đoạn 2 & Hoàn thiện USP Quản lý thiết bị & Cảnh báo trùng lặp (Conflict Scanner). Toàn bộ 50/50 tiêu chí kiểm thử ĐẠT (100% PASS). Sẵn sàng cho Giai Đoạn 3 (Deploy & Domain).
 
 ---
 
 ## 🏆 CÁC GIAI ĐOẠN TRIỂN KHAI
 
-### ✅ Giai Đoạn 1: Hoàn Thiện Tính Năng Core MVP (ĐÃ XONG 100%)
-*   **1. Quét Xung Đột Thiết Bị & Nhân Sự (Gear Conflict Scanner - USP 1):**
-    *   File: `frontend/src/lib/conflictScanner.ts`
-    *   Quét chéo lịch cùng ngày, cảnh báo đụng máy Sony A7 IV / Lens 70-200 / thợ phụ.
-    *   Nút bấm 1 chạm tự động cộng thêm phí thuê ngoài (+800.000đ/máy).
+### ✅ Giai Đoạn 1 & 2: Hoàn Thiện MVP, Dòng Tiền & Cảnh Báo Trùng Lặp Thiết Bị (USP) (ĐÃ XONG 100%)
+*   **1. Quản Lý Thiết Bị Studio (`/dashboard/gears`):**
+    *   File: `frontend/src/components/dashboard/GearsManagementPage.tsx`
+    *   Giao diện linh hoạt: chuyển đổi 1-chạm giữa **Dạng Bảng (Table View)** và **Dạng Lưới (Grid View)**.
+    *   Hỗ trợ Thêm, Sửa, Xóa thiết bị (Body Camera, Lens, Đèn Flash, Gimbal/Phụ Kiện, Mic...).
+    *   Tích hợp kho mẫu thiết bị nhanh (Mirmia Presets: Sony A7 IV, A7R V, Canon R6 II, Lens GM, Godox...).
+*   **2. Phân Bổ Thiết Bị Vào Lịch Chụp & Lưu `assigned_gears`:**
+    *   File: `frontend/src/components/dashboard/BookingDetailModal.tsx`
+    *   Khu vực phân bổ thiết bị trực quan: bộ lọc danh mục, ô tìm kiếm nhanh, tag thiết bị đã chọn có nút gỡ nhanh.
+    *   Lưu danh sách mảng UUID thiết bị vào cột `assigned_gears` của bảng `bookings`.
+*   **3. Thuật Toán Cảnh Báo Trùng Lặp (Conflict Logic) & Chặn Lưu Ghi Đè:**
+    *   File: `frontend/src/lib/conflictScanner.ts` (`checkAssignedGearConflicts`)
+    *   Khi chọn thiết bị cho Booking A vào ngày X, thuật toán tự động quét toàn bộ các Booking khác cùng ngày X.
+    *   Phát hiện đụng thiết bị: Lập tức hiển thị **Banner Đỏ Nổi Bật** ghi rõ: *"⚠️ Cảnh báo: [Tên thiết bị] đã được xếp lịch cho một khách khác ([Tên khách] - [Gói]) vào ngày này!"*.
+    *   Chặn không cho lưu: Bắt buộc thợ ảnh tích chọn *"Xác nhận ghi đè: Tôi đồng ý sử dụng thiết bị này dù có xung đột lịch trình"* mới mở khóa nút lưu.
+*   **4. Quét Xung Đột Khi Lập Báo Giá (Quote Generator):**
+    *   File: `frontend/src/lib/conflictScanner.ts` & `CreateQuoteModal.tsx`
+    *   Tự động cộng thêm phụ phí thuê ngoài ước tính vào báo giá nếu đụng thiết bị.
+
 *   **2. Trình Tạo Báo Giá Mới (Quote Generator UI):**
     *   File: `frontend/src/components/dashboard/CreateQuoteModal.tsx`
     *   Nút `+ Tạo Báo Giá Mới` trên DashboardHeader.

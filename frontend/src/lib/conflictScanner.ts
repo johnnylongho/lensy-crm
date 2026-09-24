@@ -196,3 +196,83 @@ export function scanGearConflicts(
     conflicts,
   };
 }
+
+export interface DynamicGearConflict {
+  gearId: string;
+  gearName: string;
+  conflictingBookingId: string;
+  conflictingClientName: string;
+  conflictingSessionType: string;
+  eventDate: string;
+  timeRange: string;
+}
+
+/**
+ * Thuật toán Cảnh báo trùng lặp thiết bị (USP 2):
+ * Khi thợ ảnh đang chọn thiết bị cho Booking A (vào ngày X),
+ * kiểm tra toàn bộ các Booking khác cũng diễn ra trong ngày X.
+ * Nếu thiết bị vừa chọn đã được gán cho một Booking khác trong cùng ngày,
+ * lập tức trả về danh sách chi tiết các cảnh báo xung đột (báo đỏ và chặn lưu/yêu cầu xác nhận ghi đè).
+ */
+export function checkAssignedGearConflicts(
+  targetDate: string,
+  currentBookingId: string | undefined,
+  selectedGearIds: string[],
+  allBookings: Array<{
+    id: string;
+    eventDate?: string;
+    event_date?: string;
+    clientName?: string;
+    client_name?: string;
+    sessionType?: string;
+    session_type?: string;
+    startTime?: string;
+    start_time?: string;
+    endTime?: string;
+    end_time?: string;
+    status?: string;
+    assignedGears?: string[];
+    assigned_gears?: string[];
+  }>,
+  allGears: Array<{
+    id: string;
+    name: string;
+  }>
+): DynamicGearConflict[] {
+  if (!targetDate || !selectedGearIds || selectedGearIds.length === 0 || !allBookings) {
+    return [];
+  }
+
+  // Lọc các booking khác diễn ra CÙNG NGÀY targetDate và không ở trạng thái hủy ('da_huy')
+  const sameDayBookings = allBookings.filter(b => {
+    const bDate = b.eventDate || b.event_date;
+    const bId = b.id;
+    const bStatus = b.status;
+    return bDate === targetDate && bId !== currentBookingId && bStatus !== 'da_huy';
+  });
+
+  const conflicts: DynamicGearConflict[] = [];
+
+  for (const gearId of selectedGearIds) {
+    const gearObj = allGears.find(g => g.id === gearId);
+    const gearName = gearObj ? gearObj.name : 'Thiết bị';
+
+    for (const b of sameDayBookings) {
+      const assigned = b.assignedGears || b.assigned_gears || [];
+      if (assigned.includes(gearId)) {
+        conflicts.push({
+          gearId,
+          gearName,
+          conflictingBookingId: b.id,
+          conflictingClientName: b.clientName || b.client_name || 'Khách hàng khác',
+          conflictingSessionType: (b.sessionType || b.session_type || 'Chụp ảnh').toUpperCase(),
+          eventDate: targetDate,
+          timeRange: `${(b.startTime || b.start_time || '08:00').substring(0, 5)} - ${(b.endTime || b.end_time || '12:00').substring(0, 5)}`,
+        });
+      }
+    }
+  }
+
+  return conflicts;
+}
+

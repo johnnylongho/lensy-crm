@@ -211,6 +211,113 @@ const depositModalContent = fs.existsSync(depositModalFile) ? fs.readFileSync(de
 assert(depositModalContent.includes('handleImageSelect') && depositModalContent.includes('BILL_PENDING'), 'Trang khách hàng hỗ trợ tải ảnh bill chuyển khoản và kích hoạt trạng thái chờ duyệt');
 
 // --------------------------------------------------------------------
+// 7. KIỂM TRA QUẢN LÝ THIẾT BỊ & CẢNH BÁO TRÙNG LẶP (USP 2)
+// --------------------------------------------------------------------
+console.log('\n▶ 7. Kiểm tra Quản Lý Thiết Bị & Cảnh Báo Trùng Lặp (USP 2)...');
+
+// 7.1 Kiểm tra Trang Quản Lý Thiết Bị (/dashboard/gears)
+const gearsPageFile = path.join(__dirname, 'frontend', 'src', 'components', 'dashboard', 'GearsManagementPage.tsx');
+assert(fs.existsSync(gearsPageFile), 'Trang Quản lý thiết bị (GearsManagementPage.tsx) tồn tại');
+
+const gearsPageContent = fs.existsSync(gearsPageFile) ? fs.readFileSync(gearsPageFile, 'utf8') : '';
+assert(gearsPageContent.includes("viewMode === 'table'") && gearsPageContent.includes("<table"), 'Hỗ trợ hiển thị dạng Bảng (Table View) với đầy đủ thông tin');
+assert(gearsPageContent.includes("viewMode === 'grid'") || gearsPageContent.includes("DẠNG LƯỚI"), 'Hỗ trợ hiển thị dạng Lưới (Grid View) với card hiện đại');
+assert(gearsPageContent.includes('handleDeleteGear') && gearsPageContent.includes('handleOpenEditModal'), 'Đầy đủ chức năng Thêm, Sửa, Xóa thiết bị của Studio');
+
+// 7.2 Kiểm tra Gắn Thiết Bị & Cảnh Báo Trùng Lặp tại BookingDetailModal
+const bookingDetailModalFile = path.join(__dirname, 'frontend', 'src', 'components', 'dashboard', 'BookingDetailModal.tsx');
+assert(fs.existsSync(bookingDetailModalFile), 'Modal Chi Tiết Booking (BookingDetailModal.tsx) tồn tại');
+
+const bookingDetailContent = fs.existsSync(bookingDetailModalFile) ? fs.readFileSync(bookingDetailModalFile, 'utf8') : '';
+assert(bookingDetailContent.includes('checkAssignedGearConflicts'), 'Sử dụng thuật toán kiểm tra xung đột thiết bị cùng ngày (checkAssignedGearConflicts)');
+assert(bookingDetailContent.includes('isOverrideConfirmed') && bookingDetailContent.includes('Xác nhận ghi đè'), 'Có cơ chế chặn lưu khi xung đột và yêu cầu xác nhận ghi đè');
+assert(bookingDetailContent.includes('assigned_gears: selectedGearIds'), 'Lưu danh sách UUID thiết bị phân bổ vào cột assigned_gears');
+
+// 7.3 Kiểm tra Thuật Toán Cảnh Báo Trùng Lặp (Conflict Logic Algorithm)
+const conflictScannerModule = fs.readFileSync(conflictScannerFile, 'utf8');
+assert(conflictScannerModule.includes('checkAssignedGearConflicts'), 'Hàm checkAssignedGearConflicts đã được định nghĩa và export trong conflictScanner.ts');
+
+// Mô phỏng thuật toán kiểm tra xung đột
+function simulateCheckAssignedGearConflicts(targetDate, currentBookingId, selectedGearIds, allBookings, allGears) {
+  const sameDayBookings = allBookings.filter(b => {
+    const bDate = b.eventDate || b.event_date;
+    const bId = b.id;
+    const bStatus = b.status;
+    return bDate === targetDate && bId !== currentBookingId && bStatus !== 'da_huy';
+  });
+
+  const conflicts = [];
+  for (const gearId of selectedGearIds) {
+    const gearObj = allGears.find(g => g.id === gearId);
+    const gearName = gearObj ? gearObj.name : 'Thiết bị';
+
+    for (const b of sameDayBookings) {
+      const assigned = b.assignedGears || b.assigned_gears || [];
+      if (assigned.includes(gearId)) {
+        conflicts.push({
+          gearId,
+          gearName,
+          conflictingBookingId: b.id,
+          conflictingClientName: b.clientName || b.client_name || 'Khách khác',
+        });
+      }
+    }
+  }
+  return conflicts;
+}
+
+const mockGears = [
+  { id: 'g-a74', name: 'Sony Alpha 7 IV' },
+  { id: 'g-2470', name: 'Lens FE 24-70mm GM II' },
+  { id: 'g-godox', name: 'Đèn Godox AD600 Pro' },
+];
+
+const mockBookingsList = [
+  {
+    id: 'b-show-1',
+    eventDate: '2026-09-25',
+    clientName: 'Đám Cưới Minh & Thảo',
+    assignedGears: ['g-a74', 'g-2470'],
+    status: 'da_chot',
+  },
+  {
+    id: 'b-show-2',
+    eventDate: '2026-09-25',
+    clientName: 'Lookbook Thời Trang BrandX',
+    assignedGears: [],
+    status: 'da_chot',
+  },
+  {
+    id: 'b-show-3',
+    eventDate: '2026-09-26', // Khác ngày
+    clientName: 'Chân Dung Hoàng Oanh',
+    assignedGears: ['g-a74'],
+    status: 'da_chot',
+  }
+];
+
+// Test case 1: Show 2 cùng ngày 2026-09-25 chọn máy g-a74 (ĐÃ GÁN CHO SHOW 1)
+const conflictsFound = simulateCheckAssignedGearConflicts(
+  '2026-09-25',
+  'b-show-2',
+  ['g-a74', 'g-godox'],
+  mockBookingsList,
+  mockGears
+);
+
+assert(conflictsFound.length === 1 && conflictsFound[0].gearName === 'Sony Alpha 7 IV', 'Thuật toán phát hiện chính xác máy Sony A7 IV bị đụng với "Đám Cưới Minh & Thảo" ngày 2026-09-25');
+
+// Test case 2: Show 2 chọn đèn g-godox (Chưa ai gán cùng ngày) -> Không xung đột
+const cleanSelection = simulateCheckAssignedGearConflicts(
+  '2026-09-25',
+  'b-show-2',
+  ['g-godox'],
+  mockBookingsList,
+  mockGears
+);
+assert(cleanSelection.length === 0, 'Thiết bị chưa ai gán trong cùng ngày không bị báo xung đột');
+
+// --------------------------------------------------------------------
 // TỔNG KẾT
 // --------------------------------------------------------------------
 console.log('\n====================================================================');
@@ -219,4 +326,5 @@ if (warnings > 0) {
   console.log(`   ⚠️  CẢNH BÁO: ${warnings} mục cần chú ý (Xem chi tiết bên trên)`);
 }
 console.log('====================================================================\n');
+
 

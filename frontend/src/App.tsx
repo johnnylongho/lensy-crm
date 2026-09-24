@@ -39,7 +39,7 @@ export function App() {
       startTime: (newBooking.start_time || newBooking.startTime || '08:00').substring(0, 5),
       endTime: (newBooking.end_time || newBooking.endTime || '12:00').substring(0, 5),
       location: newBooking.location || 'Tại Studio',
-      status: (newBooking.status as any) || 'cho_coc',
+      status: (newBooking.status as any) || 'lead',
       packagePrice: Number(newBooking.package_price || newBooking.packagePrice || 18000000),
       depositAmount: Number(newBooking.deposit_amount || newBooking.depositAmount || 5400000),
     };

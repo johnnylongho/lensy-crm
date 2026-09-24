@@ -336,8 +336,9 @@ const roiBarFile = path.join(__dirname, 'frontend', 'src', 'components', 'dashbo
 assert(fs.existsSync(roiBarFile), 'Component RoiProgressBar.tsx tồn tại');
 const roiBarContent = fs.existsSync(roiBarFile) ? fs.readFileSync(roiBarFile, 'utf8') : '';
 
-assert(roiBarContent.includes('totalInvestment') && roiBarContent.includes('totalCollected'), 'Tính toán đầy đủ Tổng Đầu Tư (tài sản gears) và Tổng Doanh Thu (tiền đã thu bookings)');
-assert(roiBarContent.includes('roiPercentage'), 'Áp dụng công thức % Hoàn vốn = (Tổng Doanh Thu / Tổng Đầu Tư) * 100 có bảo vệ chia cho 0');
+assert(roiBarContent.includes('totalInvestment') && roiBarContent.includes('totalCollected'), 'Tính toán đầy đủ Tổng Đầu Tư (tài sản gears) và Tổng Doanh Thu');
+assert(roiBarContent.includes('totalNetProfit'), 'Tính toán Tổng LỢI NHUẬN RÒNG (Doanh thu đã thu - Tổng chi phí) để làm tử số ROI');
+assert(roiBarContent.includes('roiPercentage'), 'Áp dụng công thức % Hoàn vốn = (Tổng Lợi Nhuận Ròng / Tổng Đầu Tư) * 100 có bảo vệ chia cho 0');
 assert(roiBarContent.includes('isOver100') && roiBarContent.includes('isOver50'), 'Chuyển màu thông minh theo 3 tầng: <50% Cam, 50-99% Xanh dương, >=100% Xanh lá');
 
 // 8.4 Tích hợp vào Dashboard
@@ -345,15 +346,106 @@ const dashboardFile = path.join(__dirname, 'frontend', 'src', 'components', 'das
 const dashboardContent = fs.existsSync(dashboardFile) ? fs.readFileSync(dashboardFile, 'utf8') : '';
 assert(dashboardContent.includes('<RoiProgressBar'), 'RoiProgressBar được đặt ở vị trí trên cùng, nổi bật nhất của PhotographerDashboard');
 
-// 8.5 Test logic công thức toán học ROI
-function calculateRoi(totalInvestment, totalCollected) {
+// 8.5 Test logic công thức toán học ROI dựa trên Lợi Nhuận Ròng
+function calculateRoiNetProfit(totalInvestment, totalCollected, totalExpenses = 0) {
   if (!totalInvestment || totalInvestment <= 0) return 0;
-  return (totalCollected / totalInvestment) * 100;
+  const netProfit = totalCollected - totalExpenses;
+  return (netProfit / totalInvestment) * 100;
 }
-assert(calculateRoi(0, 10000000) === 0, 'Xử lý Tổng đầu tư = 0 trả về 0% tránh lỗi chia cho 0');
-assert(calculateRoi(100000000, 40000000) === 40, 'Thu 40tr trên vốn 100tr tính chính xác 40% (Màu cam)');
-assert(calculateRoi(100000000, 75000000) === 75, 'Thu 75tr trên vốn 100tr tính chính xác 75% (Màu xanh dương)');
-assert(calculateRoi(100000000, 125000000) === 125, 'Thu 125tr trên vốn 100tr tính chính xác 125% (Màu xanh lá - Bắt đầu sinh lời ròng)');
+assert(calculateRoiNetProfit(0, 10000000, 2000000) === 0, 'Xử lý Tổng đầu tư = 0 trả về 0% tránh lỗi chia cho 0');
+assert(calculateRoiNetProfit(100000000, 50000000, 10000000) === 40, 'Doanh thu 50tr - chi 10tr = lãi 40tr trên vốn 100tr -> 40% (Màu cam)');
+assert(calculateRoiNetProfit(100000000, 90000000, 15000000) === 75, 'Doanh thu 90tr - chi 15tr = lãi 75tr trên vốn 100tr -> 75% (Màu xanh dương)');
+assert(calculateRoiNetProfit(100000000, 150000000, 25000000) === 125, 'Doanh thu 150tr - chi 25tr = lãi 125tr trên vốn 100tr -> 125% (Màu xanh lá - Đã hoàn vốn)');
+
+// --------------------------------------------------------------------
+// 9. KIỂM TRA HẠCH TOÁN CHI PHÍ (JOB COSTING) & LỢI NHUẬN RÒNG (NET PROFIT)
+// --------------------------------------------------------------------
+console.log('\n▶ 9. Kiểm tra Hạch Toán Chi Phí (Job Costing) & Lợi Nhuận Ròng (Net Profit)...');
+
+// 9.1 File DDL migration update_bookings_expenses.sql
+const expensesSqlFile = path.join(__dirname, 'update_bookings_expenses.sql');
+assert(fs.existsSync(expensesSqlFile), 'File update_bookings_expenses.sql tồn tại');
+if (fs.existsSync(expensesSqlFile)) {
+  const expSql = fs.readFileSync(expensesSqlFile, 'utf8');
+  assert(expSql.includes('expenses') && expSql.includes('NUMERIC'), 'update_bookings_expenses.sql bổ sung cột expenses (NUMERIC)');
+  assert(expSql.includes('expense_details') && expSql.includes('JSONB'), 'update_bookings_expenses.sql bổ sung cột expense_details (JSONB)');
+}
+
+// 9.2 TypeScript Types
+assert(typesContent.includes('export interface ExpenseItem'), 'TypeScript Types định nghĩa ExpenseItem { id, name, amount }');
+assert(typesContent.includes('expenses?:') && typesContent.includes('expenseDetails?:'), 'CalendarEvent hỗ trợ trường expenses và expenseDetails');
+
+// 9.3 Modal Chi Tiết Booking với Hạch Toán Chi Phí (Job Costing Tab)
+const bookingModalFile = path.join(__dirname, 'frontend', 'src', 'components', 'dashboard', 'BookingDetailModal.tsx');
+const bookingModalContent = fs.existsSync(bookingModalFile) ? fs.readFileSync(bookingModalFile, 'utf8') : '';
+assert(bookingModalContent.includes('Hạch Toán Chi Phí') || bookingModalContent.includes('Job Costing'), 'Modal Booking có Tab Hạch Toán Chi Phí (Job Costing)');
+assert(bookingModalContent.includes('Lợi nhuận ròng = [Số tiền khách trả] - [Tổng chi phí'), 'Hiển thị công thức trực quan: Lợi nhuận ròng = [Số tiền khách trả] - [Tổng chi phí]');
+assert(bookingModalContent.includes('handleAddExpense') && bookingModalContent.includes('handleRemoveExpense'), 'Hỗ trợ thêm các dòng chi phí nhỏ (tên khoản chi + số tiền) và xóa dòng');
+assert(bookingModalContent.includes('expense_details') && bookingModalContent.includes('expenses'), 'Lưu tổng chi phí vào expenses và danh sách chi tiết vào expense_details trong Supabase');
+
+// 9.4 Thẻ Tổng Quan DashboardHeader tách rõ Gross & Net Profit
+const headerFile = path.join(__dirname, 'frontend', 'src', 'components', 'dashboard', 'DashboardHeader.tsx');
+const headerContent = fs.existsSync(headerFile) ? fs.readFileSync(headerFile, 'utf8') : '';
+assert(headerContent.includes('Tổng Doanh Thu (Gross)'), 'DashboardHeader có thẻ Tổng Doanh Thu (Gross)');
+assert(headerContent.includes('Lợi Nhuận Ròng (Net)'), 'DashboardHeader có thẻ riêng biệt cho Lợi Nhuận Ròng (Net Profit)');
+assert(headerContent.includes('Tiền thật bỏ túi'), 'Thẻ Lợi Nhuận Ròng được định danh rõ "Tiền thật bỏ túi"');
+
+// 9.5 Biểu đồ Xu hướng Lợi Nhuận Ròng (ProfitTrendChart)
+const chartFile = path.join(__dirname, 'frontend', 'src', 'components', 'dashboard', 'ProfitTrendChart.tsx');
+assert(fs.existsSync(chartFile), 'Component ProfitTrendChart.tsx tồn tại');
+const chartContent = fs.existsSync(chartFile) ? fs.readFileSync(chartFile, 'utf8') : '';
+assert(chartContent.includes('Biểu Đồ Lợi Nhuận Ròng Theo Show'), 'ProfitTrendChart có tiêu đề Biểu Đồ Lợi Nhuận Ròng Theo Show');
+assert(chartContent.includes('Tiền Thật Bỏ Túi'), 'ProfitTrendChart ưu tiên làm nổi bật dòng Tiền Thật Bỏ Túi');
+assert(chartContent.includes('netProfitGradient') && chartContent.includes('emeraldGlow'), 'Đường Lợi Nhuận Ròng được vẽ nổi bật bằng màu Emerald với hiệu ứng Glow rực rỡ');
+assert(dashboardContent.includes('<ProfitTrendChart'), 'PhotographerDashboard tích hợp hiển thị ProfitTrendChart');
+
+// --------------------------------------------------------------------
+// 10. KIỂM TRA CHUẨN HÓA TRẠNG THÁI BOOKING & BẢNG KANBAN TIẾN ĐỘ
+// --------------------------------------------------------------------
+console.log('\n▶ 10. Kiểm tra Chuẩn Hóa Trạng Thái Booking (Kanban Photography Pipeline)...');
+
+// 10.1 File Migration SQL update_bookings_kanban_status.sql
+const kanbanSqlFile = path.join(__dirname, 'update_bookings_kanban_status.sql');
+assert(fs.existsSync(kanbanSqlFile), 'File migration update_bookings_kanban_status.sql tồn tại');
+if (fs.existsSync(kanbanSqlFile)) {
+  const kanbanSql = fs.readFileSync(kanbanSqlFile, 'utf8');
+  assert(kanbanSql.includes("ALTER COLUMN status SET DEFAULT 'lead'"), 'update_bookings_kanban_status.sql đặt default status là "lead"');
+  assert(kanbanSql.includes("'lead'") && kanbanSql.includes("'deposited'") && kanbanSql.includes("'shot'") && kanbanSql.includes("'editing'") && kanbanSql.includes("'done'"), 'Hỗ trợ đủ 5 trạng thái chuẩn: lead, deposited, shot, editing, done');
+  assert(kanbanSql.includes('bookings_status_check'), 'Cập nhật CHECK constraint an toàn cho cột status');
+}
+
+// 10.2 Đồng bộ init_database.sql
+const initSql = fs.readFileSync(sqlFile, 'utf8');
+assert(initSql.includes("status VARCHAR(50) NOT NULL DEFAULT 'lead'"), 'init_database.sql đã cập nhật DEFAULT "lead" cho bảng bookings');
+
+// 10.3 Form Đặt Lịch Khách Hàng (/book/:username)
+const clientFormFile = path.join(__dirname, 'frontend', 'src', 'components', 'quote', 'ClientBookingForm.tsx');
+const clientFormContent = fs.existsSync(clientFormFile) ? fs.readFileSync(clientFormFile, 'utf8') : '';
+assert(clientFormContent.includes("status: 'lead'"), 'Form đặt lịch khách hàng (/book/:username) luôn gán status mặc định là "lead"');
+
+// 10.4 TypeScript Types & Kanban Columns
+const updatedTypesContent = fs.readFileSync(path.join(__dirname, 'frontend', 'src', 'types', 'index.ts'), 'utf8');
+assert(updatedTypesContent.includes("'lead'") && updatedTypesContent.includes("'deposited'") && updatedTypesContent.includes("'shot'") && updatedTypesContent.includes("'editing'") && updatedTypesContent.includes("'done'"), 'TypeScript BookingStatus định nghĩa đầy đủ 5 trạng thái chuẩn');
+
+const kanbanFile = path.join(__dirname, 'frontend', 'src', 'components', 'dashboard', 'KanbanView.tsx');
+const kanbanContent = fs.existsSync(kanbanFile) ? fs.readFileSync(kanbanFile, 'utf8') : '';
+assert(kanbanContent.includes("status: 'lead'") && kanbanContent.includes("status: 'deposited'") && kanbanContent.includes("status: 'shot'") && kanbanContent.includes("status: 'editing'") && kanbanContent.includes("status: 'done'"), 'KanbanView hỗ trợ hiển thị 5 cột theo quy trình chuẩn nhiếp ảnh');
+
+// 10.5 Drag & Drop Library Installation (@dnd-kit)
+const pkgJson = JSON.parse(fs.readFileSync(frontendPkg, 'utf8'));
+assert(pkgJson.dependencies['@dnd-kit/core'] && pkgJson.dependencies['@dnd-kit/sortable'], 'Đã cài đặt thư viện @dnd-kit/core và @dnd-kit/sortable trong frontend');
+
+// 10.6 Kiểm tra UI Component KanbanView & 5 Cột Chuẩn
+assert(kanbanContent.includes("title: 'Mới hỏi'") && kanbanContent.includes("title: 'Đã cọc'") && kanbanContent.includes("title: 'Đã chụp'") && kanbanContent.includes("title: 'Đang sửa ảnh'") && kanbanContent.includes("title: 'Hoàn tất'"), 'Bảng Kanban có đủ 5 cột: Mới hỏi ➔ Đã cọc ➔ Đã chụp ➔ Đang sửa ảnh ➔ Hoàn tất');
+assert(kanbanContent.includes('DndContext') && kanbanContent.includes('useDroppable') && kanbanContent.includes('useSortable') && kanbanContent.includes('DragOverlay'), 'Tích hợp đầy đủ DndContext, useDroppable cho cột, useSortable cho thẻ và DragOverlay');
+
+// 10.7 Thẻ Booking hiển thị Tên khách, Ngày chụp & Số tiền chưa thu (Màu đỏ nếu còn nợ)
+assert(kanbanContent.includes('item.clientName') && kanbanContent.includes('item.eventDate'), 'Thẻ Booking hiển thị Tên khách hàng và Ngày chụp');
+assert(kanbanContent.includes('remainingDebt > 0') && kanbanContent.includes('bg-rose-950') && kanbanContent.includes('text-rose-300'), 'Số tiền chưa thu được nhấn mạnh bằng màu đỏ nổi bật (bg-rose-950/text-rose-300) khi còn nợ');
+
+// 10.8 Logic Cập nhật Trạng thái & Toast Thông Báo
+assert(dashboardContent.includes('handleStatusChange') && dashboardContent.includes("Đã chuyển sang trạng thái"), 'PhotographerDashboard hiển thị Toast "Đã chuyển sang trạng thái [Tên trạng thái]" khi đổi trạng thái');
+assert(dashboardContent.includes(".from('bookings')") && dashboardContent.includes('.update(updatePayload)') && dashboardContent.includes(".eq('id', eventId)"), 'Hàm handleStatusChange tự động gọi API Supabase cập nhật cột status của Booking');
 
 // --------------------------------------------------------------------
 // TỔNG KẾT

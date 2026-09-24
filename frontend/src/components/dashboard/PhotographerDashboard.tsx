@@ -11,6 +11,7 @@ import { WebhookSimulatorModal } from './WebhookSimulatorModal';
 import { ReceiptReviewModal } from './ReceiptReviewModal';
 import { BookingDetailModal } from './BookingDetailModal';
 import { RoiProgressBar } from './RoiProgressBar';
+import { ProfitTrendChart } from './ProfitTrendChart';
 import { CalendarEvent, BookingStatus } from '../../types';
 import { supabase, isSupabaseConfigured } from '../../lib/supabase';
 import { STATUS_CONFIG } from './BookingStatusSelect';
@@ -106,6 +107,8 @@ export const PhotographerDashboard: React.FC<Props> = ({
               notes: b.notes,
               receiptUrl: receiptImg,
               assignedGears: b.assigned_gears || [],
+              expenses: Number(b.expenses || 0),
+              expenseDetails: b.expense_details || [],
             };
           });
           setEvents(mappedEvents);
@@ -148,8 +151,8 @@ export const PhotographerDashboard: React.FC<Props> = ({
     }
   }, [initialEvents]);
 
-  // Cập nhật trạng thái show (đổi từ Chờ cọc -> Đã chốt -> Đã trả file...)
-  // Đồng thời tự động cập nhật dòng tiền (30% cọc khi chuyển sang Đã nhận cọc, nợ đọng)
+  // Cập nhật trạng thái show (đổi từ Mới hỏi -> Đã cọc -> Đã chụp -> Đang sửa ảnh -> Hoàn tất)
+  // Đồng thời tự động cập nhật dòng tiền (30% cọc khi chuyển sang Đã cọc, tất toán khi Hoàn tất)
   const handleStatusChange = async (eventId: string, newStatus: BookingStatus) => {
     const targetEvent = events.find(e => e.id === eventId);
     if (!targetEvent) return;
@@ -157,17 +160,17 @@ export const PhotographerDashboard: React.FC<Props> = ({
     let updatedDeposit = targetEvent.depositAmount;
     let updatedPaid = targetEvent.paidAmount ?? 0;
 
-    // Tự động tính 30% khi chuyển sang trạng thái "Đã nhận cọc"
-    if (newStatus === 'da_chot') {
+    // Tự động tính 30% khi chuyển sang trạng thái "Đã cọc" (deposited / da_chot)
+    if (newStatus === 'da_chot' || newStatus === 'deposited') {
       const deposit30 = Math.round(targetEvent.packagePrice * 0.3);
       updatedDeposit = targetEvent.depositAmount > 0 ? targetEvent.depositAmount : deposit30;
       updatedPaid = updatedDeposit;
-    } else if (newStatus === 'hoan_thanh') {
+    } else if (newStatus === 'hoan_thanh' || newStatus === 'done') {
       updatedPaid = targetEvent.packagePrice;
       if (updatedDeposit === 0) {
         updatedDeposit = Math.round(targetEvent.packagePrice * 0.3);
       }
-    } else if (newStatus === 'cho_coc') {
+    } else if (newStatus === 'cho_coc' || newStatus === 'lead') {
       updatedPaid = 0;
     }
 
@@ -191,7 +194,7 @@ export const PhotographerDashboard: React.FC<Props> = ({
     const statusInfo = STATUS_CONFIG[newStatus] || { label: newStatus };
     setToastNotification({
       type: 'success',
-      message: `Đã đổi trạng thái "${targetEvent.clientName}" ➔ ${statusInfo.label} (Cọc: ${updatedDeposit.toLocaleString('vi-VN')} đ | Nợ: ${updatedRemaining.toLocaleString('vi-VN')} đ)`,
+      message: `Đã chuyển sang trạng thái ${statusInfo.label}`,
     });
 
     // 2. Viết hàm UPDATE của Supabase: Cập nhật status, deposit_amount, paid_amount
@@ -373,6 +376,9 @@ export const PhotographerDashboard: React.FC<Props> = ({
 
       {/* ROI Progress Bar - Tiến Độ Hoàn Vốn Đầu Tư (Vị trí trên cùng nổi bật) */}
       <RoiProgressBar events={events} />
+
+      {/* Biểu Đồ Xu Hướng Lợi Nhuận Ròng (Ưu tiên hiển thị Net Profit - Tiền thật bỏ túi) */}
+      <ProfitTrendChart events={events} />
 
       {/* Control Bar: View Switcher (Calendar vs Kanban) & Realtime Status */}
       <div className="flex flex-wrap items-center justify-between gap-3 bg-slate-900/60 p-3 rounded-2xl border border-slate-800">

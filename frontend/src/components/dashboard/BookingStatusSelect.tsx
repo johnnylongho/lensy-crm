@@ -21,15 +21,78 @@ export const STATUS_CONFIG: Record<
     desc: string;
   }
 > = {
-  cho_coc: {
-    label: 'Chờ cọc',
+  // 5 Trạng Thái Quy Trình Nhiếp Ảnh Chuẩn Kanban:
+  lead: {
+    label: 'Mới hỏi',
     badgeBg: 'bg-amber-500/20',
     textColor: 'text-amber-300',
     borderColor: 'border-amber-500/40',
     dotColor: 'bg-amber-400',
     cardBg: 'bg-amber-950/25',
     cardBorder: 'border-amber-500/40 hover:border-amber-400',
-    desc: 'Đã gửi link báo giá, chờ khách chuyển khoản',
+    desc: 'Khách hàng mới gửi yêu cầu từ link đặt lịch',
+  },
+  deposited: {
+    label: 'Đã cọc',
+    badgeBg: 'bg-emerald-500/20',
+    textColor: 'text-emerald-300',
+    borderColor: 'border-emerald-500/40',
+    dotColor: 'bg-emerald-400',
+    cardBg: 'bg-emerald-950/25',
+    cardBorder: 'border-emerald-500/40 hover:border-amber-400',
+    desc: 'Đã thu tiền cọc, lịch chụp đã được khóa chắc chắn',
+  },
+  shot: {
+    label: 'Đã chụp',
+    badgeBg: 'bg-blue-500/20',
+    textColor: 'text-blue-300',
+    borderColor: 'border-blue-500/40',
+    dotColor: 'bg-blue-400',
+    cardBg: 'bg-blue-950/25',
+    cardBorder: 'border-blue-500/40 hover:border-blue-400',
+    desc: 'Đã bấm máy xong show, sẵn sàng đưa vào hậu kỳ',
+  },
+  editing: {
+    label: 'Đang sửa ảnh',
+    badgeBg: 'bg-indigo-500/20',
+    textColor: 'text-indigo-300',
+    borderColor: 'border-indigo-500/40',
+    dotColor: 'bg-indigo-400',
+    cardBg: 'bg-indigo-950/25',
+    cardBorder: 'border-indigo-500/40 hover:border-indigo-400',
+    desc: 'Đang chọn ảnh, blend màu & retouch Photoshop',
+  },
+  done: {
+    label: 'Hoàn tất',
+    badgeBg: 'bg-purple-500/20',
+    textColor: 'text-purple-300',
+    borderColor: 'border-purple-500/40',
+    dotColor: 'bg-purple-400',
+    cardBg: 'bg-purple-950/20',
+    cardBorder: 'border-purple-500/30 hover:border-purple-400',
+    desc: 'Đã giao ảnh hoàn tất 100% & quyết toán dòng tiền',
+  },
+  cancelled: {
+    label: 'Đã hủy',
+    badgeBg: 'bg-rose-500/20',
+    textColor: 'text-rose-300',
+    borderColor: 'border-rose-500/40',
+    dotColor: 'bg-rose-400',
+    cardBg: 'bg-rose-950/20',
+    cardBorder: 'border-rose-500/30 hover:border-rose-400',
+    desc: 'Lịch chụp đã hủy bỏ',
+  },
+
+  // Tương thích ngược:
+  cho_coc: {
+    label: 'Chờ cọc (Lead)',
+    badgeBg: 'bg-amber-500/20',
+    textColor: 'text-amber-300',
+    borderColor: 'border-amber-500/40',
+    dotColor: 'bg-amber-400',
+    cardBg: 'bg-amber-950/25',
+    cardBorder: 'border-amber-500/40 hover:border-amber-400',
+    desc: 'Đã gửi link báo giá, chờ khách cọc',
   },
   cho_xac_nhan_coc: {
     label: 'Chờ duyệt bill',
@@ -39,7 +102,7 @@ export const STATUS_CONFIG: Record<
     dotColor: 'bg-orange-400',
     cardBg: 'bg-orange-950/30',
     cardBorder: 'border-orange-500/50 hover:border-orange-400',
-    desc: 'Khách đã gửi ảnh bill cọc, đang chờ studio duyệt',
+    desc: 'Khách đã gửi ảnh bill cọc, chờ studio duyệt',
   },
   da_chot: {
     label: 'Đã nhận cọc',
@@ -49,7 +112,7 @@ export const STATUS_CONFIG: Record<
     dotColor: 'bg-emerald-400',
     cardBg: 'bg-emerald-950/25',
     cardBorder: 'border-emerald-500/40 hover:border-emerald-400',
-    desc: 'Đã thu cọc 30%, lịch chụp đã được khóa',
+    desc: 'Đã thu cọc, lịch chụp đã được khóa',
   },
   da_tra_file: {
     label: 'Đã trả file',
@@ -88,7 +151,7 @@ export const BookingStatusSelect: React.FC<Props> = ({
   onChange,
   size = 'md',
 }) => {
-  const current = STATUS_CONFIG[status] || STATUS_CONFIG.cho_coc;
+  const current = STATUS_CONFIG[status] || STATUS_CONFIG.lead || STATUS_CONFIG.cho_coc;
 
   return (
     <div className="relative inline-flex items-center">
@@ -100,17 +163,20 @@ export const BookingStatusSelect: React.FC<Props> = ({
         } ${current.badgeBg} ${current.textColor} ${current.borderColor} bg-slate-900`}
         title="Bấm để đổi trạng thái lịch chụp"
       >
-        <option value="cho_coc" className="bg-slate-900 text-amber-300 font-semibold py-1">
-          🟡 Chờ cọc
+        <option value="lead" className="bg-slate-900 text-amber-300 font-semibold py-1">
+          🟡 Mới hỏi (Lead)
         </option>
-        <option value="da_chot" className="bg-slate-900 text-emerald-300 font-semibold py-1">
-          🟢 Đã nhận cọc (Tự tính 30%)
+        <option value="deposited" className="bg-slate-900 text-emerald-300 font-semibold py-1">
+          🟢 Đã cọc (Deposited)
         </option>
-        <option value="da_tra_file" className="bg-slate-900 text-sky-300 font-semibold py-1">
-          🔵 Đã trả file (Chờ thanh toán)
+        <option value="shot" className="bg-slate-900 text-blue-300 font-semibold py-1">
+          📸 Đã chụp (Shot)
         </option>
-        <option value="hoan_thanh" className="bg-slate-900 text-purple-300 font-semibold py-1">
-          🟣 Hoàn thành (Đã thanh toán đủ)
+        <option value="editing" className="bg-slate-900 text-indigo-300 font-semibold py-1">
+          🎨 Đang hậu kỳ (Editing)
+        </option>
+        <option value="done" className="bg-slate-900 text-purple-300 font-semibold py-1">
+          🟣 Hoàn tất (Done)
         </option>
       </select>
 

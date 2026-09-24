@@ -59,7 +59,7 @@ export const ClientBookingForm: React.FC<Props> = ({
       package_price: defaultPrice,
       deposit_amount: defaultDeposit,
       paid_amount: 0,
-      status: 'cho_coc',
+      status: 'lead',
       quote_token: quoteToken,
       notes: notes || null,
     };

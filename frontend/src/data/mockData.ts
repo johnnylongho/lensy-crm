@@ -81,6 +81,12 @@ export const MOCK_CALENDAR_EVENTS: CalendarEvent[] = [
     status: 'da_chot',
     packagePrice: 7500000,
     depositAmount: 3000000,
+    paidAmount: 3000000,
+    expenses: 1200000,
+    expenseDetails: [
+      { name: 'Thuê phụ kiện & bàn ủi hơi nước', amount: 400000 },
+      { name: 'Trợ lý ánh sáng (nửa ngày)', amount: 800000 },
+    ],
   },
   {
     id: 'ev-2',
@@ -93,6 +99,12 @@ export const MOCK_CALENDAR_EVENTS: CalendarEvent[] = [
     status: 'da_chot',
     packagePrice: 12000000,
     depositAmount: 4000000,
+    paidAmount: 4000000,
+    expenses: 2500000,
+    expenseDetails: [
+      { name: 'Makeup Artist cô dâu', amount: 1800000 },
+      { name: 'Grab di chuyển 2 chiều', amount: 700000 },
+    ],
   },
   {
     id: 'ev-3',
@@ -105,6 +117,12 @@ export const MOCK_CALENDAR_EVENTS: CalendarEvent[] = [
     status: 'da_chot',
     packagePrice: 15000000,
     depositAmount: 5000000,
+    paidAmount: 5000000,
+    expenses: 3200000,
+    expenseDetails: [
+      { name: 'Thuê thêm ống kính tele 70-200 GM', amount: 1200000 },
+      { name: 'Thợ phụ quay teaser highlight', amount: 2000000 },
+    ],
   },
   {
     id: 'ev-4',
@@ -117,6 +135,13 @@ export const MOCK_CALENDAR_EVENTS: CalendarEvent[] = [
     status: 'da_chot',
     packagePrice: 22000000,
     depositAmount: 10000000,
+    paidAmount: 10000000,
+    expenses: 5500000,
+    expenseDetails: [
+      { name: 'Vé xe khứ hồi & xăng xe Đà Lạt', amount: 2500000 },
+      { name: 'Makeup artist đi cùng đoàn', amount: 2000000 },
+      { name: 'Phí vào cổng phim trường Secret Garden', amount: 1000000 },
+    ],
   },
   {
     id: 'ev-5',
@@ -129,6 +154,11 @@ export const MOCK_CALENDAR_EVENTS: CalendarEvent[] = [
     status: 'cho_coc',
     packagePrice: 4500000,
     depositAmount: 1500000,
+    paidAmount: 0,
+    expenses: 500000,
+    expenseDetails: [
+      { name: 'Nước uống & tip địa điểm', amount: 500000 },
+    ],
   },
   {
     id: 'ev-6',
@@ -141,6 +171,9 @@ export const MOCK_CALENDAR_EVENTS: CalendarEvent[] = [
     status: 'cho_coc',
     packagePrice: 18000000,
     depositAmount: 5400000,
+    paidAmount: 0,
+    expenses: 0,
+    expenseDetails: [],
   },
   {
     id: 'ev-7',
@@ -153,5 +186,12 @@ export const MOCK_CALENDAR_EVENTS: CalendarEvent[] = [
     status: 'da_tra_file',
     packagePrice: 16000000,
     depositAmount: 8000000,
+    paidAmount: 16000000,
+    expenses: 4200000,
+    expenseDetails: [
+      { name: 'Thuê phim trường 1 ngày', amount: 2500000 },
+      { name: 'Trợ lý ánh sáng & setup', amount: 1200000 },
+      { name: 'Cơm trưa ekip 4 người', amount: 500000 },
+    ],
   }
 ];

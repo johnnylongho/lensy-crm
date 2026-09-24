@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { CalendarEvent, GearItem } from '../../types';
+import { CalendarEvent, GearItem, ExpenseItem } from '../../types';
 import { useAuth } from '../../context/AuthContext';
 import { supabase, isSupabaseConfigured } from '../../lib/supabase';
 import { checkAssignedGearConflicts, DynamicGearConflict } from '../../lib/conflictScanner';
@@ -22,6 +22,14 @@ import {
   Info,
   Search,
   SlidersHorizontal,
+  Receipt,
+  Plus,
+  Trash2,
+  Wallet,
+  Coins,
+  TrendingUp,
+  Tag,
+  Calculator,
 } from 'lucide-react';
 
 interface Props {
@@ -42,12 +50,19 @@ export const BookingDetailModal: React.FC<Props> = ({
   onOpenDebtReminder,
 }) => {
   const { user } = useAuth();
+  const [activeTab, setActiveTab] = useState<'gears' | 'expenses'>('gears');
   const [gears, setGears] = useState<GearItem[]>([]);
   const [isLoadingGears, setIsLoadingGears] = useState(false);
   const [selectedGearIds, setSelectedGearIds] = useState<string[]>([]);
   const [isOverrideConfirmed, setIsOverrideConfirmed] = useState(false);
   const [gearSearch, setGearSearch] = useState('');
   const [gearCategory, setGearCategory] = useState<string>('all');
+  
+  // Job Costing (Hạch toán Chi phí) States
+  const [expenseItems, setExpenseItems] = useState<ExpenseItem[]>([]);
+  const [newExpenseName, setNewExpenseName] = useState('');
+  const [newExpenseAmount, setNewExpenseAmount] = useState<number | string>('');
+
   const [isSaving, setIsSaving] = useState(false);
   const [toastMessage, setToastMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
 
@@ -59,11 +74,14 @@ export const BookingDetailModal: React.FC<Props> = ({
     }
   }, [toastMessage]);
 
-  // Sync selected gears whenever booking changes
+  // Sync selected gears & expenses whenever booking changes
   useEffect(() => {
     if (booking) {
       setSelectedGearIds(booking.assignedGears || []);
       setIsOverrideConfirmed(false);
+      setExpenseItems(booking.expenseDetails || []);
+      setNewExpenseName('');
+      setNewExpenseAmount('');
     }
   }, [booking]);
 
@@ -134,7 +152,59 @@ export const BookingDetailModal: React.FC<Props> = ({
     );
   };
 
-  // Lưu thiết bị vào Supabase (Có cơ chế chặn lưu khi xung đột và yêu cầu xác nhận ghi đè)
+  // ====================================================================
+  // LOGIC HẠCH TOÁN CHI PHÍ & TÍNH LỢI NHUẬN RÒNG (JOB COSTING)
+  // ====================================================================
+  const EXPENSE_PRESETS = [
+    { name: 'Makeup Artist', amount: 1500000 },
+    { name: 'Grab / Di chuyển', amount: 300000 },
+    { name: 'Thuê phim trường / Studio', amount: 1200000 },
+    { name: 'Trợ lý ánh sáng (Second)', amount: 600000 },
+    { name: 'In album / Ép gỗ', amount: 800000 },
+    { name: 'Ăn uống / Cơm đoàn', amount: 250000 },
+  ];
+
+  const handleAddExpense = (presetName?: string, presetAmount?: number) => {
+    const title = (presetName !== undefined ? presetName : newExpenseName).trim();
+    const cost = presetAmount !== undefined ? presetAmount : (Number(newExpenseAmount) || 0);
+
+    if (!title) {
+      setToastMessage({ type: 'error', text: 'Vui lòng nhập tên khoản chi (VD: Makeup, Taxi...)' });
+      return;
+    }
+    if (cost <= 0) {
+      setToastMessage({ type: 'error', text: 'Số tiền chi phí phải lớn hơn 0 đ.' });
+      return;
+    }
+
+    const newItem: ExpenseItem = {
+      id: 'exp-' + Date.now() + '-' + Math.random().toString(36).substring(2, 6),
+      name: title,
+      amount: cost,
+    };
+
+    setExpenseItems(prev => [...prev, newItem]);
+    setNewExpenseName('');
+    setNewExpenseAmount('');
+    setToastMessage({ type: 'success', text: `Đã thêm khoản chi: "${title}" (${cost.toLocaleString('vi-VN')} đ)` });
+  };
+
+  const handleRemoveExpense = (index: number) => {
+    const item = expenseItems[index];
+    setExpenseItems(prev => prev.filter((_, i) => i !== index));
+    if (item) {
+      setToastMessage({ type: 'success', text: `Đã xóa khoản chi "${item.name}"` });
+    }
+  };
+
+  // Tính toán tài chính
+  const totalExpenses = expenseItems.reduce((sum, item) => sum + (Number(item.amount) || 0), 0);
+  const effectivePaid = Number(booking.paidAmount || booking.depositAmount || 0);
+  // Lợi nhuận ròng = Số tiền khách trả - Tổng chi phí
+  const netProfit = effectivePaid - totalExpenses;
+  const projectedNetProfit = booking.packagePrice - totalExpenses;
+
+  // Lưu phân bổ thiết bị VÀ hạch toán chi phí vào Supabase
   const handleSaveAssignedGears = async () => {
     // 1. CHẶN LƯU NẾU CÓ XUNG ĐỘT MÀ CHƯA XÁC NHẬN GHI ĐÈ
     if (activeConflicts.length > 0 && !isOverrideConfirmed) {
@@ -152,6 +222,8 @@ export const BookingDetailModal: React.FC<Props> = ({
           .from('bookings')
           .update({
             assigned_gears: selectedGearIds,
+            expenses: totalExpenses,
+            expense_details: expenseItems,
             updated_at: new Date().toISOString(),
           })
           .eq('id', booking.id);
@@ -163,6 +235,8 @@ export const BookingDetailModal: React.FC<Props> = ({
       const updated: CalendarEvent = {
         ...booking,
         assignedGears: selectedGearIds,
+        expenses: totalExpenses,
+        expenseDetails: expenseItems,
       };
 
       if (onBookingUpdated) {
@@ -172,14 +246,14 @@ export const BookingDetailModal: React.FC<Props> = ({
       setToastMessage({
         type: 'success',
         text: activeConflicts.length > 0
-          ? '⚠️ Đã ghi đè và lưu phân bổ thiết bị cho lịch chụp!'
-          : '🎉 Đã lưu danh sách thiết bị cho lịch chụp thành công!',
+          ? '⚠️ Đã ghi đè thiết bị và lưu hạch toán chi phí thành công!'
+          : '🎉 Đã lưu danh sách thiết bị & hạch toán chi phí thành công!',
       });
     } catch (err: any) {
-      console.error('Lỗi khi lưu thiết bị vào booking:', err);
+      console.error('Lỗi khi lưu booking:', err);
       setToastMessage({
         type: 'error',
-        text: `Lỗi: ${err.message || 'Không thể lưu thiết bị'}`,
+        text: `Lỗi: ${err.message || 'Không thể lưu'}`,
       });
     } finally {
       setIsSaving(false);
@@ -248,27 +322,74 @@ export const BookingDetailModal: React.FC<Props> = ({
           </div>
         </div>
 
-        {/* Financial Metrics Summary */}
-        <div className="grid grid-cols-3 gap-2.5 p-3.5 rounded-2xl bg-slate-950/70 border border-slate-800 text-xs">
+        {/* Financial Metrics Summary - 4 Cột Rõ Ràng: Tổng Gói, Khách Trả, Chi Phí, Lợi Nhuận Ròng */}
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5 p-3.5 rounded-2xl bg-slate-950/70 border border-slate-800 text-xs">
           <div>
-            <span className="text-slate-400 block text-[10px]">Tổng Gói</span>
-            <span className="font-mono font-bold text-white">
+            <span className="text-slate-400 block text-[10px]">Tổng Gói (Hợp Đồng)</span>
+            <span className="font-mono font-bold text-white text-xs sm:text-sm">
               {booking.packagePrice.toLocaleString('vi-VN')} đ
             </span>
           </div>
           <div>
-            <span className="text-slate-400 block text-[10px]">Đã Thanh Toán</span>
-            <span className="font-mono font-bold text-emerald-400">
-              {(booking.paidAmount || booking.depositAmount).toLocaleString('vi-VN')} đ
+            <span className="text-slate-400 block text-[10px]">Khách Đã Trả (Doanh Thu)</span>
+            <span className="font-mono font-bold text-sky-400 text-xs sm:text-sm">
+              {effectivePaid.toLocaleString('vi-VN')} đ
             </span>
           </div>
           <div>
-            <span className="text-slate-400 block text-[10px]">Còn Lại</span>
-            <span className={`font-mono font-bold ${remainingDebt > 0 ? 'text-amber-400' : 'text-slate-400'}`}>
-              {remainingDebt === 0 ? '0 đ (Xong)' : `${remainingDebt.toLocaleString('vi-VN')} đ`}
+            <span className="text-slate-400 block text-[10px]">Tổng Chi Phí (Job Cost)</span>
+            <span className="font-mono font-bold text-amber-400 text-xs sm:text-sm">
+              {totalExpenses.toLocaleString('vi-VN')} đ
+            </span>
+          </div>
+          <div>
+            <span className="text-slate-400 block text-[10px]">Lợi Nhuận Ròng (Net Profit)</span>
+            <span className={`font-mono font-black text-xs sm:text-sm ${netProfit >= 0 ? 'text-emerald-400' : 'text-rose-400'}`}>
+              {netProfit.toLocaleString('vi-VN')} đ
             </span>
           </div>
         </div>
+
+        {/* Tab Switcher: Phân Bổ Thiết Bị vs Hạch Toán Chi Phí */}
+        <div className="flex items-center gap-2 border-b border-slate-800 pb-2">
+          <button
+            type="button"
+            onClick={() => setActiveTab('gears')}
+            className={`flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-xs font-bold transition-all ${
+              activeTab === 'gears'
+                ? 'bg-amber-500 text-slate-950 shadow-md shadow-amber-500/20'
+                : 'text-slate-400 hover:text-white bg-slate-950/60 border border-slate-800'
+            }`}
+          >
+            <Camera className="w-3.5 h-3.5" />
+            <span>Phân Bổ Thiết Bị</span>
+            <span className={`px-1.5 py-0.2 rounded-full text-[10px] font-mono ${activeTab === 'gears' ? 'bg-slate-950 text-amber-400' : 'bg-slate-900 text-slate-400'}`}>
+              {selectedGearIds.length}
+            </span>
+          </button>
+
+          <button
+            type="button"
+            onClick={() => setActiveTab('expenses')}
+            className={`flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-xs font-bold transition-all ${
+              activeTab === 'expenses'
+                ? 'bg-emerald-500 text-slate-950 shadow-md shadow-emerald-500/20'
+                : 'text-slate-400 hover:text-white bg-slate-950/60 border border-slate-800'
+            }`}
+          >
+            <Receipt className="w-3.5 h-3.5" />
+            <span>Hạch Toán Chi Phí (Job Costing)</span>
+            <span className={`px-1.5 py-0.2 rounded-full text-[10px] font-mono ${activeTab === 'expenses' ? 'bg-slate-950 text-emerald-400' : 'bg-slate-900 text-slate-400'}`}>
+              {expenseItems.length}
+            </span>
+          </button>
+        </div>
+
+        {/* ==================================================================== */}
+        {/* TAB 1: PHÂN BỔ THIẾT BỊ (USP 2) */}
+        {/* ==================================================================== */}
+        {activeTab === 'gears' && (
+          <div className="space-y-4 animate-fadeIn">
 
         {/* ==================================================================== */}
         {/* CẢNH BÁO XUNG ĐỘT THIẾT BỊ (PROMINENT RED CONFLICT ALERT BANNER - USP 2) */}
@@ -499,85 +620,287 @@ export const BookingDetailModal: React.FC<Props> = ({
             </div>
           )}
         </div>
+      </div>
+    )}
 
-        {/* Modal Actions */}
-        <div className="flex flex-col sm:flex-row items-center justify-between gap-3 pt-3 border-t border-slate-800">
-          <div>
-            {remainingDebt > 0 && onOpenDebtReminder && (
-              <button
-                type="button"
-                onClick={() => {
-                  onClose();
-                  onOpenDebtReminder(booking);
-                }}
-                className="text-xs text-amber-400 hover:text-amber-300 font-bold underline transition-colors flex items-center gap-1"
-              >
-                <span>💬 Mở Trợ Lý Nhắc Nợ ({remainingDebt.toLocaleString('vi-VN')} đ)</span>
-              </button>
-            )}
+    {/* ==================================================================== */}
+    {/* TAB 2: HẠCH TOÁN CHI PHÍ - JOB COSTING */}
+    {/* ==================================================================== */}
+    {activeTab === 'expenses' && (
+      <div className="space-y-4 animate-fadeIn">
+        {/* Banner Công thức Lợi Nhuận Ròng (Net Profit Formula Banner) */}
+        <div className="p-4 rounded-2xl bg-gradient-to-r from-slate-950 via-slate-900 to-slate-950 border border-slate-800 shadow-xl space-y-3">
+          <div className="flex flex-wrap items-center justify-between gap-2 border-b border-slate-800/80 pb-2.5">
+            <div className="flex items-center gap-2">
+              <div className="p-1.5 rounded-lg bg-emerald-500/20 text-emerald-400">
+                <Calculator className="w-4 h-4" />
+              </div>
+              <div>
+                <h4 className="text-xs font-bold text-white uppercase tracking-wider">
+                  Công Thức Hạch Toán (Job Costing)
+                </h4>
+                <p className="text-[11px] text-slate-400">
+                  Lợi nhuận ròng = [Số tiền khách trả] - [Tổng chi phí phát sinh]
+                </p>
+              </div>
+            </div>
+            <div className="flex items-center gap-1.5 px-3 py-1 rounded-xl bg-slate-900/80 border border-slate-800 font-mono text-xs">
+              <span className="text-slate-400">Tỷ suất lợi nhuận:</span>
+              <strong className={netProfit >= 0 ? 'text-emerald-400 font-bold' : 'text-rose-400 font-bold'}>
+                {effectivePaid > 0 ? ((netProfit / effectivePaid) * 100).toFixed(1) : 0}%
+              </strong>
+            </div>
           </div>
 
-          <div className="flex items-center gap-2 w-full sm:w-auto">
-            <button
-              type="button"
-              onClick={onClose}
-              className="flex-1 sm:flex-none px-4 py-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-bold transition-colors"
-            >
-              Đóng
-            </button>
-
-            {/* Nút Lưu: Có cơ chế kiểm soát xung đột và yêu cầu ghi đè */}
-            {activeConflicts.length > 0 && !isOverrideConfirmed ? (
-              <button
-                type="button"
-                onClick={handleSaveAssignedGears}
-                className="flex-1 sm:flex-none px-5 py-2.5 rounded-xl bg-rose-950/80 border border-rose-500/70 text-rose-200 text-xs font-bold flex items-center justify-center gap-1.5 hover:bg-rose-900 transition-all shadow-md"
-                title="Bị chặn do xung đột thiết bị - Cần tích chọn Xác nhận ghi đè"
-              >
-                <ShieldAlert className="w-4 h-4 text-rose-400 animate-pulse" />
-                <span>Chặn Lưu Xung Đột (Cần Xác Nhận)</span>
-              </button>
-            ) : activeConflicts.length > 0 && isOverrideConfirmed ? (
-              <button
-                type="button"
-                disabled={isSaving}
-                onClick={handleSaveAssignedGears}
-                className="flex-1 sm:flex-none px-5 py-2.5 rounded-xl bg-gradient-to-r from-rose-500 to-amber-500 hover:from-rose-400 hover:to-amber-400 text-slate-950 text-xs font-black flex items-center justify-center gap-1.5 shadow-lg shadow-rose-500/20 transition-all hover:scale-[1.02] disabled:opacity-50"
-              >
-                {isSaving ? (
-                  <>
-                    <Loader2 className="w-4 h-4 animate-spin" />
-                    <span>Đang Lưu...</span>
-                  </>
-                ) : (
-                  <>
-                    <Save className="w-4 h-4" />
-                    <span>Xác Nhận Ghi Đè & Lưu Thiết Bị</span>
-                  </>
-                )}
-              </button>
-            ) : (
-              <button
-                type="button"
-                disabled={isSaving}
-                onClick={handleSaveAssignedGears}
-                className="flex-1 sm:flex-none px-5 py-2.5 rounded-xl bg-gradient-to-r from-amber-500 to-yellow-500 hover:from-amber-400 hover:to-yellow-400 text-slate-950 text-xs font-extrabold flex items-center justify-center gap-1.5 shadow-lg shadow-amber-500/20 transition-all hover:scale-[1.02] disabled:opacity-50"
-              >
-                {isSaving ? (
-                  <>
-                    <Loader2 className="w-4 h-4 animate-spin" />
-                    <span>Đang Lưu...</span>
-                  </>
-                ) : (
-                  <>
-                    <Save className="w-4 h-4" />
-                    <span>Lưu Thiết Bị</span>
-                  </>
-                )}
-              </button>
-            )}
+          {/* Trực quan hóa phép tính: [Khách Trả] - [Tổng Chi Phí] = [Lợi Nhuận Ròng] */}
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5 pt-1">
+            <div className="p-2.5 rounded-xl bg-slate-950/70 border border-blue-500/20 text-center">
+              <span className="text-[10px] text-slate-400 font-medium block">Số tiền khách trả</span>
+              <strong className="text-sm font-bold text-blue-400 font-mono">
+                {effectivePaid.toLocaleString('vi-VN')} đ
+              </strong>
+            </div>
+            <div className="p-2.5 rounded-xl bg-slate-950/70 border border-rose-500/20 text-center relative">
+              <div className="hidden sm:block absolute -left-2.5 top-1/2 -translate-y-1/2 text-slate-500 font-bold text-base">
+                -
+              </div>
+              <span className="text-[10px] text-slate-400 font-medium block">Tổng chi phí ({expenseItems.length} khoản)</span>
+              <strong className="text-sm font-bold text-rose-400 font-mono">
+                {totalExpenses.toLocaleString('vi-VN')} đ
+              </strong>
+            </div>
+            <div className={`p-2.5 rounded-xl border text-center relative ${
+              netProfit >= 0
+                ? 'bg-emerald-950/40 border-emerald-500/40 shadow-lg shadow-emerald-500/10'
+                : 'bg-rose-950/40 border-rose-500/40 shadow-lg shadow-rose-500/10'
+            }`}>
+              <div className="hidden sm:block absolute -left-2.5 top-1/2 -translate-y-1/2 text-slate-500 font-bold text-base">
+                =
+              </div>
+              <span className="text-[10px] text-slate-400 font-medium block">Lợi Nhuận Ròng (Net Profit)</span>
+              <strong className={`text-sm sm:text-base font-extrabold font-mono ${
+                netProfit >= 0 ? 'text-emerald-400' : 'text-rose-400'
+              }`}>
+                {netProfit.toLocaleString('vi-VN')} đ
+              </strong>
+            </div>
           </div>
         </div>
+
+        {/* Form Thêm Khoản Chi Mới */}
+        <div className="p-4 rounded-2xl bg-slate-950/60 border border-slate-800 space-y-3">
+          <div className="flex items-center justify-between">
+            <h4 className="text-xs font-bold text-slate-300 uppercase tracking-wider flex items-center gap-1.5">
+              <Plus className="w-3.5 h-3.5 text-emerald-400" />
+              <span>Thêm Khoản Chi Phí Phát Sinh Cho Show</span>
+            </h4>
+            <span className="text-[10px] text-slate-500">Mẫu chọn nhanh bên dưới</span>
+          </div>
+
+          {/* Quick Presets */}
+          <div className="flex flex-wrap gap-1.5">
+            {EXPENSE_PRESETS.map((preset) => (
+              <button
+                key={preset.name}
+                type="button"
+                onClick={() => {
+                  setNewExpenseName(preset.name);
+                  setNewExpenseAmount(preset.amount.toString());
+                }}
+                className={`text-[11px] px-2.5 py-1 rounded-lg border transition-all ${
+                  newExpenseName === preset.name
+                    ? 'bg-emerald-500/20 border-emerald-500 text-emerald-300 font-bold'
+                    : 'bg-slate-900 border-slate-800 text-slate-400 hover:text-white hover:border-slate-700'
+                }`}
+              >
+                + {preset.name} ({preset.amount.toLocaleString('vi-VN')} đ)
+              </button>
+            ))}
+          </div>
+
+          {/* Input Row */}
+          <div className="flex flex-col sm:flex-row gap-2.5 pt-1">
+            <input
+              type="text"
+              value={newExpenseName}
+              onChange={(e) => setNewExpenseName(e.target.value)}
+              placeholder="Tên khoản chi (VD: Makeup artist, Thuê Studio...)"
+              className="flex-1 px-3 py-2 rounded-xl bg-slate-900 border border-slate-800 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-emerald-500"
+              onKeyDown={(e) => {
+                if (e.key === 'Enter') {
+                  e.preventDefault();
+                  handleAddExpense();
+                }
+              }}
+            />
+            <div className="relative sm:w-44">
+              <input
+                type="number"
+                min="0"
+                step="10000"
+                value={newExpenseAmount}
+                onChange={(e) => setNewExpenseAmount(e.target.value)}
+                placeholder="Số tiền (VNĐ)"
+                className="w-full px-3 py-2 pr-9 rounded-xl bg-slate-900 border border-slate-800 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-emerald-500 font-mono"
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter') {
+                    e.preventDefault();
+                    handleAddExpense();
+                  }
+                }}
+              />
+              <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-slate-500 font-mono">
+                đ
+              </span>
+            </div>
+            <button
+              type="button"
+              onClick={() => handleAddExpense()}
+              disabled={!newExpenseName.trim() || !newExpenseAmount}
+              className="px-4 py-2 rounded-xl bg-emerald-500 hover:bg-emerald-400 disabled:opacity-40 disabled:hover:bg-emerald-500 text-slate-950 text-xs font-bold transition-all flex items-center justify-center gap-1.5 shadow-md shadow-emerald-500/20"
+            >
+              <Plus className="w-3.5 h-3.5" />
+              <span>Thêm Khoản Chi</span>
+            </button>
+          </div>
+        </div>
+
+        {/* Danh Sách Các Khoản Chi Đã Thêm */}
+        <div className="space-y-2">
+          <div className="flex items-center justify-between text-xs text-slate-400 px-1">
+            <span className="font-semibold text-slate-300">
+              Chi tiết các khoản chi ({expenseItems.length})
+            </span>
+            <span className="font-mono text-rose-400">
+              Tổng chi: <strong>{totalExpenses.toLocaleString('vi-VN')} đ</strong>
+            </span>
+          </div>
+
+          {expenseItems.length === 0 ? (
+            <div className="p-8 text-center rounded-2xl bg-slate-950/40 border border-dashed border-slate-800/80 space-y-2">
+              <Receipt className="w-8 h-8 text-slate-600 mx-auto" />
+              <p className="text-xs text-slate-400">
+                Chưa có khoản chi phí phát sinh nào cho show này.
+              </p>
+              <p className="text-[11px] text-slate-500">
+                Nhập tên và số tiền ở trên để theo dõi sát sao lợi nhuận thực tế (tiền bỏ túi).
+              </p>
+            </div>
+          ) : (
+            <div className="space-y-1.5 max-h-[220px] overflow-y-auto pr-1">
+              {expenseItems.map((item, idx) => (
+                <div
+                  key={idx}
+                  className="flex items-center justify-between p-2.5 rounded-xl bg-slate-950/70 border border-slate-800/80 hover:border-slate-700 transition-colors group"
+                >
+                  <div className="flex items-center gap-2.5 min-w-0">
+                    <span className="w-5 h-5 rounded-md bg-slate-900 border border-slate-800 text-[10px] text-slate-400 flex items-center justify-center font-mono flex-shrink-0">
+                      {idx + 1}
+                    </span>
+                    <span className="text-xs font-medium text-slate-200 truncate">
+                      {item.name}
+                    </span>
+                  </div>
+
+                  <div className="flex items-center gap-3">
+                    <span className="text-xs font-bold text-rose-400 font-mono">
+                      -{Number(item.amount).toLocaleString('vi-VN')} đ
+                    </span>
+                    <button
+                      type="button"
+                      onClick={() => handleRemoveExpense(idx)}
+                      className="p-1 rounded-lg text-slate-500 hover:text-rose-400 hover:bg-rose-950/50 transition-colors"
+                      title="Xóa khoản chi này"
+                    >
+                      <Trash2 className="w-3.5 h-3.5" />
+                    </button>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      </div>
+    )}
+
+    {/* Modal Actions */}
+    <div className="flex flex-col sm:flex-row items-center justify-between gap-3 pt-3 border-t border-slate-800">
+      <div>
+        {remainingDebt > 0 && onOpenDebtReminder && (
+          <button
+            type="button"
+            onClick={() => {
+              onClose();
+              onOpenDebtReminder(booking);
+            }}
+            className="text-xs text-amber-400 hover:text-amber-300 font-bold underline transition-colors flex items-center gap-1"
+          >
+            <span>💬 Mở Trợ Lý Nhắc Nợ ({remainingDebt.toLocaleString('vi-VN')} đ)</span>
+          </button>
+        )}
+      </div>
+
+      <div className="flex items-center gap-2 w-full sm:w-auto">
+        <button
+          type="button"
+          onClick={onClose}
+          className="flex-1 sm:flex-none px-4 py-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-bold transition-colors"
+        >
+          Đóng
+        </button>
+
+        {/* Nút Lưu: Có cơ chế kiểm soát xung đột và lưu cả Thiết Bị + Hạch Toán Chi Phí */}
+        {activeConflicts.length > 0 && !isOverrideConfirmed ? (
+          <button
+            type="button"
+            onClick={handleSaveAssignedGears}
+            className="flex-1 sm:flex-none px-5 py-2.5 rounded-xl bg-rose-950/80 border border-rose-500/70 text-rose-200 text-xs font-bold flex items-center justify-center gap-1.5 hover:bg-rose-900 transition-all shadow-md"
+            title="Bị chặn do xung đột thiết bị - Cần tích chọn Xác nhận ghi đè"
+          >
+            <ShieldAlert className="w-4 h-4 text-rose-400 animate-pulse" />
+            <span>Chặn Lưu Xung Đột (Cần Xác Nhận)</span>
+          </button>
+        ) : activeConflicts.length > 0 && isOverrideConfirmed ? (
+          <button
+            type="button"
+            disabled={isSaving}
+            onClick={handleSaveAssignedGears}
+            className="flex-1 sm:flex-none px-5 py-2.5 rounded-xl bg-gradient-to-r from-rose-500 to-amber-500 hover:from-rose-400 hover:to-amber-400 text-slate-950 text-xs font-black flex items-center justify-center gap-1.5 shadow-lg shadow-rose-500/20 transition-all hover:scale-[1.02] disabled:opacity-50"
+          >
+            {isSaving ? (
+              <>
+                <Loader2 className="w-4 h-4 animate-spin" />
+                <span>Đang Lưu...</span>
+              </>
+            ) : (
+              <>
+                <Save className="w-4 h-4" />
+                <span>Xác Nhận Ghi Đè & Lưu Phân Bổ</span>
+              </>
+            )}
+          </button>
+        ) : (
+          <button
+            type="button"
+            disabled={isSaving}
+            onClick={handleSaveAssignedGears}
+            className="flex-1 sm:flex-none px-5 py-2.5 rounded-xl bg-gradient-to-r from-amber-500 to-emerald-400 hover:from-amber-400 hover:to-emerald-300 text-slate-950 text-xs font-extrabold flex items-center justify-center gap-1.5 shadow-lg shadow-amber-500/20 transition-all hover:scale-[1.02] disabled:opacity-50"
+          >
+            {isSaving ? (
+              <>
+                <Loader2 className="w-4 h-4 animate-spin" />
+                <span>Đang Lưu...</span>
+              </>
+            ) : (
+              <>
+                <Save className="w-4 h-4" />
+                <span>Lưu Phân Bổ & Chi Phí</span>
+              </>
+            )}
+          </button>
+        )}
+      </div>
+    </div>
       </div>
     </div>
   );

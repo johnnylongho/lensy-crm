@@ -70,9 +70,9 @@ CREATE TABLE IF NOT EXISTS bookings (
     paid_amount NUMERIC(12, 2) NOT NULL DEFAULT 0,
     remaining_amount NUMERIC(12, 2) GENERATED ALWAYS AS (package_price - paid_amount) STORED,
     
-    -- 3 trạng thái cốt lõi: 'cho_coc' (Chờ cọc), 'da_chot' (Đã chốt), 'da_tra_file' (Đã trả file)
-    status VARCHAR(50) NOT NULL DEFAULT 'cho_coc' 
-        CHECK (status IN ('cho_coc', 'da_chot', 'da_tra_file', 'hoan_thanh', 'da_huy')),
+    -- Quy trình nhiếp ảnh chuẩn Kanban: 'lead' (Mới hỏi) -> 'deposited' (Đã cọc) -> 'shot' (Đã chụp) -> 'editing' (Đang hậu kỳ) -> 'done' (Hoàn tất)
+    status VARCHAR(50) NOT NULL DEFAULT 'lead' 
+        CHECK (status IN ('lead', 'deposited', 'shot', 'editing', 'done', 'cancelled', 'cho_coc', 'cho_xac_nhan_coc', 'da_chot', 'da_tra_file', 'hoan_thanh', 'da_huy')),
         
     -- Khóa bảo mật chia sẻ Quote Link cho khách hàng
     quote_token VARCHAR(100) UNIQUE NOT NULL,

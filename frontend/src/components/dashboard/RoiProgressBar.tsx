@@ -84,19 +84,25 @@ export const RoiProgressBar: React.FC<Props> = ({ events, className = '' }) => {
     }
   }, [user]);
 
-  // 2. Logic tính toán ROI chuẩn SaaS:
+  // 2. Logic tính toán ROI chuẩn SaaS (Dựa trên Lợi Nhuận Ròng thực tế):
   // - Tổng Đầu Tư: Toàn bộ giá mua các thiết bị trong kho
   const totalInvestment = gears.reduce((sum, g) => sum + (Number(g.purchase_price) || 0), 0);
 
-  // - Tổng Doanh Thu: Toàn bộ số tiền ĐÃ THU từ các Booking (paid_amount)
+  // - Tổng Doanh Thu Đã Thu (Gross Collected): Toàn bộ số tiền ĐÃ THU từ các Booking
   const totalCollected = events.reduce((sum, e) => sum + (Number(e.paidAmount) || 0), 0);
 
-  // - Công thức: % Hoàn vốn = (Tổng Doanh Thu / Tổng Đầu Tư) * 100
-  // Xử lý chia cho 0 an toàn
-  const roiPercentage = totalInvestment > 0 ? (totalCollected / totalInvestment) * 100 : 0;
+  // - Tổng Chi Phí Show (Expenses): Toàn bộ các khoản chi phí phát sinh
+  const totalExpenses = events.reduce((sum, e) => sum + (Number(e.expenses) || 0), 0);
+
+  // - Tổng LỢI NHUẬN RÒNG (Net Profit) = Tổng Doanh Thu Đã Thu - Tổng Chi Phí
+  const totalNetProfit = totalCollected - totalExpenses;
+
+  // - Công thức MỚI ĐỀ BÀI: % Hoàn vốn = (Tổng LỢI NHUẬN RÒNG / Tổng Đầu Tư) * 100
+  // Xử lý trường hợp Tổng Đầu Tư = 0 để tránh lỗi chia cho 0
+  const roiPercentage = totalInvestment > 0 ? (totalNetProfit / totalInvestment) * 100 : 0;
   const roundedPercent = Math.round(roiPercentage * 10) / 10; // 1 chữ số thập phân
 
-  // Hiệu ứng Animation mượt mà khi load số: tăng từ 0% lên % mục tiêu
+  // Hiệu ứng Animation mượt mà khi load số: tăng từ 0% lên % mục tiêu (chặn dưới 0% cho thanh bar)
   useEffect(() => {
     const timer = setTimeout(() => {
       setAnimatedPercent(Math.min(100, Math.max(0, roiPercentage)));
@@ -119,26 +125,26 @@ export const RoiProgressBar: React.FC<Props> = ({ events, className = '' }) => {
         textColor: 'text-emerald-400',
         glowColor: 'shadow-[0_0_20px_rgba(16,185,129,0.45)]',
         badgeIcon: <Sparkles className="w-3.5 h-3.5 text-emerald-400 animate-spin" style={{ animationDuration: '6s' }} />,
-        subtext: `Lợi nhuận ròng vượt vốn: +${(totalCollected - totalInvestment).toLocaleString('vi-VN')} đ`,
+        subtext: `Lợi nhuận ròng vượt vốn thiết bị: +${(totalNetProfit - totalInvestment).toLocaleString('vi-VN')} đ`,
       }
     : isOver50
     ? {
-        label: 'TIẾN ĐỘ TỐT • ĐÃ VƯỢT 50% CHI PHÍ ĐẦU TƯ',
+        label: 'TIẾN ĐỘ TỐT • LỢI NHUẬN RÒNG ĐÃ VƯỢT 50% VỐN',
         tagBg: 'bg-sky-950/80 border-sky-500/40 text-sky-300 shadow-sky-900/30',
         barGradient: 'from-sky-500 via-blue-500 to-indigo-500',
         textColor: 'text-sky-400',
         glowColor: 'shadow-[0_0_15px_rgba(14,165,233,0.35)]',
         badgeIcon: <TrendingUp className="w-3.5 h-3.5 text-sky-400" />,
-        subtext: `Còn thiếu ${(totalInvestment - totalCollected).toLocaleString('vi-VN')} đ để cán mốc hòa vốn`,
+        subtext: `Còn thiếu ${(totalInvestment - totalNetProfit).toLocaleString('vi-VN')} đ lợi nhuận ròng để cán mốc hòa vốn`,
       }
     : {
-        label: 'GIAI ĐOẠN ĐẦU • ĐANG THU HỒI VỐN THIẾT BỊ',
+        label: 'GIAI ĐOẠN ĐẦU • ĐANG THU HỒI VỐN BẰNG LÃI RÒNG',
         tagBg: 'bg-amber-950/80 border-amber-500/40 text-amber-300 shadow-amber-900/30',
         barGradient: 'from-amber-500 via-orange-500 to-yellow-500',
         textColor: 'text-amber-400',
         glowColor: 'shadow-[0_0_15px_rgba(245,158,11,0.35)]',
         badgeIcon: <Coins className="w-3.5 h-3.5 text-amber-400" />,
-        subtext: `Còn thiếu ${(totalInvestment - totalCollected).toLocaleString('vi-VN')} đ để cán mốc hòa vốn`,
+        subtext: `Còn thiếu ${(totalInvestment - totalNetProfit).toLocaleString('vi-VN')} đ lợi nhuận ròng để cán mốc hòa vốn`,
       };
 
   return (
@@ -171,7 +177,7 @@ export const RoiProgressBar: React.FC<Props> = ({ events, className = '' }) => {
             <div>
               <div className="flex items-center gap-2">
                 <h3 className="text-sm font-extrabold text-white tracking-tight flex items-center gap-1.5">
-                  Tiến Độ Hoàn Vốn Đầu Tư (ROI)
+                  Tiến Độ Hoàn Vốn Đầu Tư (ROI - Net Profit Based)
                 </h3>
                 <span
                   className={`px-2.5 py-0.5 rounded-full text-[10px] font-extrabold border shadow-sm inline-flex items-center gap-1 tracking-wide ${colorConfig.tagBg}`}
@@ -181,7 +187,7 @@ export const RoiProgressBar: React.FC<Props> = ({ events, className = '' }) => {
                 </span>
               </div>
               <p className="text-[11px] text-slate-400">
-                Theo dõi hiệu quả đầu tư máy móc và tốc độ hoàn vốn từ doanh thu nhận show
+                % Hoàn vốn = (Tổng Lợi Nhuận Ròng / Tổng Đầu Tư) × 100
               </p>
             </div>
           </div>
@@ -196,18 +202,43 @@ export const RoiProgressBar: React.FC<Props> = ({ events, className = '' }) => {
           </Link>
         </div>
 
-        {/* Text trực quan đúng yêu cầu đề bài: "Tổng tài sản: [X] đ | Đã thu hồi: [Y] đ ([Z]%)" */}
+        {/* Text trực quan: Tách rõ Doanh thu Gross, Chi phí và Lợi nhuận ròng thu hồi vốn */}
         <div className="p-3.5 sm:p-4 rounded-2xl bg-slate-950/80 border border-slate-800/90 flex flex-wrap items-center justify-between gap-3 text-xs sm:text-sm">
-          <div className="flex flex-wrap items-center gap-x-2 gap-y-1 font-medium text-slate-300">
-            <span className="text-slate-400">Tổng tài sản:</span>
-            <strong className="text-white font-mono font-bold text-sm sm:text-base">
-              {totalInvestment.toLocaleString('vi-VN')} đ
-            </strong>
-            <span className="text-slate-600 font-bold hidden sm:inline">|</span>
-            <span className="text-slate-400">Đã thu hồi:</span>
-            <strong className={`font-mono font-bold text-sm sm:text-base ${colorConfig.textColor}`}>
-              {totalCollected.toLocaleString('vi-VN')} đ
-            </strong>
+          <div className="flex flex-wrap items-center gap-x-2.5 gap-y-1.5 font-medium text-slate-300">
+            <div className="flex items-center gap-1">
+              <span className="text-slate-400">Vốn thiết bị:</span>
+              <strong className="text-white font-mono font-bold text-sm">
+                {totalInvestment.toLocaleString('vi-VN')} đ
+              </strong>
+            </div>
+
+            <span className="text-slate-600 font-bold hidden sm:inline">•</span>
+
+            <div className="flex items-center gap-1">
+              <span className="text-slate-400">Doanh thu đã thu:</span>
+              <strong className="text-blue-400 font-mono font-semibold text-xs sm:text-sm">
+                {totalCollected.toLocaleString('vi-VN')} đ
+              </strong>
+            </div>
+
+            <span className="text-slate-600 font-bold hidden sm:inline">-</span>
+
+            <div className="flex items-center gap-1">
+              <span className="text-slate-400">Chi phí:</span>
+              <strong className="text-rose-400 font-mono font-semibold text-xs sm:text-sm">
+                {totalExpenses.toLocaleString('vi-VN')} đ
+              </strong>
+            </div>
+
+            <span className="text-slate-600 font-bold hidden sm:inline">=</span>
+
+            <div className="flex items-center gap-1">
+              <span className="text-slate-300 font-bold">Lợi Nhuận Ròng:</span>
+              <strong className={`font-mono font-black text-sm sm:text-base ${colorConfig.textColor}`}>
+                {totalNetProfit.toLocaleString('vi-VN')} đ
+              </strong>
+            </div>
+
             <span className={`font-mono font-black text-sm sm:text-base px-2 py-0.5 rounded-lg border ml-1 ${colorConfig.tagBg}`}>
               ({roundedPercent}%)
             </span>

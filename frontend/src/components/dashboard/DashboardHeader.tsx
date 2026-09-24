@@ -1,6 +1,18 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
-import { Calendar, DollarSign, Camera, CheckCircle2, TrendingUp, LogOut, User, Settings } from 'lucide-react';
+import {
+  Calendar,
+  DollarSign,
+  Camera,
+  CheckCircle2,
+  TrendingUp,
+  LogOut,
+  User,
+  Settings,
+  Wallet,
+  Receipt,
+  Sparkles,
+} from 'lucide-react';
 import { CalendarEvent } from '../../types';
 import { InstallPwaButton } from './InstallPwaButton';
 import { useAuth } from '../../context/AuthContext';
@@ -22,8 +34,14 @@ export const DashboardHeader: React.FC<Props> = ({
   const bookedEvents = events.filter(e => e.status === 'da_chot' || e.status === 'da_tra_file' || e.status === 'hoan_thanh');
   const pendingEvents = events.filter(e => e.status === 'cho_coc');
   const pendingReceipts = events.filter(e => e.status === 'cho_xac_nhan_coc');
-  const totalRevenue = events.reduce((sum, e) => sum + e.packagePrice, 0);
-  const totalDepositCollected = events.reduce((sum, e) => sum + e.depositAmount, 0);
+
+  // Logic Tài chính mới tách rõ Gross và Net Profit
+  const totalRevenue = events.reduce((sum, e) => sum + (Number(e.packagePrice) || 0), 0); // Tổng giá trị hợp đồng
+  const totalDepositCollected = events.reduce((sum, e) => sum + (Number(e.depositAmount) || 0), 0); // Đã thu cọc
+  const totalGrossCollected = events.reduce((sum, e) => sum + (Number(e.paidAmount) || Number(e.depositAmount) || 0), 0); // Tổng Doanh Thu Đã Thu (Gross)
+  const totalExpenses = events.reduce((sum, e) => sum + (Number(e.expenses) || 0), 0); // Tổng Chi Phí Show
+  const totalNetProfit = totalGrossCollected - totalExpenses; // LỢI NHUẬN RÒNG THỰC TẾ
+  const netMargin = totalGrossCollected > 0 ? Math.round((totalNetProfit / totalGrossCollected) * 100) : 0;
 
   return (
     <div className="space-y-4">
@@ -127,46 +145,65 @@ export const DashboardHeader: React.FC<Props> = ({
         </div>
       </div>
 
-      {/* 4 Key Stat Cards */}
+      {/* 4 Thẻ Tổng Quan (Summary Cards) - Tách Rõ Gross & Net Profit Theo Yêu Cầu */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+        {/* Card 1: Số Lượng Show */}
         <div className="p-4 rounded-2xl bg-slate-900/80 border border-slate-800 space-y-1">
           <div className="flex items-center justify-between text-slate-400">
             <span className="text-xs font-semibold">Show Đã Chốt</span>
             <CheckCircle2 className="w-4 h-4 text-emerald-400" />
           </div>
           <div className="text-2xl font-extrabold text-white font-mono">{bookedEvents.length}</div>
-          <div className="text-[11px] text-emerald-400 font-medium">Đã nhận cọc & khóa lịch</div>
+          <div className="text-[11px] text-slate-400 font-medium flex items-center justify-between">
+            <span>+{pendingEvents.length} đang chờ cọc</span>
+            <span className="text-indigo-400 font-bold">{Math.round((bookedEvents.length / (events.length || 1)) * 100)}% chốt</span>
+          </div>
         </div>
 
+        {/* Card 2: Tổng Doanh Thu (Gross) */}
         <div className="p-4 rounded-2xl bg-slate-900/80 border border-slate-800 space-y-1">
           <div className="flex items-center justify-between text-slate-400">
-            <span className="text-xs font-semibold">Đang Chờ Cọc</span>
-            <Calendar className="w-4 h-4 text-amber-400" />
+            <span className="text-xs font-semibold">Tổng Doanh Thu (Gross)</span>
+            <DollarSign className="w-4 h-4 text-sky-400" />
           </div>
-          <div className="text-2xl font-extrabold text-amber-400 font-mono">{pendingEvents.length}</div>
-          <div className="text-[11px] text-slate-500">Đã gửi link báo giá</div>
+          <div className="text-lg sm:text-xl font-extrabold text-sky-300 font-mono">
+            {totalGrossCollected.toLocaleString('vi-VN')} đ
+          </div>
+          <div className="text-[11px] text-slate-400 truncate">
+            Tổng hợp đồng: {totalRevenue.toLocaleString('vi-VN')} đ
+          </div>
         </div>
 
+        {/* Card 3: Tổng Chi Phí (Job Expenses) */}
         <div className="p-4 rounded-2xl bg-slate-900/80 border border-slate-800 space-y-1">
           <div className="flex items-center justify-between text-slate-400">
-            <span className="text-xs font-semibold">Dự Kiến Doanh Thu</span>
-            <DollarSign className="w-4 h-4 text-amber-400" />
+            <span className="text-xs font-semibold">Tổng Chi Phí (Expenses)</span>
+            <Receipt className="w-4 h-4 text-rose-400" />
           </div>
-          <div className="text-lg sm:text-xl font-extrabold text-amber-300 font-mono">
-            {totalRevenue.toLocaleString('vi-VN')} đ
+          <div className="text-lg sm:text-xl font-extrabold text-rose-400 font-mono">
+            -{totalExpenses.toLocaleString('vi-VN')} đ
           </div>
-          <div className="text-[11px] text-slate-500">Tổng giá trị hợp đồng</div>
+          <div className="text-[11px] text-slate-400">Makeup, studio, trợ lý...</div>
         </div>
 
-        <div className="p-4 rounded-2xl bg-slate-900/80 border border-slate-800 space-y-1">
-          <div className="flex items-center justify-between text-slate-400">
-            <span className="text-xs font-semibold">Tỷ Lệ Chốt Show</span>
-            <TrendingUp className="w-4 h-4 text-indigo-400" />
+        {/* Card 4: LỢI NHUẬN RÒNG (Net Profit) - Hero Highlight Card (Tiền thật bỏ túi) */}
+        <div className="p-4 rounded-2xl bg-gradient-to-br from-emerald-950/50 via-slate-900/90 to-slate-900/90 border border-emerald-500/40 shadow-lg shadow-emerald-950/20 space-y-1 relative overflow-hidden">
+          <div className="flex items-center justify-between">
+            <span className="text-xs font-bold text-emerald-300 flex items-center gap-1">
+              <span>Lợi Nhuận Ròng (Net)</span>
+              <Sparkles className="w-3 h-3 text-emerald-400" />
+            </span>
+            <Wallet className="w-4 h-4 text-emerald-400" />
           </div>
-          <div className="text-2xl font-extrabold text-indigo-300 font-mono">
-            {Math.round((bookedEvents.length / (events.length || 1)) * 100)}%
+          <div className="text-lg sm:text-xl font-black text-emerald-400 font-mono">
+            {totalNetProfit.toLocaleString('vi-VN')} đ
           </div>
-          <div className="text-[11px] text-indigo-400">Hiệu suất cao</div>
+          <div className="text-[11px] text-emerald-300/80 font-semibold flex items-center justify-between">
+            <span>Tiền thật bỏ túi</span>
+            <span className="bg-emerald-500/20 px-1.5 py-0.5 rounded text-[10px] font-mono text-emerald-300">
+              Lãi: {netMargin}%
+            </span>
+          </div>
         </div>
       </div>
     </div>

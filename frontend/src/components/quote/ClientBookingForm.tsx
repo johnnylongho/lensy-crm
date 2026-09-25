@@ -1,7 +1,7 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { supabase, isSupabaseConfigured } from '../../lib/supabase';
-import { QuoteData, SessionType } from '../../types';
-import { Calendar, Clock, MapPin, User, Phone, Mail, FileText, Send, Loader2, CheckCircle2, AlertTriangle, Sparkles } from 'lucide-react';
+import { QuoteData, SessionType, PackageItem } from '../../types';
+import { Calendar, Clock, MapPin, User, Phone, Mail, FileText, Send, Loader2, CheckCircle2, AlertTriangle, Sparkles, Tag, Check } from 'lucide-react';
 import { PaymentSuccess } from './PaymentSuccess';
 
 interface Props {
@@ -18,6 +18,9 @@ interface Props {
   studioPhone?: string;
   onBookingCreated?: (newBooking: any) => void;
   isDynamicBookingPage?: boolean;
+  packages?: PackageItem[];
+  selectedPackage?: PackageItem | null;
+  onSelectPackage?: (pkg: PackageItem) => void;
 }
 
 export const ClientBookingForm: React.FC<Props> = ({
@@ -29,14 +32,26 @@ export const ClientBookingForm: React.FC<Props> = ({
   bankInfo,
   studioPhone,
   onBookingCreated,
-  isDynamicBookingPage = false
+  isDynamicBookingPage = false,
+  packages = [],
+  selectedPackage = null,
+  onSelectPackage,
 }) => {
   const [clientName, setClientName] = useState('');
   const [clientPhone, setClientPhone] = useState('');
   const [clientEmail, setClientEmail] = useState('');
-  const [shootRequirement, setShootRequirement] = useState('Chụp Cưới');
+  const [shootRequirement, setShootRequirement] = useState(
+    selectedPackage ? selectedPackage.name : 'Chụp Cưới'
+  );
   const [eventDate, setEventDate] = useState('');
   const [notes, setNotes] = useState('');
+
+  // Tự động đồng bộ khi khách hàng click chọn thẻ gói chụp bên trên
+  useEffect(() => {
+    if (selectedPackage) {
+      setShootRequirement(selectedPackage.name);
+    }
+  }, [selectedPackage]);
 
   // Trạng thái đã gửi thành công để hiển thị màn hình Cảm ơn & Thanh toán 1-chạm VietQR
   const [submittedBooking, setSubmittedBooking] = useState<{
@@ -105,6 +120,8 @@ export const ClientBookingForm: React.FC<Props> = ({
       : `[Nhu cầu: ${shootRequirement}]`;
 
     const chosenDate = eventDate || new Date().toISOString().split('T')[0];
+    const finalPrice = selectedPackage ? selectedPackage.price : defaultPrice;
+    const finalDeposit = selectedPackage ? Math.round(selectedPackage.price * 0.3) : defaultDeposit;
 
     try {
       if (isSupabaseConfigured) {
@@ -181,8 +198,8 @@ export const ClientBookingForm: React.FC<Props> = ({
           start_time: '08:00:00',
           end_time: '12:00:00',
           location: 'Tại Studio / Địa điểm khách yêu cầu',
-          package_price: defaultPrice,
-          deposit_amount: defaultDeposit,
+          package_price: finalPrice,
+          deposit_amount: finalDeposit,
           paid_amount: 0,
           status: 'lead',
           quote_token: quoteToken,
@@ -207,7 +224,7 @@ export const ClientBookingForm: React.FC<Props> = ({
         setSubmittedBooking({
           clientName: cleanName,
           clientPhone: cleanPhone,
-          depositAmount: defaultDeposit || 1000000,
+          depositAmount: finalDeposit || 1000000,
           sessionTitle: `Gói ${shootRequirement}`,
         });
         if (onBookingCreated) onBookingCreated(newRecord);
@@ -223,8 +240,8 @@ export const ClientBookingForm: React.FC<Props> = ({
           start_time: '08:00:00',
           end_time: '12:00:00',
           location: 'Tại Studio / Địa điểm khách yêu cầu',
-          package_price: defaultPrice,
-          deposit_amount: defaultDeposit,
+          package_price: finalPrice,
+          deposit_amount: finalDeposit,
           paid_amount: 0,
           status: 'lead',
           quote_token: quoteToken,
@@ -242,7 +259,7 @@ export const ClientBookingForm: React.FC<Props> = ({
         setSubmittedBooking({
           clientName: cleanName,
           clientPhone: cleanPhone,
-          depositAmount: defaultDeposit || 1000000,
+          depositAmount: finalDeposit || 1000000,
           sessionTitle: `Gói ${shootRequirement}`,
         });
         if (onBookingCreated) onBookingCreated(demoRecord);
@@ -394,7 +411,7 @@ export const ClientBookingForm: React.FC<Props> = ({
             <label className="block text-slate-300 font-medium mb-1.5 flex items-center justify-between">
               <span className="flex items-center gap-1.5">
                 <Sparkles className="w-3.5 h-3.5 text-amber-400" />
-                <span>Nhu Cầu Chụp</span>
+                <span>Nhu Cầu Chụp / Chọn Gói</span>
               </span>
               <span className="text-[10px] text-amber-400 font-bold uppercase tracking-wider">
                 (Bắt buộc)
@@ -402,15 +419,50 @@ export const ClientBookingForm: React.FC<Props> = ({
             </label>
             <select
               value={shootRequirement}
-              onChange={e => setShootRequirement(e.target.value)}
+              onChange={e => {
+                const val = e.target.value;
+                setShootRequirement(val);
+                if (packages && onSelectPackage) {
+                  const matchedPkg = packages.find(p => p.name === val || p.id === val);
+                  if (matchedPkg) {
+                    onSelectPackage(matchedPkg);
+                  }
+                }
+              }}
               className="w-full bg-slate-950 border border-slate-800 focus:border-amber-500 rounded-xl px-3.5 py-2.5 text-white focus:outline-none transition-colors"
             >
-              <option value="Chụp Cưới">Chụp Cưới</option>
-              <option value="Chụp Pre-Wedding">Chụp Pre-Wedding</option>
-              <option value="Chụp Gia đình">Chụp Gia đình</option>
-              <option value="Sự kiện">Sự kiện</option>
-              <option value="Khác">Khác</option>
+              {packages && packages.length > 0 && (
+                <optgroup label="✨ Gói Dịch Vụ Niêm Yết">
+                  {packages.map(p => (
+                    <option key={p.id} value={p.name}>
+                      {p.name} — {new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND', maximumFractionDigits: 0 }).format(p.price)}
+                    </option>
+                  ))}
+                </optgroup>
+              )}
+              <optgroup label="📋 Nhu Cầu Tiêu Chuẩn">
+                <option value="Chụp Cưới">Chụp Cưới</option>
+                <option value="Chụp Pre-Wedding">Chụp Pre-Wedding</option>
+                <option value="Chụp Gia đình">Chụp Gia đình</option>
+                <option value="Sự kiện">Sự kiện</option>
+                <option value="Khác">Khác</option>
+              </optgroup>
             </select>
+
+            {/* Selected Package Highlight Badge */}
+            {selectedPackage && (
+              <div className="mt-2 p-2.5 rounded-xl bg-amber-500/10 border border-amber-500/30 flex items-center justify-between text-xs">
+                <div className="flex items-center gap-2">
+                  <CheckCircle2 className="w-4 h-4 text-amber-400 flex-shrink-0" />
+                  <span className="text-white font-bold line-clamp-1">
+                    Gói đã chọn: <span className="text-amber-300">{selectedPackage.name}</span>
+                  </span>
+                </div>
+                <span className="text-[11px] font-mono text-amber-400 font-bold flex-shrink-0 ml-2">
+                  {new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND', maximumFractionDigits: 0 }).format(selectedPackage.price)}
+                </span>
+              </div>
+            )}
           </div>
         </div>
 

@@ -1003,6 +1003,47 @@ if (fs.existsSync(quoteViewFile)) {
 }
 
 // --------------------------------------------------------------------
+// 24. KIỂM TRA TÍNH NĂNG QUẢN LÝ GÓI DỊCH VỤ (PACKAGES MANAGEMENT)
+// --------------------------------------------------------------------
+console.log('\n▶ 24. Kiểm tra Tính Năng Quản Lý Gói Dịch Vụ (Packages Management)...');
+const packagesSqlFile = path.join(__dirname, 'create_packages.sql');
+assert(fs.existsSync(packagesSqlFile), 'File create_packages.sql tồn tại');
+
+if (fs.existsSync(packagesSqlFile)) {
+  const pkgSql = fs.readFileSync(packagesSqlFile, 'utf8');
+  assert(pkgSql.includes('CREATE TABLE IF NOT EXISTS packages'), 'Bảng PACKAGES được định nghĩa trong create_packages.sql');
+  assert(pkgSql.includes('photographer_id UUID REFERENCES users(id)'), 'Cột photographer_id tham chiếu bảng users(id)');
+  assert(pkgSql.includes('features JSONB'), 'Cột features kiểu JSONB lưu danh sách quyền lợi');
+  assert(pkgSql.includes('image_urls TEXT[]'), 'Cột image_urls kiểu TEXT[] lưu mảng link ảnh tham khảo');
+  assert(pkgSql.includes('is_active BOOLEAN'), 'Cột is_active lưu trạng thái hoạt động của gói');
+  assert(pkgSql.includes('ENABLE ROW LEVEL SECURITY'), 'Kích hoạt RLS cho bảng packages');
+  assert(pkgSql.includes('Photographers can manage own packages'), 'RLS Policy: Thợ ảnh toàn quyền quản lý gói của mình');
+  assert(pkgSql.includes('Public can view active packages'), 'RLS Policy: Public có thể đọc các gói đang kích hoạt (is_active = true)');
+}
+
+const packagesPageFile = path.join(__dirname, 'frontend', 'src', 'components', 'dashboard', 'PackagesManagementPage.tsx');
+assert(fs.existsSync(packagesPageFile), 'Component PackagesManagementPage.tsx tồn tại');
+
+if (fs.existsSync(packagesPageFile)) {
+  const pkgPage = fs.readFileSync(packagesPageFile, 'utf8');
+  assert(pkgPage.includes('package-images'), 'Tích hợp Supabase Storage bucket package-images để upload ảnh tham khảo');
+  assert(pkgPage.includes('features'), 'Hỗ trợ quản lý danh sách quyền lợi (gạch đầu dòng)');
+  assert(pkgPage.includes('QUICK_PRESETS'), 'Cung cấp Preset mẫu gói dịch vụ nhanh cho Studio');
+  assert(pkgPage.includes('formatVND'), 'Định dạng tiền tệ VNĐ trực quan khi nhập và hiển thị giá');
+}
+
+const dashboardLayoutFile = path.join(__dirname, 'frontend', 'src', 'layouts', 'DashboardLayout.tsx');
+if (fs.existsSync(dashboardLayoutFile)) {
+  const dashLayout = fs.readFileSync(dashboardLayoutFile, 'utf8');
+  assert(dashLayout.includes('/dashboard/packages'), 'Menu Gói Dịch Vụ được thêm vào thanh Navigation');
+}
+
+if (fs.existsSync(appFile)) {
+  const appContent = fs.readFileSync(appFile, 'utf8');
+  assert(appContent.includes('/dashboard/packages'), 'Route /dashboard/packages được đăng ký trong App.tsx');
+}
+
+// --------------------------------------------------------------------
 // TỔNG KẾT
 // --------------------------------------------------------------------
 console.log('\n====================================================================');

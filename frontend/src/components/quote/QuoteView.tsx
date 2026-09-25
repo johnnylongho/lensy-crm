@@ -8,9 +8,10 @@ import { QuoteEquipment } from './QuoteEquipment';
 import { QuotePriceSummary } from './QuotePriceSummary';
 import { ClientBookingForm } from './ClientBookingForm';
 import { DepositModal } from './DepositModal';
-import { QuoteData, SessionType } from '../../types';
+import { PackagePricingSection } from './PackagePricingSection';
+import { QuoteData, SessionType, PackageItem } from '../../types';
 import { supabase, isSupabaseConfigured } from '../../lib/supabase';
-import { MOCK_QUOTE } from '../../data/mockData';
+import { MOCK_QUOTE, MOCK_PACKAGES } from '../../data/mockData';
 import {
   Phone,
   MessageCircle,
@@ -20,6 +21,7 @@ import {
   ArrowLeft,
   Calendar,
   Sparkles,
+  ShieldCheck,
 } from 'lucide-react';
 
 interface Props {
@@ -130,6 +132,9 @@ export const QuoteView: React.FC<Props> = ({
   const [isNotFound, setIsNotFound] = useState(false);
   const [isStudioNotFound, setIsStudioNotFound] = useState(false);
   const [isDepositModalOpen, setIsDepositModalOpen] = useState(false);
+  const [packages, setPackages] = useState<PackageItem[]>([]);
+  const [selectedPackage, setSelectedPackage] = useState<PackageItem | null>(null);
+  const [verifiedStudio, setVerifiedStudio] = useState<{ name: string; logoUrl?: string } | null>(null);
 
   // Fetch dynamic studio profile by username (/book/:username)
   useEffect(() => {
@@ -157,10 +162,54 @@ export const QuoteView: React.FC<Props> = ({
 
           setPhotographerId(userData.id);
 
+          let displayStudioName = userData.studio_name || 'MIRMIA STUDIO & ACADEMY';
+          let displayAvatarUrl = userData.avatar_url || '/mirmia-logo.png';
+          let studioVerifiedInfo: { name: string; logoUrl?: string } | null = null;
+
+          // Logic hiển thị Branding theo Multi-Tenants:
+          // Nếu user là Studio Member và có status 'approved' -> Lấy name & logo từ bảng studios
+          if (userData.account_type === 'studio_member') {
+            try {
+              const { data: memberData } = await supabase
+                .from('studio_members')
+                .select(`
+                  status,
+                  role,
+                  studios:studio_id (
+                    id,
+                    name,
+                    logo_url,
+                    verified_status
+                  )
+                `)
+                .eq('user_id', userData.id)
+                .eq('status', 'approved')
+                .maybeSingle();
+
+              if (memberData && memberData.studios) {
+                const sObj = (memberData as any).studios;
+                if (sObj?.name) {
+                  displayStudioName = sObj.name;
+                  if (sObj.logo_url) {
+                    displayAvatarUrl = sObj.logo_url;
+                  }
+                  studioVerifiedInfo = {
+                    name: sObj.name,
+                    logoUrl: sObj.logo_url,
+                  };
+                }
+              }
+            } catch (mErr) {
+              console.warn('Lỗi kiểm tra studio membership:', mErr);
+            }
+          }
+
+          setVerifiedStudio(studioVerifiedInfo);
+
           setQuote(prev => ({
             ...prev,
-            studioName: userData.studio_name || 'MIRMIA STUDIO & ACADEMY',
-            studioAvatarUrl: userData.avatar_url || '/mirmia-logo.png',
+            studioName: displayStudioName,
+            studioAvatarUrl: displayAvatarUrl,
             studioCoverUrl: userData.cover_image || userData.cover_url || 'https://images.unsplash.com/photo-1492691527719-9d1e07e534b4?auto=format&fit=crop&w=1200&q=80',
             photographerName: userData.full_name || 'Nhiếp Ảnh Gia',
             photographerPhone: userData.phone || '0901234567',
@@ -171,6 +220,45 @@ export const QuoteView: React.FC<Props> = ({
               accountName: userData.bank_account_name || userData.full_name || 'MIRMIA STUDIO',
             },
           }));
+
+          // Fetch dynamic packages for this photographer
+          try {
+            let pkgList: PackageItem[] = [];
+            const { data: pkgData, error: pkgError } = await supabase
+              .from('packages')
+              .select('*')
+              .eq('photographer_id', userData.id)
+              .eq('is_active', true)
+              .order('price', { ascending: true });
+
+            if (!pkgError && pkgData && pkgData.length > 0) {
+              pkgList = pkgData.map((p: any) => ({
+                ...p,
+                price: Number(p.price || 0),
+                features: Array.isArray(p.features) ? p.features : (p.features ? JSON.parse(p.features) : []),
+                image_urls: Array.isArray(p.image_urls) ? p.image_urls : [],
+                is_active: p.is_active ?? true,
+              }));
+            } else {
+              const localSaved = localStorage.getItem('lensy_packages_local');
+              if (localSaved) {
+                const parsed = JSON.parse(localSaved).filter((p: PackageItem) => p.is_active);
+                if (parsed.length > 0) pkgList = parsed;
+              }
+              if (pkgList.length === 0) {
+                pkgList = MOCK_PACKAGES;
+              }
+            }
+
+            setPackages(pkgList);
+            if (pkgList.length > 0) {
+              setSelectedPackage(pkgList[0]);
+            }
+          } catch (pkgErr) {
+            console.warn('Lỗi khi fetch gói dịch vụ:', pkgErr);
+            setPackages(MOCK_PACKAGES);
+            setSelectedPackage(MOCK_PACKAGES[0]);
+          }
         } else {
           // Demo fallback
           if (username === 'johnnylongho') {
@@ -183,6 +271,8 @@ export const QuoteView: React.FC<Props> = ({
               photographerName: 'Johnny Long Hồ',
               photographerPhone: '0901234567',
             }));
+            setPackages(MOCK_PACKAGES);
+            setSelectedPackage(MOCK_PACKAGES[0]);
           } else {
             setIsStudioNotFound(true);
           }
@@ -482,10 +572,11 @@ export const QuoteView: React.FC<Props> = ({
         </Helmet>
       )}
 
-      {/* Container - Mobile-first width */}
-      <div className="w-full max-w-xl mx-auto px-4 py-4 sm:py-8 space-y-6 flex-1 pb-24">
+      {/* Container - Responsive width */}
+      <div className={`w-full mx-auto px-4 py-4 sm:py-8 space-y-6 flex-1 pb-24 ${isBookingPage ? 'max-w-5xl' : 'max-w-xl'}`}>
         {isBookingPage ? (
-          /* Dynamic Studio Banner, Title & Dynamic Greeting */
+          <>
+          {/* Dynamic Studio Banner, Title & Dynamic Greeting */}
           <div className="relative rounded-3xl overflow-hidden border border-slate-800 shadow-2xl bg-slate-900/90 backdrop-blur-sm animate-fadeIn">
             {/* Studio Cover Image */}
             <div className="h-44 sm:h-52 w-full relative overflow-hidden bg-slate-950">
@@ -509,11 +600,22 @@ export const QuoteView: React.FC<Props> = ({
                   }}
                 />
               </div>
-              <div className="space-y-1 flex-1">
-                <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-amber-500/10 border border-amber-500/30 text-amber-400 text-[11px] font-bold tracking-wide uppercase">
-                  <Sparkles className="w-3.5 h-3.5 text-amber-400" />
-                  <span>Lensy Studio Profile</span>
+              <div className="space-y-1.5 flex-1">
+                <div className="flex flex-wrap items-center gap-2">
+                  <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-amber-500/10 border border-amber-500/30 text-amber-400 text-[11px] font-bold tracking-wide uppercase">
+                    <Sparkles className="w-3.5 h-3.5 text-amber-400" />
+                    <span>Lensy Studio Profile</span>
+                  </div>
+
+                  {/* Badge nhỏ "Verified by [Tên Studio]" khi được phê duyệt */}
+                  {verifiedStudio && (
+                    <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-blue-500/15 border border-blue-500/40 text-blue-300 text-[11px] font-bold tracking-wide shadow-sm">
+                      <ShieldCheck className="w-3.5 h-3.5 text-blue-400" />
+                      <span>Verified by {verifiedStudio.name}</span>
+                    </div>
+                  )}
                 </div>
+
                 <h1 className="text-2xl sm:text-3xl font-extrabold text-white tracking-tight">
                   {quote.studioName}
                 </h1>
@@ -532,6 +634,21 @@ export const QuoteView: React.FC<Props> = ({
               </div>
             </div>
           </div>
+
+          {/* Bảng Giá Dịch Vụ & Mini Portfolio Lightbox */}
+          <PackagePricingSection
+            packages={packages}
+            selectedPackageId={selectedPackage?.id || null}
+            onSelectPackage={pkg => {
+              setSelectedPackage(pkg);
+              const formEl = document.getElementById('client-booking-form-wrapper');
+              if (formEl) {
+                formEl.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+              }
+            }}
+            studioName={quote.studioName}
+          />
+          </>
         ) : (
           <>
             {/* Quote Header */}
@@ -558,19 +675,24 @@ export const QuoteView: React.FC<Props> = ({
         )}
 
         {/* Client Booking Submission Form (Direct Supabase Insert & VietQR Payment) */}
-        <ClientBookingForm
-          studioName={quote.studioName}
-          defaultSessionType={quote.sessionType}
-          defaultPrice={quote.packagePrice}
-          defaultDeposit={quote.depositAmount}
-          photographerId={photographerId}
-          bankInfo={quote.bankInfo}
-          studioPhone={quote.photographerPhone}
-          isDynamicBookingPage={isBookingPage}
-          onBookingCreated={newBooking => {
-            if (onBookingSubmit) onBookingSubmit(newBooking);
-          }}
-        />
+        <div id="client-booking-form-wrapper">
+          <ClientBookingForm
+            studioName={quote.studioName}
+            defaultSessionType={quote.sessionType}
+            defaultPrice={selectedPackage ? selectedPackage.price : quote.packagePrice}
+            defaultDeposit={selectedPackage ? Math.round(selectedPackage.price * 0.3) : quote.depositAmount}
+            photographerId={photographerId}
+            bankInfo={quote.bankInfo}
+            studioPhone={quote.photographerPhone}
+            isDynamicBookingPage={isBookingPage}
+            packages={packages}
+            selectedPackage={selectedPackage}
+            onSelectPackage={pkg => setSelectedPackage(pkg)}
+            onBookingCreated={newBooking => {
+              if (onBookingSubmit) onBookingSubmit(newBooking);
+            }}
+          />
+        </div>
 
         {/* Photographer Contact Card */}
         <div className="rounded-3xl bg-slate-900/40 border border-slate-800/80 p-5 text-center space-y-3">

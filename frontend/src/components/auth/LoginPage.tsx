@@ -23,7 +23,17 @@ export const LoginPage: React.FC = () => {
   // If already logged in, redirect to dashboard
   const from = (location.state as any)?.from?.pathname || '/dashboard';
 
-  const [mode, setMode] = useState<'login' | 'signup'>('login');
+  const queryMode = new URLSearchParams(location.search).get('mode');
+  const [mode, setMode] = useState<'login' | 'signup'>(queryMode === 'signup' ? 'signup' : 'login');
+
+  React.useEffect(() => {
+    const params = new URLSearchParams(location.search);
+    if (params.get('mode') === 'signup') {
+      setMode('signup');
+    } else if (params.get('mode') === 'login') {
+      setMode('login');
+    }
+  }, [location.search]);
   const [email, setEmail] = useState<string>('');
   const [password, setPassword] = useState<string>('');
   const [fullName, setFullName] = useState<string>('');

@@ -293,3 +293,44 @@ VALUES
     ('b1111111-1111-1111-1111-111111111102', 'a1111111-1111-1111-1111-111111111111', 'deposit', 4000000, 'bank_transfer', 'completed', 'Khách chuyển khoản cọc qua VietQR MB Bank'),
     ('b1111111-1111-1111-1111-111111111103', 'a1111111-1111-1111-1111-111111111111', 'deposit', 3000000, 'bank_transfer', 'completed', 'Khách cọc trước buổi chụp Lookbook')
 ON CONFLICT DO NOTHING;
+
+-- ====================================================================
+-- BẢNG 4: PACKAGES (GÓI DỊCH VỤ NHIẾP ẢNH & BÁO GIÁ)
+-- ====================================================================
+CREATE TABLE IF NOT EXISTS packages (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    photographer_id UUID REFERENCES users(id) ON DELETE CASCADE,
+    name TEXT NOT NULL,
+    price NUMERIC(12, 2) NOT NULL DEFAULT 0,
+    description TEXT,
+    features JSONB DEFAULT '[]'::jsonb,
+    image_urls TEXT[] DEFAULT '{}'::TEXT[],
+    is_active BOOLEAN NOT NULL DEFAULT true,
+    created_at TIMESTAMPTZ DEFAULT NOW(),
+    updated_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+CREATE INDEX IF NOT EXISTS idx_packages_photographer_id ON packages(photographer_id);
+CREATE INDEX IF NOT EXISTS idx_packages_is_active ON packages(is_active);
+
+DROP TRIGGER IF EXISTS trg_packages_updated_at ON packages;
+CREATE TRIGGER trg_packages_updated_at
+    BEFORE UPDATE ON packages
+    FOR EACH ROW
+    EXECUTE FUNCTION update_updated_at_column();
+
+ALTER TABLE packages ENABLE ROW LEVEL SECURITY;
+
+DROP POLICY IF EXISTS "Photographers can manage own packages" ON packages;
+CREATE POLICY "Photographers can manage own packages"
+    ON packages FOR ALL
+    TO authenticated
+    USING (photographer_id = auth.uid())
+    WITH CHECK (photographer_id = auth.uid());
+
+DROP POLICY IF EXISTS "Public can view active packages" ON packages;
+CREATE POLICY "Public can view active packages"
+    ON packages FOR SELECT
+    TO anon, authenticated
+    USING (is_active = true);
+

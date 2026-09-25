@@ -111,4 +111,53 @@ export interface GearItem {
   created_at?: string;
 }
 
+export interface PackageItem {
+  id: string;
+  photographer_id?: string;
+  name: string;
+  price: number;
+  description?: string | null;
+  features: string[];
+  image_urls: string[];
+  is_active: boolean;
+  created_at?: string;
+  updated_at?: string;
+}
+
+// ==========================================
+// MULTI-TENANT & WORKSPACE TYPES
+// ==========================================
+export type AccountType = 'freelancer' | 'studio_member';
+export type StudioRole = 'admin' | 'photographer';
+export type MemberStatus = 'pending' | 'approved' | 'rejected';
+
+export interface Studio {
+  id: string;
+  name: string;
+  logo_url?: string | null;
+  verified_status: boolean;
+  owner_id: string;
+  created_at?: string;
+  updated_at?: string;
+}
+
+export interface StudioMember {
+  id: string;
+  studio_id: string;
+  user_id: string;
+  role: StudioRole;
+  status: MemberStatus;
+  created_at?: string;
+  updated_at?: string;
+  studio?: Studio;
+  user?: {
+    id: string;
+    full_name: string;
+    email: string;
+    avatar_url?: string;
+    phone?: string;
+  };
+}
+
+
 

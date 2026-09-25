@@ -11,6 +11,8 @@ import {
   Users,
   Menu,
   X,
+  Package,
+  Building2,
 } from 'lucide-react';
 import { ThemeToggle } from '../components/common/ThemeToggle';
 
@@ -19,6 +21,7 @@ export const DashboardLayout: React.FC = () => {
   const location = useLocation();
   const [currentUsername, setCurrentUsername] = useState<string>('johnnylongho');
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const [isStudioAdmin, setIsStudioAdmin] = useState(false);
   const mobileMenuRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -33,6 +36,39 @@ export const DashboardLayout: React.FC = () => {
           setCurrentUsername(data.username);
         }
       });
+
+    // Check if user is studio owner or approved admin
+    const checkAdmin = async () => {
+      try {
+        const { data: owned } = await supabase
+          .from('studios')
+          .select('id')
+          .eq('owner_id', user.id)
+          .limit(1);
+
+        if (owned && owned.length > 0) {
+          setIsStudioAdmin(true);
+          return;
+        }
+
+        const { data: member } = await supabase
+          .from('studio_members')
+          .select('id')
+          .eq('user_id', user.id)
+          .eq('role', 'admin')
+          .eq('status', 'approved')
+          .limit(1);
+
+        if (member && member.length > 0) {
+          setIsStudioAdmin(true);
+        } else {
+          setIsStudioAdmin(false);
+        }
+      } catch (err) {
+        console.error('Lỗi kiểm tra quyền Studio Admin:', err);
+      }
+    };
+    checkAdmin();
   }, [user]);
 
   // Đóng mobile menu khi click ra ngoài
@@ -59,6 +95,12 @@ export const DashboardLayout: React.FC = () => {
       isActive: location.pathname === '/dashboard',
     },
     {
+      to: '/dashboard/packages',
+      label: 'Gói Dịch Vụ',
+      icon: Package,
+      isActive: location.pathname.startsWith('/dashboard/packages'),
+    },
+    {
       to: '/dashboard/clients',
       label: 'Khách Hàng',
       icon: Users,
@@ -76,6 +118,16 @@ export const DashboardLayout: React.FC = () => {
       icon: Settings,
       isActive: location.pathname.startsWith('/dashboard/settings'),
     },
+    ...(isStudioAdmin
+      ? [
+          {
+            to: '/dashboard/studio-settings',
+            label: 'Quản Trị Studio',
+            icon: Building2,
+            isActive: location.pathname.startsWith('/dashboard/studio-settings'),
+          },
+        ]
+      : []),
   ];
 
   const userFullName = user?.user_metadata?.full_name || 'Thợ ảnh';

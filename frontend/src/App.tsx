@@ -11,6 +11,8 @@ import { QuoteView } from './components/quote/QuoteView';
 import { PhotographerDashboard } from './components/dashboard/PhotographerDashboard';
 import { SettingsPage } from './components/dashboard/SettingsPage';
 import { GearsManagementPage } from './components/dashboard/GearsManagementPage';
+import { PackagesManagementPage } from './components/dashboard/PackagesManagementPage';
+import { StudioSettingsPage } from './components/dashboard/StudioSettingsPage';
 import { ClientsManagementPage } from './components/clients/ClientsManagementPage';
 import { MOCK_QUOTE, MOCK_CALENDAR_EVENTS } from './data/mockData';
 import { CalendarEvent, QuoteData } from './types';
@@ -129,16 +131,25 @@ export function App() {
             {/* Trang Quản Lý Thiết Bị Studio */}
             <Route path="/dashboard/gears" element={<GearsManagementPage />} />
 
+            {/* Trang Quản Lý Gói Dịch Vụ & Bảng Giá */}
+            <Route path="/dashboard/packages" element={<PackagesManagementPage />} />
+
             {/* Trang Cài Đặt Hồ Sơ & Tài Khoản Ngân Hàng */}
             <Route path="/dashboard/settings" element={<SettingsPage />} />
+            <Route path="/dashboard/settings/profile" element={<SettingsPage />} />
+
+            {/* Trang Quản Trị Dành Riêng Cho Studio Admin */}
+            <Route path="/dashboard/studio-settings" element={<StudioSettingsPage />} />
           </Route>
 
           {/* ==================================================================== */}
           {/* 3. ALIAS & FALLBACK ROUTES                                           */}
           {/* ==================================================================== */}
+          <Route path="/packages" element={<Navigate to="/dashboard/packages" replace />} />
           <Route path="/clients" element={<Navigate to="/dashboard/clients" replace />} />
           <Route path="/settings" element={<Navigate to="/dashboard/settings" replace />} />
           <Route path="/gears" element={<Navigate to="/dashboard/gears" replace />} />
+          <Route path="/studio-settings" element={<Navigate to="/dashboard/studio-settings" replace />} />
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
       </BrowserRouter>

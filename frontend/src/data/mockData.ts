@@ -202,3 +202,67 @@ export const MOCK_CALENDAR_EVENTS: CalendarEvent[] = [
     ],
   }
 ];
+
+export const MOCK_PACKAGES: import('../types').PackageItem[] = [
+  {
+    id: 'pkg-1',
+    name: 'Phóng Sự Cưới Cao Cấp (Luxury Wedding Journalism)',
+    price: 18000000,
+    description: 'Trọn gói chụp ngày cưới với 2 thợ chính, bắt trọn từng khoảnh khắc cảm xúc thăng hoa và đẳng cấp nghệ thuật.',
+    features: [
+      '2 Thợ chụp chính máy Sony A7 IV + Lens GM cao cấp',
+      'Chụp không giới hạn số lượng file trong buổi lễ & tiệc',
+      'Chỉnh sửa màu toàn bộ ảnh gốc (blend màu chuẩn Studio)',
+      'Retouch chi tiết 80 ảnh chân dung cô dâu chú rể & gia đình',
+      'Tặng 01 photobook mở phẳng 30x30cm (40 trang) bìa da cao cấp',
+      'Tặng 02 ảnh cổng ép gỗ pha lê 60x90cm',
+      'Bàn giao toàn bộ file gốc & hoàn thiện qua Google Drive vĩnh viễn'
+    ],
+    image_urls: [
+      'https://images.unsplash.com/photo-1519741497674-611481863552?auto=format&fit=crop&w=1200&q=80',
+      'https://images.unsplash.com/photo-1511285560929-80b456fea0bc?auto=format&fit=crop&w=1200&q=80'
+    ],
+    is_active: true,
+    created_at: '2026-08-01T08:00:00Z',
+  },
+  {
+    id: 'pkg-2',
+    name: 'Chụp Pre-Wedding Ngoại Cảnh & Phim Trường',
+    price: 14500000,
+    description: 'Buổi chụp lãng mạn ngoại cảnh hoặc phim trường chuyên nghiệp, hỗ trợ stylist và hướng dẫn tạo dáng tự nhiên.',
+    features: [
+      '01 Thợ chụp chính + 01 Thợ phụ đánh sáng chuyên nghiệp',
+      'Miễn phí 02 trang phục cưới cao cấp & 01 vest chú rể',
+      'Trang điểm & làm tóc thay đổi 03 layout theo concept',
+      'Retouch chuyên sâu 50 ảnh đẹp nhất',
+      'Tặng 01 album phóng sự mở phẳng 25x35cm',
+      'Tặng 01 ảnh cổng pha lê cao cấp 60x90cm',
+      'Xe di chuyển trong nội thành và vé vào phim trường'
+    ],
+    image_urls: [
+      'https://images.unsplash.com/photo-1583939003579-730e3918a45a?auto=format&fit=crop&w=1200&q=80',
+      'https://images.unsplash.com/photo-1465495976277-4387d4b0b4c6?auto=format&fit=crop&w=1200&q=80'
+    ],
+    is_active: true,
+    created_at: '2026-08-05T08:00:00Z',
+  },
+  {
+    id: 'pkg-3',
+    name: 'Lookbook Thời Trang & Portrait Doanh Nhân',
+    price: 8500000,
+    description: 'Chuyên nghiệp cho các thương hiệu thời trang, lookbook bộ sưu tập hoặc bộ ảnh xây dựng thương hiệu cá nhân doanh nhân.',
+    features: [
+      'Chụp tại studio với hệ thống đèn Profoto / Godox chuyên dụng',
+      'Chụp tối đa 4 concept hoặc 15 bộ trang phục',
+      'Retouch chi tiết chuẩn tạp chí cho 25 ảnh xuất sắc nhất',
+      'Bàn giao file nén tối ưu hiển thị web & social media',
+      'Hỗ trợ chỉnh sửa nhanh lấy gấp trong 48h'
+    ],
+    image_urls: [
+      'https://images.unsplash.com/photo-1490481651871-ab68de25d43d?auto=format&fit=crop&w=1200&q=80'
+    ],
+    is_active: true,
+    created_at: '2026-08-10T08:00:00Z',
+  }
+];
+

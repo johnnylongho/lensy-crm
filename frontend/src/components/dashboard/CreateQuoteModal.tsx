@@ -629,7 +629,8 @@ export const CreateQuoteModal: React.FC<Props> = ({
                   </label>
                   <input
                     type="number"
-                    step={500000}
+                    min={0}
+                    step="any"
                     value={packagePrice}
                     onChange={e => setPackagePrice(Number(e.target.value))}
                     className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-amber-400 font-mono font-bold focus:outline-none focus:border-amber-500"

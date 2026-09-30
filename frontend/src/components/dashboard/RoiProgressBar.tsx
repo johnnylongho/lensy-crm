@@ -1,7 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { motion } from 'framer-motion';
+import { motion, AnimatePresence } from 'framer-motion';
 import CountUp from 'react-countup';
-import confetti from 'canvas-confetti';
 import { Link } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import { supabase, isSupabaseConfigured } from '../../lib/supabase';
@@ -10,9 +9,6 @@ import {
   calculateYtdRevenue,
   getTierProgress,
   TierProgress,
-  hasCelebratedTier,
-  markTierCelebrated,
-  triggerCelebrationConfetti,
 } from '../../utils/tierSystem';
 import { TierBadge } from './TierBadge';
 import { TierCelebrationModal } from './TierCelebrationModal';
@@ -32,20 +28,24 @@ import {
   Crown,
   Gem,
   ChevronRight,
+  ChevronDown,
+  ChevronUp,
 } from 'lucide-react';
 
 interface Props {
   events: CalendarEvent[];
   className?: string;
+  defaultCollapsed?: boolean;
 }
 
-export const RoiProgressBar: React.FC<Props> = ({ events, className = '' }) => {
+export const RoiProgressBar: React.FC<Props> = ({ events, className = '', defaultCollapsed = false }) => {
   const { user } = useAuth();
   const [gears, setGears] = useState<GearItem[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [animatedPercent, setAnimatedPercent] = useState(0);
   const [showCelebrationModal, setShowCelebrationModal] = useState(false);
   const [activeTab, setActiveTab] = useState<'tier' | 'roi'>('tier');
+  const [isCollapsed, setIsCollapsed] = useState(defaultCollapsed);
   const hasCelebratedRoi = useRef(false);
 
   // 1. Tính toán Doanh thu Năm Hiện Tại (YTD Revenue) & Cấp bậc Studio
@@ -140,57 +140,27 @@ export const RoiProgressBar: React.FC<Props> = ({ events, className = '' }) => {
     return () => clearTimeout(timer);
   }, [progressPercent]);
 
-  // ====================================================================
-  // 4. SMART CONFETTI VALIDATION & MODAL CHÚC MỪNG MỐC DOANH THU MỚI
-  // ====================================================================
-  // Để tránh việc nổ pháo hoa mỗi lần load trang:
-  // Lưu trạng thái vinh danh vào localStorage: lensy_celebrated_tier_[tên_tier] = true
-  // Chỉ kích hoạt canvas-confetti VÀ mở Modal vinh danh duy nhất 1 lần khi vượt mốc mới.
-  useEffect(() => {
-    if (currentTier.id === 'rookie') return;
-
-    const alreadyCelebrated = hasCelebratedTier(currentTier.id);
-    if (!alreadyCelebrated) {
-      markTierCelebrated(currentTier.id);
-      triggerCelebrationConfetti();
-      setShowCelebrationModal(true);
-    }
-  }, [currentTier.id]);
-
-  // Backward compatibility: Gamification Kịch bản 2 pháo hoa nếu ROI đạt 100%
-  useEffect(() => {
-    if (roiPercentage >= 100 && !hasCelebratedRoi.current && !isLoading) {
-      hasCelebratedRoi.current = true;
-      try {
-        confetti({
-          particleCount: 100,
-          spread: 70,
-          origin: { y: 0.6 },
-          colors: ['#10b981', '#34d399', '#6ee7b7', '#f59e0b', '#fbbf24'],
-        });
-      } catch (err) {}
-    }
-  }, [roiPercentage, isLoading]);
-
   return (
     <>
       <motion.div
         initial={{ opacity: 0, y: 18 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.45, ease: 'easeOut', delay: 0.15 }}
-        className={`relative overflow-hidden rounded-3xl bg-white/60 dark:bg-white/5 backdrop-blur-xl border border-white/60 dark:border-white/10 shadow-[0_8px_32px_0_rgba(0,0,0,0.06)] dark:shadow-[0_8px_32px_0_rgba(0,0,0,0.3)] p-6 sm:p-7 transition-all duration-300 hover:shadow-md hover:-translate-y-0.5 ${className}`}
+        className={`relative overflow-hidden rounded-3xl bg-white/60 dark:bg-white/5 backdrop-blur-xl border border-white/60 dark:border-white/10 shadow-[0_8px_32px_0_rgba(0,0,0,0.06)] dark:shadow-[0_8px_32px_0_rgba(0,0,0,0.3)] transition-all duration-300 hover:shadow-md ${
+          isCollapsed ? 'p-4 sm:p-5' : 'p-6 sm:p-7'
+        } ${className}`}
       >
         {/* Background Ambient Glow */}
         <div
           className={`absolute -top-16 -right-16 w-64 h-64 rounded-full blur-3xl opacity-25 pointer-events-none transition-all duration-1000 bg-gradient-to-br ${currentTier.gradient}`}
         />
 
-        <div className="relative space-y-5">
+        <div className={`relative ${isCollapsed ? 'space-y-0' : 'space-y-5'}`}>
           {/* Top Header: Badge, Title & Switch Tab */}
           <div className="flex flex-wrap items-center justify-between gap-3">
             <div className="flex items-center gap-3">
               <div
-                className={`w-11 h-11 rounded-2xl flex items-center justify-center border shadow-md transition-colors bg-gradient-to-br ${currentTier.gradient} text-white`}
+                className={`w-11 h-11 rounded-2xl flex items-center justify-center border shadow-md transition-colors bg-gradient-to-br ${currentTier.gradient} text-white flex-shrink-0`}
               >
                 {currentTier.iconName === 'Trophy' ? (
                   <Trophy className="w-5 h-5 text-yellow-300" />
@@ -216,54 +186,86 @@ export const RoiProgressBar: React.FC<Props> = ({ events, className = '' }) => {
 
                 <p className="text-xs text-slate-500 dark:text-white/50">
                   Doanh thu YTD {currentYear}: <strong className="text-slate-800 dark:text-white/90 font-mono font-bold">{(ytdRevenue).toLocaleString('vi-VN')} đ</strong>
-                  {nextMilestone && (
+                  {isCollapsed ? (
+                    <span className="ml-2 text-amber-500 font-bold">• {progressPercent}% tiến độ</span>
+                  ) : nextMilestone ? (
                     <span> • Mục tiêu: <span className="font-mono text-amber-500 font-bold">{(nextMilestone).toLocaleString('vi-VN')} đ</span> ({nextTier?.name})</span>
-                  )}
+                  ) : null}
                 </p>
               </div>
             </div>
 
-            {/* Quick Switch Tabs: Cấp Bậc (Mặc định) vs ROI Thiết Bị */}
+            {/* Quick Switch Tabs & Toggle Button */}
             <div className="flex items-center gap-2">
-              <div className="flex items-center p-1 rounded-2xl bg-white/40 dark:bg-white/5 border border-white/40 dark:border-white/10 backdrop-blur-md">
-                <button
-                  type="button"
-                  onClick={() => setActiveTab('tier')}
-                  className={`px-3 py-1 rounded-xl text-xs font-bold transition-all ${
-                    activeTab === 'tier'
-                      ? 'bg-amber-500 text-slate-950 shadow-sm'
-                      : 'text-slate-600 dark:text-slate-300 hover:text-slate-950 dark:hover:text-white'
-                  }`}
-                >
-                  Cấp Bậc ({currentTier.name})
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setActiveTab('roi')}
-                  className={`px-3 py-1 rounded-xl text-xs font-bold transition-all ${
-                    activeTab === 'roi'
-                      ? 'bg-amber-500 text-slate-950 shadow-sm'
-                      : 'text-slate-600 dark:text-slate-300 hover:text-slate-950 dark:hover:text-white'
-                  }`}
-                >
-                  ROI Thiết Bị
-                </button>
-              </div>
+              {!isCollapsed && (
+                <>
+                  <div className="flex items-center p-1 rounded-2xl bg-white/40 dark:bg-white/5 border border-white/40 dark:border-white/10 backdrop-blur-md">
+                    <button
+                      type="button"
+                      onClick={() => setActiveTab('tier')}
+                      className={`px-3 py-1 rounded-xl text-xs font-bold transition-all cursor-pointer ${
+                        activeTab === 'tier'
+                          ? 'bg-amber-500 text-slate-950 shadow-sm'
+                          : 'text-slate-600 dark:text-slate-300 hover:text-slate-950 dark:hover:text-white'
+                      }`}
+                    >
+                      Cấp Bậc ({currentTier.name})
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setActiveTab('roi')}
+                      className={`px-3 py-1 rounded-xl text-xs font-bold transition-all cursor-pointer ${
+                        activeTab === 'roi'
+                          ? 'bg-amber-500 text-slate-950 shadow-sm'
+                          : 'text-slate-600 dark:text-slate-300 hover:text-slate-950 dark:hover:text-white'
+                      }`}
+                    >
+                      ROI Thiết Bị
+                    </button>
+                  </div>
 
-              <Link
-                to="/dashboard/gears"
-                className="hidden sm:inline-flex items-center gap-1.5 px-3 py-1.5 rounded-2xl bg-white/20 dark:bg-white/5 hover:bg-white/30 dark:hover:bg-white/10 border border-white/40 dark:border-white/10 text-slate-700 dark:text-white/80 text-xs font-semibold backdrop-blur-md transition-all active:scale-95"
-                title="Quản lý kho thiết bị"
+                  <Link
+                    to="/dashboard/gears"
+                    className="hidden sm:inline-flex items-center gap-1.5 px-3 py-1.5 rounded-2xl bg-white/20 dark:bg-white/5 hover:bg-white/30 dark:hover:bg-white/10 border border-white/40 dark:border-white/10 text-slate-700 dark:text-white/80 text-xs font-semibold backdrop-blur-md transition-all active:scale-95"
+                    title="Quản lý kho thiết bị"
+                  >
+                    <Camera className="w-3.5 h-3.5 text-amber-500" />
+                    <span>Kho Máy</span>
+                  </Link>
+                </>
+              )}
+
+              {/* Nút Toggle Thu gọn / Mở rộng */}
+              <button
+                type="button"
+                onClick={() => setIsCollapsed(prev => !prev)}
+                className="p-2 sm:px-3 sm:py-1.5 rounded-2xl bg-white/40 dark:bg-white/5 hover:bg-white/70 dark:hover:bg-white/10 border border-white/40 dark:border-white/10 text-slate-700 dark:text-zinc-300 transition-all active:scale-95 flex items-center gap-1.5 text-xs font-semibold cursor-pointer shadow-sm"
+                title={isCollapsed ? 'Mở rộng hành trình thăng hạng' : 'Thu gọn hành trình thăng hạng'}
+                aria-label={isCollapsed ? 'Mở rộng thẻ tiến độ' : 'Thu gọn thẻ tiến độ'}
               >
-                <Camera className="w-3.5 h-3.5 text-amber-500" />
-                <span>Kho Máy</span>
-              </Link>
+                <span className="text-[11px] hidden sm:inline">{isCollapsed ? 'Mở rộng' : 'Thu gọn'}</span>
+                {isCollapsed ? (
+                  <ChevronDown className="w-4 h-4 text-amber-500" />
+                ) : (
+                  <ChevronUp className="w-4 h-4 text-amber-500" />
+                )}
+              </button>
             </div>
           </div>
 
-          {/* TAB 1: HÀNH TRÌNH THĂNG HẠNG (GROWTH PROGRESS) */}
-          {activeTab === 'tier' ? (
-            <div className="space-y-4">
+          <AnimatePresence initial={false}>
+            {!isCollapsed && (
+              <motion.div
+                key="roi-progress-body"
+                initial={{ height: 0, opacity: 0 }}
+                animate={{ height: 'auto', opacity: 1 }}
+                exit={{ height: 0, opacity: 0 }}
+                transition={{ duration: 0.35, ease: [0.04, 0.62, 0.23, 0.98] }}
+                className="overflow-hidden space-y-5 pt-1"
+              >
+                {/* TAB 1: HÀNH TRÌNH THĂNG HẠNG (GROWTH PROGRESS) */}
+                {activeTab === 'tier' ? (
+                  <div className="space-y-4">
               {/* Stat Bar: Chi tiết quãng đường từ Cấp Hiện Tại lên Cấp Kế Tiếp */}
               <div className="p-4 sm:p-5 rounded-2xl bg-white/40 dark:bg-white/5 backdrop-blur-md border border-white/40 dark:border-white/10 flex flex-wrap items-center justify-between gap-3 text-xs sm:text-sm">
                 <div className="flex flex-wrap items-center gap-x-3 gap-y-2 font-medium text-slate-700 dark:text-slate-200">
@@ -387,6 +389,9 @@ export const RoiProgressBar: React.FC<Props> = ({ events, className = '' }) => {
               </div>
             </div>
           )}
+              </motion.div>
+            )}
+          </AnimatePresence>
         </div>
       </motion.div>
 

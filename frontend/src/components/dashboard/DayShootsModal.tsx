@@ -6,6 +6,7 @@ import { CalendarEvent, BookingStatus } from '../../types';
 import { BookingStatusSelect, STATUS_CONFIG } from './BookingStatusSelect';
 import { BookingFinancialCard } from './BookingFinancialCard';
 import { generateGoogleCalendarUrl } from '../../lib/calendarIntegration';
+import { getCategoryConfig } from '../../utils/categoryConfig';
 
 interface Props {
   selectedDate: Date;
@@ -14,6 +15,8 @@ interface Props {
   onStatusChange?: (eventId: string, newStatus: BookingStatus) => void;
   onSelectBooking?: (booking: CalendarEvent) => void;
   onOpenDebtReminder?: (booking: CalendarEvent) => void;
+  onEditFinancials?: (booking: CalendarEvent) => void;
+  onEditCategory?: (booking: CalendarEvent) => void;
 }
 
 export const DayShootsModal: React.FC<Props> = ({
@@ -23,12 +26,14 @@ export const DayShootsModal: React.FC<Props> = ({
   onStatusChange,
   onSelectBooking,
   onOpenDebtReminder,
+  onEditFinancials,
+  onEditCategory,
 }) => {
   const dayEvents = events.filter(e => isSameDay(parseISO(e.eventDate), selectedDate));
   const formattedDate = format(selectedDate, 'EEEE, dd/MM/yyyy', { locale: vi });
 
   return (
-    <div className="rounded-3xl bg-white/60 dark:bg-white/5 backdrop-blur-xl border border-white/60 dark:border-white/10 shadow-[0_8px_32px_0_rgba(0,0,0,0.06)] dark:shadow-[0_8px_32px_0_rgba(0,0,0,0.3)] p-5 sm:p-6 space-y-4 transition-all duration-300">
+    <div className="rounded-3xl bg-white/70 dark:bg-white/5 backdrop-blur-2xl border border-white/60 dark:border-white/10 shadow-[0_8px_32px_0_rgba(0,0,0,0.04)] dark:shadow-[0_8px_32px_0_rgba(0,0,0,0.4)] p-6 sm:p-7 space-y-5 transition-all duration-300">
       <div className="flex items-center justify-between pb-3 border-b border-white/40 dark:border-white/10">
         <div>
           <span className="text-[10px] font-bold uppercase tracking-wider text-amber-500 dark:text-amber-400 block mb-0.5">
@@ -86,9 +91,26 @@ export const DayShootsModal: React.FC<Props> = ({
                       {item.clientName}
                     </button>
                     <div className="flex items-center gap-1.5 flex-wrap">
-                      <span className="text-[10px] uppercase tracking-wider font-semibold text-amber-400">
-                        {item.sessionType} Photography
-                      </span>
+                      {(() => {
+                        const catCfg = getCategoryConfig(item.category || item.sessionType);
+                        return (
+                          <button
+                            type="button"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              if (onEditCategory) onEditCategory(item);
+                            }}
+                            className={`text-[9px] px-1.5 py-0.5 rounded font-bold border flex items-center gap-1 transition-all hover:scale-105 cursor-pointer flex-shrink-0 ${catCfg.color}`}
+                            title={`Loại hình: ${catCfg.label}${item.package_type ? ` - Gói: ${item.package_type}` : ''} (Nhấn để tùy chỉnh)`}
+                          >
+                            <span className={`w-1.5 h-1.5 rounded-full ${catCfg.dotColor}`} />
+                            <span>{catCfg.label}</span>
+                            {item.package_type && (
+                              <span className="opacity-75 font-normal">· {item.package_type}</span>
+                            )}
+                          </button>
+                        );
+                      })()}
                       {item.assignedGears && item.assignedGears.length > 0 && (
                         <span className="text-[9px] px-1.5 py-0.5 rounded font-bold border bg-sky-950/80 border-sky-500/40 text-sky-300">
                           {item.assignedGears.length} thiết bị
@@ -126,6 +148,7 @@ export const DayShootsModal: React.FC<Props> = ({
                   status={item.status}
                   paidAmount={item.paidAmount}
                   compact={false}
+                  onEditFinancials={onEditFinancials ? () => onEditFinancials(item) : undefined}
                 />
 
                 {/* USP 1: Nút "Nhắc thanh toán" */}

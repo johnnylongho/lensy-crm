@@ -83,6 +83,18 @@ export function App() {
               }
             />
 
+            {/* Trang đặt lịch theo Mã định danh Studio (Public Studio Booking Link) */}
+            <Route
+              path="/book/studio/:id"
+              element={
+                <QuoteView
+                  initialQuote={quote}
+                  onQuoteStatusChange={handleQuoteStatusChange}
+                  onBookingSubmit={handleNewBooking}
+                />
+              }
+            />
+
             {/* Trang xem báo giá qua mã chia sẻ (Quote Link Token) */}
             <Route
               path="/quote/:token"

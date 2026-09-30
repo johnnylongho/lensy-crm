@@ -1,8 +1,10 @@
 import React, { useState, useEffect } from 'react';
-import { CalendarEvent, GearItem, ExpenseItem } from '../../types';
+import { CalendarEvent, GearItem, ExpenseItem, StudioMember, StaffInfo } from '../../types';
 import { useAuth } from '../../context/AuthContext';
+import { useWorkspace } from '../../context/WorkspaceContext';
 import { supabase, isSupabaseConfigured } from '../../lib/supabase';
 import { checkAssignedGearConflicts, DynamicGearConflict } from '../../lib/conflictScanner';
+import { STANDARD_CATEGORIES, getCategoryConfig, normalizeCategory } from '../../utils/categoryConfig';
 import {
   X,
   Calendar,
@@ -30,6 +32,9 @@ import {
   TrendingUp,
   Tag,
   Calculator,
+  UserCheck,
+  Palette,
+  Pencil,
 } from 'lucide-react';
 
 interface Props {
@@ -39,6 +44,7 @@ interface Props {
   onClose: () => void;
   onBookingUpdated?: (updatedBooking: CalendarEvent) => void;
   onOpenDebtReminder?: (booking: CalendarEvent) => void;
+  onEditFinancials?: (booking: CalendarEvent) => void;
 }
 
 export const BookingDetailModal: React.FC<Props> = ({
@@ -48,8 +54,10 @@ export const BookingDetailModal: React.FC<Props> = ({
   onClose,
   onBookingUpdated,
   onOpenDebtReminder,
+  onEditFinancials,
 }) => {
   const { user } = useAuth();
+  const { currentStudio } = useWorkspace();
   const [activeTab, setActiveTab] = useState<'gears' | 'expenses'>('gears');
   const [gears, setGears] = useState<GearItem[]>([]);
   const [isLoadingGears, setIsLoadingGears] = useState(false);
@@ -57,7 +65,17 @@ export const BookingDetailModal: React.FC<Props> = ({
   const [isOverrideConfirmed, setIsOverrideConfirmed] = useState(false);
   const [gearSearch, setGearSearch] = useState('');
   const [gearCategory, setGearCategory] = useState<string>('all');
+
+  // Staff Assignment (Phân công nhân sự) States
+  const [assignedPhotographerId, setAssignedPhotographerId] = useState<string>('');
+  const [assignedMakeupId, setAssignedMakeupId] = useState<string>('');
+  const [studioMembers, setStudioMembers] = useState<StudioMember[]>([]);
+  const [staffSearchQuery, setStaffSearchQuery] = useState('');
   
+  // Category & Package Type (Loại hình & Gói chụp) States
+  const [selectedCategory, setSelectedCategory] = useState<string>('portrait');
+  const [packageType, setPackageType] = useState<string>('');
+
   // Job Costing (Hạch toán Chi phí) States
   const [expenseItems, setExpenseItems] = useState<ExpenseItem[]>([]);
   const [newExpenseName, setNewExpenseName] = useState('');
@@ -74,7 +92,7 @@ export const BookingDetailModal: React.FC<Props> = ({
     }
   }, [toastMessage]);
 
-  // Sync selected gears & expenses whenever booking changes
+  // Sync selected gears, staff & expenses whenever booking changes
   useEffect(() => {
     if (booking) {
       setSelectedGearIds(booking.assignedGears || []);
@@ -82,8 +100,118 @@ export const BookingDetailModal: React.FC<Props> = ({
       setExpenseItems(booking.expenseDetails || []);
       setNewExpenseName('');
       setNewExpenseAmount('');
+      setAssignedPhotographerId(booking.photographer_id || (booking.photographer?.id || ''));
+      setAssignedMakeupId(booking.makeup_artist_id || (booking.makeup_artist?.id || ''));
+      setSelectedCategory(normalizeCategory(booking.category || booking.sessionType));
+      setPackageType(booking.package_type || '');
     }
   }, [booking]);
+
+  // Fetch studio members (Photographers & Makeup Artists)
+  useEffect(() => {
+    if (!isOpen) return;
+
+    const fetchStudioStaff = async () => {
+      try {
+        if (isSupabaseConfigured && currentStudio) {
+          const { data, error } = await supabase
+            .from('studio_members')
+            .select(`
+              id,
+              studio_id,
+              user_id,
+              role,
+              status,
+              users:user_id (
+                id,
+                full_name,
+                avatar_url,
+                phone,
+                email
+              )
+            `)
+            .eq('studio_id', currentStudio.id)
+            .eq('status', 'approved');
+
+          if (!error && data) {
+            setStudioMembers(data.map((r: any) => ({
+              id: r.id,
+              studio_id: r.studio_id,
+              user_id: r.user_id,
+              role: r.role,
+              status: r.status,
+              user: r.users,
+            })));
+            return;
+          }
+        }
+
+        // Demo / Fallback Staff
+        setStudioMembers([
+          {
+            id: 'sm-p1',
+            studio_id: 'studio-1',
+            user_id: 'u-photo-1',
+            role: 'photographer',
+            status: 'approved',
+            user: {
+              id: 'u-photo-1',
+              full_name: 'Johnny Long (Lead Photo)',
+              email: 'johnny@lensy.io',
+              phone: '0901234567',
+              avatar_url: '/mirmia-logo.png',
+            },
+          },
+          {
+            id: 'sm-p2',
+            studio_id: 'studio-1',
+            user_id: 'u-photo-2',
+            role: 'photographer',
+            status: 'approved',
+            user: {
+              id: 'u-photo-2',
+              full_name: 'Minh Hoàng (Second Shooter)',
+              email: 'hoang.photo@lensy.io',
+              phone: '0912345678',
+              avatar_url: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=150',
+            },
+          },
+          {
+            id: 'sm-m1',
+            studio_id: 'studio-1',
+            user_id: 'u-mua-1',
+            role: 'makeup_artist',
+            status: 'approved',
+            user: {
+              id: 'u-mua-1',
+              full_name: 'Lan Anh MUA (Lead MUA)',
+              email: 'lananh.makeup@gmail.com',
+              phone: '0988776655',
+              avatar_url: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150',
+            },
+          },
+          {
+            id: 'sm-m2',
+            studio_id: 'studio-1',
+            user_id: 'u-mua-2',
+            role: 'makeup_artist',
+            status: 'approved',
+            user: {
+              id: 'u-mua-2',
+              full_name: 'Bảo Trâm Makeup (Bridal Specialist)',
+              email: 'baotram.mua@gmail.com',
+              phone: '0933221100',
+              avatar_url: 'https://images.unsplash.com/photo-1517841905240-472988babdf9?w=150',
+            },
+          },
+        ]);
+      } catch (err) {
+        console.warn('Lỗi khi tải nhân sự Studio:', err);
+      }
+    };
+
+    fetchStudioStaff();
+  }, [isOpen, currentStudio]);
 
   // Fetch gears of photographer
   useEffect(() => {
@@ -204,7 +332,7 @@ export const BookingDetailModal: React.FC<Props> = ({
   const netProfit = effectivePaid - totalExpenses;
   const projectedNetProfit = booking.packagePrice - totalExpenses;
 
-  // Lưu phân bổ thiết bị VÀ hạch toán chi phí vào Supabase
+  // Lưu phân bổ thiết bị, hạch toán chi phí VÀ phân công nhân sự vào Supabase
   const handleSaveAssignedGears = async () => {
     // 1. CHẶN LƯU NẾU CÓ XUNG ĐỘT MÀ CHƯA XÁC NHẬN GHI ĐÈ
     if (activeConflicts.length > 0 && !isOverrideConfirmed) {
@@ -218,25 +346,75 @@ export const BookingDetailModal: React.FC<Props> = ({
     setIsSaving(true);
     try {
       if (isSupabaseConfigured) {
+        const canonicalCategory = normalizeCategory(selectedCategory);
         const { error } = await supabase
           .from('bookings')
           .update({
             assigned_gears: selectedGearIds,
             expenses: totalExpenses,
             expense_details: expenseItems,
+            photographer_id: assignedPhotographerId || null,
+            makeup_artist_id: assignedMakeupId || null,
+            category: canonicalCategory,
+            session_type: canonicalCategory,
+            package_type: packageType.trim() || null,
             updated_at: new Date().toISOString(),
           })
           .eq('id', booking.id);
 
-        if (error) throw error;
+        if (error) {
+          console.warn('Lỗi lưu category, fallback qua session_type:', error);
+          const { error: fallbackErr } = await supabase
+            .from('bookings')
+            .update({
+              assigned_gears: selectedGearIds,
+              expenses: totalExpenses,
+              expense_details: expenseItems,
+              photographer_id: assignedPhotographerId || null,
+              makeup_artist_id: assignedMakeupId || null,
+              session_type: canonicalCategory,
+              updated_at: new Date().toISOString(),
+            })
+            .eq('id', booking.id);
+          if (fallbackErr) throw fallbackErr;
+        }
       }
+
+      const canonicalCategory = normalizeCategory(selectedCategory);
+
+      // Tìm thông tin staff tương ứng để update UI ngay lập tức
+      const assignedPhotoMember = studioMembers.find(m => m.user_id === assignedPhotographerId || m.id === assignedPhotographerId);
+      const assignedMuaMember = studioMembers.find(m => m.user_id === assignedMakeupId || m.id === assignedMakeupId);
+
+      const updatedPhotoInfo: StaffInfo | null = assignedPhotoMember?.user ? {
+        id: assignedPhotoMember.user_id,
+        full_name: assignedPhotoMember.user.full_name,
+        avatar_url: assignedPhotoMember.user.avatar_url,
+        phone: assignedPhotoMember.user.phone,
+        email: assignedPhotoMember.user.email,
+      } : (assignedPhotographerId ? (booking.photographer || null) : null);
+
+      const updatedMuaInfo: StaffInfo | null = assignedMuaMember?.user ? {
+        id: assignedMuaMember.user_id,
+        full_name: assignedMuaMember.user.full_name,
+        avatar_url: assignedMuaMember.user.avatar_url,
+        phone: assignedMuaMember.user.phone,
+        email: assignedMuaMember.user.email,
+      } : (assignedMakeupId ? (booking.makeup_artist || null) : null);
 
       // Cập nhật state cho parent
       const updated: CalendarEvent = {
         ...booking,
+        category: canonicalCategory,
+        sessionType: canonicalCategory as any,
+        package_type: packageType.trim() || undefined,
         assignedGears: selectedGearIds,
         expenses: totalExpenses,
         expenseDetails: expenseItems,
+        photographer_id: assignedPhotographerId || undefined,
+        makeup_artist_id: assignedMakeupId || undefined,
+        photographer: updatedPhotoInfo,
+        makeup_artist: updatedMuaInfo,
       };
 
       if (onBookingUpdated) {
@@ -246,8 +424,8 @@ export const BookingDetailModal: React.FC<Props> = ({
       setToastMessage({
         type: 'success',
         text: activeConflicts.length > 0
-          ? '⚠️ Đã ghi đè thiết bị và lưu hạch toán chi phí thành công!'
-          : '🎉 Đã lưu danh sách thiết bị & hạch toán chi phí thành công!',
+          ? '⚠️ Đã ghi đè thiết bị và lưu phân công nhân sự thành công!'
+          : '🎉 Đã lưu thiết bị, hạch toán chi phí & phân công nhân sự thành công!',
       });
     } catch (err: any) {
       console.error('Lỗi khi lưu booking:', err);
@@ -280,9 +458,21 @@ export const BookingDetailModal: React.FC<Props> = ({
               <span className="text-[10px] uppercase font-bold px-2 py-0.5 rounded bg-amber-500/10 border border-amber-500/30 text-amber-300">
                 Chi Tiết Lịch Chụp
               </span>
-              <span className="text-[10px] uppercase font-bold px-2 py-0.5 rounded bg-slate-800 border border-slate-700 text-slate-300">
-                {booking.sessionType.toUpperCase()}
-              </span>
+              {(() => {
+                const catConfig = getCategoryConfig(selectedCategory);
+                return (
+                  <span className={`text-[10px] font-bold px-2.5 py-0.5 rounded-full border flex items-center gap-1.5 shadow-sm ${catConfig.color}`}>
+                    <span className={`w-1.5 h-1.5 rounded-full ${catConfig.dotColor}`} />
+                    <span>{catConfig.label}</span>
+                  </span>
+                );
+              })()}
+              {packageType && (
+                <span className="text-[10px] font-medium px-2 py-0.5 rounded-full bg-slate-800 text-slate-300 border border-slate-700 flex items-center gap-1">
+                  <Tag className="w-2.5 h-2.5 text-slate-400" />
+                  <span>{packageType}</span>
+                </span>
+              )}
             </div>
             <h2 className="text-xl sm:text-2xl font-black text-white tracking-tight truncate">
               {booking.clientName}
@@ -337,7 +527,19 @@ export const BookingDetailModal: React.FC<Props> = ({
         {/* Financial Metrics Summary - 4 Cột Rõ Ràng: Tổng Gói, Khách Trả, Chi Phí, Lợi Nhuận Ròng */}
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5 p-3.5 rounded-2xl bg-slate-950/70 border border-slate-800 text-xs">
           <div>
-            <span className="text-slate-400 block text-[10px]">Tổng Gói (Hợp Đồng)</span>
+            <div className="flex items-center gap-1.5">
+              <span className="text-slate-400 block text-[10px]">Tổng Gói (Hợp Đồng)</span>
+              {onEditFinancials && (
+                <button
+                  type="button"
+                  onClick={() => onEditFinancials(booking)}
+                  className="text-gray-500 hover:text-white transition-colors p-0.5 rounded hover:bg-white/10 cursor-pointer"
+                  title="Cập nhật tài chính"
+                >
+                  <Pencil className="w-3 h-3" />
+                </button>
+              )}
+            </div>
             <span className="font-mono font-bold text-white text-xs sm:text-sm">
               {booking.packagePrice.toLocaleString('vi-VN')} đ
             </span>
@@ -359,6 +561,183 @@ export const BookingDetailModal: React.FC<Props> = ({
             <span className={`font-mono font-black text-xs sm:text-sm ${netProfit >= 0 ? 'text-emerald-400' : 'text-rose-400'}`}>
               {netProfit.toLocaleString('vi-VN')} đ
             </span>
+          </div>
+        </div>
+
+        {/* ==================================================================== */}
+        {/* KHU VỰC PHÂN CÔNG NHÂN SỰ (STAFF ASSIGNMENT: PHOTOGRAPHER & MAKEUP) */}
+        {/* ==================================================================== */}
+        <div className="p-4 sm:p-5 rounded-2xl bg-slate-950/70 border border-slate-800 space-y-3.5">
+          <div className="flex flex-wrap items-center justify-between gap-2 border-b border-slate-800 pb-2.5">
+            <div className="flex items-center gap-2">
+              <UserCheck className="w-4 h-4 text-emerald-400" />
+              <h4 className="text-xs font-bold uppercase tracking-wider text-white">
+                Phân Công Nhân Sự Cho Show (Staff Assignment)
+              </h4>
+            </div>
+            <span className="text-[10px] text-slate-400">Chọn nhân sự phụ trách từ đội ngũ Studio</span>
+          </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            {/* 1. Chọn Thợ Chụp */}
+            <div className="space-y-1.5">
+              <label className="text-[11px] font-bold text-amber-400 flex items-center gap-1.5">
+                <Camera className="w-3.5 h-3.5" />
+                <span>Chọn Thợ Chụp (Photographer)</span>
+              </label>
+              <select
+                value={assignedPhotographerId}
+                onChange={e => setAssignedPhotographerId(e.target.value)}
+                className="w-full px-3 py-2 rounded-xl bg-slate-900 border border-slate-800 text-xs font-semibold text-slate-200 outline-none focus:border-amber-400 cursor-pointer"
+              >
+                <option value="">-- Chưa chỉ định thợ chụp --</option>
+                {studioMembers
+                  .filter(m => m.role === 'photographer' || m.role === 'admin')
+                  .map(m => (
+                    <option key={m.user_id || m.id} value={m.user_id || m.id}>
+                      📷 {m.user?.full_name || 'Thợ ảnh'} {m.role === 'admin' ? '(Quản lý)' : ''}
+                    </option>
+                  ))}
+              </select>
+            </div>
+
+            {/* 2. Chọn Thợ Makeup */}
+            <div className="space-y-1.5">
+              <label className="text-[11px] font-bold text-fuchsia-400 flex items-center gap-1.5">
+                <Sparkles className="w-3.5 h-3.5" />
+                <span>Chọn Thợ Makeup (MUA)</span>
+              </label>
+              <select
+                value={assignedMakeupId}
+                onChange={e => setAssignedMakeupId(e.target.value)}
+                className="w-full px-3 py-2 rounded-xl bg-slate-900 border border-slate-800 text-xs font-semibold text-slate-200 outline-none focus:border-fuchsia-400 cursor-pointer"
+              >
+                <option value="">-- Chưa chỉ định thợ makeup --</option>
+                {studioMembers
+                  .filter(m => m.role === 'makeup_artist')
+                  .map(m => (
+                    <option key={m.user_id || m.id} value={m.user_id || m.id}>
+                      💄 {m.user?.full_name || 'Thợ Makeup'}
+                    </option>
+                  ))}
+              </select>
+            </div>
+          </div>
+
+          {/* Quick Staff Preview Banner */}
+          {(assignedPhotographerId || assignedMakeupId) && (
+            <div className="flex flex-wrap items-center gap-4 pt-2 border-t border-slate-800/80 text-xs">
+              {assignedPhotographerId && (
+                <div className="flex items-center gap-2">
+                  <div className="w-6 h-6 rounded-full overflow-hidden bg-amber-500/20 border border-amber-500/30 flex-shrink-0">
+                    <img
+                      src={
+                        studioMembers.find(m => (m.user_id === assignedPhotographerId || m.id === assignedPhotographerId))?.user?.avatar_url ||
+                        booking.photographer?.avatar_url ||
+                        '/mirmia-logo.png'
+                      }
+                      alt="Photographer"
+                      className="w-full h-full object-cover"
+                      onError={e => {
+                        (e.target as HTMLImageElement).src = '/mirmia-logo.png';
+                      }}
+                    />
+                  </div>
+                  <span className="text-[11px] text-slate-300">
+                    Thợ chụp: <strong className="text-amber-400">{
+                      studioMembers.find(m => (m.user_id === assignedPhotographerId || m.id === assignedPhotographerId))?.user?.full_name ||
+                      booking.photographer?.full_name ||
+                      'Đã phân công'
+                    }</strong>
+                  </span>
+                </div>
+              )}
+
+              {assignedMakeupId && (
+                <div className="flex items-center gap-2">
+                  <div className="w-6 h-6 rounded-full overflow-hidden bg-fuchsia-500/20 border border-fuchsia-500/30 flex-shrink-0">
+                    <img
+                      src={
+                        studioMembers.find(m => (m.user_id === assignedMakeupId || m.id === assignedMakeupId))?.user?.avatar_url ||
+                        booking.makeup_artist?.avatar_url ||
+                        'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150'
+                      }
+                      alt="MUA"
+                      className="w-full h-full object-cover"
+                      onError={e => {
+                        (e.target as HTMLImageElement).src = '/mirmia-logo.png';
+                      }}
+                    />
+                  </div>
+                  <span className="text-[11px] text-slate-300">
+                    MUA: <strong className="text-fuchsia-400">{
+                      studioMembers.find(m => (m.user_id === assignedMakeupId || m.id === assignedMakeupId))?.user?.full_name ||
+                      booking.makeup_artist?.full_name ||
+                      'Đã phân công'
+                    }</strong>
+                  </span>
+                </div>
+              )}
+            </div>
+          )}
+        </div>
+
+        {/* ==================================================================== */}
+        {/* KHU VỰC LOẠI HÌNH CHỤP & GÓI DỊCH VỤ (CATEGORY & PACKAGE SELECTION)   */}
+        {/* ==================================================================== */}
+        <div className="p-4 sm:p-5 rounded-2xl bg-slate-950/70 border border-slate-800 space-y-3.5">
+          <div className="flex flex-wrap items-center justify-between gap-2 border-b border-slate-800 pb-2.5">
+            <div className="flex items-center gap-2">
+              <Tag className="w-4 h-4 text-amber-400" />
+              <h4 className="text-xs font-bold uppercase tracking-wider text-white">
+                Loại Hình Chụp & Gói Dịch Vụ (Category & Package)
+              </h4>
+            </div>
+            {(() => {
+              const currentCat = getCategoryConfig(selectedCategory);
+              return (
+                <span className={`text-[10px] font-bold px-2 py-0.5 rounded-md border flex items-center gap-1 ${currentCat.color}`}>
+                  <span className={`w-1.5 h-1.5 rounded-full ${currentCat.dotColor}`} />
+                  <span>{currentCat.label}</span>
+                </span>
+              );
+            })()}
+          </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            {/* 1. Dropdown Chọn Loại Hình Chụp */}
+            <div className="space-y-1.5">
+              <label className="text-[11px] font-bold text-amber-400 flex items-center gap-1.5">
+                <Sparkles className="w-3.5 h-3.5" />
+                <span>Loại Hình Chụp (Category) *</span>
+              </label>
+              <select
+                value={selectedCategory}
+                onChange={e => setSelectedCategory(e.target.value)}
+                className="w-full px-3 py-2 rounded-xl bg-slate-900 border border-slate-800 text-xs font-semibold text-slate-200 outline-none focus:border-amber-400 cursor-pointer"
+              >
+                {STANDARD_CATEGORIES.map(cat => (
+                  <option key={cat.id} value={cat.id}>
+                    {cat.label}
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            {/* 2. Tên Gói Chụp / Gói Dịch Vụ */}
+            <div className="space-y-1.5">
+              <label className="text-[11px] font-bold text-indigo-400 flex items-center gap-1.5">
+                <Tag className="w-3.5 h-3.5" />
+                <span>Gói Chụp / Dịch Vụ Cụ Thể</span>
+              </label>
+              <input
+                type="text"
+                value={packageType}
+                onChange={e => setPackageType(e.target.value)}
+                placeholder="VD: Gói VIP Diamond, Ngoại cảnh Đà Lạt, Lookbook 5 set..."
+                className="w-full px-3 py-2 rounded-xl bg-slate-900 border border-slate-800 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-amber-400 font-medium"
+              />
+            </div>
           </div>
         </div>
 
@@ -749,7 +1128,7 @@ export const BookingDetailModal: React.FC<Props> = ({
               <input
                 type="number"
                 min="0"
-                step="10000"
+                step="any"
                 value={newExpenseAmount}
                 onChange={(e) => setNewExpenseAmount(e.target.value)}
                 placeholder="Số tiền (VNĐ)"

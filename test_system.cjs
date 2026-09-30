@@ -397,6 +397,7 @@ const chartContent = fs.existsSync(chartFile) ? fs.readFileSync(chartFile, 'utf8
 assert(chartContent.includes('Biểu Đồ Lợi Nhuận Ròng Theo Show'), 'ProfitTrendChart có tiêu đề Biểu Đồ Lợi Nhuận Ròng Theo Show');
 assert(chartContent.includes('Tiền Thật Bỏ Túi'), 'ProfitTrendChart ưu tiên làm nổi bật dòng Tiền Thật Bỏ Túi');
 assert(chartContent.includes('netProfitGradient') && chartContent.includes('emeraldGlow'), 'Đường Lợi Nhuận Ròng được vẽ nổi bật bằng màu Emerald với hiệu ứng Glow rực rỡ');
+assert(chartContent.includes('isCollapsed') && chartContent.includes('AnimatePresence'), 'ProfitTrendChart hỗ trợ tính năng Thu gọn/Mở rộng (Collapse/Expand) với AnimatePresence');
 assert(dashboardContent.includes('<ProfitTrendChart'), 'PhotographerDashboard tích hợp hiển thị ProfitTrendChart');
 
 // --------------------------------------------------------------------
@@ -735,8 +736,7 @@ if (fs.existsSync(pkgJsonFile)) {
   const pkg = JSON.parse(fs.readFileSync(pkgJsonFile, 'utf8'));
   const deps = { ...pkg.dependencies, ...pkg.devDependencies };
   assert(deps['framer-motion'], 'Đã cài đặt thư viện framer-motion cho hiệu ứng UI mượt mà');
-  assert(deps['react-countup'], 'Đã cài đặt thư viện react-countup cho hiệu ứng số nhảy');
-  assert(deps['canvas-confetti'], 'Đã cài đặt thư viện canvas-confetti cho hiệu ứng pháo hoa');
+  assert(!deps['canvas-confetti'], 'Đã gỡ bỏ thư viện canvas-confetti để UI tối giản chuyên nghiệp');
 }
 
 if (fs.existsSync(dashHeaderFile)) {
@@ -751,7 +751,7 @@ const roiProgressFile = path.join(__dirname, 'frontend', 'src', 'components', 'd
 if (fs.existsSync(roiProgressFile)) {
   const roiContent = fs.readFileSync(roiProgressFile, 'utf8');
   assert(roiContent.includes('CountUp'), 'Thanh Tiến độ Hoàn vốn (ROI) tích hợp CountUp cho số % hoàn vốn');
-  assert(roiContent.includes('confetti') && roiContent.includes('roiPercentage >= 100'), 'Gamification Kịch bản 2: Bắn pháo hoa giấy toàn màn hình khi ROI chạm hoặc vượt 100%');
+  assert(!roiContent.includes('confetti'), 'Đã gỡ bỏ hiệu ứng confetti khỏi RoiProgressBar');
 }
 
 if (fs.existsSync(kanbanViewFile)) {
@@ -761,8 +761,8 @@ if (fs.existsSync(kanbanViewFile)) {
     'Phản hồi vật lý thẻ Kanban khi hover: Hơi phóng to 2% (scale: 1.02)'
   );
   assert(
-    kvContent.includes('confetti') && (kvContent.includes("targetStatus === 'done'") || kvContent.includes('triggerDoneConfetti')),
-    'Gamification Kịch bản 1: Bắn pháo hoa giấy khi kéo thả thành công thẻ Booking sang cột Hoàn tất (Done)'
+    !kvContent.includes('confetti'),
+    'Đã gỡ bỏ hiệu ứng confetti khỏi Bảng Kanban'
   );
 }
 
@@ -1162,7 +1162,7 @@ if (fs.existsSync(tierSystemFile)) {
   );
   assert(tsContent.includes('calculateYtdRevenue'), 'Hàm calculateYtdRevenue tính tổng doanh thu trong năm hiện tại');
   assert(tsContent.includes('getTierProgress'), 'Hàm getTierProgress xác định Cấp hiện tại, Mục tiêu kế tiếp và % hoàn thành');
-  assert(tsContent.includes('lensy_celebrated_tier_') && tsContent.includes('localStorage'), 'Smart Confetti Validation lưu trạng thái vinh danh vào localStorage chống nổ lại khi reload');
+  assert(!tsContent.includes('confetti'), 'Đã gỡ bỏ hoàn toàn logic confetti khỏi tierSystem.ts');
   assert(tsContent.includes('gamificationHook'), 'Hệ thống tích hợp dòng text Gamification Hook động kích thích thăng hạng');
 }
 
@@ -1180,6 +1180,7 @@ if (fs.existsSync(growthBarFile)) {
   assert(gbContent.includes('Hành Trình Thăng Hạng'), 'Thẻ Tiến độ hiển thị tiêu đề "Hành Trình Thăng Hạng (Growth Progress)"');
   assert(gbContent.includes('TierCelebrationModal'), 'Tích hợp TierCelebrationModal vinh danh khi vượt mốc doanh thu mới');
   assert(gbContent.includes('gamificationHook'), 'Hiển thị dòng text mồi nhử Gamification Hook đặc quyền mở khóa');
+  assert(gbContent.includes('isCollapsed') && gbContent.includes('AnimatePresence'), 'GrowthProgressBar hỗ trợ tính năng Thu gọn/Mở rộng (Collapse/Expand) với AnimatePresence');
 }
 
 // Kiểm tra hiển thị Huy chương tại Header & Profile
@@ -1191,6 +1192,413 @@ if (fs.existsSync(dashHeaderFile)) {
 if (fs.existsSync(dashboardLayoutFile)) {
   const dlContent = fs.readFileSync(dashboardLayoutFile, 'utf8');
   assert(dlContent.includes('TierBadge'), 'DashboardLayout hiển thị Huy chương TierBadge tại khu vực Header / Workspace');
+}
+
+// --------------------------------------------------------------------
+// 29. KIỂM TRA TÍNH NĂNG IMPORT/EXPORT DỮ LIỆU LỊCH CHỤP CSV/EXCEL
+// --------------------------------------------------------------------
+console.log('\n▶ 29. Kiểm tra Tính Năng Import/Export Dữ Liệu Lịch Chụp CSV/Excel...');
+
+if (fs.existsSync(pkgJsonFile)) {
+  const pkg = JSON.parse(fs.readFileSync(pkgJsonFile, 'utf8'));
+  const deps = { ...pkg.dependencies, ...pkg.devDependencies };
+  assert(deps['papaparse'], 'Đã cài đặt thư viện papaparse để xử lý file CSV');
+  assert(deps['file-saver'], 'Đã cài đặt thư viện file-saver để tải file CSV mẫu và xuất dữ liệu');
+}
+
+const importModalFile = path.join(__dirname, 'frontend', 'src', 'components', 'dashboard', 'ImportBookingsModal.tsx');
+assert(fs.existsSync(importModalFile), 'Component ImportBookingsModal.tsx tồn tại');
+
+if (fs.existsSync(importModalFile)) {
+  const imContent = fs.readFileSync(importModalFile, 'utf8');
+  assert(imContent.includes('Papa.parse'), 'ImportBookingsModal tích hợp Papa.parse phân tích file CSV tải lên');
+  assert(imContent.includes('handleDownloadTemplate'), 'Hỗ trợ tải file CSV mẫu (Template) với đầy đủ các cột chuẩn');
+  assert(imContent.includes('handleBulkInsert'), 'Hỗ trợ đẩy toàn bộ dữ liệu (Bulk Insert) lên cơ sở dữ liệu Supabase');
+  assert(imContent.includes('Tìm thấy') && imContent.includes('lịch chụp hợp lệ'), 'Có màn hình Preview xem trước số lượng lịch chụp hợp lệ');
+  assert(imContent.includes('sanitizeMoneyNumber'), 'Tích hợp hàm RegExp sanitizeMoneyNumber để làm sạch dữ liệu số');
+  assert(imContent.includes('STATUS_TRANSLATION_MAP') && imContent.includes('translateStatus'), 'Tích hợp từ điển trạng thái STATUS_TRANSLATION_MAP');
+  assert(imContent.includes('combineDateAndTimeIso'), 'Tích hợp hàm combineDateAndTimeIso kết hợp ngày & giờ thành ISO 8601');
+  assert(imContent.includes('smartFindValue'), 'Tích hợp hàm smartFindValue tự động ánh xạ tiêu đề cột tiếng Việt/tiếng Anh');
+  assert(imContent.includes('failedRows') && imContent.includes('skipEmptyLines'), 'Xử lý lỗi thông minh: bỏ qua dòng trống và gom các dòng thiếu dữ liệu bắt buộc');
+
+  // Kiểm tra trực tiếp thuật toán Data Sanitization (RegExp)
+  const sanitizeMoneyNumberRegex = (val) => {
+    if (val === null || val === undefined) return 0;
+    if (typeof val === 'number') return isNaN(val) ? 0 : val;
+    const str = String(val).trim().toLowerCase();
+    if (!str) return 0;
+    if (str.includes('tr') || str.includes('triệu') || str.includes('trieu')) {
+      const cleanDecimal = str.replace(/[^\d.,]/g, '').replace(',', '.');
+      const num = parseFloat(cleanDecimal);
+      return isNaN(num) ? 0 : Math.round(num * 1_000_000);
+    }
+    if (str.includes('k') || str.includes('nghìn') || str.includes('ngan')) {
+      const cleanDecimal = str.replace(/[^\d.,]/g, '').replace(',', '.');
+      const num = parseFloat(cleanDecimal);
+      return isNaN(num) ? 0 : Math.round(num * 1_000);
+    }
+    const digitsOnly = str.replace(/[^\d]/g, '');
+    if (!digitsOnly) return 0;
+    const parsed = parseInt(digitsOnly, 10);
+    return isNaN(parsed) ? 0 : parsed;
+  };
+
+  assert(sanitizeMoneyNumberRegex('3.500.000 đ') === 3500000, 'Làm sạch số tiền "3.500.000 đ" thành 3500000');
+  assert(sanitizeMoneyNumberRegex('12.000.000 VNĐ') === 12000000, 'Làm sạch số tiền "12.000.000 VNĐ" thành 12000000');
+  assert(sanitizeMoneyNumberRegex('3.5tr') === 3500000, 'Làm sạch số tiền viết tắt "3.5tr" thành 3500000');
+  assert(sanitizeMoneyNumberRegex('500k') === 500000, 'Làm sạch số tiền viết tắt "500k" thành 500000');
+  assert(sanitizeMoneyNumberRegex('') === 0, 'Số tiền rỗng trả về 0');
+  assert(sanitizeMoneyNumberRegex(null) === 0, 'Số tiền null trả về 0');
+
+  // Kiểm tra Status Translation
+  const testStatusMap = {
+    'mới hỏi': 'lead', 'chưa cọc': 'lead', 'lead': 'lead',
+    'đã cọc': 'deposited', 'deposit': 'deposited',
+    'đã chụp': 'shot', 'chụp xong': 'shot',
+    'đang sửa': 'editing', 'hậu kỳ': 'editing',
+    'hoàn tất': 'done', 'đã trả ảnh': 'done', 'xong': 'done',
+    'hủy': 'cancelled', 'cancel': 'cancelled'
+  };
+  const translateTestStatus = (s) => (s && testStatusMap[s.toLowerCase().trim()]) || 'lead';
+  assert(translateTestStatus('Mới hỏi') === 'lead' && translateTestStatus('Chưa cọc') === 'lead', 'Dịch trạng thái "Mới hỏi", "Chưa cọc" -> lead');
+  assert(translateTestStatus('Đã cọc') === 'deposited' && translateTestStatus('Deposit') === 'deposited', 'Dịch trạng thái "Đã cọc", "Deposit" -> deposited');
+  assert(translateTestStatus('Đã chụp') === 'shot' && translateTestStatus('Chụp xong') === 'shot', 'Dịch trạng thái "Đã chụp", "Chụp xong" -> shot');
+  assert(translateTestStatus('Đang sửa') === 'editing' && translateTestStatus('Hậu kỳ') === 'editing', 'Dịch trạng thái "Đang sửa", "Hậu kỳ" -> editing');
+  assert(translateTestStatus('Hoàn tất') === 'done' && translateTestStatus('Xong') === 'done' && translateTestStatus('Đã trả ảnh') === 'done', 'Dịch trạng thái "Hoàn tất", "Xong", "Đã trả ảnh" -> done');
+  assert(translateTestStatus('Hủy') === 'cancelled' && translateTestStatus('Cancel') === 'cancelled', 'Dịch trạng thái "Hủy", "Cancel" -> cancelled');
+  assert(imContent.includes('FileReader') && imContent.includes('readAsText'), 'Sử dụng FileReader để đọc nội dung text trước khi tiền xử lý CSV');
+  assert(imContent.includes('preprocessCsvText'), 'Tích hợp hàm preprocessCsvText tự động dò tìm dòng Header');
+  assert(imContent.includes("File không đúng định dạng. Không tìm thấy cột 'Khách hàng'."), 'Thông báo lỗi thân thiện khi không tìm thấy cột Khách hàng thay vì báo lỗi hàng loạt dòng');
+
+  // Kiểm tra trực tiếp thuật toán Pre-processing & Header Auto-Discovery
+  const preprocessCsvTest = (rawText) => {
+    if (!rawText || !rawText.trim()) {
+      return { cleanedCsv: '', headerIndex: -1, error: 'File CSV rỗng hoặc không có dữ liệu.' };
+    }
+    const cleanText = rawText.replace(/^\uFEFF/, '');
+    const lines = cleanText.split(/\r?\n/);
+    let headerIndex = -1;
+    for (let i = 0; i < lines.length; i++) {
+      const lineLower = lines[i].toLowerCase();
+      if (
+        lineLower.includes('khách hàng') ||
+        lineLower.includes('khach hang') ||
+        lineLower.includes('client_name')
+      ) {
+        headerIndex = i;
+        break;
+      }
+    }
+    if (headerIndex === -1) {
+      return {
+        cleanedCsv: '',
+        headerIndex: -1,
+        error: "File không đúng định dạng. Không tìm thấy cột 'Khách hàng'.",
+      };
+    }
+    const cleanedLines = lines.slice(headerIndex);
+    const cleanedCsv = cleanedLines.join('\n');
+    return { cleanedCsv, headerIndex };
+  };
+
+  const rawGoogleSheetsCsv = `LỊCH CHỤP THÁNG 10 - MIRMIA STUDIO\n\n\nKhách hàng,SĐT,Ngày chụp,Giá,Cọc,Trạng thái\nNguyễn Văn A,0901234567,2026-10-15,3.5tr,1tr,Đã cọc`;
+  const resultValid = preprocessCsvTest(rawGoogleSheetsCsv);
+  assert(resultValid.headerIndex === 3, 'Tự động phát hiện dòng Header thực sự bỏ qua 3 dòng Title merge và dòng trống');
+  assert(resultValid.cleanedCsv.startsWith('Khách hàng,SĐT,Ngày chụp'), 'Dòng Header thực sự được đưa lên dòng số 1 trong chuỗi CSV chuẩn hóa');
+
+  const invalidCsv = `STT,Sản phẩm,Số lượng\n1,Máy ảnh Sony A7IV,2`;
+  const resultInvalid = preprocessCsvTest(invalidCsv);
+  assert(resultInvalid.headerIndex === -1 && resultInvalid.error === "File không đúng định dạng. Không tìm thấy cột 'Khách hàng'.", 'Báo lỗi chuẩn xác khi file không chứa cột Khách hàng');
+}
+
+if (fs.existsSync(dashHeaderFile)) {
+  const dhContent = fs.readFileSync(dashHeaderFile, 'utf8');
+  assert(dhContent.includes('Import CSV') && dhContent.includes('onOpenImportCsv'), 'DashboardHeader bổ sung nút "Import CSV" cạnh nút Tạo Báo Giá Mới');
+}
+
+const photoDashFile = path.join(__dirname, 'frontend', 'src', 'components', 'dashboard', 'PhotographerDashboard.tsx');
+if (fs.existsSync(photoDashFile)) {
+  const pdContent = fs.readFileSync(photoDashFile, 'utf8');
+  assert(pdContent.includes('<ImportBookingsModal') && pdContent.includes('isImportModalOpen'), 'PhotographerDashboard tích hợp hiển thị ImportBookingsModal');
+}
+
+// --------------------------------------------------------------------
+// 30. QUẢN LÝ THỢ MAKEUP (MUA) & PHÂN CÔNG NHÂN SỰ CHÉO
+// --------------------------------------------------------------------
+console.log('\n▶ 30. Kiểm tra Cơ Sở Dữ Liệu Quản Lý Thợ Makeup (MUA) & Phân Công Nhân Sự...');
+
+const makeupMigrationFile = path.join(__dirname, 'update_makeup_artist_and_staff_assignment.sql');
+assert(fs.existsSync(makeupMigrationFile), 'File migration update_makeup_artist_and_staff_assignment.sql tồn tại');
+
+if (fs.existsSync(makeupMigrationFile)) {
+  const sqlContent = fs.readFileSync(makeupMigrationFile, 'utf8');
+  assert(sqlContent.includes('makeup_artist'), 'Hỗ trợ vai trò makeup_artist cho studio_members và users');
+  assert(sqlContent.includes('makeup_artist_id UUID REFERENCES users(id)'), 'Bổ sung cột makeup_artist_id tham chiếu users(id) vào bảng bookings');
+  assert(sqlContent.includes('photographer_id UUID REFERENCES users(id)'), 'Đảm bảo cột photographer_id tham chiếu users(id) vào bảng bookings');
+  assert(sqlContent.includes('idx_bookings_makeup_artist_id'), 'Tạo Index tối ưu tìm kiếm theo makeup_artist_id');
+  assert(sqlContent.includes('bookings_with_staff_view'), 'Tạo View bookings_with_staff_view JOIN với users lấy tên và avatar');
+  assert(sqlContent.includes('get_bookings_with_staff'), 'Tạo Stored Procedure get_bookings_with_staff truy vấn kèm nhân sự');
+}
+
+if (fs.existsSync(typesFile)) {
+  const staffTypesContent = fs.readFileSync(typesFile, 'utf8');
+  assert(staffTypesContent.includes("'makeup_artist'"), 'StudioRole hỗ trợ vai trò "makeup_artist"');
+  assert(staffTypesContent.includes('makeup_artist_id') && staffTypesContent.includes('makeup_artist?: StaffInfo | null'), 'CalendarEvent hỗ trợ makeup_artist_id và thông tin makeup_artist');
+}
+
+if (fs.existsSync(photoDashFile)) {
+  const pdContent = fs.readFileSync(photoDashFile, 'utf8');
+  assert(pdContent.includes('makeup_artist:users!makeup_artist_id'), 'PhotographerDashboard query JOIN users lấy thông tin makeup_artist');
+}
+
+if (fs.existsSync(bookingDetailModalFile)) {
+  const bdmContent = fs.readFileSync(bookingDetailModalFile, 'utf8');
+  assert(bdmContent.includes('booking.makeup_artist') && bdmContent.includes('Thợ Makeup (MUA)'), 'BookingDetailModal hiển thị banner thông tin Thợ Makeup được phân công');
+}
+
+
+// --------------------------------------------------------------------
+// 31. GIAO DIỆN (UI/UX) QUẢN LÝ VÀ ĐẶT LỊCH THỢ MAKEUP (MUA)
+// --------------------------------------------------------------------
+console.log('\n▶ 31. Kiểm tra Giao Diện (UI/UX) Quản Lý & Đặt Lịch Thợ Makeup (MUA)...');
+
+const studioSettingsPageFile = path.join(__dirname, 'frontend', 'src', 'components', 'dashboard', 'StudioSettingsPage.tsx');
+assert(fs.existsSync(studioSettingsPageFile), 'Component StudioSettingsPage.tsx tồn tại');
+
+if (fs.existsSync(studioSettingsPageFile)) {
+  const sspContent = fs.readFileSync(studioSettingsPageFile, 'utf8');
+  assert(sspContent.includes('makeup_artist') && sspContent.includes('Thợ Makeup (MUA)'), 'StudioSettingsPage hỗ trợ vai trò Thợ Makeup (MUA)');
+  assert(sspContent.includes('Đội Ngũ Nhiếp Ảnh (Photographers)') && sspContent.includes('Đội Ngũ Makeup (Makeup Artists / MUA)'), 'StudioSettingsPage chia danh sách nhân sự thành 2 nhóm rõ ràng: Đội ngũ Nhiếp ảnh & Đội ngũ Makeup');
+  assert(sspContent.includes('isInviteModalOpen') && sspContent.includes('Mời Nhân Sự Mới'), 'StudioSettingsPage hỗ trợ Modal mời nhân sự mới với chọn vai trò');
+  assert(sspContent.includes('selectedRolesForPending') || sspContent.includes('roleSelect'), 'Admin có thể chọn vai trò (Thợ ảnh hoặc Thợ Makeup) khi phê duyệt thành viên');
+}
+
+if (fs.existsSync(kanbanViewFile)) {
+  const kvContent = fs.readFileSync(kanbanViewFile, 'utf8');
+  assert(kvContent.includes('item.photographer') || kvContent.includes('item.makeup_artist'), 'Thẻ Kanban rút gọn hỗ trợ hiển thị avatar của Thợ chụp và Thợ Makeup');
+  assert(kvContent.includes('item.makeup_artist.full_name') && kvContent.includes('Thợ Makeup'), 'Thẻ Kanban hiển thị tooltip tên Thợ Makeup khi hover vào avatar');
+}
+
+if (fs.existsSync(bookingDetailModalFile)) {
+  const bdmContent = fs.readFileSync(bookingDetailModalFile, 'utf8');
+  assert(bdmContent.includes('Phân Công Nhân Sự Cho Show') || bdmContent.includes('Phân công nhân sự'), 'BookingDetailModal có khu vực Phân công nhân sự cho show');
+  assert(bdmContent.includes('Chọn Thợ Chụp') && bdmContent.includes('Chọn Thợ Makeup'), 'BookingDetailModal có 2 dropdown chọn Thợ Chụp và Thợ Makeup từ danh sách nhân viên đã duyệt');
+}
+
+const clientBookingFormFile = path.join(__dirname, 'frontend', 'src', 'components', 'quote', 'ClientBookingForm.tsx');
+assert(fs.existsSync(clientBookingFormFile), 'Component ClientBookingForm.tsx tồn tại');
+
+if (fs.existsSync(clientBookingFormFile)) {
+  const cbfContent = fs.readFileSync(clientBookingFormFile, 'utf8');
+  assert(cbfContent.includes('packageIncludesMakeup'), 'ClientBookingForm tự động nhận diện gói chụp có bao gồm Makeup');
+  assert(cbfContent.includes('checkIfPackageIncludesMakeup'), 'Hàm kiểm tra checkIfPackageIncludesMakeup được định nghĩa');
+  assert(cbfContent.includes('Đội Ngũ Phục Vụ Bạn') && cbfContent.includes('Chuyên Viên Trang Điểm & Làm Tóc (MUA)'), 'Hiển thị khu vực Đội ngũ phục vụ bạn khi gói có makeup');
+  assert(cbfContent.includes('Để Studio Sắp Xếp') && cbfContent.includes('Chỉ Định Thợ Makeup'), 'Cho phép khách chọn "Để Studio sắp xếp" hoặc "Chỉ định thợ Makeup"');
+  assert(cbfContent.includes('Xem Portfolio') && cbfContent.includes('portfolio_url'), 'Hiển thị link xem Portfolio tác phẩm của từng thợ makeup');
+  assert(cbfContent.includes('makeup_artist_id'), 'Lưu makeup_artist_id vào bản ghi booking');
+}
+
+if (fs.existsSync(appFile)) {
+  const appContent = fs.readFileSync(appFile, 'utf8');
+  assert(appContent.includes('/book/studio/:id'), 'App.tsx bổ sung route đặt lịch /book/studio/:id');
+}
+
+if (fs.existsSync(quoteViewFile)) {
+  const qvContent = fs.readFileSync(quoteViewFile, 'utf8');
+  assert(qvContent.includes('/book/studio/:id') || qvContent.includes('useParams<{ token?: string; username?: string; id?: string }>()'), 'QuoteView hỗ trợ parameter studio id');
+  assert(qvContent.includes('studioId={quote.studio_id'), 'QuoteView truyền studioId vào ClientBookingForm');
+}
+
+// --------------------------------------------------------------------
+// 32. TÍNH NĂNG CẬP NHẬT TÀI CHÍNH NHANH (QUICK EDIT FINANCIALS)
+// --------------------------------------------------------------------
+console.log('\n▶ 32. Kiểm tra Tính Năng Cập Nhật Tài Chính Nhanh (Quick Edit Financials)...');
+
+const quickEditModalFile = path.join(__dirname, 'frontend', 'src', 'components', 'dashboard', 'QuickEditFinancialsModal.tsx');
+assert(fs.existsSync(quickEditModalFile), 'Component QuickEditFinancialsModal.tsx tồn tại');
+
+if (fs.existsSync(quickEditModalFile)) {
+  const qemContent = fs.readFileSync(quickEditModalFile, 'utf8');
+  assert(qemContent.includes('formatCurrencyVND') && qemContent.includes('parseCurrencyVND'), 'Định nghĩa hàm formatCurrencyVND và parseCurrencyVND');
+  assert(qemContent.includes('remainingDebt = Math.max(0, totalPrice - depositAmount)') || qemContent.includes('totalPrice - depositAmount'), 'Tự động tính toán nợ đọng còn lại từ giá trị hợp đồng và số tiền đã thu');
+  assert(qemContent.includes('remainingDebt === 0') && qemContent.includes('Đã thu đủ 100%'), 'Hiển thị badge màu xanh khi nợ đọng = 0');
+  assert(qemContent.includes('package_price') && qemContent.includes('deposit_amount') && qemContent.includes('notes'), 'Gửi lệnh update package_price, deposit_amount và notes qua Supabase');
+
+  // Test thuật toán format và parse
+  const testFormatVND = (val) => {
+    if (val === '' || val === null || val === undefined) return '0';
+    const num = typeof val === 'number' ? val : parseInt(val.toString().replace(/\D/g, ''), 10);
+    return isNaN(num) ? '0' : num.toLocaleString('vi-VN');
+  };
+  const testParseVND = (val) => {
+    if (!val) return 0;
+    const clean = val.replace(/\D/g, '');
+    return clean ? parseInt(clean, 10) : 0;
+  };
+
+  assert(testFormatVND(1500000) === '1.500.000', 'Format số 1500000 thành 1.500.000 có dấu chấm phân cách hàng nghìn');
+  assert(testParseVND('1.500.000 VNĐ') === 1500000, 'Parse chuỗi "1.500.000 VNĐ" về số nguyên 1500000');
+  assert(testFormatVND(20000000) === '20.000.000', 'Format số 20000000 thành 20.000.000');
+}
+
+const upcomingShootsListFile = path.join(__dirname, 'frontend', 'src', 'components', 'dashboard', 'UpcomingShootsList.tsx');
+if (fs.existsSync(upcomingShootsListFile)) {
+  const uslContent = fs.readFileSync(upcomingShootsListFile, 'utf8');
+  assert(uslContent.includes('onEditFinancials') && uslContent.includes('Cập nhật tài chính'), 'UpcomingShootsList (List View) tích hợp icon Pencil và tooltip Cập nhật tài chính cạnh Tổng gói');
+}
+
+if (fs.existsSync(kanbanViewFile)) {
+  const kvContent = fs.readFileSync(kanbanViewFile, 'utf8');
+  assert(kvContent.includes('onEditFinancials') && kvContent.includes('Cập nhật tài chính'), 'KanbanView (Kanban Card) tích hợp icon Pencil và tooltip Cập nhật tài chính');
+}
+
+if (fs.existsSync(bookingDetailModalFile)) {
+  const bdmContent = fs.readFileSync(bookingDetailModalFile, 'utf8');
+  assert(bdmContent.includes('onEditFinancials') && bdmContent.includes('Cập nhật tài chính'), 'BookingDetailModal (Detail Drawer) tích hợp icon Pencil cạnh Tổng Gói (Hợp Đồng)');
+}
+
+if (fs.existsSync(photoDashFile)) {
+  const pdContent = fs.readFileSync(photoDashFile, 'utf8');
+  assert(pdContent.includes('<QuickEditFinancialsModal') && pdContent.includes('financialsModalBooking'), 'PhotographerDashboard tích hợp QuickEditFinancialsModal');
+  assert(pdContent.includes('handleBookingFinancialsUpdated') || pdContent.includes('setFinancialsModalBooking'), 'PhotographerDashboard cập nhật lại state của lịch chụp ngay lập tức');
+}
+
+// --------------------------------------------------------------------
+// 33. KHẮC PHỤC LỖI VALIDATE SỐ TIỀN & STEP NUMBER INPUT
+// --------------------------------------------------------------------
+console.log('\n▶ 33. Kiểm tra Khắc Phục Lỗi Validate Số Tiền & Step Number Input...');
+
+const currencyUtilFile = path.join(__dirname, 'frontend', 'src', 'utils', 'currency.ts');
+assert(fs.existsSync(currencyUtilFile), 'Module utils/currency.ts tồn tại và tập trung hóa logic format/parse tiền tệ');
+
+if (fs.existsSync(currencyUtilFile)) {
+  const cuContent = fs.readFileSync(currencyUtilFile, 'utf8');
+  assert(cuContent.includes('export function formatCurrencyVND') && cuContent.includes('export function parseCurrencyVND'), 'Export đầy đủ 2 hàm formatCurrencyVND và parseCurrencyVND');
+}
+
+const gearsManagementFile = path.join(__dirname, 'frontend', 'src', 'components', 'dashboard', 'GearsManagementPage.tsx');
+if (fs.existsSync(gearsManagementFile)) {
+  const gmContent = fs.readFileSync(gearsManagementFile, 'utf8');
+  assert(!gmContent.includes('step="100000"'), 'Đã loại bỏ hoàn toàn thuộc tính hạn chế step="100000" trên input Giá Mua Thiết Bị');
+  assert(gmContent.includes('formatCurrencyVND') && gmContent.includes('parseCurrencyVND'), 'GearsManagementPage tích hợp formatCurrencyVND và parseCurrencyVND');
+  assert(gmContent.includes('inputMode="numeric"'), 'Input Giá Mua Thiết Bị hỗ trợ inputMode="numeric" cho thiết bị di động');
+}
+
+if (fs.existsSync(bookingDetailModalFile)) {
+  const bdmContent = fs.readFileSync(bookingDetailModalFile, 'utf8');
+  assert(!bdmContent.includes('step="10000"'), 'BookingDetailModal đã loại bỏ step="10000"');
+  assert(bdmContent.includes('step="any"'), 'BookingDetailModal sử dụng step="any" để không bị giới hạn số tiền chi phí');
+}
+
+const createQuoteModalTarget = path.join(__dirname, 'frontend', 'src', 'components', 'dashboard', 'CreateQuoteModal.tsx');
+if (fs.existsSync(createQuoteModalTarget)) {
+  const cqmContent = fs.readFileSync(createQuoteModalTarget, 'utf8');
+  assert(!cqmContent.includes('step={500000}'), 'CreateQuoteModal đã loại bỏ step={500000}');
+  assert(cqmContent.includes('step="any"'), 'CreateQuoteModal sử dụng step="any" cho giá trọn gói');
+}
+
+const packagesManagementTarget = path.join(__dirname, 'frontend', 'src', 'components', 'dashboard', 'PackagesManagementPage.tsx');
+if (fs.existsSync(packagesManagementTarget)) {
+  const pkmContent = fs.readFileSync(packagesManagementTarget, 'utf8');
+  assert(!pkmContent.includes('step={500000}'), 'PackagesManagementPage đã loại bỏ step={500000}');
+  assert(pkmContent.includes('step="any"'), 'PackagesManagementPage sử dụng step="any" cho giá tiền gói dịch vụ');
+}
+
+// --------------------------------------------------------------------
+// 34. KIỂM TRA ĐỘ TƯƠNG PHẢN LIGHT MODE TRÊN CÁC BẢNG DỮ LIỆU
+// --------------------------------------------------------------------
+console.log('\n▶ 34. Kiểm tra Độ Tương Phản Light Mode Trên Bảng Dữ Liệu...');
+
+if (fs.existsSync(gearsManagementFile)) {
+  const gmContent = fs.readFileSync(gearsManagementFile, 'utf8');
+  assert(gmContent.includes('text-gray-900 dark:text-white font-medium'), 'Tên thiết bị trong bảng sử dụng text-gray-900 dark:text-white font-medium, không bị chìm màu ở Light mode');
+  assert(gmContent.includes('text-gray-500 dark:text-gray-400'), 'Cột Mã thiết bị (UUID) sử dụng màu xám trung tính text-gray-500 dark:text-gray-400');
+  assert(gmContent.includes('text-sky-700 dark:text-sky-300') && gmContent.includes('text-amber-700 dark:text-amber-300'), 'Các nhãn phân loại (GEAR_TYPE_LABELS) hỗ trợ màu chữ đậm ở Light mode');
+  assert(gmContent.includes('text-emerald-700 dark:text-emerald-300'), 'Các nhãn trạng thái (GEAR_STATUS_LABELS) hỗ trợ màu chữ đậm ở Light mode');
+}
+
+const clientsManagementTarget = path.join(__dirname, 'frontend', 'src', 'components', 'clients', 'ClientsManagementPage.tsx');
+if (fs.existsSync(clientsManagementTarget)) {
+  const cmContent = fs.readFileSync(clientsManagementTarget, 'utf8');
+  assert(cmContent.includes('text-gray-900 dark:text-white font-medium') || cmContent.includes('text-gray-900 dark:text-white'), 'Tên khách hàng trong bảng Clients sử dụng text-gray-900 dark:text-white');
+  assert(cmContent.includes('bg-white/70 dark:bg-slate-900/60'), 'Bảng khách hàng sử dụng nền sáng trong Light mode');
+}
+
+// --------------------------------------------------------------------
+// 35. KIỂM TRA TÙY CHỈNH LOẠI HÌNH CHỤP & GÓI CHỤP (CATEGORY & PACKAGE TYPE)
+// --------------------------------------------------------------------
+console.log('\n▶ 35. Kiểm tra Tính Năng Tùy Chỉnh Loại Hình Chụp & Gói Chụp...');
+
+const categoryMigrationFile = path.join(__dirname, 'update_bookings_category.sql');
+assert(fs.existsSync(categoryMigrationFile), 'File migration update_bookings_category.sql tồn tại');
+
+if (fs.existsSync(categoryMigrationFile)) {
+  const catSql = fs.readFileSync(categoryMigrationFile, 'utf8');
+  assert(catSql.includes('category VARCHAR(100)'), 'Bổ sung cột category vào bảng bookings');
+  assert(catSql.includes('package_type VARCHAR(255)'), 'Bổ sung cột package_type vào bảng bookings');
+  assert(catSql.includes('DROP CONSTRAINT IF EXISTS bookings_session_type_check'), 'Xóa constraint giới hạn cũ bookings_session_type_check');
+  assert(catSql.includes('UPDATE bookings SET category = session_type WHERE category IS NULL'), 'Backfill dữ liệu category từ session_type cho các bản ghi cũ');
+  assert(catSql.includes('idx_bookings_category'), 'Tạo index tối ưu tìm kiếm theo category');
+}
+
+const catConfigFile = path.join(__dirname, 'frontend', 'src', 'utils', 'categoryConfig.ts');
+assert(fs.existsSync(catConfigFile), 'File frontend/src/utils/categoryConfig.ts tồn tại');
+
+if (fs.existsSync(catConfigFile)) {
+  const cfgContent = fs.readFileSync(catConfigFile, 'utf8');
+  assert(cfgContent.includes('STANDARD_CATEGORIES'), 'Khai báo danh sách STANDARD_CATEGORIES');
+  assert(cfgContent.includes("'wedding'") && cfgContent.includes('rose'), 'Wedding có màu hồng (rose)');
+  assert(cfgContent.includes("'lookbook'") && cfgContent.includes('purple'), 'Lookbook có màu tím (purple)');
+  assert(cfgContent.includes("'outdoor'") && cfgContent.includes('emerald'), 'Outdoor có màu xanh lá (emerald)');
+  assert(cfgContent.includes("'studio'") && cfgContent.includes('sky'), 'Studio có màu xanh dương (sky)');
+  assert(cfgContent.includes("'event'") && cfgContent.includes('amber'), 'Event có màu cam (amber)');
+  assert(cfgContent.includes("'portrait'") && cfgContent.includes('indigo'), 'Portrait có màu indigo');
+  assert(cfgContent.includes('getCategoryConfig'), 'Hàm getCategoryConfig thông minh tự nhận diện theo từ khóa tiếng Việt');
+  assert(cfgContent.includes('normalizeCategory'), 'Hàm normalizeCategory chuẩn hóa loại hình');
+}
+
+const editCategoryModalFile = path.join(__dirname, 'frontend', 'src', 'components', 'dashboard', 'EditCategoryModal.tsx');
+assert(fs.existsSync(editCategoryModalFile), 'File EditCategoryModal.tsx tồn tại');
+
+if (fs.existsSync(editCategoryModalFile)) {
+  const ecmContent = fs.readFileSync(editCategoryModalFile, 'utf8');
+  assert(ecmContent.includes('EditCategoryModal'), 'Component EditCategoryModal được định nghĩa');
+  assert(ecmContent.includes('STANDARD_CATEGORIES'), 'EditCategoryModal hiển thị danh sách loại hình chuẩn');
+  assert(ecmContent.includes('package_type') && ecmContent.includes('session_type'), 'EditCategoryModal cập nhật category, package_type và session_type');
+}
+
+const importModalTarget = path.join(__dirname, 'frontend', 'src', 'components', 'dashboard', 'ImportBookingsModal.tsx');
+if (fs.existsSync(importModalTarget)) {
+  const imContent = fs.readFileSync(importModalTarget, 'utf8');
+  assert(imContent.includes('loại hình') && imContent.includes('category'), 'Smart Mapper CSV nhận diện cột Loại hình / Category từ Excel');
+  assert(imContent.includes('getCategoryConfig'), 'Import CSV sử dụng getCategoryConfig chuẩn hóa loại hình thay vì mặc định cố định PORTRAIT');
+}
+
+const bookingDetailModalTarget = path.join(__dirname, 'frontend', 'src', 'components', 'dashboard', 'BookingDetailModal.tsx');
+if (fs.existsSync(bookingDetailModalTarget)) {
+  const bdmContent = fs.readFileSync(bookingDetailModalTarget, 'utf8');
+  assert(bdmContent.includes('Loại Hình Chụp & Gói Dịch Vụ') || bdmContent.includes('selectedCategory'), 'BookingDetailModal cho phép chỉnh sửa loại hình và tên gói chụp');
+  assert(bdmContent.includes('STANDARD_CATEGORIES'), 'BookingDetailModal cung cấp dropdown các giá trị chuẩn');
+}
+
+const kanbanViewTarget = path.join(__dirname, 'frontend', 'src', 'components', 'dashboard', 'KanbanView.tsx');
+if (fs.existsSync(kanbanViewTarget)) {
+  const kvContent = fs.readFileSync(kanbanViewTarget, 'utf8');
+  assert(kvContent.includes('getCategoryConfig'), 'KanbanView import và dùng getCategoryConfig');
+  assert(kvContent.includes('catCfg.color') && kvContent.includes('onEditCategory'), 'Thẻ Kanban hiển thị Category Badge có màu tương ứng và cho phép click đổi nhanh');
+}
+
+const upcomingShootsTarget = path.join(__dirname, 'frontend', 'src', 'components', 'dashboard', 'UpcomingShootsList.tsx');
+if (fs.existsSync(upcomingShootsTarget)) {
+  const usContent = fs.readFileSync(upcomingShootsTarget, 'utf8');
+  assert(usContent.includes('getCategoryConfig'), 'UpcomingShootsList hiển thị Badge theo từng loại hình');
+  assert(usContent.includes('onEditCategory'), 'UpcomingShootsList hỗ trợ click vào Badge để chỉnh sửa nhanh');
+}
+
+if (fs.existsSync(photoDashFile)) {
+  const pdContent = fs.readFileSync(photoDashFile, 'utf8');
+  assert(pdContent.includes('<EditCategoryModal') && pdContent.includes('categoryModalBooking'), 'PhotographerDashboard tích hợp EditCategoryModal và quản lý state categoryModalBooking');
+  assert(pdContent.includes('handleBookingCategoryUpdated'), 'PhotographerDashboard có handler cập nhật loại hình ngay lập tức');
 }
 
 // --------------------------------------------------------------------

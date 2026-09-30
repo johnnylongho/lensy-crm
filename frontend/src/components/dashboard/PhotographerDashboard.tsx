@@ -11,15 +11,19 @@ import { CreateQuoteModal } from './CreateQuoteModal';
 import { WebhookSimulatorModal } from './WebhookSimulatorModal';
 import { ReceiptReviewModal } from './ReceiptReviewModal';
 import { BookingDetailModal } from './BookingDetailModal';
+import { DeleteBookingConfirmationModal } from './DeleteBookingConfirmationModal';
 import { RoiProgressBar } from './RoiProgressBar';
 import { GrowthProgressBar } from './GrowthProgressBar';
 import { ProfitTrendChart } from './ProfitTrendChart';
+import { ImportBookingsModal } from './ImportBookingsModal';
 import { useAuth } from '../../context/AuthContext';
 import { useWorkspace } from '../../context/WorkspaceContext';
 import { CalendarEvent, BookingStatus } from '../../types';
 import { supabase, isSupabaseConfigured } from '../../lib/supabase';
 import { STATUS_CONFIG } from './BookingStatusSelect';
-import { Calendar, Kanban, RefreshCw, CheckCircle2, AlertCircle } from 'lucide-react';
+import { Calendar, Kanban, RefreshCw, CheckCircle2, AlertCircle, Upload } from 'lucide-react';
+import { QuickEditFinancialsModal } from './QuickEditFinancialsModal';
+import { EditCategoryModal } from './EditCategoryModal';
 
 interface Props {
   events: CalendarEvent[];
@@ -44,7 +48,12 @@ export const PhotographerDashboard: React.FC<Props> = ({
   const [activeDetailBooking, setActiveDetailBooking] =
     useState<CalendarEvent | null>(null);
   const [isCreateQuoteOpen, setIsCreateQuoteOpen] = useState(false);
+  const [isImportModalOpen, setIsImportModalOpen] = useState(false);
   const [isWebhookSimulatorOpen, setIsWebhookSimulatorOpen] = useState(false);
+  const [bookingToDelete, setBookingToDelete] = useState<CalendarEvent | null>(null);
+  const [isDeletingBooking, setIsDeletingBooking] = useState(false);
+  const [financialsModalBooking, setFinancialsModalBooking] = useState<CalendarEvent | null>(null);
+  const [categoryModalBooking, setCategoryModalBooking] = useState<CalendarEvent | null>(null);
   const [toastNotification, setToastNotification] = useState<{
     type: 'success' | 'error';
     message: string;
@@ -65,24 +74,43 @@ export const PhotographerDashboard: React.FC<Props> = ({
       if (isSupabaseConfigured) {
         let bookingsQuery = supabase
           .from('bookings')
-          .select('*')
+          .select(`
+            *,
+            photographer:users!photographer_id (
+              id,
+              full_name,
+              avatar_url,
+              phone,
+              email
+            ),
+            makeup_artist:users!makeup_artist_id (
+              id,
+              full_name,
+              avatar_url,
+              phone,
+              email
+            )
+          `)
           .order('event_date', { ascending: true });
 
         if (currentStudio) {
-          bookingsQuery = bookingsQuery.or(`studio_id.eq.${currentStudio.id},photographer_id.eq.${user?.id}`);
+          bookingsQuery = bookingsQuery.or(`studio_id.eq.${currentStudio.id},photographer_id.eq.${user?.id},makeup_artist_id.eq.${user?.id}`);
         } else if (user) {
-          bookingsQuery = bookingsQuery.eq('photographer_id', user.id);
+          bookingsQuery = bookingsQuery.or(`photographer_id.eq.${user.id},makeup_artist_id.eq.${user.id}`);
         }
 
-        const { data, error } = await bookingsQuery;
+        let { data, error } = await bookingsQuery;
 
         if (error) {
-          console.warn('Lỗi truy vấn Supabase:', error.message);
-          return;
+          console.warn('Truy vấn Join users gặp lỗi (có thể do quan hệ chưa migrate), fallback sang select(*):', error.message);
+          const fallbackRes = await supabase.from('bookings').select('*').order('event_date', { ascending: true });
+          data = fallbackRes.data;
         }
 
         if (data && data.length > 0) {
-          const mappedEvents: CalendarEvent[] = data.map((b: any) => {
+          const mappedEvents: CalendarEvent[] = data
+            .filter((b: any) => b.status !== 'cancelled' && b.status !== 'da_huy' && !b.is_deleted)
+            .map((b: any) => {
             const pkgPrice = Number(b.package_price || 0);
             const depAmount = Number(b.deposit_amount || 0);
             const paid = Number(b.paid_amount || 0);
@@ -108,7 +136,9 @@ export const PhotographerDashboard: React.FC<Props> = ({
               id: b.id,
               clientName: b.client_name,
               clientPhone: b.client_phone || '',
-              sessionType: b.session_type,
+              sessionType: b.category || b.session_type,
+              category: b.category || b.session_type,
+              package_type: b.package_type || '',
               eventDate: b.event_date,
               startTime: b.start_time?.substring(0, 5) || '08:00',
               endTime: b.end_time?.substring(0, 5) || '12:00',
@@ -126,6 +156,12 @@ export const PhotographerDashboard: React.FC<Props> = ({
               expenseDetails: b.expense_details || [],
               studio_id: b.studio_id,
               photographer_id: b.photographer_id,
+              makeup_artist_id: b.makeup_artist_id,
+              photographer: b.photographer,
+              makeup_artist: b.makeup_artist,
+              created_at: b.created_at,
+              updated_at: b.updated_at,
+              is_deleted: b.is_deleted,
             };
           });
           setEvents(mappedEvents);
@@ -256,6 +292,90 @@ export const PhotographerDashboard: React.FC<Props> = ({
     }
   };
 
+  // Xử lý Xóa / Hủy lịch chụp (Soft Delete hoặc chuyển trạng thái sang cancelled)
+  const handleConfirmDeleteBooking = async (bookingId: string) => {
+    setIsDeletingBooking(true);
+    // 1. Optimistic update: Xóa ngay lập tức khỏi state để UI phản hồi tức thì
+    setEvents(prev => prev.filter(e => e.id !== bookingId));
+    setBookingToDelete(null);
+
+    // 2. Cập nhật Supabase
+    if (isSupabaseConfigured) {
+      try {
+        let { error } = await supabase
+          .from('bookings')
+          .update({
+            status: 'cancelled',
+            is_deleted: true,
+            updated_at: new Date().toISOString(),
+          })
+          .eq('id', bookingId);
+
+        // Fallback nếu chưa chạy SQL thêm cột is_deleted
+        if (error && error.message?.includes('is_deleted')) {
+          const fallback = await supabase
+            .from('bookings')
+            .update({
+              status: 'cancelled',
+              updated_at: new Date().toISOString(),
+            })
+            .eq('id', bookingId);
+          error = fallback.error;
+        }
+
+        if (error) throw error;
+
+        setToastNotification({
+          type: 'success',
+          message: 'Đã hủy/xóa lịch chụp thành công',
+        });
+      } catch (err: any) {
+        console.error('Lỗi khi xóa lịch chụp trên Supabase:', err);
+        setToastNotification({
+          type: 'error',
+          message: `Lỗi khi xóa lịch chụp: ${err.message || 'Thử lại sau'}`,
+        });
+        fetchBookingsFromSupabase();
+      } finally {
+        setIsDeletingBooking(false);
+      }
+    } else {
+      setIsDeletingBooking(false);
+      setToastNotification({
+        type: 'success',
+        message: 'Đã hủy/xóa lịch chụp thành công',
+      });
+    }
+  };
+
+  // Cập nhật tài chính nhanh (Quick Edit Financials)
+  const handleBookingFinancialsUpdated = (updatedBooking: CalendarEvent) => {
+    setEvents(prev =>
+      prev.map(e => (e.id === updatedBooking.id ? updatedBooking : e))
+    );
+    if (activeDetailBooking && activeDetailBooking.id === updatedBooking.id) {
+      setActiveDetailBooking(updatedBooking);
+    }
+    setToastNotification({
+      type: 'success',
+      message: `Đã cập nhật tài chính cho khách "${updatedBooking.clientName}" thành công!`,
+    });
+  };
+
+  // Cập nhật loại hình chụp & gói dịch vụ nhanh (Edit Category / Package)
+  const handleBookingCategoryUpdated = (updatedBooking: CalendarEvent) => {
+    setEvents(prev =>
+      prev.map(e => (e.id === updatedBooking.id ? updatedBooking : e))
+    );
+    if (activeDetailBooking && activeDetailBooking.id === updatedBooking.id) {
+      setActiveDetailBooking(updatedBooking);
+    }
+    setToastNotification({
+      type: 'success',
+      message: `Đã cập nhật loại hình cho khách "${updatedBooking.clientName}" thành công!`,
+    });
+  };
+
   return (
     <div className="w-full max-w-7xl mx-auto px-4 sm:px-6 py-6 sm:py-8 space-y-7 sm:space-y-8 animate-fadeIn">
       {/* Top Floating Toast Notification */}
@@ -300,6 +420,32 @@ export const PhotographerDashboard: React.FC<Props> = ({
           setActiveDetailBooking(null);
           setActiveDebtReminderBooking(b);
         }}
+        onEditFinancials={b => setFinancialsModalBooking(b)}
+      />
+
+      {/* Modal Cập Nhật Tài Chính Nhanh (Quick Edit Financials) */}
+      <QuickEditFinancialsModal
+        isOpen={Boolean(financialsModalBooking)}
+        booking={financialsModalBooking}
+        onClose={() => setFinancialsModalBooking(null)}
+        onSuccess={handleBookingFinancialsUpdated}
+      />
+
+      {/* Modal Cập Nhật Loại Hình Chụp & Gói Dịch Vụ (Edit Category / Package) */}
+      <EditCategoryModal
+        isOpen={Boolean(categoryModalBooking)}
+        booking={categoryModalBooking}
+        onClose={() => setCategoryModalBooking(null)}
+        onSuccess={handleBookingCategoryUpdated}
+      />
+
+      {/* Modal Xác nhận Xóa / Hủy lịch chụp (Delete Confirmation Modal) */}
+      <DeleteBookingConfirmationModal
+        isOpen={Boolean(bookingToDelete)}
+        booking={bookingToDelete}
+        onClose={() => setBookingToDelete(null)}
+        onConfirm={handleConfirmDeleteBooking}
+        isDeleting={isDeletingBooking}
       />
 
       {/* Modal Tạo Báo Giá & Quét Xung Đột Thiết Bị (USP 1) */}
@@ -388,6 +534,7 @@ export const PhotographerDashboard: React.FC<Props> = ({
         onOpenCreateQuote={() => setIsCreateQuoteOpen(true)}
         onOpenWebhookSimulator={() => setIsWebhookSimulatorOpen(true)}
         onOpenReceiptReview={booking => setActiveReviewBooking(booking)}
+        onOpenImportCsv={() => setIsImportModalOpen(true)}
       />
 
       {/* Thẻ Hành Trình Thăng Hạng - Cấp Bậc Doanh Thu Studio (Growth Progress / RoiProgressBar) */}
@@ -447,6 +594,16 @@ export const PhotographerDashboard: React.FC<Props> = ({
 
           <button
             type="button"
+            onClick={() => setIsImportModalOpen(true)}
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-white/30 dark:bg-white/5 hover:bg-white/60 dark:hover:bg-white/10 text-slate-700 dark:text-zinc-200 transition-all border border-white/40 dark:border-white/10 backdrop-blur-md shadow-sm active:scale-95 text-xs font-semibold cursor-pointer"
+            title="Nhập danh sách lịch chụp từ file CSV"
+          >
+            <Upload className="w-3.5 h-3.5 text-amber-500" />
+            <span className="hidden sm:inline">Import CSV</span>
+          </button>
+
+          <button
+            type="button"
             onClick={fetchBookingsFromSupabase}
             disabled={isLoading}
             className="p-2 rounded-xl bg-white/30 dark:bg-white/5 hover:bg-white/50 dark:hover:bg-white/10 text-slate-600 dark:text-white/70 hover:text-slate-900 dark:hover:text-white transition-all border border-white/40 dark:border-white/10 backdrop-blur-md shadow-sm active:scale-95"
@@ -483,6 +640,8 @@ export const PhotographerDashboard: React.FC<Props> = ({
                     onStatusChange={handleStatusChange}
                     onSelectBooking={setActiveDetailBooking}
                     onOpenDebtReminder={setActiveDebtReminderBooking}
+                    onEditFinancials={b => setFinancialsModalBooking(b)}
+                    onEditCategory={b => setCategoryModalBooking(b)}
                   />
                 </div>
               </div>
@@ -497,6 +656,9 @@ export const PhotographerDashboard: React.FC<Props> = ({
                 onStatusChange={handleStatusChange}
                 onOpenDebtReminder={setActiveDebtReminderBooking}
                 onOpenReceiptReview={booking => setActiveReviewBooking(booking)}
+                onDeleteBooking={setBookingToDelete}
+                onEditFinancials={b => setFinancialsModalBooking(b)}
+                onEditCategory={b => setCategoryModalBooking(b)}
               />
             </div>
           </div>
@@ -507,10 +669,27 @@ export const PhotographerDashboard: React.FC<Props> = ({
               onStatusChange={handleStatusChange}
               onSelectBooking={setActiveDetailBooking}
               onOpenDebtReminder={setActiveDebtReminderBooking}
+              onDeleteBooking={setBookingToDelete}
+              onEditFinancials={b => setFinancialsModalBooking(b)}
+              onEditCategory={b => setCategoryModalBooking(b)}
             />
           </div>
         )}
       </motion.div>
+
+      {/* Modal Nhập Lịch Chụp Từ CSV / Excel */}
+      <ImportBookingsModal
+        isOpen={isImportModalOpen}
+        onClose={() => setIsImportModalOpen(false)}
+        events={events}
+        onSuccess={() => {
+          fetchBookingsFromSupabase();
+          setToastNotification({
+            type: 'success',
+            message: 'Nhập dữ liệu lịch chụp từ CSV thành công!',
+          });
+        }}
+      />
     </div>
   );
 };

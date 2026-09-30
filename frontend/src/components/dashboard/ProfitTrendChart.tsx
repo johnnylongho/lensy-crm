@@ -1,16 +1,18 @@
 import React, { useState } from 'react';
-import { motion } from 'framer-motion';
+import { motion, AnimatePresence } from 'framer-motion';
 import { CalendarEvent } from '../../types';
-import { TrendingUp, Wallet, Receipt, DollarSign, Sparkles, Filter } from 'lucide-react';
+import { TrendingUp, Wallet, Receipt, DollarSign, Sparkles, Filter, ChevronDown, ChevronUp } from 'lucide-react';
 
 interface Props {
   events: CalendarEvent[];
   className?: string;
+  defaultCollapsed?: boolean;
 }
 
-export const ProfitTrendChart: React.FC<Props> = ({ events, className = '' }) => {
+export const ProfitTrendChart: React.FC<Props> = ({ events, className = '', defaultCollapsed = true }) => {
   const [hoveredIndex, setHoveredIndex] = useState<number | null>(null);
   const [filterMode, setFilterMode] = useState<'all' | 'recent'>('recent');
+  const [isCollapsed, setIsCollapsed] = useState(defaultCollapsed);
 
   // Lọc và sắp xếp các sự kiện theo thứ tự thời gian tăng dần
   const validEvents = events
@@ -97,16 +99,18 @@ export const ProfitTrendChart: React.FC<Props> = ({ events, className = '' }) =>
       initial={{ opacity: 0, y: 18 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.45, ease: 'easeOut', delay: 0.25 }}
-      className={`rounded-3xl bg-white/60 dark:bg-white/5 backdrop-blur-xl border border-white/60 dark:border-white/10 shadow-[0_8px_32px_0_rgba(0,0,0,0.06)] dark:shadow-[0_8px_32px_0_rgba(0,0,0,0.3)] p-6 sm:p-7 space-y-5 transition-all duration-300 hover:shadow-md hover:-translate-y-0.5 ${className}`}
+      className={`rounded-3xl bg-white/60 dark:bg-white/5 backdrop-blur-xl border border-white/60 dark:border-white/10 shadow-[0_8px_32px_0_rgba(0,0,0,0.06)] dark:shadow-[0_8px_32px_0_rgba(0,0,0,0.3)] transition-all duration-300 hover:shadow-md ${
+        isCollapsed ? 'p-4 sm:p-5' : 'p-6 sm:p-7'
+      } ${className}`}
     >
       {/* Chart Header & Summary Metrics */}
-      <div className="flex flex-wrap items-center justify-between gap-3 border-b border-white/40 dark:border-white/10 pb-4">
+      <div className={`flex flex-wrap items-center justify-between gap-3 ${!isCollapsed ? 'border-b border-white/40 dark:border-white/10 pb-4' : ''}`}>
         <div className="flex items-center gap-3">
-          <div className="w-10 h-10 rounded-2xl bg-emerald-500/10 border border-emerald-500/30 flex items-center justify-center text-emerald-500 dark:text-emerald-400 shadow-md">
+          <div className="w-10 h-10 rounded-2xl bg-emerald-500/10 border border-emerald-500/30 flex items-center justify-center text-emerald-500 dark:text-emerald-400 shadow-md flex-shrink-0">
             <Wallet className="w-5 h-5" />
           </div>
           <div>
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-2 flex-wrap">
               <h3 className="text-sm sm:text-base font-bold text-slate-900 dark:text-white/95 tracking-tight flex items-center gap-1.5">
                 Biểu Đồ Lợi Nhuận Ròng Theo Show (Net Profit Stream)
               </h3>
@@ -116,37 +120,74 @@ export const ProfitTrendChart: React.FC<Props> = ({ events, className = '' }) =>
               </span>
             </div>
             <p className="text-xs text-slate-500 dark:text-white/50">
-              Đường xanh lá cây phản ánh lợi nhuận thực tế sau khi trừ toàn bộ chi phí makeup, studio, trợ lý...
+              {isCollapsed ? (
+                <span>
+                  Tổng ròng: <strong className="text-emerald-600 dark:text-emerald-400 font-mono">{totalNetProfit.toLocaleString('vi-VN')} đ</strong> ({chartData.length} show) • Nhấn "Mở rộng" để xem chi tiết
+                </span>
+              ) : (
+                'Đường xanh lá cây phản ánh lợi nhuận thực tế sau khi trừ toàn bộ chi phí makeup, studio, trợ lý...'
+              )}
             </p>
           </div>
         </div>
 
-        {/* View Filter Switcher: Liquid Glass Ghost Tabs */}
-        <div className="flex items-center gap-1.5 p-1 rounded-2xl bg-white/40 dark:bg-white/5 backdrop-blur-md border border-white/40 dark:border-white/10 text-xs">
+        {/* View Filter Switcher & Toggle Collapse Button */}
+        <div className="flex items-center gap-2">
+          {!isCollapsed && (
+            <div className="flex items-center gap-1.5 p-1 rounded-2xl bg-white/40 dark:bg-white/5 backdrop-blur-md border border-white/40 dark:border-white/10 text-xs">
+              <button
+                type="button"
+                onClick={() => setFilterMode('recent')}
+                className={`px-3.5 py-1.5 rounded-xl font-bold transition-all duration-200 cursor-pointer ${
+                  filterMode === 'recent'
+                    ? 'bg-gradient-to-r from-emerald-500 to-teal-500 text-slate-950 shadow-md shadow-emerald-500/20'
+                    : 'text-slate-600 dark:text-white/60 hover:text-slate-950 dark:hover:text-white'
+                }`}
+              >
+                7 Show Gần Nhất
+              </button>
+              <button
+                type="button"
+                onClick={() => setFilterMode('all')}
+                className={`px-3.5 py-1.5 rounded-xl font-bold transition-all duration-200 cursor-pointer ${
+                  filterMode === 'all'
+                    ? 'bg-gradient-to-r from-emerald-500 to-teal-500 text-slate-950 shadow-md shadow-emerald-500/20'
+                    : 'text-slate-600 dark:text-white/60 hover:text-slate-950 dark:hover:text-white'
+                }`}
+              >
+                Tất Cả ({validEvents.length})
+              </button>
+            </div>
+          )}
+
+          {/* Nút Toggle Thu gọn / Mở rộng */}
           <button
             type="button"
-            onClick={() => setFilterMode('recent')}
-            className={`px-3.5 py-1.5 rounded-xl font-bold transition-all duration-200 ${
-              filterMode === 'recent'
-                ? 'bg-gradient-to-r from-emerald-500 to-teal-500 text-slate-950 shadow-md shadow-emerald-500/20'
-                : 'text-slate-600 dark:text-white/60 hover:text-slate-950 dark:hover:text-white'
-            }`}
+            onClick={() => setIsCollapsed(prev => !prev)}
+            className="p-2 sm:px-3 sm:py-1.5 rounded-2xl bg-white/40 dark:bg-white/5 hover:bg-white/70 dark:hover:bg-white/10 border border-white/40 dark:border-white/10 text-slate-700 dark:text-zinc-300 transition-all active:scale-95 flex items-center gap-1.5 text-xs font-semibold cursor-pointer shadow-sm"
+            title={isCollapsed ? 'Mở rộng biểu đồ lợi nhuận' : 'Thu gọn biểu đồ lợi nhuận'}
+            aria-label={isCollapsed ? 'Mở rộng biểu đồ' : 'Thu gọn biểu đồ'}
           >
-            7 Show Gần Nhất
-          </button>
-          <button
-            type="button"
-            onClick={() => setFilterMode('all')}
-            className={`px-3.5 py-1.5 rounded-xl font-bold transition-all duration-200 ${
-              filterMode === 'all'
-                ? 'bg-gradient-to-r from-emerald-500 to-teal-500 text-slate-950 shadow-md shadow-emerald-500/20'
-                : 'text-slate-600 dark:text-white/60 hover:text-slate-950 dark:hover:text-white'
-            }`}
-          >
-            Tất Cả ({validEvents.length})
+            <span className="text-[11px] hidden sm:inline">{isCollapsed ? 'Mở rộng' : 'Thu gọn'}</span>
+            {isCollapsed ? (
+              <ChevronDown className="w-4 h-4 text-emerald-500" />
+            ) : (
+              <ChevronUp className="w-4 h-4 text-emerald-500" />
+            )}
           </button>
         </div>
       </div>
+
+      <AnimatePresence initial={false}>
+        {!isCollapsed && (
+          <motion.div
+            key="profit-chart-body"
+            initial={{ height: 0, opacity: 0 }}
+            animate={{ height: 'auto', opacity: 1 }}
+            exit={{ height: 0, opacity: 0 }}
+            transition={{ duration: 0.35, ease: [0.04, 0.62, 0.23, 0.98] }}
+            className="overflow-hidden space-y-5 pt-1"
+          >
 
       {/* KPI Cards Strip: Liquid Glass Cards */}
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-3.5">
@@ -414,6 +455,9 @@ export const ProfitTrendChart: React.FC<Props> = ({ events, className = '' }) =>
           <span>Chi Phí Show</span>
         </div>
       </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </motion.div>
   );
 };

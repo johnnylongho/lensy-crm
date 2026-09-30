@@ -1,5 +1,5 @@
-import React, { useState, useEffect, useRef } from 'react';
-import { motion } from 'framer-motion';
+import React, { useState, useEffect } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
 import CountUp from 'react-countup';
 import { Link } from 'react-router-dom';
 import { CalendarEvent, GearItem } from '../../types';
@@ -9,40 +9,35 @@ import {
   calculateYtdRevenue,
   getTierProgress,
   TierProgress,
-  hasCelebratedTier,
-  markTierCelebrated,
-  triggerCelebrationConfetti,
-  TIER_CONFIGS,
-  MILESTONES,
 } from '../../utils/tierSystem';
 import { TierBadge } from './TierBadge';
 import { TierCelebrationModal } from './TierCelebrationModal';
 import {
-  TrendingUp,
-  Sparkles,
   Trophy,
   Award,
   Medal,
   Crown,
   Gem,
-  ArrowRight,
   Camera,
-  Coins,
   ChevronRight,
-  Target,
+  Sparkles,
+  ChevronDown,
+  ChevronUp,
 } from 'lucide-react';
 
 interface Props {
   events: CalendarEvent[];
   className?: string;
+  defaultCollapsed?: boolean;
 }
 
-export const GrowthProgressBar: React.FC<Props> = ({ events, className = '' }) => {
+export const GrowthProgressBar: React.FC<Props> = ({ events, className = '', defaultCollapsed = false }) => {
   const { user } = useAuth();
   const [animatedPercent, setAnimatedPercent] = useState(0);
   const [showCelebrationModal, setShowCelebrationModal] = useState(false);
   const [viewTab, setViewTab] = useState<'tier' | 'roi'>('tier');
   const [gears, setGears] = useState<GearItem[]>([]);
+  const [isCollapsed, setIsCollapsed] = useState(defaultCollapsed);
 
   // 1. Tính toán Doanh thu Năm Hiện Tại (YTD Revenue) & Tiến trình Cấp bậc
   const currentYear = new Date().getFullYear();
@@ -50,7 +45,7 @@ export const GrowthProgressBar: React.FC<Props> = ({ events, className = '' }) =
   const tierProgress: TierProgress = getTierProgress(ytdRevenue, currentYear);
   const { currentTier, nextTier, nextMilestone, progressPercent, remainingAmount, gamificationHook } = tierProgress;
 
-  // 2. Fetch danh sách thiết bị nếu người dùng muốn xem tab ROI
+  // 2. Fetch danh sách thiết bị cho tab ROI
   useEffect(() => {
     const fetchStudioGears = async () => {
       try {
@@ -78,7 +73,7 @@ export const GrowthProgressBar: React.FC<Props> = ({ events, className = '' }) =
   const totalNetProfit = totalCollected - totalExpenses;
   const roiPercentage = totalInvestment > 0 ? (totalNetProfit / totalInvestment) * 100 : 0;
 
-  // Hiệu ứng Animation mượt mà khi load số: tăng từ 0% lên % mục tiêu
+  // Animation mượt mà thanh tiến độ
   useEffect(() => {
     const timer = setTimeout(() => {
       setAnimatedPercent(progressPercent);
@@ -86,220 +81,200 @@ export const GrowthProgressBar: React.FC<Props> = ({ events, className = '' }) =
     return () => clearTimeout(timer);
   }, [progressPercent]);
 
-  // ====================================================================
-  // 3. SMART CONFETTI VALIDATION & CELEBRATION MODAL
-  // ====================================================================
-  // Chỉ bắn pháo hoa VÀ hiển thị Modal vinh danh DUY NHẤT 1 LẦN cho mỗi mốc tier mới.
-  // Khi reload lại trang, kiểm tra localStorage (lensy_celebrated_tier_[tên_tier]), tuyệt đối không bắn lại!
-  useEffect(() => {
-    // Không celebrate tân binh (rookie)
-    if (currentTier.id === 'rookie') return;
-
-    const alreadyCelebrated = hasCelebratedTier(currentTier.id);
-    if (!alreadyCelebrated) {
-      // Đánh dấu đã vinh danh vào localStorage ngay lập tức
-      markTierCelebrated(currentTier.id);
-
-      // Kích hoạt pháo hoa bùng nổ
-      triggerCelebrationConfetti();
-
-      // Mở modal vinh danh hoành tráng
-      setShowCelebrationModal(true);
-    }
-  }, [currentTier.id]);
-
   return (
     <>
       <motion.div
         initial={{ opacity: 0, y: 18 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.45, ease: 'easeOut', delay: 0.15 }}
-        className={`relative overflow-hidden rounded-3xl bg-white/60 dark:bg-white/5 backdrop-blur-xl border border-white/60 dark:border-white/10 shadow-[0_8px_32px_0_rgba(0,0,0,0.06)] dark:shadow-[0_8px_32px_0_rgba(0,0,0,0.3)] p-6 sm:p-7 transition-all duration-300 hover:shadow-md hover:-translate-y-0.5 ${className}`}
+        className={`relative overflow-hidden rounded-3xl bg-white/70 dark:bg-white/5 backdrop-blur-2xl border border-white/60 dark:border-white/10 shadow-[0_8px_32px_0_rgba(0,0,0,0.04)] dark:shadow-[0_8px_32px_0_rgba(0,0,0,0.4)] transition-all duration-300 hover:shadow-md ${
+          isCollapsed ? 'p-4 sm:p-5' : 'p-6 sm:p-8'
+        } ${className}`}
       >
-        {/* Background Ambient Glow tương thích với cấp bậc hiện tại */}
+        {/* Background Ambient Glow */}
         <div
-          className={`absolute -top-16 -right-16 w-64 h-64 rounded-full blur-3xl opacity-25 pointer-events-none transition-all duration-1000 bg-gradient-to-br ${currentTier.gradient}`}
+          className={`absolute -top-20 -right-20 w-72 h-72 rounded-full blur-3xl opacity-20 pointer-events-none transition-all duration-1000 bg-gradient-to-br ${currentTier.gradient}`}
         />
 
-        <div className="relative space-y-5">
-          {/* Top Header: Badge, Title & Tab Toggle */}
-          <div className="flex flex-wrap items-center justify-between gap-3">
-            <div className="flex items-center gap-3">
-              <div
-                className={`w-11 h-11 rounded-2xl flex items-center justify-center border shadow-md transition-colors bg-gradient-to-br ${currentTier.gradient} text-white`}
-              >
-                {currentTier.iconName === 'Trophy' ? (
-                  <Trophy className="w-5 h-5 text-yellow-300" />
-                ) : currentTier.iconName === 'Crown' ? (
-                  <Crown className="w-5 h-5 text-cyan-200" />
-                ) : currentTier.iconName === 'Gem' ? (
-                  <Gem className="w-5 h-5 text-indigo-200 animate-spin" style={{ animationDuration: '10s' }} />
-                ) : currentTier.iconName === 'Award' ? (
-                  <Award className="w-5 h-5 text-slate-100" />
-                ) : (
-                  <Medal className="w-5 h-5 text-amber-200" />
+        <div className={`relative ${isCollapsed ? 'space-y-0' : 'space-y-6'}`}>
+          {/* Header Bar */}
+          <div className="flex flex-wrap items-center justify-between gap-4">
+            <div>
+              <div className="flex items-center gap-2">
+                <h3 className="text-base sm:text-lg font-bold text-slate-900 dark:text-white tracking-tight flex items-center gap-2">
+                  Hành Trình Thăng Hạng (Growth Progress)
+                </h3>
+                {isCollapsed && <TierBadge tier={currentTier} size="xs" />}
+              </div>
+              <p className="text-xs text-slate-500 dark:text-zinc-400 font-mono mt-0.5">
+                Doanh thu YTD {currentYear}: <strong className="text-slate-800 dark:text-zinc-200">{ytdRevenue.toLocaleString('vi-VN')} đ</strong>
+                {isCollapsed && (
+                  <span className="ml-2 text-amber-500 font-bold">• {progressPercent}% tiến độ</span>
                 )}
-              </div>
-
-              <div>
-                <div className="flex items-center gap-2 flex-wrap">
-                  <h3 className="text-sm sm:text-base font-bold text-slate-900 dark:text-white/95 tracking-tight flex items-center gap-1.5">
-                    Hành Trình Thăng Hạng (Growth Progress)
-                  </h3>
-
-                  <TierBadge tier={currentTier} size="sm" />
-                </div>
-
-                <p className="text-xs text-slate-500 dark:text-white/50">
-                  Doanh thu YTD {currentYear}: <strong className="text-slate-800 dark:text-white/90 font-mono font-bold">{(ytdRevenue).toLocaleString('vi-VN')} đ</strong>
-                  {nextMilestone && (
-                    <span> • Mục tiêu kế tiếp: <span className="font-mono text-amber-500 font-bold">{(nextMilestone).toLocaleString('vi-VN')} đ</span> ({nextTier?.name})</span>
-                  )}
-                </p>
-              </div>
+              </p>
             </div>
 
-            {/* Quick Switch Tabs & Action Links */}
+            {/* Quick Switch Tabs & Toggle Button */}
             <div className="flex items-center gap-2">
-              <div className="flex items-center p-1 rounded-2xl bg-white/40 dark:bg-white/5 border border-white/40 dark:border-white/10 backdrop-blur-md">
-                <button
-                  type="button"
-                  onClick={() => setViewTab('tier')}
-                  className={`px-3 py-1 rounded-xl text-xs font-bold transition-all ${
-                    viewTab === 'tier'
-                      ? 'bg-amber-500 text-slate-950 shadow-sm'
-                      : 'text-slate-600 dark:text-slate-300 hover:text-slate-950 dark:hover:text-white'
-                  }`}
-                >
-                  Cấp Bậc ({currentTier.name})
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setViewTab('roi')}
-                  className={`px-3 py-1 rounded-xl text-xs font-bold transition-all ${
-                    viewTab === 'roi'
-                      ? 'bg-amber-500 text-slate-950 shadow-sm'
-                      : 'text-slate-600 dark:text-slate-300 hover:text-slate-950 dark:hover:text-white'
-                  }`}
-                >
-                  ROI Thiết Bị
-                </button>
-              </div>
+              {!isCollapsed && (
+                <>
+                  <div className="flex items-center p-1 rounded-2xl bg-white/40 dark:bg-white/5 border border-white/40 dark:border-white/10 backdrop-blur-md text-xs">
+                    <button
+                      type="button"
+                      onClick={() => setViewTab('tier')}
+                      className={`px-3 py-1 rounded-xl font-bold transition-all cursor-pointer ${
+                        viewTab === 'tier'
+                          ? 'bg-amber-500 text-slate-950 shadow-sm'
+                          : 'text-slate-600 dark:text-zinc-400 hover:text-slate-900 dark:hover:text-white'
+                      }`}
+                    >
+                      Cấp Bậc ({currentTier.name})
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setViewTab('roi')}
+                      className={`px-3 py-1 rounded-xl font-bold transition-all cursor-pointer ${
+                        viewTab === 'roi'
+                          ? 'bg-amber-500 text-slate-950 shadow-sm'
+                          : 'text-slate-600 dark:text-zinc-400 hover:text-slate-900 dark:hover:text-white'
+                      }`}
+                    >
+                      ROI Thiết Bị
+                    </button>
+                  </div>
 
-              <Link
-                to="/dashboard/gears"
-                className="hidden sm:inline-flex items-center gap-1.5 px-3 py-1.5 rounded-2xl bg-white/20 dark:bg-white/5 hover:bg-white/30 dark:hover:bg-white/10 border border-white/40 dark:border-white/10 text-slate-700 dark:text-white/80 text-xs font-semibold backdrop-blur-md transition-all active:scale-95"
-                title="Quản lý kho thiết bị"
+                  <Link
+                    to="/dashboard/gears"
+                    className="hidden sm:inline-flex items-center gap-1.5 px-3 py-1.5 rounded-2xl bg-white/20 dark:bg-white/5 hover:bg-white/30 dark:hover:bg-white/10 border border-white/40 dark:border-white/10 text-slate-700 dark:text-zinc-300 text-xs font-semibold backdrop-blur-md transition-all active:scale-95"
+                    title="Quản lý kho thiết bị"
+                  >
+                    <Camera className="w-3.5 h-3.5 text-amber-500" />
+                    <span>Kho Máy</span>
+                  </Link>
+                </>
+              )}
+
+              {/* Nút Toggle Thu gọn / Mở rộng */}
+              <button
+                type="button"
+                onClick={() => setIsCollapsed(prev => !prev)}
+                className="p-2 sm:px-3 sm:py-1.5 rounded-2xl bg-white/40 dark:bg-white/5 hover:bg-white/70 dark:hover:bg-white/10 border border-white/40 dark:border-white/10 text-slate-700 dark:text-zinc-300 transition-all active:scale-95 flex items-center gap-1.5 text-xs font-semibold cursor-pointer shadow-sm"
+                title={isCollapsed ? 'Mở rộng hành trình thăng hạng' : 'Thu gọn hành trình thăng hạng'}
+                aria-label={isCollapsed ? 'Mở rộng thẻ tiến độ' : 'Thu gọn thẻ tiến độ'}
               >
-                <Camera className="w-3.5 h-3.5 text-amber-500" />
-                <span>Kho Máy</span>
-              </Link>
+                <span className="text-[11px] hidden sm:inline">{isCollapsed ? 'Mở rộng' : 'Thu gọn'}</span>
+                {isCollapsed ? (
+                  <ChevronDown className="w-4 h-4 text-amber-500" />
+                ) : (
+                  <ChevronUp className="w-4 h-4 text-amber-500" />
+                )}
+              </button>
             </div>
           </div>
 
-          {/* TAB 1: HÀNH TRÌNH THĂNG HẠNG (GROWTH PROGRESS) */}
-          {viewTab === 'tier' ? (
-            <div className="space-y-4">
-              {/* Stat Bar: Chi tiết quãng đường từ Cấp Hiện Tại lên Cấp Kế Tiếp */}
-              <div className="p-4 sm:p-5 rounded-2xl bg-white/40 dark:bg-white/5 backdrop-blur-md border border-white/40 dark:border-white/10 flex flex-wrap items-center justify-between gap-3 text-xs sm:text-sm">
-                <div className="flex flex-wrap items-center gap-x-3 gap-y-2 font-medium text-slate-700 dark:text-slate-200">
-                  <div className="flex items-center gap-1.5">
-                    <span className="text-slate-500 dark:text-white/50">Cấp hiện tại:</span>
-                    <strong className="text-slate-900 dark:text-white font-bold">
-                      {currentTier.name} ({(currentTier.minRevenue / 1_000_000)}M đ)
-                    </strong>
+          <AnimatePresence initial={false}>
+            {!isCollapsed && (
+              <motion.div
+                key="growth-progress-body"
+                initial={{ height: 0, opacity: 0 }}
+                animate={{ height: 'auto', opacity: 1 }}
+                exit={{ height: 0, opacity: 0 }}
+                transition={{ duration: 0.35, ease: [0.04, 0.62, 0.23, 0.98] }}
+                className="overflow-hidden space-y-6 pt-1"
+              >
+                {/* TAB 1: CẤP BẬC - NGHỆ THUẬT VỚI BIỂU TƯỢNG PHÓNG TO VÀ THANH PROGRESS BAR LỚN */}
+                {viewTab === 'tier' ? (
+                  <div className="space-y-5">
+              {/* Điểm nhấn Nghệ thuật: Biểu tượng Cấp bậc Phóng to + Tỷ lệ % khổng lồ */}
+              <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 pt-1">
+                {/* Biểu tượng Badge lớn phóng to */}
+                <div className="flex items-center gap-4">
+                  <div
+                    className={`w-14 h-14 sm:w-16 sm:h-16 rounded-2xl flex items-center justify-center shadow-xl ring-2 ring-white/10 transition-transform hover:scale-105 bg-gradient-to-br ${currentTier.gradient} text-white flex-shrink-0`}
+                  >
+                    {currentTier.iconName === 'Trophy' ? (
+                      <Trophy className="w-7 h-7 sm:w-8 sm:h-8 text-yellow-300" />
+                    ) : currentTier.iconName === 'Crown' ? (
+                      <Crown className="w-7 h-7 sm:w-8 sm:h-8 text-cyan-200" />
+                    ) : currentTier.iconName === 'Gem' ? (
+                      <Gem className="w-7 h-7 sm:w-8 sm:h-8 text-indigo-200 animate-spin" style={{ animationDuration: '10s' }} />
+                    ) : currentTier.iconName === 'Award' ? (
+                      <Award className="w-7 h-7 sm:w-8 sm:h-8 text-slate-100" />
+                    ) : (
+                      <Medal className="w-7 h-7 sm:w-8 sm:h-8 text-amber-200" />
+                    )}
                   </div>
 
-                  {nextMilestone && nextTier && (
-                    <>
-                      <span className="text-slate-400 dark:text-white/30 font-bold hidden sm:inline">➔</span>
-
-                      <div className="flex items-center gap-1.5">
-                        <span className="text-slate-500 dark:text-white/50">Mục tiêu:</span>
-                        <strong className="text-amber-600 dark:text-amber-400 font-bold">
-                          {nextTier.name} ({(nextMilestone / 1_000_000)}M đ)
-                        </strong>
-                      </div>
-                    </>
-                  )}
-
-                  <span className="text-slate-400 dark:text-white/30 font-bold hidden sm:inline">•</span>
-
-                  <div className="flex items-center gap-1.5">
-                    <span className="text-slate-500 dark:text-white/50">Tiến độ chặng:</span>
-                    <strong className="font-mono font-black text-sm text-amber-500 dark:text-amber-400">
-                      <CountUp start={0} end={progressPercent} decimals={1} duration={1.2} suffix="%" />
-                    </strong>
+                  <div className="space-y-1">
+                    <div className="flex items-center gap-2">
+                      <span className="text-xl sm:text-2xl font-bold text-slate-900 dark:text-white tracking-tight">
+                        {currentTier.name}
+                      </span>
+                      <TierBadge tier={currentTier} size="xs" />
+                    </div>
+                    <div className="text-xs text-slate-500 dark:text-zinc-400 font-mono">
+                      {nextMilestone && nextTier ? (
+                        <span>
+                          Mục tiêu: <strong className="text-amber-500 font-semibold">{nextTier.name} ({nextMilestone / 1_000_000}M đ)</strong> • Còn thiếu <strong className="text-slate-800 dark:text-zinc-200 font-semibold">{remainingAmount.toLocaleString('vi-VN')} đ</strong>
+                        </span>
+                      ) : (
+                        <span className="text-emerald-500 font-bold">🏆 Đã đạt cấp Kim Cương tối đa!</span>
+                      )}
+                    </div>
                   </div>
                 </div>
 
-                <div className="text-[11px] font-medium text-slate-500 dark:text-white/60">
-                  {nextMilestone ? (
-                    <span>
-                      Còn thiếu <strong className="text-amber-500 font-mono font-bold">{(remainingAmount).toLocaleString('vi-VN')} đ</strong> để thăng hạng
-                    </span>
-                  ) : (
-                    <span className="text-emerald-500 dark:text-emerald-400 font-bold">
-                      🏆 Đã đạt cấp Kim Cương tối đa!
-                    </span>
-                  )}
+                {/* Phần trăm tiến độ khổng lồ, font-light thanh mảnh */}
+                <div className="sm:text-right font-mono font-light text-4xl sm:text-5xl text-slate-900 dark:text-white tracking-tight flex items-baseline gap-1">
+                  <CountUp start={0} end={progressPercent} decimals={1} duration={1.2} />
+                  <span className="text-2xl sm:text-3xl text-amber-500 font-normal">%</span>
                 </div>
               </div>
 
-              {/* Progress Bar Container: Hiển thị số % tiến tới Cấp bậc tiếp theo */}
-              <div className="space-y-1.5">
-                <div className="relative w-full h-5 rounded-full bg-slate-950 border border-slate-800 p-0.5 overflow-hidden shadow-inner">
-                  {/* Thanh tiến độ chính với Gradient cấp bậc */}
+              {/* Thanh Progress Bar phóng to (h-7 sm:h-8) sang trọng với gradient & shimmer */}
+              <div className="space-y-2">
+                <div className="relative w-full h-7 sm:h-8 rounded-full bg-slate-900/90 dark:bg-black/80 border border-slate-800 dark:border-white/10 p-1 overflow-hidden shadow-inner">
+                  {/* Thanh tiến độ chính */}
                   <div
                     className={`h-full rounded-full bg-gradient-to-r ${currentTier.barGradient} transition-all duration-1000 ease-out relative`}
-                    style={{ width: `${Math.min(100, Math.max(3, animatedPercent))}%` }}
+                    style={{ width: `${Math.min(100, Math.max(4, animatedPercent))}%` }}
                   >
-                    {/* Hiệu ứng sọc ánh sáng lướt qua (Shimmer Effect) */}
-                    <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/25 to-transparent animate-shimmer" />
+                    {/* Hiệu ứng sọc ánh sáng lướt qua */}
+                    <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/30 to-transparent animate-shimmer" />
 
-                    {/* Con trỏ hiển thị tỷ lệ phần trăm */}
-                    {animatedPercent >= 10 && (
-                      <div className="absolute right-2 top-1/2 -translate-y-1/2 text-[10px] font-black font-mono text-slate-950 px-1.5 py-0.5 rounded-full bg-white/95 shadow-sm leading-none">
+                    {/* Tag nhỏ nổi trên thanh nếu đủ rộng */}
+                    {animatedPercent >= 15 && (
+                      <div className="absolute right-2.5 top-1/2 -translate-y-1/2 text-[10px] font-black font-mono text-slate-950 px-2 py-0.5 rounded-full bg-white/95 shadow-sm leading-none">
                         {progressPercent}%
                       </div>
                     )}
                   </div>
                 </div>
 
-                {/* Mốc chỉ số trực quan các cấp bậc */}
-                <div className="flex items-center justify-between text-[10px] font-mono text-slate-500 dark:text-slate-400 px-1 font-bold">
-                  <span className="hover:text-slate-300 transition-colors">
-                    {currentTier.name} ({(currentTier.minRevenue / 1_000_000)}M)
-                  </span>
-                  <span className="text-amber-500/80 hover:text-amber-400 transition-colors">
-                    50% Chặng
-                  </span>
-                  <span className="text-emerald-500 dark:text-emerald-400 hover:text-emerald-300 transition-colors">
-                    {nextTier ? `${nextTier.name} (${(nextMilestone! / 1_000_000)}M)` : 'Đỉnh cao Kim Cương'}
+                {/* Mốc chỉ số trực quan */}
+                <div className="flex items-center justify-between text-[11px] font-mono text-slate-400 dark:text-zinc-500 px-1 font-medium">
+                  <span>{currentTier.name} ({currentTier.minRevenue / 1_000_000}M)</span>
+                  <span className="text-amber-500/80">50% Chặng</span>
+                  <span className="text-emerald-500 dark:text-emerald-400">
+                    {nextTier ? `${nextTier.name} (${nextMilestone! / 1_000_000}M)` : 'Đỉnh cao Kim Cương'}
                   </span>
                 </div>
               </div>
 
-              {/* Tính năng Tương lai: Dòng Gamification Hook động kích thích thăng hạng */}
-              <div className="p-3.5 rounded-2xl bg-amber-500/10 dark:bg-amber-400/5 border border-amber-500/25 flex items-center justify-between gap-3 text-xs">
-                <div className="flex items-center gap-2.5">
-                  <div className="w-6 h-6 rounded-lg bg-amber-500/20 text-amber-500 flex items-center justify-center flex-shrink-0">
-                    <Sparkles className="w-3.5 h-3.5" />
-                  </div>
-                  <div>
-                    <span className="font-bold text-amber-700 dark:text-amber-300 mr-1.5">
-                      Đặc quyền tiếp theo:
-                    </span>
-                    <span className="text-slate-700 dark:text-white/80 font-medium">
-                      {gamificationHook}
-                    </span>
-                  </div>
+              {/* Gamification Hook tinh tế, gọn gàng */}
+              <div className="pt-1 flex items-center justify-between gap-3 text-xs border-t border-slate-100 dark:border-white/5">
+                <div className="flex items-center gap-2 text-slate-600 dark:text-zinc-400">
+                  <Sparkles className="w-3.5 h-3.5 text-amber-500 flex-shrink-0" />
+                  <span>
+                    <strong className="text-amber-600 dark:text-amber-400 font-semibold mr-1">Đặc quyền tiếp theo:</strong>
+                    {gamificationHook}
+                  </span>
                 </div>
 
                 <button
                   type="button"
                   onClick={() => setShowCelebrationModal(true)}
-                  className="hidden md:inline-flex items-center gap-1 text-[11px] font-bold text-amber-600 dark:text-amber-400 hover:underline flex-shrink-0"
+                  className="hidden md:inline-flex items-center gap-1 text-[11px] font-bold text-amber-600 dark:text-amber-400 hover:underline flex-shrink-0 cursor-pointer"
                 >
                   <span>Chi tiết cấp</span>
                   <ChevronRight className="w-3 h-3" />
@@ -307,22 +282,23 @@ export const GrowthProgressBar: React.FC<Props> = ({ events, className = '' }) =
               </div>
             </div>
           ) : (
-            /* TAB 2: THÔNG TIN ROI HOÀN VỐN THIẾT BỊ */
-            <div className="space-y-4">
-              <div className="p-4 rounded-2xl bg-white/40 dark:bg-white/5 border border-white/40 dark:border-white/10 flex flex-wrap items-center justify-between gap-3 text-xs">
-                <div className="flex flex-wrap items-center gap-3">
-                  <span>Vốn thiết bị: <strong className="font-mono">{totalInvestment.toLocaleString('vi-VN')} đ</strong></span>
-                  <span>•</span>
-                  <span>Đã thu: <strong className="text-sky-500 font-mono">{totalCollected.toLocaleString('vi-VN')} đ</strong></span>
-                  <span>•</span>
-                  <span>Lãi ròng: <strong className="text-emerald-500 font-mono">{totalNetProfit.toLocaleString('vi-VN')} đ</strong></span>
-                </div>
-                <div className="font-bold text-amber-500">
-                  ROI: {Math.round(roiPercentage * 10) / 10}%
-                </div>
+            /* TAB 2: ROI THIẾT BỊ */
+            <div className="p-5 rounded-2xl bg-white/40 dark:bg-white/5 border border-white/40 dark:border-white/10 flex flex-wrap items-center justify-between gap-4 text-xs">
+              <div className="flex flex-wrap items-center gap-4">
+                <span>Vốn thiết bị: <strong className="font-mono text-slate-900 dark:text-white font-bold">{totalInvestment.toLocaleString('vi-VN')} đ</strong></span>
+                <span>•</span>
+                <span>Đã thu: <strong className="text-sky-500 font-mono font-bold">{totalCollected.toLocaleString('vi-VN')} đ</strong></span>
+                <span>•</span>
+                <span>Lãi ròng: <strong className="text-emerald-500 font-mono font-bold">{totalNetProfit.toLocaleString('vi-VN')} đ</strong></span>
+              </div>
+              <div className="font-mono font-bold text-sm text-amber-500">
+                ROI: {Math.round(roiPercentage * 10) / 10}%
               </div>
             </div>
           )}
+              </motion.div>
+            )}
+          </AnimatePresence>
         </div>
       </motion.div>
 
@@ -336,3 +312,5 @@ export const GrowthProgressBar: React.FC<Props> = ({ events, className = '' }) =
     </>
   );
 };
+
+export default GrowthProgressBar;

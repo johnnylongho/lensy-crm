@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { motion, type Variants } from 'framer-motion';
 import CountUp from 'react-countup';
 import {
@@ -8,6 +8,11 @@ import {
   Wallet,
   Receipt,
   Sparkles,
+  MoreHorizontal,
+  Zap,
+  Bell,
+  Check,
+  Upload,
 } from 'lucide-react';
 import { CalendarEvent } from '../../types';
 import { InstallPwaButton } from './InstallPwaButton';
@@ -20,6 +25,7 @@ interface Props {
   onOpenCreateQuote?: () => void;
   onOpenWebhookSimulator?: () => void;
   onOpenReceiptReview?: (booking: CalendarEvent) => void;
+  onOpenImportCsv?: () => void;
 }
 
 const containerVariants: Variants = {
@@ -47,21 +53,41 @@ export const DashboardHeader: React.FC<Props> = ({
   onOpenCreateQuote,
   onOpenWebhookSimulator,
   onOpenReceiptReview,
+  onOpenImportCsv,
 }) => {
   const { user } = useAuth();
-  const bookedEvents = events.filter(e => e.status === 'da_chot' || e.status === 'da_tra_file' || e.status === 'hoan_thanh');
+  const [isMoreMenuOpen, setIsMoreMenuOpen] = useState(false);
+  const moreMenuRef = useRef<HTMLDivElement>(null);
+
+  // Close more menu when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (e: MouseEvent) => {
+      if (moreMenuRef.current && !moreMenuRef.current.contains(e.target as Node)) {
+        setIsMoreMenuOpen(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
+
+  const bookedEvents = events.filter(
+    e => e.status === 'da_chot' || e.status === 'da_tra_file' || e.status === 'hoan_thanh'
+  );
   const pendingEvents = events.filter(e => e.status === 'cho_coc');
   const pendingReceipts = events.filter(e => e.status === 'cho_xac_nhan_coc');
 
-  // Logic Tài chính tách rõ Gross và Net Profit
-  const totalRevenue = events.reduce((sum, e) => sum + (Number(e.packagePrice) || 0), 0); // Tổng giá trị hợp đồng
-  const totalDepositCollected = events.reduce((sum, e) => sum + (Number(e.depositAmount) || 0), 0); // Đã thu cọc
-  const totalGrossCollected = events.reduce((sum, e) => sum + (Number(e.paidAmount) || Number(e.depositAmount) || 0), 0); // Tổng Doanh Thu Đã Thu (Gross)
-  const totalExpenses = events.reduce((sum, e) => sum + (Number(e.expenses) || 0), 0); // Tổng Chi Phí Show
-  const totalNetProfit = totalGrossCollected - totalExpenses; // LỢI NHUẬN RÒNG THỰC TẾ
+  // Logic Tài chính
+  const totalRevenue = events.reduce((sum, e) => sum + (Number(e.packagePrice) || 0), 0);
+  const totalDepositCollected = events.reduce((sum, e) => sum + (Number(e.depositAmount) || 0), 0);
+  const totalGrossCollected = events.reduce(
+    (sum, e) => sum + (Number(e.paidAmount) || Number(e.depositAmount) || 0),
+    0
+  );
+  const totalExpenses = events.reduce((sum, e) => sum + (Number(e.expenses) || 0), 0);
+  const totalNetProfit = totalGrossCollected - totalExpenses;
   const netMargin = totalGrossCollected > 0 ? Math.round((totalNetProfit / totalGrossCollected) * 100) : 0;
 
-  // Logic Doanh thu Năm (YTD) & Cấp bậc Huy chương Studio
+  // Logic Cấp bậc Studio
   const currentYear = new Date().getFullYear();
   const ytdRevenue = calculateYtdRevenue(events, currentYear);
   const { currentTier } = getTierProgress(ytdRevenue, currentYear);
@@ -73,33 +99,33 @@ export const DashboardHeader: React.FC<Props> = ({
       variants={containerVariants}
       className="space-y-6"
     >
-      {/* Title & Studio Profile Liquid Glass Bar */}
+      {/* ==================================================================== */}
+      {/* THẺ STUDIO: Minimalist Glassmorphism (Ẩn bớt badge vụn vặt, CTA duy nhất) */}
+      {/* ==================================================================== */}
       <motion.div
         variants={cardVariants}
-        className="flex flex-wrap items-center justify-between gap-4 p-5 sm:p-6 rounded-3xl bg-white/60 dark:bg-white/5 backdrop-blur-xl border border-white/60 dark:border-white/10 shadow-[0_8px_32px_0_rgba(0,0,0,0.06)] dark:shadow-[0_8px_32px_0_rgba(0,0,0,0.3)] transition-all duration-300"
+        className="flex flex-wrap items-center justify-between gap-5 p-6 sm:p-8 rounded-3xl bg-white/70 dark:bg-white/5 backdrop-blur-2xl border border-white/60 dark:border-white/10 shadow-[0_8px_32px_0_rgba(0,0,0,0.04)] dark:shadow-[0_8px_32px_0_rgba(0,0,0,0.4)] transition-all duration-300"
       >
-        <div className="flex items-center gap-3.5">
-          <div className="w-12 h-12 rounded-2xl overflow-hidden border border-white/20 dark:border-white/10 bg-black shadow-md flex-shrink-0">
+        {/* Studio Info: Logo + Tên Studio + Cấp bậc */}
+        <div className="flex items-center gap-4">
+          <div className="w-13 h-13 sm:w-14 sm:h-14 rounded-2xl overflow-hidden border border-white/20 dark:border-white/10 bg-black shadow-lg flex-shrink-0">
             <img
               src="/mirmia-logo.png"
               alt="Mirmia Studio & Academy"
               className="w-full h-full object-cover"
             />
           </div>
-          <div>
-            <div className="flex items-center gap-2 flex-wrap">
-              <h2 className="text-base sm:text-lg font-bold text-slate-900 dark:text-white/95 tracking-tight">
+          <div className="space-y-1">
+            <div className="flex items-center gap-2.5 flex-wrap">
+              <h2 className="text-base sm:text-lg font-bold text-slate-900 dark:text-white tracking-tight">
                 MIRMIA STUDIO & ACADEMY
               </h2>
-              {/* Biểu tượng Huy chương Cấp bậc Studio */}
+              {/* Biểu tượng Huy chương Cấp bậc */}
               <TierBadge tier={currentTier} size="sm" />
-              <span className="px-2 py-0.5 text-[10px] font-bold bg-amber-500/10 dark:bg-amber-500/20 border border-amber-500/20 text-amber-600 dark:text-amber-300 rounded-full">
-                Lensy CRM
-              </span>
             </div>
-            <p className="text-xs text-slate-500 dark:text-white/50">
+            <p className="text-xs text-slate-500 dark:text-zinc-400 font-normal">
               {user ? (
-                <span>Tài khoản: <strong className="text-slate-700 dark:text-white/80 font-mono">{user.email}</strong></span>
+                <span>Tài khoản: <strong className="text-slate-700 dark:text-zinc-200 font-mono">{user.email}</strong></span>
               ) : (
                 'Hệ thống quản lý lịch trình & nhận show nhiếp ảnh chuyên nghiệp'
               )}
@@ -107,57 +133,120 @@ export const DashboardHeader: React.FC<Props> = ({
           </div>
         </div>
 
-        {/* Action Controls: Ghost Buttons & Shimmer Accent Primary Button */}
-        <div className="flex flex-wrap items-center gap-2.5">
-          {pendingReceipts.length > 0 && onOpenReceiptReview && (
-            <button
-              type="button"
-              onClick={() => onOpenReceiptReview(pendingReceipts[0])}
-              className="px-3.5 py-2 rounded-2xl bg-orange-500/15 hover:bg-orange-500/25 border border-orange-500/30 text-orange-400 text-xs font-semibold backdrop-blur-md transition-all active:scale-95 shadow-sm"
-              title="Có khách hàng vừa gửi ảnh biên lai cọc cần duyệt"
-            >
-              <span>🔔 {pendingReceipts.length} Biên Lai Cần Duyệt</span>
-            </button>
-          )}
-
-          {onOpenWebhookSimulator && (
-            <button
-              type="button"
-              onClick={onOpenWebhookSimulator}
-              className="px-3.5 py-2 rounded-2xl bg-white/20 dark:bg-white/5 hover:bg-white/30 dark:hover:bg-white/10 border border-white/40 dark:border-white/10 text-amber-600 dark:text-amber-400 text-xs font-medium backdrop-blur-md transition-all active:scale-95 shadow-sm ghost-btn"
-              title="Mô phỏng nhận tiền cọc qua SePAY/VietQR để test tự động hóa"
-            >
-              <span>⚡ Test Cọc (SePAY)</span>
-            </button>
-          )}
-
-          {/* Nút Tạo Báo Giá: Accent Button với hiệu ứng Shimmer Sweep lướt tuần hoàn */}
+        {/* Action Controls: Duy nhất 1 CTA "Tạo Báo Giá Mới" + Icon ... (More Options) */}
+        <div className="flex items-center gap-3">
+          {/* CTA Duy Nhất: Nút Tạo Báo Giá với gradient mượt mà & glow viền */}
           {onOpenCreateQuote && (
             <button
               type="button"
               onClick={onOpenCreateQuote}
-              className="relative overflow-hidden px-4 py-2.5 rounded-2xl bg-gradient-to-r from-amber-500/90 via-amber-400 to-yellow-500/90 hover:from-amber-400 hover:to-yellow-400 text-slate-950 text-xs font-extrabold flex items-center gap-1.5 shadow-lg shadow-amber-500/20 active:scale-95 transition-all group"
+              className="relative overflow-hidden px-5 py-2.5 rounded-2xl bg-gradient-to-r from-amber-500 via-amber-400 to-yellow-500 hover:from-amber-400 hover:to-yellow-400 text-slate-950 text-xs sm:text-sm font-extrabold flex items-center gap-2 shadow-lg shadow-amber-500/25 ring-1 ring-amber-400/50 hover:shadow-amber-500/40 hover:scale-[1.02] active:scale-[0.98] transition-all cursor-pointer group"
             >
-              {/* Shimmer sweep light overlay */}
-              <div className="absolute inset-0 w-1/2 h-full bg-gradient-to-r from-transparent via-white/50 to-transparent opacity-75 pointer-events-none animate-shimmer-sweep" />
-              <Camera className="w-3.5 h-3.5 relative z-10" />
+              {/* Subtle shimmer sweep overlay */}
+              <div className="absolute inset-0 w-1/2 h-full bg-gradient-to-r from-transparent via-white/40 to-transparent opacity-60 pointer-events-none animate-shimmer-sweep" />
+              <Camera className="w-4 h-4 relative z-10" />
               <span className="relative z-10">+ Tạo Báo Giá Mới</span>
             </button>
           )}
 
-          <InstallPwaButton />
+          {/* Nút "Import CSV" (kèm icon Tải lên) đặt cạnh nút "Tạo Báo Giá Mới" trên thanh hành động */}
+          {onOpenImportCsv && (
+            <button
+              type="button"
+              onClick={onOpenImportCsv}
+              className="px-4 py-2.5 rounded-2xl bg-white/70 dark:bg-white/10 hover:bg-white dark:hover:bg-white/15 border border-slate-200/80 dark:border-white/15 text-slate-800 dark:text-zinc-200 text-xs sm:text-sm font-bold flex items-center gap-2 shadow-sm transition-all hover:scale-[1.02] active:scale-[0.98] cursor-pointer"
+              title="Nhập danh sách lịch chụp từ file CSV/Excel"
+            >
+              <Upload className="w-4 h-4 text-amber-500" />
+              <span>Import CSV</span>
+            </button>
+          )}
 
-          {/* Pill Đã Thu Cọc (Ghost Style) */}
-          <div className="px-3.5 py-2 rounded-2xl bg-emerald-500/10 dark:bg-emerald-500/5 border border-emerald-500/20 text-xs backdrop-blur-md ghost-btn">
-            <span className="text-slate-500 dark:text-white/50 block text-[10px]">Đã Thu Cọc</span>
-            <span className="font-mono font-medium text-emerald-600 dark:text-emerald-400">
-              <CountUp start={0} end={totalDepositCollected} duration={1.5} separator="." suffix=" đ" />
-            </span>
+          {/* More Options Dropdown: Gom các nút Test Cọc, Cài đặt PWA, Duyệt bill */}
+          <div className="relative" ref={moreMenuRef}>
+            <button
+              type="button"
+              onClick={() => setIsMoreMenuOpen(prev => !prev)}
+              className="p-2.5 rounded-2xl bg-white/50 dark:bg-white/5 hover:bg-white/80 dark:hover:bg-white/10 border border-white/60 dark:border-white/10 text-slate-600 dark:text-zinc-400 hover:text-slate-900 dark:hover:text-white transition-all cursor-pointer shadow-sm active:scale-95"
+              title="Tùy chọn mở rộng"
+              aria-label="More options"
+            >
+              <MoreHorizontal className="w-5 h-5" />
+            </button>
+
+            {/* Dropdown Menu */}
+            {isMoreMenuOpen && (
+              <div className="absolute right-0 top-full mt-2 w-64 rounded-2xl bg-white/95 dark:bg-[#0c0c0e]/95 backdrop-blur-2xl border border-slate-200 dark:border-white/10 shadow-2xl p-2 z-50 animate-scaleUp text-xs space-y-1">
+                <div className="px-3 py-1.5 text-[10px] font-bold uppercase tracking-wider text-slate-400 dark:text-zinc-500">
+                  Công Cụ Nhanh
+                </div>
+
+                {/* Import CSV trong Menu */}
+                {onOpenImportCsv && (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setIsMoreMenuOpen(false);
+                      onOpenImportCsv();
+                    }}
+                    className="w-full flex items-center gap-2.5 px-3 py-2 rounded-xl text-slate-700 dark:text-zinc-300 hover:text-amber-500 hover:bg-slate-100 dark:hover:bg-white/5 font-medium transition-colors cursor-pointer text-left"
+                  >
+                    <Upload className="w-4 h-4 text-amber-500 flex-shrink-0" />
+                    <span>📥 Nhập Lịch Chụp (CSV)</span>
+                  </button>
+                )}
+
+                {/* Test Cọc (SePAY) */}
+                {onOpenWebhookSimulator && (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setIsMoreMenuOpen(false);
+                      onOpenWebhookSimulator();
+                    }}
+                    className="w-full flex items-center gap-2.5 px-3 py-2 rounded-xl text-slate-700 dark:text-zinc-300 hover:text-amber-500 hover:bg-slate-100 dark:hover:bg-white/5 font-medium transition-colors cursor-pointer text-left"
+                  >
+                    <Zap className="w-4 h-4 text-amber-500 flex-shrink-0" />
+                    <span>⚡ Giả lập Cọc (SePAY)</span>
+                  </button>
+                )}
+
+                {/* Duyệt biên lai nếu có */}
+                {pendingReceipts.length > 0 && onOpenReceiptReview && (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setIsMoreMenuOpen(false);
+                      onOpenReceiptReview(pendingReceipts[0]);
+                    }}
+                    className="w-full flex items-center gap-2.5 px-3 py-2 rounded-xl text-orange-600 dark:text-orange-400 hover:bg-orange-50 dark:hover:bg-orange-950/30 font-medium transition-colors cursor-pointer text-left"
+                  >
+                    <Bell className="w-4 h-4 flex-shrink-0" />
+                    <span>Duyệt {pendingReceipts.length} Biên Lai Cọc</span>
+                  </button>
+                )}
+
+                {/* Cài đặt App PWA */}
+                <div className="px-1 py-1" onClick={() => setIsMoreMenuOpen(false)}>
+                  <InstallPwaButton />
+                </div>
+
+                {/* Thống kê nhanh: Đã thu cọc */}
+                <div className="p-2.5 rounded-xl bg-slate-50 dark:bg-white/5 text-[11px] flex items-center justify-between font-mono">
+                  <span className="text-slate-500 dark:text-zinc-400 font-sans">Đã thu cọc:</span>
+                  <span className="font-bold text-emerald-600 dark:text-emerald-400">
+                    {totalDepositCollected.toLocaleString('vi-VN')} đ
+                  </span>
+                </div>
+              </div>
+            )}
           </div>
         </div>
       </motion.div>
 
-      {/* 4 Thẻ Tổng Quan (Summary Cards) - Entrance Animations & Number Ticker */}
+      {/* ==================================================================== */}
+      {/* 4 THẺ TỔNG QUAN TÀI CHÍNH: Font-light thanh mảnh, kích thước lớn, tương phản cao */}
+      {/* ==================================================================== */}
       <motion.div
         variants={containerVariants}
         className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5 sm:gap-6"
@@ -165,7 +254,7 @@ export const DashboardHeader: React.FC<Props> = ({
         {/* Card 1: Số Lượng Show */}
         <motion.div
           variants={cardVariants}
-          className="p-6 sm:p-7 rounded-3xl bg-white/60 dark:bg-white/5 backdrop-blur-xl border border-white/60 dark:border-white/10 shadow-[0_8px_32px_0_rgba(0,0,0,0.06)] dark:shadow-[0_8px_32px_0_rgba(0,0,0,0.3)] hover:shadow-md hover:-translate-y-0.5 transition-all duration-300 space-y-2.5"
+          className="p-6 sm:p-7 rounded-3xl bg-white/70 dark:bg-white/5 backdrop-blur-xl backdrop-blur-2xl border border-white/60 dark:border-white/10 shadow-[0_8px_32px_0_rgba(0,0,0,0.04)] dark:shadow-[0_8px_32px_0_rgba(0,0,0,0.3)] hover:shadow-md hover:-translate-y-0.5 transition-all duration-300 space-y-3"
         >
           <div className="flex items-center justify-between">
             <span className="text-xs font-medium text-slate-500 dark:text-white/50">Show Đã Chốt</span>
@@ -178,7 +267,7 @@ export const DashboardHeader: React.FC<Props> = ({
           </div>
           <div className="text-[11px] text-slate-500 dark:text-white/50 flex items-center justify-between pt-1">
             <span>+{pendingEvents.length} đang chờ cọc</span>
-            <span className="text-indigo-600 dark:text-indigo-400 font-medium">
+            <span className="text-amber-500 font-medium font-mono">
               {Math.round((bookedEvents.length / (events.length || 1)) * 100)}% chốt
             </span>
           </div>
@@ -187,7 +276,7 @@ export const DashboardHeader: React.FC<Props> = ({
         {/* Card 2: Tổng Doanh Thu (Gross) */}
         <motion.div
           variants={cardVariants}
-          className="p-6 sm:p-7 rounded-3xl bg-white/60 dark:bg-white/5 backdrop-blur-xl border border-white/60 dark:border-white/10 shadow-[0_8px_32px_0_rgba(0,0,0,0.06)] dark:shadow-[0_8px_32px_0_rgba(0,0,0,0.3)] hover:shadow-md hover:-translate-y-0.5 transition-all duration-300 space-y-2.5"
+          className="p-6 sm:p-7 rounded-3xl bg-white/70 dark:bg-white/5 backdrop-blur-xl backdrop-blur-2xl border border-white/60 dark:border-white/10 shadow-[0_8px_32px_0_rgba(0,0,0,0.04)] dark:shadow-[0_8px_32px_0_rgba(0,0,0,0.3)] hover:shadow-md hover:-translate-y-0.5 transition-all duration-300 space-y-3"
         >
           <div className="flex items-center justify-between">
             <span className="text-xs font-medium text-slate-500 dark:text-white/50">Tổng Doanh Thu (Gross)</span>
@@ -195,18 +284,18 @@ export const DashboardHeader: React.FC<Props> = ({
               <DollarSign className="w-4 h-4" />
             </div>
           </div>
-          <div className="text-2xl sm:text-3xl font-light text-sky-600 dark:text-sky-300 font-mono tracking-tight">
+          <div className="text-2xl sm:text-3xl font-light text-slate-900 dark:text-white/90 font-mono tracking-tight">
             <CountUp start={0} end={totalGrossCollected} duration={1.5} separator="." suffix=" đ" />
           </div>
           <div className="text-[11px] text-slate-500 dark:text-white/50 truncate pt-1">
-            Tổng hợp đồng: {totalRevenue.toLocaleString('vi-VN')} đ
+            Hợp đồng: {totalRevenue.toLocaleString('vi-VN')} đ
           </div>
         </motion.div>
 
         {/* Card 3: Tổng Chi Phí (Job Expenses) */}
         <motion.div
           variants={cardVariants}
-          className="p-6 sm:p-7 rounded-3xl bg-white/60 dark:bg-white/5 backdrop-blur-xl border border-white/60 dark:border-white/10 shadow-[0_8px_32px_0_rgba(0,0,0,0.06)] dark:shadow-[0_8px_32px_0_rgba(0,0,0,0.3)] hover:shadow-md hover:-translate-y-0.5 transition-all duration-300 space-y-2.5"
+          className="p-6 sm:p-7 rounded-3xl bg-white/70 dark:bg-white/5 backdrop-blur-xl backdrop-blur-2xl border border-white/60 dark:border-white/10 shadow-[0_8px_32px_0_rgba(0,0,0,0.04)] dark:shadow-[0_8px_32px_0_rgba(0,0,0,0.3)] hover:shadow-md hover:-translate-y-0.5 transition-all duration-300 space-y-3"
         >
           <div className="flex items-center justify-between">
             <span className="text-xs font-medium text-slate-500 dark:text-white/50">Tổng Chi Phí (Expenses)</span>
@@ -218,14 +307,14 @@ export const DashboardHeader: React.FC<Props> = ({
             -<CountUp start={0} end={totalExpenses} duration={1.5} separator="." suffix=" đ" />
           </div>
           <div className="text-[11px] text-slate-500 dark:text-white/50 pt-1">
-            Makeup, studio, trợ lý...
+            Studio, makeup, thiết bị...
           </div>
         </motion.div>
 
-        {/* Card 4: LỢI NHUẬN RÒNG (Net Profit) - Hero Highlight Card (Tiền thật bỏ túi) */}
+        {/* Card 4: LỢI NHUẬN RÒNG (Net Profit) - Hero Highlight Card */}
         <motion.div
           variants={cardVariants}
-          className="p-6 sm:p-7 rounded-3xl bg-gradient-to-br from-emerald-500/10 via-white/60 to-emerald-500/5 dark:from-emerald-950/40 dark:via-white/5 dark:to-transparent backdrop-blur-xl border border-emerald-400/40 dark:border-emerald-500/30 shadow-[0_8px_32px_0_rgba(0,0,0,0.06)] dark:shadow-[0_8px_32px_0_rgba(0,0,0,0.3)] hover:shadow-md hover:-translate-y-0.5 transition-all duration-300 space-y-2.5 relative overflow-hidden"
+          className="p-6 sm:p-7 rounded-3xl bg-gradient-to-br from-emerald-500/10 via-white/70 to-emerald-500/5 dark:from-emerald-950/30 dark:via-white/5 dark:to-transparent backdrop-blur-xl backdrop-blur-2xl border border-emerald-400/40 dark:border-emerald-500/30 shadow-[0_8px_32px_0_rgba(0,0,0,0.04)] dark:shadow-[0_8px_32px_0_rgba(0,0,0,0.3)] hover:shadow-md hover:-translate-y-0.5 transition-all duration-300 space-y-3 relative overflow-hidden"
         >
           <div className="flex items-center justify-between">
             <span className="text-xs font-medium text-emerald-600 dark:text-emerald-400 flex items-center gap-1.5">
@@ -236,7 +325,7 @@ export const DashboardHeader: React.FC<Props> = ({
               <Wallet className="w-4 h-4" />
             </div>
           </div>
-          <div className="text-2xl sm:text-3xl font-light text-emerald-600 dark:text-emerald-400 font-mono tracking-tight">
+          <div className="text-2xl sm:text-3xl font-light text-emerald-600 dark:text-emerald-300 font-mono tracking-tight">
             <CountUp start={0} end={totalNetProfit} duration={1.5} separator="." suffix=" đ" />
           </div>
           <div className="text-[11px] text-emerald-700/90 dark:text-emerald-300/80 font-medium flex items-center justify-between pt-1">

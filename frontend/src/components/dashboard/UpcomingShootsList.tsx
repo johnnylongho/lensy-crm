@@ -1,9 +1,10 @@
 import React from 'react';
-import { Calendar, Clock, MapPin, ArrowRight, MessageSquareQuote, Camera } from 'lucide-react';
+import { Calendar, Clock, MapPin, ArrowRight, MessageSquareQuote, Camera, Trash2, Pencil } from 'lucide-react';
 import { CalendarEvent, BookingStatus } from '../../types';
 import { BookingStatusSelect, STATUS_CONFIG } from './BookingStatusSelect';
 import { BookingFinancialCard } from './BookingFinancialCard';
 import { generateGoogleCalendarUrl } from '../../lib/calendarIntegration';
+import { getCategoryConfig } from '../../utils/categoryConfig';
 
 interface Props {
   events: CalendarEvent[];
@@ -12,6 +13,9 @@ interface Props {
   onStatusChange?: (eventId: string, newStatus: BookingStatus) => void;
   onOpenDebtReminder?: (booking: CalendarEvent) => void;
   onOpenReceiptReview?: (booking: CalendarEvent) => void;
+  onDeleteBooking?: (booking: CalendarEvent) => void;
+  onEditFinancials?: (booking: CalendarEvent) => void;
+  onEditCategory?: (booking: CalendarEvent) => void;
 }
 
 export const UpcomingShootsList: React.FC<Props> = ({
@@ -21,13 +25,16 @@ export const UpcomingShootsList: React.FC<Props> = ({
   onStatusChange,
   onOpenDebtReminder,
   onOpenReceiptReview,
+  onDeleteBooking,
+  onEditFinancials,
+  onEditCategory,
 }) => {
   const sorted = [...events].sort(
     (a, b) => new Date(a.eventDate).getTime() - new Date(b.eventDate).getTime()
   );
 
   return (
-    <div className="w-full max-w-7xl mx-auto rounded-3xl bg-white/60 dark:bg-white/5 backdrop-blur-xl border border-white/60 dark:border-white/10 shadow-[0_8px_32px_0_rgba(0,0,0,0.06)] dark:shadow-[0_8px_32px_0_rgba(0,0,0,0.3)] p-5 sm:p-7 space-y-5 transition-all duration-300">
+    <div className="w-full max-w-7xl mx-auto rounded-3xl bg-white/70 dark:bg-white/5 backdrop-blur-2xl border border-white/60 dark:border-white/10 shadow-[0_8px_32px_0_rgba(0,0,0,0.04)] dark:shadow-[0_8px_32px_0_rgba(0,0,0,0.4)] p-6 sm:p-8 space-y-6 transition-all duration-300">
       <div className="flex items-center justify-between pb-4 border-b border-white/40 dark:border-white/10">
         <div>
           <span className="text-[10px] font-bold uppercase tracking-wider text-amber-500 dark:text-amber-400 block mb-0.5">
@@ -91,14 +98,31 @@ export const UpcomingShootsList: React.FC<Props> = ({
                   <button
                     type="button"
                     onClick={() => onSelectBooking && onSelectBooking(ev)}
-                    className="font-bold text-white text-base truncate hover:text-amber-400 hover:underline text-left transition-colors max-w-full"
+                    className="font-medium text-gray-900 dark:text-white text-base truncate hover:text-amber-600 dark:hover:text-amber-400 hover:underline text-left transition-colors max-w-full"
                     title="Nhấn để xem chi tiết & Gắn thiết bị"
                   >
                     {ev.clientName}
                   </button>
-                  <span className="text-[10px] px-2 py-0.5 rounded font-bold uppercase border bg-slate-900/90 border-slate-700 text-amber-300 flex-shrink-0">
-                    {ev.sessionType}
-                  </span>
+                  {(() => {
+                    const catCfg = getCategoryConfig(ev.category || ev.sessionType);
+                    return (
+                      <button
+                        type="button"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          if (onEditCategory) onEditCategory(ev);
+                        }}
+                        className={`text-[10px] px-2 py-0.5 rounded font-bold border flex items-center gap-1.5 transition-all hover:scale-105 cursor-pointer flex-shrink-0 ${catCfg.color}`}
+                        title={`Loại hình: ${catCfg.label}${ev.package_type ? ` - Gói: ${ev.package_type}` : ''} (Nhấn để tùy chỉnh)`}
+                      >
+                        <span className={`w-1.5 h-1.5 rounded-full ${catCfg.dotColor}`} />
+                        <span>{catCfg.label}</span>
+                        {ev.package_type && (
+                          <span className="opacity-75 font-normal">· {ev.package_type}</span>
+                        )}
+                      </button>
+                    );
+                  })()}
                   {ev.assignedGears && ev.assignedGears.length > 0 && (
                     <span className="text-[10px] px-2 py-0.5 rounded font-bold border bg-sky-950/80 border-sky-500/40 text-sky-300 flex items-center gap-1 flex-shrink-0">
                       <Camera className="w-3 h-3" />
@@ -107,7 +131,7 @@ export const UpcomingShootsList: React.FC<Props> = ({
                   )}
                 </div>
 
-                <div className="flex flex-wrap items-center gap-4 text-slate-300 text-xs">
+                <div className="flex flex-wrap items-center gap-4 text-slate-600 dark:text-slate-300 text-xs">
                   <span className="flex items-center gap-1.5 flex-shrink-0">
                     <Clock className="w-3.5 h-3.5 text-slate-400" />
                     <span>{ev.startTime} - {ev.endTime}</span>
@@ -150,7 +174,22 @@ export const UpcomingShootsList: React.FC<Props> = ({
               {/* Cột 3 (Tài chính tĩnh): flex-shrink-0 w-64 bg-white/5 p-3 rounded-lg */}
               <div className="flex-shrink-0 w-64 bg-white/5 dark:bg-white/5 p-3 rounded-lg border border-white/10 space-y-1.5 font-mono text-xs">
                 <div className="flex justify-between items-center text-slate-300">
-                  <span className="text-gray-400 text-xs font-sans">Tổng gói:</span>
+                  <div className="flex items-center gap-1.5">
+                    <span className="text-gray-400 text-xs font-sans">Tổng gói:</span>
+                    {onEditFinancials && (
+                      <button
+                        type="button"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          onEditFinancials(ev);
+                        }}
+                        className="text-gray-500 hover:text-white transition-colors p-0.5 rounded hover:bg-white/10 cursor-pointer"
+                        title="Cập nhật tài chính"
+                      >
+                        <Pencil className="w-3 h-3" />
+                      </button>
+                    )}
+                  </div>
                   <span className="font-bold text-white text-right">
                     {ev.packagePrice.toLocaleString('vi-VN')} đ
                   </span>
@@ -224,6 +263,16 @@ export const UpcomingShootsList: React.FC<Props> = ({
                 >
                   <ArrowRight className="w-4 h-4" />
                 </button>
+                {onDeleteBooking && (
+                  <button
+                    type="button"
+                    onClick={() => onDeleteBooking(ev)}
+                    className="p-2 rounded-xl bg-slate-800/80 hover:bg-rose-500/20 text-slate-400 hover:text-rose-400 border border-slate-700/80 hover:border-rose-500/40 transition-colors flex-shrink-0 cursor-pointer"
+                    title="Hủy / Xóa lịch chụp này"
+                  >
+                    <Trash2 className="w-4 h-4" />
+                  </button>
+                )}
               </div>
             </div>
           );

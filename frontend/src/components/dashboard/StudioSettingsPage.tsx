@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import { supabase, isSupabaseConfigured } from '../../lib/supabase';
-import { Studio, StudioMember } from '../../types';
+import { Studio, StudioMember, StudioRole } from '../../types';
 import {
   Building2,
   Users,
@@ -21,6 +21,8 @@ import {
   Sparkles,
   RefreshCw,
   PlusCircle,
+  Camera,
+  UserPlus,
 } from 'lucide-react';
 
 export const StudioSettingsPage: React.FC = () => {
@@ -50,6 +52,14 @@ export const StudioSettingsPage: React.FC = () => {
   const [pendingMembers, setPendingMembers] = useState<StudioMember[]>([]);
   const [approvedMembers, setApprovedMembers] = useState<StudioMember[]>([]);
   const [isProcessingMemberId, setIsProcessingMemberId] = useState<string | null>(null);
+  const [selectedRolesForPending, setSelectedRolesForPending] = useState<Record<string, StudioRole>>({});
+
+  // Invite Modal state
+  const [isInviteModalOpen, setIsInviteModalOpen] = useState(false);
+  const [inviteName, setInviteName] = useState('');
+  const [inviteEmail, setInviteEmail] = useState('');
+  const [invitePhone, setInvitePhone] = useState('');
+  const [inviteRole, setInviteRole] = useState<StudioRole>('photographer');
 
   // Toast
   const [toast, setToast] = useState<{
@@ -365,9 +375,10 @@ export const StudioSettingsPage: React.FC = () => {
   };
 
   // Duyệt thành viên (Approve)
-  const handleApproveMember = async (member: StudioMember) => {
+  const handleApproveMember = async (member: StudioMember, roleOverride?: StudioRole) => {
     if (!studio) return;
     setIsProcessingMemberId(member.id);
+    const assignedRole = roleOverride || selectedRolesForPending[member.id] || member.role || 'photographer';
 
     try {
       if (isSupabaseConfigured) {
@@ -375,6 +386,7 @@ export const StudioSettingsPage: React.FC = () => {
           .from('studio_members')
           .update({
             status: 'approved',
+            role: assignedRole,
             updated_at: new Date().toISOString(),
           })
           .eq('id', member.id);
@@ -389,19 +401,21 @@ export const StudioSettingsPage: React.FC = () => {
 
         // Cập nhật state UI
         setPendingMembers(prev => prev.filter(m => m.id !== member.id));
-        setApprovedMembers(prev => [{ ...member, status: 'approved' }, ...prev]);
+        setApprovedMembers(prev => [{ ...member, status: 'approved', role: assignedRole }, ...prev]);
 
+        const roleTitle = assignedRole === 'makeup_artist' ? 'Thợ Makeup (MUA)' : assignedRole === 'admin' ? 'Quản lý' : 'Thợ ảnh';
         setToast({
           type: 'success',
-          message: `✅ Đã phê duyệt thợ ảnh "${member.user?.full_name || 'Thành viên'}" vào Studio!`,
+          message: `✅ Đã phê duyệt "${member.user?.full_name || 'Thành viên'}" với vai trò ${roleTitle}!`,
         });
       } else {
         await new Promise(r => setTimeout(r, 400));
         setPendingMembers(prev => prev.filter(m => m.id !== member.id));
-        setApprovedMembers(prev => [{ ...member, status: 'approved' }, ...prev]);
+        setApprovedMembers(prev => [{ ...member, status: 'approved', role: assignedRole }, ...prev]);
+        const roleTitle = assignedRole === 'makeup_artist' ? 'Thợ Makeup (MUA)' : assignedRole === 'admin' ? 'Quản lý' : 'Thợ ảnh';
         setToast({
           type: 'success',
-          message: `✅ [Demo] Đã phê duyệt thợ ảnh thành công!`,
+          message: `✅ [Demo] Đã phê duyệt thành viên với vai trò ${roleTitle}!`,
         });
       }
     } catch (err: any) {
@@ -412,6 +426,81 @@ export const StudioSettingsPage: React.FC = () => {
       });
     } finally {
       setIsProcessingMemberId(null);
+    }
+  };
+
+  // Cập nhật đổi vai trò cho thành viên đã duyệt
+  const handleUpdateMemberRole = async (member: StudioMember, newRole: StudioRole) => {
+    if (!studio) return;
+    try {
+      if (isSupabaseConfigured) {
+        const { error } = await supabase
+          .from('studio_members')
+          .update({
+            role: newRole,
+            updated_at: new Date().toISOString(),
+          })
+          .eq('id', member.id);
+        if (error) throw error;
+      }
+
+      setApprovedMembers(prev => prev.map(m => m.id === member.id ? { ...m, role: newRole } : m));
+      const roleTitle = newRole === 'makeup_artist' ? 'Thợ Makeup (MUA)' : newRole === 'admin' ? 'Quản lý' : 'Thợ ảnh';
+      setToast({
+        type: 'success',
+        message: `✅ Đã chuyển vai trò của "${member.user?.full_name || 'Nhân sự'}" sang ${roleTitle}!`,
+      });
+    } catch (err: any) {
+      setToast({
+        type: 'error',
+        message: 'Lỗi cập nhật vai trò: ' + (err.message || 'Không thể cập nhật'),
+      });
+    }
+  };
+
+  // Mời nhân sự mới trực tiếp vào Studio
+  const handleInviteMember = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!studio || !inviteName.trim()) return;
+
+    try {
+      const tempId = `sm-${Date.now()}`;
+      const newMemberItem: StudioMember = {
+        id: tempId,
+        studio_id: studio.id,
+        user_id: `u-${Date.now()}`,
+        role: inviteRole,
+        status: 'approved',
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString(),
+        user: {
+          id: `u-${Date.now()}`,
+          full_name: inviteName.trim(),
+          email: inviteEmail.trim() || `${inviteName.toLowerCase().replace(/\s+/g, '')}@lensy.studio`,
+          phone: invitePhone.trim() || '0900000000',
+          avatar_url: inviteRole === 'makeup_artist'
+            ? 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150'
+            : 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=150',
+        },
+      };
+
+      setApprovedMembers(prev => [newMemberItem, ...prev]);
+      setIsInviteModalOpen(false);
+      setInviteName('');
+      setInviteEmail('');
+      setInvitePhone('');
+      setInviteRole('photographer');
+
+      const roleTitle = inviteRole === 'makeup_artist' ? 'Thợ Makeup (MUA)' : inviteRole === 'admin' ? 'Quản lý' : 'Thợ ảnh';
+      setToast({
+        type: 'success',
+        message: `🎉 Đã thêm thành công ${roleTitle} "${newMemberItem.user?.full_name}" vào đội ngũ Studio!`,
+      });
+    } catch (err: any) {
+      setToast({
+        type: 'error',
+        message: 'Lỗi khi thêm nhân sự: ' + (err.message || 'Lỗi hệ thống'),
+      });
     }
   };
 
@@ -816,7 +905,7 @@ export const StudioSettingsPage: React.FC = () => {
                 <UserCheck className="w-8 h-8 mx-auto text-slate-500/60" />
                 <p className="text-xs font-medium">Hiện không có yêu cầu xin gia nhập nào đang chờ.</p>
                 <p className="text-[11px] text-slate-500">
-                  Khi thợ chụp tìm kiếm Studio của bạn và gửi yêu cầu, thông tin sẽ xuất hiện tại đây để bạn duyệt.
+                  Khi thợ chụp hoặc MUA tìm kiếm Studio của bạn và gửi yêu cầu, thông tin sẽ xuất hiện tại đây để bạn duyệt.
                 </p>
               </div>
             ) : (
@@ -830,17 +919,17 @@ export const StudioSettingsPage: React.FC = () => {
                       <div className="w-11 h-11 rounded-full overflow-hidden bg-slate-800 border border-amber-500/30 flex-shrink-0">
                         <img
                           src={member.user?.avatar_url || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=200&q=80'}
-                          alt={member.user?.full_name || 'Thợ ảnh'}
+                          alt={member.user?.full_name || 'Nhân sự'}
                           className="w-full h-full object-cover"
                         />
                       </div>
                       <div className="space-y-0.5">
                         <div className="flex items-center gap-2">
                           <h4 className="text-xs sm:text-sm font-bold text-slate-900 dark:text-white">
-                            {member.user?.full_name || 'Thợ ảnh ẩn danh'}
+                            {member.user?.full_name || 'Nhân sự ẩn danh'}
                           </h4>
                           <span className="text-[10px] px-2 py-0.5 rounded-full bg-amber-500/20 text-amber-500 font-bold border border-amber-500/30">
-                            Chờ duyệt (Pending)
+                            Chờ duyệt
                           </span>
                         </div>
                         <div className="flex flex-wrap items-center gap-3 text-[11px] text-slate-500 dark:text-slate-400">
@@ -860,22 +949,36 @@ export const StudioSettingsPage: React.FC = () => {
                       </div>
                     </div>
 
-                    {/* Actions: Approve & Reject */}
-                    <div className="flex items-center gap-2 self-end sm:self-center">
+                    {/* Actions: Role Selector + Approve & Reject */}
+                    <div className="flex flex-wrap items-center gap-2.5 self-end sm:self-center">
+                      <div className="flex items-center gap-1.5">
+                        <span className="text-[11px] text-slate-400 hidden sm:inline">Vai trò:</span>
+                        <select
+                          value={selectedRolesForPending[member.id] || member.role || 'photographer'}
+                          onChange={e => setSelectedRolesForPending(prev => ({ ...prev, [member.id]: e.target.value as StudioRole }))}
+                          className="px-2.5 py-1.5 rounded-xl bg-slate-100 dark:bg-slate-900 border border-slate-300 dark:border-white/10 text-xs font-bold text-slate-900 dark:text-amber-300 outline-none cursor-pointer"
+                        >
+                          <option value="photographer">Thợ Ảnh</option>
+                          <option value="makeup_artist">Thợ Makeup</option>
+                          <option value="admin">Quản lý</option>
+                        </select>
+                      </div>
+
                       <button
                         type="button"
                         disabled={isProcessingMemberId === member.id}
                         onClick={() => handleRejectMember(member)}
-                        className="px-3.5 py-1.5 rounded-xl border border-rose-500/40 text-rose-400 hover:bg-rose-500/10 text-xs font-bold flex items-center gap-1.5 transition-all"
+                        className="px-3 py-1.5 rounded-xl border border-rose-500/40 text-rose-400 hover:bg-rose-500/10 text-xs font-bold flex items-center gap-1 transition-all cursor-pointer"
                       >
                         <XCircle className="w-3.5 h-3.5" />
                         <span>Từ chối</span>
                       </button>
+
                       <button
                         type="button"
                         disabled={isProcessingMemberId === member.id}
                         onClick={() => handleApproveMember(member)}
-                        className="px-4 py-1.5 rounded-xl bg-gradient-to-r from-emerald-500 to-teal-500 text-white text-xs font-bold flex items-center gap-1.5 shadow-md shadow-emerald-500/20 hover:scale-[1.02] transition-all"
+                        className="px-3.5 py-1.5 rounded-xl bg-gradient-to-r from-emerald-500 to-teal-500 text-white text-xs font-bold flex items-center gap-1.5 shadow-md shadow-emerald-500/20 hover:scale-[1.02] transition-all cursor-pointer"
                       >
                         {isProcessingMemberId === member.id ? (
                           <Loader2 className="w-3.5 h-3.5 animate-spin" />
@@ -891,66 +994,280 @@ export const StudioSettingsPage: React.FC = () => {
             )}
           </div>
 
-          {/* Section 2: Danh sách thợ ảnh đã duyệt (Official Team) */}
-          <div className="p-6 sm:p-7 rounded-3xl bg-white/60 dark:bg-white/5 backdrop-blur-xl border border-white/60 dark:border-white/10 shadow-[0_8px_32px_0_rgba(0,0,0,0.25)] space-y-4">
-            <div className="flex items-center justify-between pb-3 border-b border-slate-200 dark:border-white/10">
+          {/* Section 2: Đội Ngũ Nhân Sự Chính Thức (Chia 2 nhóm Nhiếp ảnh & Makeup) */}
+          <div className="space-y-6">
+            <div className="flex flex-wrap items-center justify-between gap-3 pb-1 border-b border-slate-200 dark:border-white/10">
               <div className="flex items-center gap-2">
                 <Users className="w-5 h-5 text-emerald-500 dark:text-emerald-400" />
                 <h3 className="text-sm font-bold text-slate-900 dark:text-white uppercase tracking-wider">
-                  Đội Ngũ Nhiếp Ảnh Gia Trực Thuộc ({approvedMembers.length})
+                  Đội Ngũ Nhân Sự Trực Thuộc ({approvedMembers.length})
                 </h3>
               </div>
-              <span className="text-[11px] text-emerald-400 font-medium">Được gắn badge Studio Verified</span>
+              <button
+                type="button"
+                onClick={() => setIsInviteModalOpen(true)}
+                className="px-3.5 py-1.5 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-bold text-xs flex items-center gap-1.5 transition-all shadow-md shadow-emerald-500/20 active:scale-95 cursor-pointer"
+              >
+                <UserPlus className="w-3.5 h-3.5" />
+                <span>Mời Nhân Sự Mới</span>
+              </button>
             </div>
 
-            {approvedMembers.length === 0 ? (
-              <p className="text-xs text-slate-400 text-center py-6">Chưa có thành viên nào được duyệt.</p>
-            ) : (
-              <div className="divide-y divide-slate-200/60 dark:divide-white/5">
-                {approvedMembers.map(member => (
-                  <div key={member.id} className="py-3.5 flex items-center justify-between gap-4">
-                    <div className="flex items-center gap-3">
-                      <div className="w-10 h-10 rounded-full overflow-hidden bg-slate-800 border border-emerald-500/30 flex-shrink-0">
-                        <img
-                          src={member.user?.avatar_url || '/mirmia-logo.png'}
-                          alt={member.user?.full_name || 'Thợ ảnh'}
-                          className="w-full h-full object-cover"
-                        />
-                      </div>
-                      <div>
-                        <div className="flex items-center gap-2">
-                          <span className="text-xs sm:text-sm font-bold text-slate-900 dark:text-white">
-                            {member.user?.full_name || 'Thợ ảnh'}
-                          </span>
-                          <span className={`text-[10px] px-2 py-0.2 rounded-full font-bold border ${
-                            member.role === 'admin'
-                              ? 'bg-amber-500/20 text-amber-400 border-amber-500/30'
-                              : 'bg-emerald-500/20 text-emerald-400 border-emerald-500/30'
-                          }`}>
-                            {member.role === 'admin' ? 'Quản trị viên' : 'Thợ ảnh chính'}
-                          </span>
-                        </div>
-                        <p className="text-[11px] text-slate-500 dark:text-slate-400">
-                          {member.user?.email || member.user?.phone || 'Chưa cập nhật liên hệ'}
-                        </p>
-                      </div>
-                    </div>
-
-                    {/* Chỉ cho gỡ bỏ nếu không phải chính mình hoặc không phải owner */}
-                    {member.user_id !== user?.id && (
-                      <button
-                        type="button"
-                        onClick={() => handleRemoveMember(member)}
-                        className="text-[11px] text-slate-400 hover:text-rose-400 px-2.5 py-1 rounded-lg hover:bg-rose-500/10 transition-colors"
-                      >
-                        Gỡ bỏ
-                      </button>
-                    )}
-                  </div>
-                ))}
+            {/* Nhóm 1: Đội ngũ Nhiếp ảnh */}
+            <div className="p-6 rounded-3xl bg-white/60 dark:bg-white/5 backdrop-blur-xl border border-white/60 dark:border-white/10 shadow-sm space-y-4">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2 text-amber-500 dark:text-amber-400">
+                  <Camera className="w-4 h-4" />
+                  <h4 className="text-xs font-bold uppercase tracking-wider text-slate-900 dark:text-white">
+                    Đội Ngũ Nhiếp Ảnh (Photographers)
+                  </h4>
+                </div>
+                <span className="text-[11px] font-mono px-2 py-0.5 rounded-full bg-amber-500/10 text-amber-500 font-bold border border-amber-500/20">
+                  {approvedMembers.filter(m => m.role === 'photographer' || m.role === 'admin').length} nhân sự
+                </span>
               </div>
-            )}
+
+              {approvedMembers.filter(m => m.role === 'photographer' || m.role === 'admin').length === 0 ? (
+                <p className="text-xs text-slate-400 text-center py-4">Chưa có nhiếp ảnh gia nào trong nhóm này.</p>
+              ) : (
+                <div className="divide-y divide-slate-200/60 dark:divide-white/5">
+                  {approvedMembers
+                    .filter(m => m.role === 'photographer' || m.role === 'admin')
+                    .map(member => (
+                      <div key={member.id} className="py-3 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                        <div className="flex items-center gap-3">
+                          <div className="w-10 h-10 rounded-full overflow-hidden bg-slate-800 border border-amber-500/30 flex-shrink-0">
+                            <img
+                              src={member.user?.avatar_url || '/mirmia-logo.png'}
+                              alt={member.user?.full_name || 'Thợ ảnh'}
+                              className="w-full h-full object-cover"
+                              onError={e => {
+                                (e.target as HTMLImageElement).src = '/mirmia-logo.png';
+                              }}
+                            />
+                          </div>
+                          <div>
+                            <div className="flex items-center gap-2">
+                              <span className="text-xs sm:text-sm font-bold text-slate-900 dark:text-white">
+                                {member.user?.full_name || 'Thợ ảnh'}
+                              </span>
+                              <span className={`text-[10px] px-2 py-0.5 rounded-full font-bold border ${
+                                member.role === 'admin'
+                                  ? 'bg-amber-500/20 text-amber-400 border-amber-500/30'
+                                  : 'bg-emerald-500/20 text-emerald-400 border-emerald-500/30'
+                              }`}>
+                                {member.role === 'admin' ? 'Quản lý' : 'Thợ ảnh'}
+                              </span>
+                            </div>
+                            <p className="text-[11px] text-slate-500 dark:text-slate-400">
+                              {member.user?.email || member.user?.phone || 'Chưa cập nhật liên hệ'}
+                            </p>
+                          </div>
+                        </div>
+
+                        <div className="flex items-center gap-2 self-end sm:self-center">
+                          {/* Role Selector */}
+                          <select
+                            value={member.role}
+                            onChange={e => handleUpdateMemberRole(member, e.target.value as StudioRole)}
+                            className="px-2 py-1 rounded-lg bg-slate-100 dark:bg-slate-900 border border-slate-300 dark:border-white/10 text-[11px] font-semibold text-slate-800 dark:text-slate-200 outline-none cursor-pointer"
+                          >
+                            <option value="photographer">Thợ ảnh</option>
+                            <option value="makeup_artist">Thợ Makeup</option>
+                            <option value="admin">Quản lý</option>
+                          </select>
+
+                          {member.user_id !== user?.id && (
+                            <button
+                              type="button"
+                              onClick={() => handleRemoveMember(member)}
+                              className="text-[11px] text-slate-400 hover:text-rose-400 px-2 py-1 rounded-lg hover:bg-rose-500/10 transition-colors cursor-pointer"
+                            >
+                              Gỡ bỏ
+                            </button>
+                          )}
+                        </div>
+                      </div>
+                    ))}
+                </div>
+              )}
+            </div>
+
+            {/* Nhóm 2: Đội ngũ Makeup (MUA) */}
+            <div className="p-6 rounded-3xl bg-white/60 dark:bg-white/5 backdrop-blur-xl border border-white/60 dark:border-white/10 shadow-sm space-y-4">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2 text-fuchsia-500 dark:text-fuchsia-400">
+                  <Sparkles className="w-4 h-4" />
+                  <h4 className="text-xs font-bold uppercase tracking-wider text-slate-900 dark:text-white">
+                    Đội Ngũ Makeup (Makeup Artists / MUA)
+                  </h4>
+                </div>
+                <span className="text-[11px] font-mono px-2 py-0.5 rounded-full bg-fuchsia-500/10 text-fuchsia-500 font-bold border border-fuchsia-500/20">
+                  {approvedMembers.filter(m => m.role === 'makeup_artist').length} nhân sự
+                </span>
+              </div>
+
+              {approvedMembers.filter(m => m.role === 'makeup_artist').length === 0 ? (
+                <div className="text-center py-6 text-slate-400 space-y-2">
+                  <p className="text-xs">Chưa có Thợ Makeup nào trong đội ngũ.</p>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setInviteRole('makeup_artist');
+                      setIsInviteModalOpen(true);
+                    }}
+                    className="text-xs font-bold text-fuchsia-400 hover:underline inline-flex items-center gap-1 cursor-pointer"
+                  >
+                    <PlusCircle className="w-3.5 h-3.5" />
+                    <span>Thêm Thợ Makeup đầu tiên</span>
+                  </button>
+                </div>
+              ) : (
+                <div className="divide-y divide-slate-200/60 dark:divide-white/5">
+                  {approvedMembers
+                    .filter(m => m.role === 'makeup_artist')
+                    .map(member => (
+                      <div key={member.id} className="py-3 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                        <div className="flex items-center gap-3">
+                          <div className="w-10 h-10 rounded-full overflow-hidden bg-slate-800 border border-fuchsia-500/30 flex-shrink-0">
+                            <img
+                              src={member.user?.avatar_url || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150'}
+                              alt={member.user?.full_name || 'Thợ Makeup'}
+                              className="w-full h-full object-cover"
+                              onError={e => {
+                                (e.target as HTMLImageElement).src = '/mirmia-logo.png';
+                              }}
+                            />
+                          </div>
+                          <div>
+                            <div className="flex items-center gap-2">
+                              <span className="text-xs sm:text-sm font-bold text-slate-900 dark:text-white">
+                                {member.user?.full_name || 'Thợ Makeup'}
+                              </span>
+                              <span className="text-[10px] px-2 py-0.5 rounded-full font-bold border bg-fuchsia-500/20 text-fuchsia-400 border-fuchsia-500/30">
+                                Thợ Makeup (MUA)
+                              </span>
+                            </div>
+                            <p className="text-[11px] text-slate-500 dark:text-slate-400">
+                              {member.user?.email || member.user?.phone || 'Chưa cập nhật liên hệ'}
+                            </p>
+                          </div>
+                        </div>
+
+                        <div className="flex items-center gap-2 self-end sm:self-center">
+                          {/* Role Selector */}
+                          <select
+                            value={member.role}
+                            onChange={e => handleUpdateMemberRole(member, e.target.value as StudioRole)}
+                            className="px-2 py-1 rounded-lg bg-slate-100 dark:bg-slate-900 border border-slate-300 dark:border-white/10 text-[11px] font-semibold text-slate-800 dark:text-slate-200 outline-none cursor-pointer"
+                          >
+                            <option value="makeup_artist">Thợ Makeup</option>
+                            <option value="photographer">Thợ ảnh</option>
+                            <option value="admin">Quản lý</option>
+                          </select>
+
+                          {member.user_id !== user?.id && (
+                            <button
+                              type="button"
+                              onClick={() => handleRemoveMember(member)}
+                              className="text-[11px] text-slate-400 hover:text-rose-400 px-2 py-1 rounded-lg hover:bg-rose-500/10 transition-colors cursor-pointer"
+                            >
+                              Gỡ bỏ
+                            </button>
+                          )}
+                        </div>
+                      </div>
+                    ))}
+                </div>
+              )}
+            </div>
           </div>
+
+          {/* Modal Mời Nhân Sự Mới */}
+          {isInviteModalOpen && (
+            <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm animate-fadeIn">
+              <div className="w-full max-w-md p-6 rounded-3xl bg-white dark:bg-zinc-900 border border-gray-200 dark:border-white/10 shadow-2xl space-y-4">
+                <div className="flex items-center justify-between pb-2 border-b border-gray-100 dark:border-white/10">
+                  <div className="flex items-center gap-2">
+                    <UserPlus className="w-5 h-5 text-emerald-500" />
+                    <h3 className="text-sm font-bold text-gray-900 dark:text-white">Thêm Nhân Sự Vào Studio</h3>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => setIsInviteModalOpen(false)}
+                    className="p-1 rounded-lg text-gray-400 hover:text-white"
+                  >
+                    <XCircle className="w-5 h-5" />
+                  </button>
+                </div>
+
+                <form onSubmit={handleInviteMember} className="space-y-3.5 text-xs">
+                  <div className="space-y-1">
+                    <label className="font-bold text-slate-700 dark:text-slate-300">Họ và Tên Nhân Sự *</label>
+                    <input
+                      type="text"
+                      required
+                      placeholder="VD: Lan Anh Makeup / Tuấn Hoàng Photo"
+                      value={inviteName}
+                      onChange={e => setInviteName(e.target.value)}
+                      className="w-full px-3 py-2 rounded-xl bg-slate-50 dark:bg-black/40 border border-gray-200 dark:border-white/10 text-slate-900 dark:text-white outline-none focus:border-amber-400"
+                    />
+                  </div>
+
+                  <div className="space-y-1">
+                    <label className="font-bold text-slate-700 dark:text-slate-300">Vai Trò Phụ Trách *</label>
+                    <select
+                      value={inviteRole}
+                      onChange={e => setInviteRole(e.target.value as StudioRole)}
+                      className="w-full px-3 py-2 rounded-xl bg-slate-50 dark:bg-black/40 border border-gray-200 dark:border-white/10 text-slate-900 dark:text-white font-semibold outline-none focus:border-amber-400 cursor-pointer"
+                    >
+                      <option value="photographer">Thợ Ảnh (Photographer)</option>
+                      <option value="makeup_artist">Thợ Makeup (MUA)</option>
+                      <option value="admin">Quản lý Studio (Admin)</option>
+                    </select>
+                  </div>
+
+                  <div className="space-y-1">
+                    <label className="font-bold text-slate-700 dark:text-slate-300">Số Điện Thoại / Zalo</label>
+                    <input
+                      type="tel"
+                      placeholder="VD: 0901234567"
+                      value={invitePhone}
+                      onChange={e => setInvitePhone(e.target.value)}
+                      className="w-full px-3 py-2 rounded-xl bg-slate-50 dark:bg-black/40 border border-gray-200 dark:border-white/10 text-slate-900 dark:text-white outline-none focus:border-amber-400"
+                    />
+                  </div>
+
+                  <div className="space-y-1">
+                    <label className="font-bold text-slate-700 dark:text-slate-300">Email Liên Hệ</label>
+                    <input
+                      type="email"
+                      placeholder="VD: staff@studio.com"
+                      value={inviteEmail}
+                      onChange={e => setInviteEmail(e.target.value)}
+                      className="w-full px-3 py-2 rounded-xl bg-slate-50 dark:bg-black/40 border border-gray-200 dark:border-white/10 text-slate-900 dark:text-white outline-none focus:border-amber-400"
+                    />
+                  </div>
+
+                  <div className="flex items-center justify-end gap-2 pt-2">
+                    <button
+                      type="button"
+                      onClick={() => setIsInviteModalOpen(false)}
+                      className="px-3.5 py-1.5 rounded-xl text-slate-400 hover:text-white"
+                    >
+                      Hủy bỏ
+                    </button>
+                    <button
+                      type="submit"
+                      className="px-4 py-2 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-bold transition-all shadow-md shadow-emerald-500/20 cursor-pointer"
+                    >
+                      Xác Nhận Thêm
+                    </button>
+                  </div>
+                </form>
+              </div>
+            </div>
+          )}
         </div>
       )}
     </div>

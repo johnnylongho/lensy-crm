@@ -1,5 +1,4 @@
 import { CalendarEvent } from '../types';
-import confetti from 'canvas-confetti';
 
 // ====================================================================
 // 1. HẰNG SỐ MỐC DOANH THU MỤC TIÊU (MILESTONES)
@@ -220,63 +219,3 @@ export const getTierProgress = (ytdRevenue: number, targetYear?: number): TierPr
   };
 };
 
-// ====================================================================
-// 4. SMART CONFETTI VALIDATION (TRÁNH BẮN LẠI KHI RELOAD TRANG)
-// ====================================================================
-export const getTierCelebrationKey = (tierId: TierId): string => {
-  return `lensy_celebrated_tier_${tierId}`;
-};
-
-export const hasCelebratedTier = (tierId: TierId): boolean => {
-  if (typeof window === 'undefined' || !window.localStorage) return false;
-  return window.localStorage.getItem(getTierCelebrationKey(tierId)) === 'true';
-};
-
-export const markTierCelebrated = (tierId: TierId): void => {
-  if (typeof window === 'undefined' || !window.localStorage) return;
-  window.localStorage.setItem(getTierCelebrationKey(tierId), 'true');
-};
-
-export const triggerCelebrationConfetti = (): void => {
-  try {
-    // Đợt 1: Pháo hoa bùng nổ trung tâm
-    confetti({
-      particleCount: 120,
-      spread: 80,
-      origin: { y: 0.55 },
-      colors: ['#f59e0b', '#fbbf24', '#10b981', '#38bdf8', '#818cf8', '#ec4899'],
-    });
-
-    // Đợt 2: Pháo sáng bắn chéo từ 2 góc màn hình
-    setTimeout(() => {
-      confetti({
-        particleCount: 75,
-        angle: 60,
-        spread: 60,
-        origin: { x: 0.05, y: 0.65 },
-        colors: ['#eab308', '#f59e0b', '#38bdf8'],
-      });
-      confetti({
-        particleCount: 75,
-        angle: 120,
-        spread: 60,
-        origin: { x: 0.95, y: 0.65 },
-        colors: ['#eab308', '#f59e0b', '#38bdf8'],
-      });
-    }, 280);
-
-    // Đợt 3: Mưa sao lấp lánh nhẹ nhàng
-    setTimeout(() => {
-      confetti({
-        particleCount: 50,
-        spread: 100,
-        origin: { y: 0.4 },
-        shapes: ['circle'],
-        scalar: 1.2,
-        colors: ['#fbbf24', '#ffffff', '#38bdf8'],
-      });
-    }, 550);
-  } catch (err) {
-    console.warn('[TierConfetti] Error triggering confetti:', err);
-  }
-};

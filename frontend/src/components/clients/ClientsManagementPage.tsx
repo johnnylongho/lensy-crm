@@ -565,11 +565,11 @@ export const ClientsManagementPage: React.FC = () => {
       </div>
 
       {/* 1. MÀN HÌNH DESKTOP: BẢNG DỮ LIỆU TẬN DỤNG TOÀN DIỆN CHIỀU NGANG */}
-      <div className="hidden md:block rounded-2xl border border-slate-800 bg-slate-900/60 overflow-hidden shadow-xl">
+      <div className="hidden md:block rounded-2xl border border-slate-200 dark:border-slate-800 bg-white/70 dark:bg-slate-900/60 overflow-hidden shadow-xl">
         <div className="overflow-x-auto">
           <table className="w-full text-left text-xs border-collapse">
             <thead>
-              <tr className="bg-slate-950/80 border-b border-slate-800 text-[11px] font-bold uppercase tracking-wider text-slate-400">
+              <tr className="bg-slate-100/90 dark:bg-slate-950/80 border-b border-slate-200 dark:border-slate-800 text-[11px] font-bold uppercase tracking-wider text-slate-600 dark:text-slate-400">
                 <th className="py-3 px-4">Khách Hàng</th>
                 <th className="py-3 px-4">Số Điện Thoại</th>
                 <th className="py-3 px-4 text-center">Hạng Khách</th>
@@ -579,7 +579,7 @@ export const ClientsManagementPage: React.FC = () => {
                 <th className="py-3 px-4 text-center">Thao Tác</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-slate-800/60">
+            <tbody className="divide-y divide-slate-200/80 dark:divide-slate-800/60">
               {filteredClients.length === 0 ? (
                 <tr>
                   <td colSpan={7} className="py-12 text-center text-slate-500">
@@ -601,7 +601,7 @@ export const ClientsManagementPage: React.FC = () => {
                     <tr
                       key={client.id}
                       onClick={() => handleOpenClientProfile(client)}
-                      className="hover:bg-slate-800/50 cursor-pointer transition-colors group"
+                      className="hover:bg-slate-100/70 dark:hover:bg-slate-800/50 cursor-pointer transition-colors group"
                     >
                       {/* Cột 1: Tên & Email */}
                       <td className="py-3 px-4">
@@ -610,21 +610,21 @@ export const ClientsManagementPage: React.FC = () => {
                             className={`w-9 h-9 rounded-xl flex items-center justify-center font-bold text-xs flex-shrink-0 ${
                               client.isVip
                                 ? 'bg-gradient-to-br from-amber-400 to-yellow-600 text-slate-950 shadow-md ring-2 ring-amber-500/30'
-                                : 'bg-slate-800 border border-slate-700 text-slate-200'
+                                : 'bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-200'
                             }`}
                           >
                             {initials}
                           </div>
                           <div className="min-w-0">
-                            <span className="font-bold text-white text-sm group-hover:text-amber-400 transition-colors block truncate max-w-[200px]">
+                            <span className="font-medium text-gray-900 dark:text-white text-sm group-hover:text-amber-600 dark:group-hover:text-amber-400 transition-colors block truncate max-w-[200px]">
                               {client.name}
                             </span>
                             {client.email ? (
-                              <span className="text-[11px] text-slate-400 truncate block max-w-[200px]">
+                              <span className="text-[11px] text-slate-500 dark:text-slate-400 truncate block max-w-[200px]">
                                 {client.email}
                               </span>
                             ) : (
-                              <span className="text-[10px] text-slate-600 italic">
+                              <span className="text-[10px] text-slate-400 dark:text-slate-600 italic">
                                 Chưa có email
                               </span>
                             )}
@@ -633,17 +633,17 @@ export const ClientsManagementPage: React.FC = () => {
                       </td>
 
                       {/* Cột 2: SĐT kèm nút copy */}
-                      <td className="py-3 px-4 font-mono text-slate-300">
+                      <td className="py-3 px-4 font-mono text-slate-700 dark:text-slate-300">
                         <div className="flex items-center gap-1.5">
                           <span>{client.phone}</span>
                           <button
                             type="button"
                             onClick={e => handleCopyPhone(client.phone, e)}
-                            className="p-1 rounded hover:bg-slate-700 text-slate-400 hover:text-white transition-colors"
+                            className="p-1 rounded hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-400 hover:text-slate-700 dark:hover:text-white transition-colors"
                             title="Sao chép số điện thoại"
                           >
                             {copiedPhone === client.phone ? (
-                              <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400" />
+                              <CheckCircle2 className="w-3.5 h-3.5 text-emerald-500 dark:text-emerald-400" />
                             ) : (
                               <Copy className="w-3.5 h-3.5" />
                             )}
@@ -654,17 +654,17 @@ export const ClientsManagementPage: React.FC = () => {
                       {/* Cột 3: Hạng VIP Gamification */}
                       <td className="py-3 px-4 text-center">
                         {client.isVip ? (
-                          <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-black bg-gradient-to-r from-amber-500/20 via-yellow-500/20 to-amber-500/20 border border-amber-500/50 text-amber-300 shadow-sm animate-pulse-subtle">
+                          <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-black bg-gradient-to-r from-amber-500/20 via-yellow-500/20 to-amber-500/20 border border-amber-500/50 text-amber-600 dark:text-amber-300 shadow-sm animate-pulse-subtle">
                             <span>👑</span>
                             <span>VIP GOLD</span>
                           </span>
                         ) : client.tier === 'regular' ? (
-                          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-bold bg-slate-800 border border-slate-700 text-slate-300">
+                          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-bold bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-300">
                             <span>🥈</span>
                             <span>Thân Thiết</span>
                           </span>
                         ) : (
-                          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-medium bg-slate-800/40 text-slate-400 border border-slate-800">
+                          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-medium bg-slate-100 dark:bg-slate-800/40 text-slate-600 dark:text-slate-400 border border-slate-200 dark:border-slate-800">
                             <span>🥉</span>
                             <span>Mới</span>
                           </span>
@@ -673,32 +673,32 @@ export const ClientsManagementPage: React.FC = () => {
 
                       {/* Cột 4: Số Lần Chụp */}
                       <td className="py-3 px-4 text-center font-mono">
-                        <span className="inline-flex items-center justify-center w-7 h-7 rounded-lg bg-slate-800 border border-slate-700 font-bold text-white text-xs">
+                        <span className="inline-flex items-center justify-center w-7 h-7 rounded-lg bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 font-bold text-slate-800 dark:text-white text-xs">
                           {client.totalBookings}
                         </span>
                       </td>
 
                       {/* Cột 5: Tổng Chi Tiêu (LTV) */}
                       <td className="py-3 px-4 text-right font-mono">
-                        <span className="font-extrabold text-sm text-emerald-400">
+                        <span className="font-extrabold text-sm text-emerald-600 dark:text-emerald-400">
                           {client.totalSpent.toLocaleString('vi-VN')} đ
                         </span>
                         {client.totalRemainingDebt > 0 && (
-                          <span className="block text-[10px] text-rose-400 font-medium">
+                          <span className="block text-[10px] text-rose-500 dark:text-rose-400 font-medium">
                             Nợ: {client.totalRemainingDebt.toLocaleString('vi-VN')} đ
                           </span>
                         )}
                       </td>
 
                       {/* Cột 6: Show Gần Nhất */}
-                      <td className="py-3 px-4 text-slate-400">
+                      <td className="py-3 px-4 text-slate-600 dark:text-slate-400">
                         {client.lastBookingDate ? (
                           <div className="flex items-center gap-1.5 text-[11px]">
-                            <Calendar className="w-3.5 h-3.5 text-amber-400 flex-shrink-0" />
+                            <Calendar className="w-3.5 h-3.5 text-amber-500 dark:text-amber-400 flex-shrink-0" />
                             <span>{client.lastBookingDate}</span>
                           </div>
                         ) : (
-                          <span className="text-slate-600 italic text-[11px]">Chưa đặt lịch</span>
+                          <span className="text-slate-400 dark:text-slate-600 italic text-[11px]">Chưa đặt lịch</span>
                         )}
                       </td>
 
@@ -709,7 +709,7 @@ export const ClientsManagementPage: React.FC = () => {
                             href={`https://zalo.me/${cleanPhone}`}
                             target="_blank"
                             rel="noopener noreferrer"
-                            className="p-1.5 rounded-lg bg-blue-600/10 hover:bg-blue-600/20 text-blue-400 hover:text-blue-300 border border-blue-500/30 transition-colors"
+                            className="p-1.5 rounded-lg bg-blue-500/10 hover:bg-blue-500/20 text-blue-600 dark:text-blue-400 border border-blue-500/30 transition-colors"
                             title="Chat Zalo với khách"
                           >
                             <MessageCircle className="w-4 h-4" />
@@ -718,7 +718,7 @@ export const ClientsManagementPage: React.FC = () => {
                           <button
                             type="button"
                             onClick={() => handleOpenClientProfile(client)}
-                            className="px-2.5 py-1 rounded-lg bg-slate-800 hover:bg-amber-500 hover:text-slate-950 border border-slate-700 text-slate-200 font-bold text-[11px] transition-all flex items-center gap-1"
+                            className="px-2.5 py-1 rounded-lg bg-slate-100 dark:bg-slate-800 hover:bg-amber-500 hover:text-slate-950 border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-200 font-bold text-[11px] transition-all flex items-center gap-1"
                           >
                             <span>Xem Hồ Sơ</span>
                             <ChevronRight className="w-3 h-3" />

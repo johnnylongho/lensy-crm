@@ -125,10 +125,11 @@ export const QuoteView: React.FC<Props> = ({
   onQuoteStatusChange,
   onBookingSubmit,
 }) => {
-  const { token, username } = useParams<{ token?: string; username?: string }>();
+  const { token, username, id } = useParams<{ token?: string; username?: string; id?: string }>();
   const [quote, setQuote] = useState<QuoteData>(initialQuote);
   const [photographerId, setPhotographerId] = useState<string | null>(null);
-  const [isLoading, setIsLoading] = useState(Boolean(token || username));
+  const isBookingPage = Boolean(username) || Boolean(id);
+  const [isLoading, setIsLoading] = useState(Boolean(token || username || id));
   const [isNotFound, setIsNotFound] = useState(false);
   const [isStudioNotFound, setIsStudioNotFound] = useState(false);
   const [isDepositModalOpen, setIsDepositModalOpen] = useState(false);
@@ -136,39 +137,82 @@ export const QuoteView: React.FC<Props> = ({
   const [selectedPackage, setSelectedPackage] = useState<PackageItem | null>(null);
   const [verifiedStudio, setVerifiedStudio] = useState<{ name: string; logoUrl?: string } | null>(null);
 
-  // Fetch dynamic studio profile by username (/book/:username)
+  // Fetch dynamic studio profile by username (/book/:username) or studio id (/book/studio/:id)
   useEffect(() => {
-    if (!username) return;
+    if (!username && !id) return;
 
-    const fetchStudioByUsername = async () => {
+    const fetchStudioProfile = async () => {
       setIsLoading(true);
       setIsStudioNotFound(false);
       setIsNotFound(false);
 
       try {
         if (isSupabaseConfigured) {
-          const { data: userData, error: userError } = await supabase
-            .from('users')
-            .select('*')
-            .eq('username', username)
-            .maybeSingle();
+          let userData: any = null;
+          let studioData: any = null;
 
-          if (userError || !userData) {
-            console.warn('Không tìm thấy Studio với username:', username, userError);
+          if (id) {
+            // Check if id corresponds to a studio record in studios table
+            const { data: sData } = await supabase
+              .from('studios')
+              .select('*')
+              .eq('id', id)
+              .maybeSingle();
+
+            if (sData) {
+              studioData = sData;
+              const { data: uOwner } = await supabase
+                .from('users')
+                .select('*')
+                .eq('id', sData.owner_id)
+                .maybeSingle();
+              userData = uOwner;
+            } else {
+              // Maybe id is a user id directly
+              const { data: uData } = await supabase
+                .from('users')
+                .select('*')
+                .eq('id', id)
+                .maybeSingle();
+              userData = uData;
+            }
+          } else if (username) {
+            const { data: uData, error: userError } = await supabase
+              .from('users')
+              .select('*')
+              .eq('username', username)
+              .maybeSingle();
+
+            if (userError || !uData) {
+              console.warn('Không tìm thấy Studio với username:', username, userError);
+              setIsStudioNotFound(true);
+              setIsLoading(false);
+              return;
+            }
+            userData = uData;
+          }
+
+          if (!userData && !studioData) {
+            console.warn('Không tìm thấy Studio với mã định danh:', username || id);
             setIsStudioNotFound(true);
             setIsLoading(false);
             return;
           }
 
-          setPhotographerId(userData.id);
+          if (userData) {
+            setPhotographerId(userData.id);
+          }
 
-          let displayStudioName = userData.studio_name || 'MIRMIA STUDIO & ACADEMY';
-          let displayAvatarUrl = userData.avatar_url || '/mirmia-logo.png';
-          let studioVerifiedInfo: { name: string; logoUrl?: string } | null = null;
+          let displayStudioName = studioData?.name || userData?.studio_name || 'MIRMIA STUDIO & ACADEMY';
+          let displayAvatarUrl = studioData?.logo_url || userData?.avatar_url || '/mirmia-logo.png';
+          let studioVerifiedInfo: { name: string; logoUrl?: string } | null = studioData ? {
+            name: studioData.name,
+            logoUrl: studioData.logo_url,
+          } : null;
 
           // Logic hiển thị Branding theo Multi-Tenants:
           // Nếu user là Studio Member và có status 'approved' -> Lấy name & logo từ bảng studios
-          if (userData.account_type === 'studio_member') {
+          if (userData && userData.account_type === 'studio_member' && !studioData) {
             try {
               const { data: memberData } = await supabase
                 .from('studio_members')
@@ -208,28 +252,36 @@ export const QuoteView: React.FC<Props> = ({
 
           setQuote(prev => ({
             ...prev,
+            studio_id: studioData?.id || prev.studio_id,
             studioName: displayStudioName,
             studioAvatarUrl: displayAvatarUrl,
-            studioCoverUrl: userData.cover_image || userData.cover_url || 'https://images.unsplash.com/photo-1492691527719-9d1e07e534b4?auto=format&fit=crop&w=1200&q=80',
-            photographerName: userData.full_name || 'Nhiếp Ảnh Gia',
-            photographerPhone: userData.phone || '0901234567',
-            photographerEmail: userData.email || 'contact@mirmia.vn',
+            studioCoverUrl: userData?.cover_image || userData?.cover_url || 'https://images.unsplash.com/photo-1492691527719-9d1e07e534b4?auto=format&fit=crop&w=1200&q=80',
+            photographerName: userData?.full_name || displayStudioName,
+            photographerPhone: userData?.phone || '0901234567',
+            photographerEmail: userData?.email || 'contact@mirmia.vn',
             bankInfo: {
-              bankName: userData.bank_name || 'MB Bank',
-              accountNumber: userData.bank_account_number || '0901234567',
-              accountName: userData.bank_account_name || userData.full_name || 'MIRMIA STUDIO',
+              bankName: userData?.bank_name || 'MB Bank',
+              accountNumber: userData?.bank_account_number || '0901234567',
+              accountName: userData?.bank_account_name || userData?.full_name || displayStudioName,
             },
           }));
 
-          // Fetch dynamic packages for this photographer
+          // Fetch dynamic packages for this photographer or studio
           try {
             let pkgList: PackageItem[] = [];
-            const { data: pkgData, error: pkgError } = await supabase
+            let pkgQuery = supabase
               .from('packages')
               .select('*')
-              .eq('photographer_id', userData.id)
               .eq('is_active', true)
               .order('price', { ascending: true });
+
+            if (studioData?.id) {
+              pkgQuery = pkgQuery.or(`studio_id.eq.${studioData.id},photographer_id.eq.${userData?.id || studioData.owner_id}`);
+            } else if (userData?.id) {
+              pkgQuery = pkgQuery.eq('photographer_id', userData.id);
+            }
+
+            const { data: pkgData, error: pkgError } = await pkgQuery;
 
             if (!pkgError && pkgData && pkgData.length > 0) {
               pkgList = pkgData.map((p: any) => ({
@@ -261,21 +313,18 @@ export const QuoteView: React.FC<Props> = ({
           }
         } else {
           // Demo fallback
-          if (username === 'johnnylongho') {
-            setPhotographerId('87239d64-5964-47b1-a146-f12f3d41de9e');
-            setQuote(prev => ({
-              ...prev,
-              studioName: 'MIRMIA STUDIO & ACADEMY',
-              studioAvatarUrl: '/mirmia-logo.png',
-              studioCoverUrl: 'https://images.unsplash.com/photo-1492691527719-9d1e07e534b4?auto=format&fit=crop&w=1200&q=80',
-              photographerName: 'Johnny Long Hồ',
-              photographerPhone: '0901234567',
-            }));
-            setPackages(MOCK_PACKAGES);
-            setSelectedPackage(MOCK_PACKAGES[0]);
-          } else {
-            setIsStudioNotFound(true);
-          }
+          setPhotographerId('87239d64-5964-47b1-a146-f12f3d41de9e');
+          setQuote(prev => ({
+            ...prev,
+            studio_id: id || 'studio-demo-1',
+            studioName: 'MIRMIA STUDIO & ACADEMY',
+            studioAvatarUrl: '/mirmia-logo.png',
+            studioCoverUrl: 'https://images.unsplash.com/photo-1492691527719-9d1e07e534b4?auto=format&fit=crop&w=1200&q=80',
+            photographerName: 'Johnny Long Hồ',
+            photographerPhone: '0901234567',
+          }));
+          setPackages(MOCK_PACKAGES);
+          setSelectedPackage(MOCK_PACKAGES[0]);
         }
       } catch (err) {
         console.error('Lỗi truy vấn Studio:', err);
@@ -285,12 +334,12 @@ export const QuoteView: React.FC<Props> = ({
       }
     };
 
-    fetchStudioByUsername();
-  }, [username]);
+    fetchStudioProfile();
+  }, [username, id]);
 
   // Fetch dynamic quote from Supabase by token
   useEffect(() => {
-    if (username) return; // Nếu đang ở link /book/:username thì không fetch theo token
+    if (username || id) return; // Nếu đang ở link /book/:username hoặc /book/studio/:id thì không fetch theo token
 
     if (!token) {
       setQuote(initialQuote);
@@ -525,7 +574,6 @@ export const QuoteView: React.FC<Props> = ({
     );
   }
 
-  const isBookingPage = Boolean(username);
   const studioCoverUrl =
     quote.studioCoverUrl ||
     'https://images.unsplash.com/photo-1492691527719-9d1e07e534b4?auto=format&fit=crop&w=1200&q=80';
@@ -678,6 +726,7 @@ export const QuoteView: React.FC<Props> = ({
         <div id="client-booking-form-wrapper">
           <ClientBookingForm
             studioName={quote.studioName}
+            studioId={quote.studio_id || (id ? id : null)}
             defaultSessionType={quote.sessionType}
             defaultPrice={selectedPackage ? selectedPackage.price : quote.packagePrice}
             defaultDeposit={selectedPackage ? Math.round(selectedPackage.price * 0.3) : quote.depositAmount}

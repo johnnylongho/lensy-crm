@@ -4,6 +4,7 @@ import { useAuth } from '../../context/AuthContext';
 import { useWorkspace } from '../../context/WorkspaceContext';
 import { supabase, isSupabaseConfigured } from '../../lib/supabase';
 import { GearItem, GearType, GearStatus } from '../../types';
+import { formatCurrencyVND, parseCurrencyVND } from '../../utils/currency';
 import {
   Camera,
   Layers,
@@ -33,48 +34,48 @@ import {
 const GEAR_TYPE_LABELS: Record<GearType, { label: string; icon: React.ReactNode; color: string }> = {
   camera: {
     label: 'Máy Ảnh (Camera)',
-    icon: <Camera className="w-4 h-4 text-sky-400" />,
-    color: 'bg-sky-500/10 text-sky-300 border-sky-500/30',
+    icon: <Camera className="w-4 h-4 text-sky-500 dark:text-sky-400" />,
+    color: 'bg-sky-500/10 text-sky-700 dark:text-sky-300 border-sky-500/30',
   },
   lens: {
     label: 'Ống Kính (Lens)',
-    icon: <Layers className="w-4 h-4 text-purple-400" />,
-    color: 'bg-purple-500/10 text-purple-300 border-purple-500/30',
+    icon: <Layers className="w-4 h-4 text-purple-500 dark:text-purple-400" />,
+    color: 'bg-purple-500/10 text-purple-700 dark:text-purple-300 border-purple-500/30',
   },
   lighting: {
     label: 'Đèn Chiếu Sáng (Lighting)',
-    icon: <Lightbulb className="w-4 h-4 text-amber-400" />,
-    color: 'bg-amber-500/10 text-amber-300 border-amber-500/30',
+    icon: <Lightbulb className="w-4 h-4 text-amber-600 dark:text-amber-400" />,
+    color: 'bg-amber-500/10 text-amber-700 dark:text-amber-300 border-amber-500/30',
   },
   audio: {
     label: 'Âm Thanh / Mic',
-    icon: <Mic className="w-4 h-4 text-emerald-400" />,
-    color: 'bg-emerald-500/10 text-emerald-300 border-emerald-500/30',
+    icon: <Mic className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />,
+    color: 'bg-emerald-500/10 text-emerald-700 dark:text-emerald-300 border-emerald-500/30',
   },
   accessory: {
     label: 'Phụ Kiện / Gimbal',
-    icon: <SlidersHorizontal className="w-4 h-4 text-indigo-400" />,
-    color: 'bg-indigo-500/10 text-indigo-300 border-indigo-500/30',
+    icon: <SlidersHorizontal className="w-4 h-4 text-indigo-600 dark:text-indigo-400" />,
+    color: 'bg-indigo-500/10 text-indigo-700 dark:text-indigo-300 border-indigo-500/30',
   },
   other: {
     label: 'Khác',
-    icon: <Wrench className="w-4 h-4 text-slate-400" />,
-    color: 'bg-slate-500/10 text-slate-300 border-slate-500/30',
+    icon: <Wrench className="w-4 h-4 text-slate-500 dark:text-slate-400" />,
+    color: 'bg-slate-500/10 text-slate-700 dark:text-slate-300 border-slate-500/30',
   },
 };
 
 const GEAR_STATUS_LABELS: Record<GearStatus, { label: string; color: string }> = {
   active: {
     label: 'Hoạt động tốt',
-    color: 'bg-emerald-950/70 border-emerald-500/40 text-emerald-300',
+    color: 'bg-emerald-500/15 dark:bg-emerald-950/70 border-emerald-500/40 text-emerald-700 dark:text-emerald-300',
   },
   maintenance: {
     label: 'Đang bảo dưỡng',
-    color: 'bg-amber-950/70 border-amber-500/40 text-amber-300',
+    color: 'bg-amber-500/15 dark:bg-amber-950/70 border-amber-500/40 text-amber-700 dark:text-amber-300',
   },
   retired: {
     label: 'Ngừng sử dụng',
-    color: 'bg-slate-900 border-slate-700 text-slate-400',
+    color: 'bg-slate-200 dark:bg-slate-900 border-slate-300 dark:border-slate-700 text-slate-700 dark:text-slate-400',
   },
 };
 
@@ -190,7 +191,7 @@ export const GearsManagementPage: React.FC = () => {
       return;
     }
 
-    const numericPrice = Number(purchasePrice) || 0;
+    const numericPrice = parseCurrencyVND(purchasePrice);
 
     setIsSubmitting(true);
     try {
@@ -486,9 +487,9 @@ export const GearsManagementPage: React.FC = () => {
           {/* 1. Màn hình Desktop: Table đầy đủ các cột */}
           <div className="hidden md:block rounded-3xl border border-white/60 dark:border-white/10 bg-white/60 dark:bg-white/5 backdrop-blur-xl overflow-hidden shadow-[0_8px_32px_0_rgba(0,0,0,0.25)]">
             <div className="overflow-x-auto">
-              <table className="w-full text-left text-xs text-slate-300 border-collapse">
+              <table className="w-full text-left text-xs text-slate-700 dark:text-slate-300 border-collapse">
                 <thead>
-                  <tr className="border-b border-slate-800 bg-slate-950/80 text-[11px] uppercase tracking-wider text-slate-400 font-bold">
+                  <tr className="border-b border-slate-200 dark:border-slate-800 bg-slate-100/90 dark:bg-slate-950/80 text-[11px] uppercase tracking-wider text-slate-600 dark:text-slate-400 font-bold">
                     <th className="py-3.5 px-4">Thiết Bị</th>
                     <th className="py-3.5 px-4">Phân Loại</th>
                     <th className="py-3.5 px-4">Trạng Thái Khả Dụng</th>
@@ -497,7 +498,7 @@ export const GearsManagementPage: React.FC = () => {
                     <th className="py-3.5 px-4 text-right">Thao Tác</th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-slate-800/60">
+                <tbody className="divide-y divide-slate-200/80 dark:divide-slate-800/60">
                   {filteredGears.map(gear => {
                     const typeConfig = GEAR_TYPE_LABELS[gear.type] || GEAR_TYPE_LABELS.other;
                     const statusConfig = GEAR_STATUS_LABELS[gear.status] || GEAR_STATUS_LABELS.active;
@@ -506,18 +507,18 @@ export const GearsManagementPage: React.FC = () => {
                     return (
                       <tr
                         key={gear.id}
-                        className="hover:bg-slate-800/40 transition-colors group"
+                        className="hover:bg-slate-100/70 dark:hover:bg-slate-800/40 transition-colors group"
                       >
                         <td className="py-3 px-4">
                           <div className="flex items-center gap-3">
-                            <div className="p-2 rounded-xl bg-slate-950 border border-slate-800 text-slate-300 group-hover:text-amber-400 group-hover:border-amber-500/30 transition-colors">
+                            <div className="p-2 rounded-xl bg-slate-100 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 text-slate-600 dark:text-slate-300 group-hover:text-amber-600 dark:group-hover:text-amber-400 group-hover:border-amber-500/30 transition-colors">
                               {typeConfig.icon}
                             </div>
                             <div>
-                              <span className="font-bold text-white text-xs block group-hover:text-amber-300 transition-colors">
+                              <span className="text-gray-900 dark:text-white font-medium text-xs block group-hover:text-amber-600 dark:group-hover:text-amber-300 transition-colors">
                                 {gear.name}
                               </span>
-                              <span className="text-[10px] text-slate-500 md:hidden font-mono">
+                              <span className="text-[10px] text-gray-500 dark:text-gray-400 md:hidden font-mono">
                                 {gear.id.substring(0, 8)}...
                               </span>
                             </div>
@@ -532,18 +533,18 @@ export const GearsManagementPage: React.FC = () => {
 
                         <td className="py-3 px-4">
                           <span className={`px-2.5 py-0.5 rounded-full text-[10px] font-bold border inline-flex items-center gap-1.5 ${statusConfig.color}`}>
-                            <span className={`w-1.5 h-1.5 rounded-full ${gear.status === 'active' ? 'bg-emerald-400' : gear.status === 'maintenance' ? 'bg-amber-400' : 'bg-slate-400'}`} />
+                            <span className={`w-1.5 h-1.5 rounded-full ${gear.status === 'active' ? 'bg-emerald-500' : gear.status === 'maintenance' ? 'bg-amber-500' : 'bg-slate-400'}`} />
                             {statusConfig.label}
                           </span>
                         </td>
 
                         <td className="py-3 px-4 text-right">
-                          <span className="font-mono font-bold text-amber-300 text-xs">
-                            {price > 0 ? `${price.toLocaleString('vi-VN')} đ` : <span className="text-slate-600 font-normal">Chưa nhập</span>}
+                          <span className="font-mono font-bold text-amber-600 dark:text-amber-300 text-xs">
+                            {price > 0 ? `${price.toLocaleString('vi-VN')} đ` : <span className="text-slate-400 dark:text-slate-600 font-normal">Chưa nhập</span>}
                           </span>
                         </td>
 
-                        <td className="py-3 px-4 hidden md:table-cell font-mono text-[11px] text-slate-500">
+                        <td className="py-3 px-4 hidden md:table-cell font-mono text-[11px] text-gray-500 dark:text-gray-400">
                           {gear.id}
                         </td>
 
@@ -552,7 +553,7 @@ export const GearsManagementPage: React.FC = () => {
                             <button
                               type="button"
                               onClick={() => handleOpenEditModal(gear)}
-                              className="p-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white transition-colors"
+                              className="p-1.5 rounded-lg bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white transition-colors"
                               title="Sửa thiết bị"
                             >
                               <Edit2 className="w-3.5 h-3.5" />
@@ -560,7 +561,7 @@ export const GearsManagementPage: React.FC = () => {
                             <button
                               type="button"
                               onClick={() => handleDeleteGear(gear)}
-                              className="p-1.5 rounded-lg bg-slate-800 hover:bg-rose-950 text-slate-400 hover:text-rose-300 transition-colors"
+                              className="p-1.5 rounded-lg bg-slate-100 dark:bg-slate-800 hover:bg-rose-100 dark:hover:bg-rose-950 text-slate-500 dark:text-slate-400 hover:text-rose-600 dark:hover:text-rose-300 transition-colors"
                               title="Xóa thiết bị"
                             >
                               <Trash2 className="w-3.5 h-3.5" />
@@ -593,7 +594,7 @@ export const GearsManagementPage: React.FC = () => {
                         {typeConfig.icon}
                       </div>
                       <div className="min-w-0">
-                        <h4 className="font-bold text-slate-900 dark:text-white text-sm truncate">
+                        <h4 className="text-gray-900 dark:text-white font-medium text-sm truncate">
                           {gear.name}
                         </h4>
                         <span className={`px-2 py-0.5 rounded text-[10px] font-bold border inline-block mt-0.5 ${typeConfig.color}`}>
@@ -663,7 +664,7 @@ export const GearsManagementPage: React.FC = () => {
                     </span>
                   </div>
 
-                  <h3 className="text-sm font-bold text-slate-800 dark:text-white group-hover:text-amber-500 dark:group-hover:text-amber-300 transition-colors">
+                  <h3 className="text-sm font-medium text-gray-900 dark:text-white group-hover:text-amber-500 dark:group-hover:text-amber-300 transition-colors">
                     {gear.name}
                   </h3>
 
@@ -803,20 +804,26 @@ export const GearsManagementPage: React.FC = () => {
                     <Coins className="w-3.5 h-3.5 text-amber-400" />
                     <span>Giá Mua Thiết Bị (VNĐ)</span>
                   </label>
-                  {Number(purchasePrice) > 0 && (
+                  {parseCurrencyVND(purchasePrice) > 0 && (
                     <span className="text-[11px] font-mono text-amber-300 font-bold bg-amber-500/10 px-2 py-0.5 rounded-lg border border-amber-500/20">
-                      {Number(purchasePrice).toLocaleString('vi-VN')} đ
+                      {parseCurrencyVND(purchasePrice).toLocaleString('vi-VN')} đ
                     </span>
                   )}
                 </div>
                 <div className="relative">
                   <input
-                    type="number"
-                    min="0"
-                    step="100000"
-                    value={purchasePrice}
-                    onChange={e => setPurchasePrice(e.target.value)}
-                    placeholder="VD: 48000000 (48 triệu VNĐ)"
+                    type="text"
+                    inputMode="numeric"
+                    value={formatCurrencyVND(purchasePrice)}
+                    onChange={e => {
+                      const raw = e.target.value;
+                      if (!raw.trim()) {
+                        setPurchasePrice('');
+                      } else {
+                        setPurchasePrice(parseCurrencyVND(raw));
+                      }
+                    }}
+                    placeholder="VD: 13.250.000 (13 triệu 250 nghìn VNĐ)"
                     className="w-full pl-3.5 pr-14 py-2.5 rounded-xl bg-slate-950 border border-slate-800 focus:border-amber-400 text-xs text-white placeholder-slate-600 transition-all outline-none font-mono"
                   />
                   <span className="absolute right-3.5 top-2.5 text-xs text-slate-500 font-bold">

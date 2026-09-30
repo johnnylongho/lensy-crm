@@ -12,7 +12,7 @@ export type BookingStatus =
   | 'da_huy'
   | 'cancelled';
 
-export type SessionType = 'wedding' | 'prewedding' | 'portrait' | 'lookbook' | 'event' | 'commercial' | 'family' | 'other';
+export type SessionType = 'wedding' | 'prewedding' | 'portrait' | 'lookbook' | 'event' | 'commercial' | 'studio' | 'outdoor' | 'family' | 'other' | string;
 
 export interface PackageInclusion {
   id: string;
@@ -89,6 +89,22 @@ export interface CalendarEvent {
   client_id?: string; // UUID khách hàng trong bảng clients
   studio_id?: string | null; // UUID Studio Workspace
   photographer_id?: string;
+  makeup_artist_id?: string | null; // UUID Thợ Makeup (MUA)
+  photographer?: StaffInfo | null; // Thông tin thợ chụp kèm tên, avatar
+  makeup_artist?: StaffInfo | null; // Thông tin thợ makeup kèm tên, avatar
+  category?: string; // Loại hình chụp (Studio, Outdoor, Event, Wedding, Lookbook, Portrait, Pre-wedding...)
+  package_type?: string; // Gói chụp
+  created_at?: string;
+  updated_at?: string;
+  is_deleted?: boolean;
+}
+
+export interface StaffInfo {
+  id: string;
+  full_name: string;
+  avatar_url?: string | null;
+  phone?: string;
+  email?: string;
 }
 
 export interface Client {
@@ -134,7 +150,7 @@ export interface PackageItem {
 // MULTI-TENANT & WORKSPACE TYPES
 // ==========================================
 export type AccountType = 'freelancer' | 'studio_member';
-export type StudioRole = 'admin' | 'photographer';
+export type StudioRole = 'admin' | 'photographer' | 'makeup_artist';
 export type MemberStatus = 'pending' | 'approved' | 'rejected';
 
 export interface Studio {
@@ -164,6 +180,7 @@ export interface StudioMember {
     phone?: string;
   };
 }
+
 
 
 

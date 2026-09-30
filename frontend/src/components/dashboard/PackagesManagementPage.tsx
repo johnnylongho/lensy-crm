@@ -1125,7 +1125,7 @@ export const PackagesManagementPage: React.FC = () => {
                       type="number"
                       required
                       min={0}
-                      step={500000}
+                      step="any"
                       placeholder="VD: 18000000"
                       value={packagePrice}
                       onChange={e => setPackagePrice(e.target.value)}

@@ -154,39 +154,39 @@ export const BookingStatusSelect: React.FC<Props> = ({
   const current = STATUS_CONFIG[status] || STATUS_CONFIG.lead || STATUS_CONFIG.cho_coc;
 
   return (
-    <div className="relative inline-flex items-center">
+    <div className={`relative inline-flex items-center ${size === 'sm' ? 'max-w-[110px]' : 'max-w-[140px]'}`}>
       <select
         value={status}
         onChange={e => onChange(e.target.value as BookingStatus)}
-        className={`appearance-none cursor-pointer pl-6 pr-6 rounded-lg font-bold border transition-all shadow-sm focus:outline-none focus:ring-1 focus:ring-amber-400 ${
+        className={`appearance-none cursor-pointer pl-5 pr-5 rounded-lg font-bold border transition-all shadow-sm focus:outline-none focus:ring-1 focus:ring-amber-400 truncate w-full ${
           size === 'sm' ? 'py-1 text-[10px]' : 'py-1.5 text-xs'
-        } ${current.badgeBg} ${current.textColor} ${current.borderColor} bg-slate-900`}
+        } ${current.badgeBg} ${current.textColor} ${current.borderColor} bg-white dark:bg-slate-900`}
         title="Bấm để đổi trạng thái lịch chụp"
       >
-        <option value="lead" className="bg-slate-900 text-amber-300 font-semibold py-1">
-          🟡 Mới hỏi (Lead)
+        <option value="lead" className="bg-white dark:bg-slate-900 text-amber-700 dark:text-amber-300 font-semibold py-1">
+          🟡 Mới hỏi
         </option>
-        <option value="deposited" className="bg-slate-900 text-emerald-300 font-semibold py-1">
-          🟢 Đã cọc (Deposited)
+        <option value="deposited" className="bg-white dark:bg-slate-900 text-emerald-700 dark:text-emerald-300 font-semibold py-1">
+          🟢 Đã cọc
         </option>
-        <option value="shot" className="bg-slate-900 text-blue-300 font-semibold py-1">
-          📸 Đã chụp (Shot)
+        <option value="shot" className="bg-white dark:bg-slate-900 text-blue-700 dark:text-blue-300 font-semibold py-1">
+          📸 Đã chụp
         </option>
-        <option value="editing" className="bg-slate-900 text-indigo-300 font-semibold py-1">
-          🎨 Đang hậu kỳ (Editing)
+        <option value="editing" className="bg-white dark:bg-slate-900 text-indigo-700 dark:text-indigo-300 font-semibold py-1">
+          🎨 Đang sửa
         </option>
-        <option value="done" className="bg-slate-900 text-purple-300 font-semibold py-1">
-          🟣 Hoàn tất (Done)
+        <option value="done" className="bg-white dark:bg-slate-900 text-purple-700 dark:text-purple-300 font-semibold py-1">
+          🟣 Hoàn tất
         </option>
       </select>
 
       {/* Status Dot Indicator */}
       <span
-        className={`absolute left-2 w-2 h-2 rounded-full pointer-events-none ${current.dotColor} shadow-sm animate-pulse`}
+        className={`absolute left-1.5 w-1.5 h-1.5 rounded-full pointer-events-none ${current.dotColor} shadow-sm animate-pulse`}
       />
 
       {/* Down arrow icon */}
-      <ChevronDown className="absolute right-1.5 w-3.5 h-3.5 text-slate-400 pointer-events-none" />
+      <ChevronDown className="absolute right-1 w-3 h-3 text-gray-400 pointer-events-none" />
     </div>
   );
 };

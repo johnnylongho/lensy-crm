@@ -14,7 +14,7 @@ import {
   X,
   Package,
   Building2,
-  Sparkles,
+  ChevronDown,
 } from 'lucide-react';
 import { ThemeToggle } from '../components/common/ThemeToggle';
 import { TierBadge } from '../components/dashboard/TierBadge';
@@ -22,12 +22,14 @@ import { TierConfig, TIER_CONFIGS, calculateYtdRevenue, getTierProgress } from '
 
 export const DashboardLayout: React.FC = () => {
   const { user, signOut } = useAuth();
-  const { currentStudio, studioRole, isStudioAdmin, isStudioMember, isFreelancer } = useWorkspace();
+  const { currentStudio, studioRole, isStudioAdmin } = useWorkspace();
   const location = useLocation();
   const [currentUsername, setCurrentUsername] = useState<string>('johnnylongho');
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const [isUserMenuOpen, setIsUserMenuOpen] = useState(false);
   const [studioTier, setStudioTier] = useState<TierConfig>(TIER_CONFIGS.gold);
   const mobileMenuRef = useRef<HTMLDivElement>(null);
+  const userMenuRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     if (!user) return;
@@ -72,20 +74,24 @@ export const DashboardLayout: React.FC = () => {
     });
   }, [user, currentStudio]);
 
-  // Đóng mobile menu khi click ra ngoài
+  // Đóng dropdown khi click ra ngoài
   useEffect(() => {
     const handleClickOutside = (e: MouseEvent) => {
       if (mobileMenuRef.current && !mobileMenuRef.current.contains(e.target as Node)) {
         setIsMobileMenuOpen(false);
+      }
+      if (userMenuRef.current && !userMenuRef.current.contains(e.target as Node)) {
+        setIsUserMenuOpen(false);
       }
     };
     document.addEventListener('mousedown', handleClickOutside);
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
 
-  // Đóng mobile menu khi chuyển trang
+  // Đóng menu khi chuyển trang
   useEffect(() => {
     setIsMobileMenuOpen(false);
+    setIsUserMenuOpen(false);
   }, [location.pathname]);
 
   const navItems = [
@@ -119,16 +125,6 @@ export const DashboardLayout: React.FC = () => {
       icon: Settings,
       isActive: location.pathname.startsWith('/dashboard/settings'),
     },
-    ...(isStudioAdmin
-      ? [
-          {
-            to: '/dashboard/studio-settings',
-            label: 'Quản Trị Studio',
-            icon: Building2,
-            isActive: location.pathname.startsWith('/dashboard/studio-settings'),
-          },
-        ]
-      : []),
   ];
 
   const userFullName = user?.user_metadata?.full_name || 'Thợ ảnh';
@@ -140,155 +136,198 @@ export const DashboardLayout: React.FC = () => {
     .join('') || 'TH';
 
   return (
-    <div className="min-h-screen bg-slate-50 dark:bg-[#0a0a0a] text-slate-800 dark:text-slate-100 flex flex-col relative overflow-x-hidden transition-colors duration-200">
+    <div className="min-h-screen bg-slate-50 dark:bg-[#0a0a0a] dark:bg-[#050505] text-slate-800 dark:text-slate-100 flex flex-col relative overflow-x-hidden transition-colors duration-200">
       {/* ==================================================================== */}
-      {/* 1. LIQUID GLASS BACKGROUND MESH GRADIENT (Ánh sáng mờ ảo phía sau)  */}
+      {/* 1. LIQUID GLASS BACKGROUND DEPTH (Ánh sáng mờ ảo phía sau nền sâu thẳm) */}
       {/* ==================================================================== */}
       <div className="fixed inset-0 pointer-events-none overflow-hidden z-0" aria-hidden="true">
-        {/* Khối 1: Tím Pastel / Indigo Gradient (Góc trên bên trái) */}
-        <div className="absolute -top-32 -left-32 w-80 sm:w-[500px] h-80 sm:h-[500px] rounded-full bg-gradient-to-br from-indigo-500/25 via-purple-500/20 to-pink-500/10 dark:from-indigo-600/30 dark:via-purple-600/25 dark:to-transparent blur-[120px] opacity-30 dark:opacity-35" />
+        {/* Khối 1: Tím Indigo / Amber Gradient sâu thẳm */}
+        <div className="absolute -top-32 -left-32 w-80 sm:w-[500px] h-80 sm:h-[500px] rounded-full bg-gradient-to-br from-indigo-600/20 via-purple-600/15 to-transparent blur-[120px] opacity-30 dark:opacity-35" />
 
-        {/* Khối 2: Xanh Ngọc / Teal Cyan Gradient (Góc trên bên phải) */}
-        <div className="absolute top-10 -right-32 w-80 sm:w-[550px] h-80 sm:h-[550px] rounded-full bg-gradient-to-br from-teal-400/25 via-cyan-500/20 to-emerald-500/15 dark:from-teal-500/30 dark:via-emerald-600/25 dark:to-transparent blur-[120px] opacity-30 dark:opacity-35" />
+        {/* Khối 2: Teal / Cyan Gradient */}
+        <div className="absolute top-10 -right-32 w-80 sm:w-[550px] h-80 sm:h-[550px] rounded-full bg-gradient-to-br from-teal-500/20 via-emerald-600/15 to-transparent blur-[120px] opacity-30 dark:opacity-35" />
 
-        {/* Khối 3: Hổ Phách Ấm / Rose Gradient (Góc dưới trung tâm) */}
-        <div className="absolute -bottom-40 left-1/3 w-80 sm:w-[600px] h-80 sm:h-[600px] rounded-full bg-gradient-to-tr from-amber-500/15 via-rose-500/10 to-transparent dark:from-amber-600/20 dark:via-purple-900/15 dark:to-transparent blur-[140px] opacity-30 dark:opacity-25" />
+        {/* Khối 3: Hổ phách nhẹ trung tâm */}
+        <div className="absolute -bottom-40 left-1/3 w-80 sm:w-[600px] h-80 sm:h-[600px] rounded-full bg-gradient-to-tr from-amber-600/15 via-rose-950/10 to-transparent blur-[120px] opacity-30 dark:opacity-25" />
       </div>
 
       {/* ==================================================================== */}
-      {/* 2. TOP HEADER NAVBAR NỔI (STICKY TOP-0 VỚI TOÀN BỘ 5 MENU DÀN TRẢI) */}
+      {/* 2. TOP HEADER NAVBAR NỔI (MINIMALIST GLASSMORPHISM - KHÔNG TRÀN CHỮ)  */}
       {/* ==================================================================== */}
-      <header className="sticky top-0 z-40 w-full bg-white/75 dark:bg-black/60 backdrop-blur-xl border-b border-white/60 dark:border-white/10 shadow-sm transition-colors duration-200">
+      <header className="sticky top-0 z-40 w-full bg-white/70 dark:bg-[#050505]/75 backdrop-blur-2xl border-b border-white/40 dark:border-white/10 shadow-[0_4px_30px_rgba(0,0,0,0.03)] dark:shadow-[0_4px_30px_rgba(0,0,0,0.5)] transition-colors duration-200">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between gap-4">
-          {/* Brand Logo & Studio Name */}
-          <Link to="/dashboard" className="flex items-center gap-3 flex-shrink-0 group">
+          
+          {/* Brand Logo: Tối giản, thanh lịch, xóa bỏ tên Studio thừa trên Header */}
+          <Link to="/dashboard" className="flex items-center gap-2.5 flex-shrink-0 group">
             <div className="h-8 w-auto flex-shrink-0 group-hover:scale-105 transition-transform duration-200">
               <img
                 src="/lensy-logo.png"
-                alt="Lensy - CRM for Photographers"
+                alt="Lensy CRM"
                 className="h-8 w-auto object-contain"
               />
             </div>
-            <div className="flex flex-col">
-              <div className="flex items-center gap-1.5 leading-none">
-                <span className="font-extrabold text-base tracking-tight text-slate-900 dark:text-white">
-                  Lensy
-                </span>
-                <span className="text-[9px] uppercase font-bold px-1.5 py-0.5 rounded-full bg-amber-500/10 dark:bg-amber-400/10 text-amber-600 dark:text-amber-400 border border-amber-500/20">
-                  CRM
-                </span>
-                <TierBadge tier={studioTier} size="xs" />
-              </div>
-              <span className="text-[10px] text-gray-400 dark:text-gray-400/80 italic font-medium tracking-wider mt-0.5">
-                by Mirmia Studio
+            <div className="flex items-center gap-1.5 leading-none">
+              <span className="font-extrabold text-base tracking-tight text-slate-900 dark:text-white">
+                Lensy
+              </span>
+              <span className="text-[9px] uppercase font-bold px-1.5 py-0.5 rounded-full bg-amber-500/10 dark:bg-amber-400/10 text-amber-600 dark:text-amber-400 border border-amber-500/20">
+                CRM
               </span>
             </div>
           </Link>
 
-          {/* Dàn trải toàn bộ các menu chính trên màn hình Desktop/Tablet (md/lg trở lên) - flex items-center gap-4 lg:gap-6 */}
-          <nav className="hidden md:flex items-center gap-4 lg:gap-6">
-            {navItems.map(item => {
-              const Icon = item.icon;
-              return (
-                <Link
-                  key={item.to}
-                  to={item.to}
-                  className={`flex items-center gap-2 px-3 py-1.5 rounded-xl font-bold text-xs transition-all duration-200 ${
-                    item.isActive
-                      ? 'bg-gradient-to-r from-amber-500 to-yellow-500 text-slate-950 shadow-md shadow-amber-500/20'
-                      : 'text-slate-600 dark:text-slate-300 hover:text-slate-950 dark:hover:text-white hover:bg-white/60 dark:hover:bg-white/10'
-                  }`}
-                >
-                  <Icon className="w-4 h-4 flex-shrink-0" />
-                  <span>{item.label}</span>
-                </Link>
-              );
-            })}
+          {/* Dàn trải các menu chính dạng Minimalist Text Links: Xóa nền & viền, text-gray-400, whitespace-nowrap */}
+          <nav className="hidden md:flex items-center gap-6 lg:gap-8">
+            {navItems.map(item => (
+              <Link
+                key={item.to}
+                to={item.to}
+                className={`relative py-1 text-xs sm:text-sm font-medium whitespace-nowrap transition-colors duration-200 ${
+                  item.isActive
+                    ? 'text-slate-900 dark:text-white font-semibold'
+                    : 'text-gray-500 dark:text-gray-400 hover:text-slate-900 dark:hover:text-white'
+                }`}
+              >
+                <span>{item.label}</span>
+                {item.isActive && (
+                  <span className="absolute -bottom-1.5 left-0 right-0 h-0.5 bg-gradient-to-r from-amber-400 to-amber-500 rounded-full shadow-[0_0_8px_rgba(251,191,36,0.5)]" />
+                )}
+              </Link>
+            ))}
 
-            {/* Menu thứ 5: Link Đặt Lịch công khai */}
+            {/* Menu Link Đặt Lịch công khai dạng Text Link */}
             <a
               href={`/book/${currentUsername}`}
               target="_blank"
               rel="noopener noreferrer"
-              className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl font-semibold text-xs text-slate-600 dark:text-slate-300 hover:text-amber-500 dark:hover:text-amber-400 hover:bg-white/60 dark:hover:bg-white/10 transition-colors"
+              className="relative py-1 text-xs sm:text-sm font-medium whitespace-nowrap text-gray-500 dark:text-gray-400 hover:text-amber-500 dark:hover:text-amber-400 transition-colors flex items-center gap-1.5"
               title={`Trang Đặt Lịch Công Khai (@${currentUsername})`}
             >
-              <ExternalLink className="w-3.5 h-3.5 flex-shrink-0 text-amber-500" />
+              <ExternalLink className="w-3.5 h-3.5 text-amber-500 flex-shrink-0" />
               <span>Link Đặt Lịch</span>
-              <span className="text-[10px] font-mono text-slate-400 dark:text-slate-500 ml-0.5">
-                @{currentUsername}
-              </span>
             </a>
           </nav>
 
-          {/* Right Header Actions: User Info, Theme Toggle duy nhất, Đăng xuất, Mobile Hamburger */}
+          {/* Right Header Actions: ThemeToggle + User Avatar Dropdown */}
           <div className="flex items-center gap-3">
-            {/* Workspace / Studio Indicator Badge */}
-            {currentStudio ? (
-              <Link
-                to="/dashboard/studio-settings"
-                className="hidden xl:flex items-center gap-2 px-3 py-1.5 rounded-xl bg-amber-500/10 border border-amber-500/25 hover:bg-amber-500/15 text-amber-600 dark:text-amber-400 text-xs font-semibold transition-all group"
-                title="Quản trị Studio Workspace"
-              >
-                <Building2 className="w-3.5 h-3.5 text-amber-500 group-hover:scale-110 transition-transform" />
-                <span className="truncate max-w-[140px] font-bold">{currentStudio.name}</span>
-                <TierBadge tier={studioTier} size="xs" />
-                <span className="text-[9px] px-1.5 py-0.5 rounded-md bg-amber-500/20 uppercase font-mono tracking-wider">
-                  {studioRole === 'admin' ? 'Admin' : 'Thợ ảnh'}
-                </span>
-              </Link>
-            ) : (
-              <div className="hidden xl:flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-slate-500/10 border border-slate-500/20 text-slate-500 dark:text-slate-400 text-xs font-semibold">
-                <Camera className="w-3.5 h-3.5" />
-                <span>Freelancer Mode</span>
-                <TierBadge tier={studioTier} size="xs" />
-              </div>
-            )}
-
-            {/* Tên User & Email trên Desktop */}
-            <div className="hidden lg:flex items-center gap-2.5">
-              <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-amber-400 to-yellow-600 text-slate-950 font-bold text-xs flex items-center justify-center flex-shrink-0 shadow-sm">
-                {userInitials}
-              </div>
-              <div className="flex flex-col text-right min-w-0">
-                <span className="text-xs font-bold text-slate-900 dark:text-white truncate max-w-[130px]">
-                  {userFullName}
-                </span>
-                <span className="text-[10px] text-slate-400 dark:text-white/40 font-mono truncate max-w-[130px]">
-                  {user?.email}
-                </span>
-              </div>
-            </div>
-
-            {/* Nút ThemeToggle duy nhất trên toàn màn hình - nằm cạnh User/Đăng xuất */}
+            {/* Theme Toggle duy nhất */}
             <ThemeToggle size="sm" />
 
-            {/* Nút Đăng xuất */}
-            <button
-              type="button"
-              onClick={() => signOut()}
-              className="hidden sm:flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-white/40 dark:bg-white/5 hover:bg-rose-500/10 dark:hover:bg-rose-500/20 text-slate-600 dark:text-white/70 hover:text-rose-600 dark:hover:text-rose-400 text-xs font-semibold border border-white/60 dark:border-white/10 transition-all"
-              title="Đăng xuất khỏi Lensy"
-            >
-              <LogOut className="w-3.5 h-3.5" />
-              <span>Đăng xuất</span>
-            </button>
+            {/* User Avatar Dropdown (Gom toàn bộ User Actions: Tên, Cài đặt, Đăng xuất) */}
+            <div className="relative" ref={userMenuRef}>
+              <button
+                type="button"
+                onClick={() => setIsUserMenuOpen(prev => !prev)}
+                className="flex items-center gap-2 p-1 pl-1.5 rounded-full hover:bg-white/40 dark:hover:bg-white/5 border border-transparent hover:border-white/10 transition-all cursor-pointer group"
+                aria-label="User profile and menu"
+              >
+                <div className="w-8 h-8 rounded-full bg-gradient-to-tr from-amber-500 to-yellow-400 text-slate-950 font-bold text-xs flex items-center justify-center shadow-md ring-2 ring-white/10 group-hover:ring-amber-400/50 transition-all flex-shrink-0">
+                  {userInitials}
+                </div>
+                <ChevronDown className={`w-3.5 h-3.5 text-slate-400 transition-transform duration-200 hidden sm:block ${isUserMenuOpen ? 'rotate-180 text-amber-500' : ''}`} />
+              </button>
 
-            {/* Nút Hamburger menu chỉ hiển thị trên mobile (< md) */}
+              {/* Dropdown Menu thả xuống */}
+              {isUserMenuOpen && (
+                <div className="absolute right-0 top-full mt-2.5 w-64 rounded-2xl bg-white/95 dark:bg-[#0c0c0e]/95 backdrop-blur-2xl border border-slate-200 dark:border-white/10 shadow-2xl p-2 z-50 animate-scaleUp text-xs space-y-1">
+                  {/* Profile info header */}
+                  <div className="p-3 rounded-xl bg-slate-50 dark:bg-white/5 space-y-1">
+                    <div className="flex items-center justify-between gap-2">
+                      <p className="font-bold text-slate-900 dark:text-white truncate">{userFullName}</p>
+                      <TierBadge tier={studioTier} size="xs" />
+                    </div>
+                    <p className="text-[11px] text-slate-400 dark:text-zinc-500 font-mono truncate">{user?.email}</p>
+                    {currentStudio && (
+                      <div className="pt-1.5 mt-1 border-t border-slate-200/60 dark:border-white/5 flex items-center justify-between text-[10px]">
+                        <span className="text-slate-500 dark:text-zinc-400 flex items-center gap-1">
+                          <Building2 className="w-3 h-3 text-amber-500" />
+                          <span className="truncate max-w-[120px] font-semibold">{currentStudio.name}</span>
+                        </span>
+                        <span className="px-1.5 py-0.5 rounded bg-amber-500/10 text-amber-600 dark:text-amber-400 font-mono uppercase font-bold">
+                          {studioRole === 'admin' ? 'Admin' : 'Thợ ảnh'}
+                        </span>
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Links */}
+                  <div className="pt-1 space-y-0.5">
+                    <Link
+                      to="/dashboard/settings"
+                      onClick={() => setIsUserMenuOpen(false)}
+                      className="flex items-center gap-2.5 px-3 py-2 rounded-xl text-slate-700 dark:text-zinc-300 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-white/5 font-medium transition-colors"
+                    >
+                      <Settings className="w-4 h-4 text-slate-400" />
+                      <span>Cài Đặt Tài Khoản</span>
+                    </Link>
+
+                    {isStudioAdmin && (
+                      <Link
+                        to="/dashboard/studio-settings"
+                        onClick={() => setIsUserMenuOpen(false)}
+                        className="flex items-center gap-2.5 px-3 py-2 rounded-xl text-slate-700 dark:text-zinc-300 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-white/5 font-medium transition-colors"
+                      >
+                        <Building2 className="w-4 h-4 text-amber-500" />
+                        <span>Quản Trị Studio</span>
+                      </Link>
+                    )}
+
+                    <a
+                      href={`/book/${currentUsername}`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      onClick={() => setIsUserMenuOpen(false)}
+                      className="flex items-center justify-between px-3 py-2 rounded-xl text-slate-700 dark:text-zinc-300 hover:text-amber-500 dark:hover:text-amber-400 hover:bg-slate-100 dark:hover:bg-white/5 font-medium transition-colors"
+                    >
+                      <span className="flex items-center gap-2.5">
+                        <ExternalLink className="w-4 h-4 text-amber-500" />
+                        <span>Trang Đặt Lịch</span>
+                      </span>
+                      <span className="text-[10px] font-mono text-slate-400">@{currentUsername}</span>
+                    </a>
+                  </div>
+
+                  {/* Divider */}
+                  <div className="h-px bg-slate-100 dark:bg-white/10 my-1" />
+
+                  {/* Sign Out Button */}
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setIsUserMenuOpen(false);
+                      signOut();
+                    }}
+                    className="w-full flex items-center gap-2.5 px-3 py-2 rounded-xl text-rose-500 hover:bg-rose-500/10 font-medium transition-colors cursor-pointer"
+                  >
+                    <LogOut className="w-4 h-4" />
+                    <span>Đăng xuất</span>
+                  </button>
+
+                  {/* Dấu ấn bản quyền */}
+                  <div className="pt-1.5 pb-0.5 text-center">
+                    <span className="text-[10px] text-gray-400 dark:text-gray-400 italic">
+                      by Mirmia Studio
+                    </span>
+                  </div>
+                </div>
+              )}
+            </div>
+
+            {/* Mobile Hamburger (< md) */}
             <div className="md:hidden" ref={mobileMenuRef}>
               <button
                 type="button"
                 onClick={() => setIsMobileMenuOpen(prev => !prev)}
-                className="p-2 rounded-xl bg-white/50 dark:bg-white/10 border border-white/40 dark:border-white/10 text-slate-700 dark:text-slate-200 hover:text-slate-900 dark:hover:text-white transition-colors"
+                className="p-2 rounded-xl bg-white/40 dark:bg-white/5 border border-white/20 dark:border-white/10 text-slate-700 dark:text-slate-200 hover:text-slate-900 dark:hover:text-white transition-colors"
                 aria-label="Toggle navigation menu"
               >
                 {isMobileMenuOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
               </button>
 
-              {/* Mobile Drawer Dropdown khi mở Hamburger */}
+              {/* Mobile Drawer Dropdown */}
               {isMobileMenuOpen && (
-                <div className="absolute right-3 top-full mt-2 w-64 rounded-2xl bg-white/95 dark:bg-[#121212]/95 backdrop-blur-2xl border border-white/60 dark:border-white/15 shadow-2xl p-3 z-50 animate-scaleUp text-xs space-y-1.5">
-                  <div className="px-2 py-1 text-[10px] font-bold uppercase tracking-wider text-slate-400 dark:text-white/40">
+                <div className="absolute right-3 top-full mt-2 w-64 rounded-2xl bg-white/95 dark:bg-[#0c0c0e]/95 backdrop-blur-2xl border border-slate-200 dark:border-white/10 shadow-2xl p-3 z-50 animate-scaleUp text-xs space-y-1.5">
+                  <div className="px-2 py-1 text-[10px] font-bold uppercase tracking-wider text-slate-400 dark:text-zinc-500">
                     Menu Điều Hướng
                   </div>
 
@@ -299,10 +338,10 @@ export const DashboardLayout: React.FC = () => {
                         key={item.to}
                         to={item.to}
                         onClick={() => setIsMobileMenuOpen(false)}
-                        className={`flex items-center gap-2.5 px-3 py-2 rounded-xl font-bold transition-all ${
+                        className={`flex items-center gap-2.5 px-3 py-2 rounded-xl font-medium transition-all ${
                           item.isActive
-                            ? 'bg-gradient-to-r from-amber-500 to-yellow-500 text-slate-950 shadow-md shadow-amber-500/20'
-                            : 'text-slate-700 dark:text-slate-200 hover:bg-white/60 dark:hover:bg-white/10'
+                            ? 'bg-amber-500/10 text-amber-500 font-semibold'
+                            : 'text-slate-700 dark:text-zinc-300 hover:bg-white/60 dark:hover:bg-white/5'
                         }`}
                       >
                         <Icon className="w-4 h-4 flex-shrink-0" />
@@ -316,7 +355,7 @@ export const DashboardLayout: React.FC = () => {
                     target="_blank"
                     rel="noopener noreferrer"
                     onClick={() => setIsMobileMenuOpen(false)}
-                    className="flex items-center justify-between px-3 py-2 rounded-xl text-slate-700 dark:text-slate-200 hover:bg-white/60 dark:hover:bg-white/10 font-semibold"
+                    className="flex items-center justify-between px-3 py-2 rounded-xl text-slate-700 dark:text-zinc-300 hover:bg-white/60 dark:hover:bg-white/5 font-medium"
                   >
                     <span className="flex items-center gap-2">
                       <ExternalLink className="w-4 h-4 text-amber-500" />
@@ -327,19 +366,14 @@ export const DashboardLayout: React.FC = () => {
 
                   <div className="pt-2 border-t border-slate-100 dark:border-white/10" />
 
-                  {/* Thông tin User & Đăng xuất trên Mobile */}
-                  <div className="px-3 py-1.5 rounded-xl bg-slate-100/60 dark:bg-white/5 space-y-1">
-                    <p className="font-bold text-slate-900 dark:text-white truncate">{userFullName}</p>
-                    <p className="text-[10px] text-slate-400 font-mono truncate">{user?.email}</p>
-                  </div>
-
+                  {/* Sign Out on Mobile */}
                   <button
                     type="button"
                     onClick={() => {
                       setIsMobileMenuOpen(false);
                       signOut();
                     }}
-                    className="w-full flex items-center gap-2 px-3 py-2 rounded-xl text-rose-500 hover:bg-rose-500/10 font-bold transition-colors"
+                    className="w-full flex items-center gap-2 px-3 py-2 rounded-xl text-rose-500 hover:bg-rose-500/10 font-medium transition-colors"
                   >
                     <LogOut className="w-4 h-4" />
                     <span>Đăng Xuất</span>

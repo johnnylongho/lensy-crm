@@ -1,6 +1,6 @@
 import React from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { TierConfig, triggerCelebrationConfetti } from '../../utils/tierSystem';
+import { TierConfig } from '../../utils/tierSystem';
 import {
   X,
   Sparkles,
@@ -142,22 +142,11 @@ export const TierCelebrationModal: React.FC<Props> = ({
           </div>
 
           {/* Action Buttons */}
-          <div className="flex flex-col sm:flex-row items-center gap-3 pt-2">
-            <button
-              type="button"
-              onClick={() => {
-                triggerCelebrationConfetti();
-              }}
-              className="w-full sm:w-auto flex-1 px-4 py-3 rounded-2xl bg-white/10 hover:bg-white/20 border border-white/20 text-white font-bold text-xs transition-all active:scale-95 flex items-center justify-center gap-2"
-            >
-              <Sparkles className="w-4 h-4 text-amber-400" />
-              <span>Bắn pháo hoa lại 🎉</span>
-            </button>
-
+          <div className="pt-2">
             <button
               type="button"
               onClick={onClose}
-              className="w-full sm:w-auto flex-1 px-5 py-3 rounded-2xl bg-gradient-to-r from-amber-500 to-yellow-500 hover:from-amber-400 hover:to-yellow-400 text-slate-950 font-black text-xs transition-all shadow-lg shadow-amber-500/30 active:scale-95 flex items-center justify-center gap-2"
+              className="w-full px-5 py-3 rounded-2xl bg-gradient-to-r from-amber-500 to-yellow-500 hover:from-amber-400 hover:to-yellow-400 text-slate-950 font-black text-xs transition-all shadow-lg shadow-amber-500/30 active:scale-95 flex items-center justify-center gap-2 cursor-pointer"
             >
               <span>Tiếp Tục Bứt Phá Doanh Thu</span>
               <ArrowRight className="w-4 h-4" />

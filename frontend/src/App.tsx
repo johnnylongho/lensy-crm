@@ -1,21 +1,25 @@
-import React, { useState } from 'react';
+import React, { useState, Suspense, lazy } from 'react';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { AuthProvider } from './context/AuthContext';
+import { WorkspaceProvider } from './context/WorkspaceContext';
 import { ThemeProvider } from './context/ThemeContext';
 import { PrivateRoute } from './components/auth/PrivateRoute';
 import { DashboardLayout } from './layouts/DashboardLayout';
 import { PublicLayout } from './layouts/PublicLayout';
-import { LandingPage } from './components/home/LandingPage';
-import { LoginPage } from './components/auth/LoginPage';
-import { QuoteView } from './components/quote/QuoteView';
-import { PhotographerDashboard } from './components/dashboard/PhotographerDashboard';
-import { SettingsPage } from './components/dashboard/SettingsPage';
-import { GearsManagementPage } from './components/dashboard/GearsManagementPage';
-import { PackagesManagementPage } from './components/dashboard/PackagesManagementPage';
-import { StudioSettingsPage } from './components/dashboard/StudioSettingsPage';
-import { ClientsManagementPage } from './components/clients/ClientsManagementPage';
+import { PageLoadingFallback } from './components/common/PageLoadingFallback';
 import { MOCK_QUOTE, MOCK_CALENDAR_EVENTS } from './data/mockData';
 import { CalendarEvent, QuoteData } from './types';
+
+// Code-splitting via React.lazy: Tách các chunks độc lập tối ưu tốc độ tải
+const LandingPage = lazy(() => import('./components/home/LandingPage').then(m => ({ default: m.LandingPage })));
+const LoginPage = lazy(() => import('./components/auth/LoginPage').then(m => ({ default: m.LoginPage })));
+const QuoteView = lazy(() => import('./components/quote/QuoteView').then(m => ({ default: m.QuoteView })));
+const PhotographerDashboard = lazy(() => import('./components/dashboard/PhotographerDashboard').then(m => ({ default: m.PhotographerDashboard })));
+const SettingsPage = lazy(() => import('./components/dashboard/SettingsPage').then(m => ({ default: m.SettingsPage })));
+const GearsManagementPage = lazy(() => import('./components/dashboard/GearsManagementPage').then(m => ({ default: m.GearsManagementPage })));
+const PackagesManagementPage = lazy(() => import('./components/dashboard/PackagesManagementPage').then(m => ({ default: m.PackagesManagementPage })));
+const StudioSettingsPage = lazy(() => import('./components/dashboard/StudioSettingsPage').then(m => ({ default: m.StudioSettingsPage })));
+const ClientsManagementPage = lazy(() => import('./components/clients/ClientsManagementPage').then(m => ({ default: m.ClientsManagementPage })));
 
 export function App() {
   const [quote, setQuote] = useState<QuoteData>(MOCK_QUOTE);
@@ -53,8 +57,10 @@ export function App() {
   return (
     <ThemeProvider>
       <AuthProvider>
-      <BrowserRouter>
-        <Routes>
+        <WorkspaceProvider>
+          <BrowserRouter>
+            <Suspense fallback={<PageLoadingFallback />}>
+              <Routes>
           {/* ==================================================================== */}
           {/* 1. PUBLIC LAYOUT: KHÔNG CÓ MENU QUẢN TRỊ (Dành cho Khách Hàng & Public) */}
           {/* ==================================================================== */}
@@ -151,10 +157,12 @@ export function App() {
           <Route path="/gears" element={<Navigate to="/dashboard/gears" replace />} />
           <Route path="/studio-settings" element={<Navigate to="/dashboard/studio-settings" replace />} />
           <Route path="*" element={<Navigate to="/" replace />} />
-        </Routes>
-      </BrowserRouter>
-    </AuthProvider>
-  </ThemeProvider>
+              </Routes>
+            </Suspense>
+          </BrowserRouter>
+        </WorkspaceProvider>
+      </AuthProvider>
+    </ThemeProvider>
   );
 }
 

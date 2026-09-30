@@ -56,6 +56,7 @@ export interface QuoteData {
   };
   receiptUrl?: string;
   depositTransferredAt?: string;
+  studio_id?: string;
 }
 
 export interface ExpenseItem {
@@ -86,11 +87,14 @@ export interface CalendarEvent {
   expenses?: number; // Tổng chi phí phát sinh (Job Costing)
   expenseDetails?: ExpenseItem[]; // Chi tiết các khoản chi
   client_id?: string; // UUID khách hàng trong bảng clients
+  studio_id?: string | null; // UUID Studio Workspace
+  photographer_id?: string;
 }
 
 export interface Client {
   id: string;
   photographer_id?: string;
+  studio_id?: string | null;
   name: string;
   phone: string;
   email?: string;
@@ -104,6 +108,7 @@ export type GearStatus = 'active' | 'maintenance' | 'retired';
 export interface GearItem {
   id: string;
   photographer_id?: string;
+  studio_id?: string | null;
   name: string;
   type: GearType;
   status: GearStatus;
@@ -114,6 +119,7 @@ export interface GearItem {
 export interface PackageItem {
   id: string;
   photographer_id?: string;
+  studio_id?: string | null;
   name: string;
   price: number;
   description?: string | null;

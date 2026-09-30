@@ -1044,6 +1044,156 @@ if (fs.existsSync(appFile)) {
 }
 
 // --------------------------------------------------------------------
+// 25. KIỂM TRA KIẾN TRÚC MULTI-TENANT WORKSPACES & RBAC (BƯỚC 1)
+// --------------------------------------------------------------------
+console.log('\n▶ 25. Kiểm tra Kiến Trúc Multi-Tenant Workspaces & RBAC...');
+const multiTenantSql = path.join(__dirname, 'multi_tenant_core_schema.sql');
+assert(fs.existsSync(multiTenantSql), 'File multi_tenant_core_schema.sql tồn tại');
+
+if (fs.existsSync(multiTenantSql)) {
+  const sql = fs.readFileSync(multiTenantSql, 'utf8');
+  assert(sql.includes('ALTER TABLE bookings') && sql.includes('studio_id'), 'Cột studio_id được thêm vào bảng bookings');
+  assert(sql.includes('ALTER TABLE gears') && sql.includes('studio_id'), 'Cột studio_id được thêm vào bảng gears');
+  assert(sql.includes('ALTER TABLE clients') && sql.includes('studio_id'), 'Cột studio_id được thêm vào bảng clients');
+  assert(sql.includes('CREATE TABLE IF NOT EXISTS packages') || sql.includes('ALTER TABLE packages'), 'Bảng packages có studio_id và RLS');
+  assert(sql.includes('FUNCTION is_studio_member'), 'Hàm bảo mật is_studio_member được định nghĩa');
+}
+
+const workspaceCtxFile = path.join(__dirname, 'frontend', 'src', 'context', 'WorkspaceContext.tsx');
+assert(fs.existsSync(workspaceCtxFile), 'Context WorkspaceContext.tsx tồn tại');
+
+if (fs.existsSync(workspaceCtxFile)) {
+  const ctx = fs.readFileSync(workspaceCtxFile, 'utf8');
+  assert(ctx.includes('useWorkspace'), 'useWorkspace hook được export');
+  assert(ctx.includes('WorkspaceProvider'), 'WorkspaceProvider được export');
+}
+
+if (fs.existsSync(appFile)) {
+  const app = fs.readFileSync(appFile, 'utf8');
+  assert(app.includes('WorkspaceProvider'), 'App.tsx bọc WorkspaceProvider');
+}
+
+if (fs.existsSync(dashboardLayoutFile)) {
+  const layout = fs.readFileSync(dashboardLayoutFile, 'utf8');
+  assert(layout.includes('useWorkspace'), 'DashboardLayout tích hợp useWorkspace hook');
+  assert(layout.includes('currentStudio'), 'DashboardLayout hiển thị Workspace Badge theo Studio');
+}
+
+// --------------------------------------------------------------------
+// 26. KIỂM TRA TỐI ƯU HIỆU NĂNG & CODE-SPLITTING (BƯỚC 2)
+// --------------------------------------------------------------------
+console.log('\n▶ 26. Kiểm tra Tối Ưu Hiệu Năng & Code-Splitting...');
+const pageLoadingFallbackFile = path.join(__dirname, 'frontend', 'src', 'components', 'common', 'PageLoadingFallback.tsx');
+assert(fs.existsSync(pageLoadingFallbackFile), 'Component PageLoadingFallback.tsx tồn tại');
+
+if (fs.existsSync(appFile)) {
+  const app = fs.readFileSync(appFile, 'utf8');
+  assert(app.includes('lazy('), 'App.tsx sử dụng React.lazy để chia tách chunks');
+  assert(app.includes('Suspense'), 'App.tsx bọc Suspense fallback');
+  assert(app.includes('PageLoadingFallback'), 'App.tsx sử dụng PageLoadingFallback làm Suspense fallback');
+}
+
+const viteConfigFile = path.join(__dirname, 'frontend', 'vite.config.ts');
+if (fs.existsSync(viteConfigFile)) {
+  const viteConfig = fs.readFileSync(viteConfigFile, 'utf8');
+  assert(viteConfig.includes('manualChunks'), 'vite.config.ts cấu hình manualChunks để tối ưu bundle');
+  assert(viteConfig.includes('vendor-react'), 'vite.config.ts tách riêng chunk vendor-react');
+  assert(viteConfig.includes('vendor-supabase'), 'vite.config.ts tách riêng chunk vendor-supabase');
+  assert(viteConfig.includes('vendor-motion'), 'vite.config.ts tách riêng chunk vendor-motion');
+}
+
+// --------------------------------------------------------------------
+// 27. KIỂM TRA CẤU HÌNH PRODUCTION & WEBHOOK SEPAY (BƯỚC 3)
+// --------------------------------------------------------------------
+console.log('\n▶ 27. Kiểm tra Cấu hình Triển Khai Production & Webhook SePAY...');
+const vercelWebhookFile = path.join(__dirname, 'api', 'sepay-webhook.js');
+assert(fs.existsSync(vercelWebhookFile), 'Serverless Webhook api/sepay-webhook.js tồn tại');
+
+if (fs.existsSync(vercelWebhookFile)) {
+  const code = fs.readFileSync(vercelWebhookFile, 'utf8');
+  assert(code.includes('extractQuoteTokenFromContent'), 'Hỗ trợ trích xuất mã cọc từ nội dung chuyển khoản');
+  assert(code.includes('da_chot'), 'Tự động cập nhật trạng thái booking sang da_chot');
+  assert(code.includes('transactions'), 'Ghi nhận bản ghi dòng tiền vào bảng transactions');
+}
+
+const edgeFunctionFile = path.join(__dirname, 'supabase', 'functions', 'sepay-webhook', 'index.ts');
+assert(fs.existsSync(edgeFunctionFile), 'Supabase Edge Function sepay-webhook/index.ts tồn tại');
+
+const vercelJsonFile = path.join(__dirname, 'vercel.json');
+assert(fs.existsSync(vercelJsonFile), 'Cấu hình vercel.json tồn tại');
+
+if (fs.existsSync(vercelJsonFile)) {
+  const vConfig = fs.readFileSync(vercelJsonFile, 'utf8');
+  assert(vConfig.includes('rewrites'), 'vercel.json cấu hình SPA rewrites điều hướng route');
+  assert(vConfig.includes('api/sepay-webhook') || vConfig.includes('/api/'), 'vercel.json hỗ trợ endpoint API serverless');
+}
+
+const cloudflareRedirects = path.join(__dirname, 'frontend', 'public', '_redirects');
+assert(fs.existsSync(cloudflareRedirects), 'Cấu hình _redirects cho Cloudflare Pages tồn tại');
+
+const prodDocFile = path.join(__dirname, 'TRIEN_KHAI_PRODUCTION.md');
+assert(fs.existsSync(prodDocFile), 'Tài liệu hướng dẫn TRIEN_KHAI_PRODUCTION.md tồn tại');
+
+// --------------------------------------------------------------------
+// 28. KIỂM TRA HỆ THỐNG CẤP BẬC (TIER/BADGE SYSTEM) & SMART CONFETTI
+// --------------------------------------------------------------------
+console.log('\n▶ 28. Kiểm tra Hệ Thống Cấp Bậc (Tier/Badge System) & Smart Confetti...');
+const tierSystemFile = path.join(__dirname, 'frontend', 'src', 'utils', 'tierSystem.ts');
+assert(fs.existsSync(tierSystemFile), 'Module tierSystem.ts tồn tại trong frontend/src/utils/');
+
+if (fs.existsSync(tierSystemFile)) {
+  const tsContent = fs.readFileSync(tierSystemFile, 'utf8');
+  assert(
+    tsContent.includes('10_000_000') &&
+    tsContent.includes('20_000_000') &&
+    tsContent.includes('50_000_000') &&
+    tsContent.includes('100_000_000') &&
+    tsContent.includes('200_000_000'),
+    'Hằng số MILESTONES chứa đầy đủ các mốc: 10tr, 20tr, 50tr, 100tr, 200tr'
+  );
+  assert(
+    tsContent.includes('rookie') &&
+    tsContent.includes('bronze') &&
+    tsContent.includes('silver') &&
+    tsContent.includes('gold') &&
+    tsContent.includes('platinum') &&
+    tsContent.includes('diamond'),
+    'Hỗ trợ đầy đủ các Cấp bậc: Tân Binh, Đồng, Bạc, Vàng, Bạch Kim, Kim Cương'
+  );
+  assert(tsContent.includes('calculateYtdRevenue'), 'Hàm calculateYtdRevenue tính tổng doanh thu trong năm hiện tại');
+  assert(tsContent.includes('getTierProgress'), 'Hàm getTierProgress xác định Cấp hiện tại, Mục tiêu kế tiếp và % hoàn thành');
+  assert(tsContent.includes('lensy_celebrated_tier_') && tsContent.includes('localStorage'), 'Smart Confetti Validation lưu trạng thái vinh danh vào localStorage chống nổ lại khi reload');
+  assert(tsContent.includes('gamificationHook'), 'Hệ thống tích hợp dòng text Gamification Hook động kích thích thăng hạng');
+}
+
+const tierBadgeFile = path.join(__dirname, 'frontend', 'src', 'components', 'dashboard', 'TierBadge.tsx');
+assert(fs.existsSync(tierBadgeFile), 'Component TierBadge.tsx tồn tại');
+
+const tierModalFile = path.join(__dirname, 'frontend', 'src', 'components', 'dashboard', 'TierCelebrationModal.tsx');
+assert(fs.existsSync(tierModalFile), 'Component TierCelebrationModal.tsx tồn tại');
+
+const growthBarFile = path.join(__dirname, 'frontend', 'src', 'components', 'dashboard', 'GrowthProgressBar.tsx');
+assert(fs.existsSync(growthBarFile), 'Component GrowthProgressBar.tsx (Thẻ Hành trình Thăng hạng) tồn tại');
+
+if (fs.existsSync(growthBarFile)) {
+  const gbContent = fs.readFileSync(growthBarFile, 'utf8');
+  assert(gbContent.includes('Hành Trình Thăng Hạng'), 'Thẻ Tiến độ hiển thị tiêu đề "Hành Trình Thăng Hạng (Growth Progress)"');
+  assert(gbContent.includes('TierCelebrationModal'), 'Tích hợp TierCelebrationModal vinh danh khi vượt mốc doanh thu mới');
+  assert(gbContent.includes('gamificationHook'), 'Hiển thị dòng text mồi nhử Gamification Hook đặc quyền mở khóa');
+}
+
+// Kiểm tra hiển thị Huy chương tại Header & Profile
+if (fs.existsSync(dashHeaderFile)) {
+  const dhContent = fs.readFileSync(dashHeaderFile, 'utf8');
+  assert(dhContent.includes('TierBadge'), 'DashboardHeader hiển thị Huy chương TierBadge trang trọng trong thẻ Profile');
+}
+
+if (fs.existsSync(dashboardLayoutFile)) {
+  const dlContent = fs.readFileSync(dashboardLayoutFile, 'utf8');
+  assert(dlContent.includes('TierBadge'), 'DashboardLayout hiển thị Huy chương TierBadge tại khu vực Header / Workspace');
+}
+
+// --------------------------------------------------------------------
 // TỔNG KẾT
 // --------------------------------------------------------------------
 console.log('\n====================================================================');

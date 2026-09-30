@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
+import { useWorkspace } from '../../context/WorkspaceContext';
 import { supabase, isSupabaseConfigured } from '../../lib/supabase';
 import { GearItem, GearType, GearStatus } from '../../types';
 import {
@@ -79,6 +80,7 @@ const GEAR_STATUS_LABELS: Record<GearStatus, { label: string; color: string }> =
 
 export const GearsManagementPage: React.FC = () => {
   const { user } = useAuth();
+  const { currentStudio } = useWorkspace();
   const [gears, setGears] = useState<GearItem[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
@@ -131,7 +133,9 @@ export const GearsManagementPage: React.FC = () => {
           .select('*')
           .order('created_at', { ascending: false });
 
-        if (user) {
+        if (currentStudio) {
+          query = query.or(`studio_id.eq.${currentStudio.id},photographer_id.eq.${user?.id}`);
+        } else if (user) {
           query = query.eq('photographer_id', user.id);
         }
 
@@ -156,7 +160,7 @@ export const GearsManagementPage: React.FC = () => {
 
   useEffect(() => {
     fetchGears();
-  }, [user]);
+  }, [user, currentStudio]);
 
   // Open Modal for Add
   const handleOpenAddModal = () => {
@@ -213,6 +217,7 @@ export const GearsManagementPage: React.FC = () => {
             status: gearStatus,
             purchase_price: numericPrice,
             photographer_id: user?.id || '87239d64-5964-47b1-a146-f12f3d41de9e',
+            studio_id: currentStudio?.id || null,
           };
           const { error } = await supabase.from('gears').insert([newGearPayload]);
           if (error) throw error;

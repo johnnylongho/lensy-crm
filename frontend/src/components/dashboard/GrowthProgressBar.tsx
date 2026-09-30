@@ -1,11 +1,10 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { motion } from 'framer-motion';
 import CountUp from 'react-countup';
-import confetti from 'canvas-confetti';
 import { Link } from 'react-router-dom';
+import { CalendarEvent, GearItem } from '../../types';
 import { useAuth } from '../../context/AuthContext';
 import { supabase, isSupabaseConfigured } from '../../lib/supabase';
-import { CalendarEvent, GearItem } from '../../types';
 import {
   calculateYtdRevenue,
   getTierProgress,
@@ -13,25 +12,24 @@ import {
   hasCelebratedTier,
   markTierCelebrated,
   triggerCelebrationConfetti,
+  TIER_CONFIGS,
+  MILESTONES,
 } from '../../utils/tierSystem';
 import { TierBadge } from './TierBadge';
 import { TierCelebrationModal } from './TierCelebrationModal';
 import {
   TrendingUp,
-  Coins,
   Sparkles,
-  ArrowRight,
-  ShieldCheck,
-  CheckCircle2,
-  AlertCircle,
-  HelpCircle,
-  Camera,
   Trophy,
   Award,
   Medal,
   Crown,
   Gem,
+  ArrowRight,
+  Camera,
+  Coins,
   ChevronRight,
+  Target,
 } from 'lucide-react';
 
 interface Props {
@@ -39,100 +37,48 @@ interface Props {
   className?: string;
 }
 
-export const RoiProgressBar: React.FC<Props> = ({ events, className = '' }) => {
+export const GrowthProgressBar: React.FC<Props> = ({ events, className = '' }) => {
   const { user } = useAuth();
-  const [gears, setGears] = useState<GearItem[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
   const [animatedPercent, setAnimatedPercent] = useState(0);
   const [showCelebrationModal, setShowCelebrationModal] = useState(false);
-  const [activeTab, setActiveTab] = useState<'tier' | 'roi'>('tier');
-  const hasCelebratedRoi = useRef(false);
+  const [viewTab, setViewTab] = useState<'tier' | 'roi'>('tier');
+  const [gears, setGears] = useState<GearItem[]>([]);
 
-  // 1. Tính toán Doanh thu Năm Hiện Tại (YTD Revenue) & Cấp bậc Studio
+  // 1. Tính toán Doanh thu Năm Hiện Tại (YTD Revenue) & Tiến trình Cấp bậc
   const currentYear = new Date().getFullYear();
   const ytdRevenue = calculateYtdRevenue(events, currentYear);
   const tierProgress: TierProgress = getTierProgress(ytdRevenue, currentYear);
   const { currentTier, nextTier, nextMilestone, progressPercent, remainingAmount, gamificationHook } = tierProgress;
 
-  // 2. Fetch toàn bộ thiết bị của studio để tính "Tổng Đầu Tư"
-  const fetchStudioGears = async () => {
-    setIsLoading(true);
-    try {
-      if (isSupabaseConfigured) {
-        let query = supabase
-          .from('gears')
-          .select('id, name, type, status, purchase_price');
-
-        if (user) {
-          query = query.eq('photographer_id', user.id);
-        }
-
-        const { data, error } = await query;
-        if (error) {
-          console.warn('[ROI] Lỗi truy vấn bảng gears:', error.message);
-        } else if (data && data.length > 0) {
-          setGears(data);
-          return;
-        }
-      }
-
-      // Fallback mock gears với giá mua thực tế để trải nghiệm trực quan ngay cả khi chưa kết nối
-      setGears([
-        { id: 'g1', name: 'Body Sony Alpha 7 IV #1', type: 'camera', status: 'active', purchase_price: 48000000 },
-        { id: 'g2', name: 'Lens Sony FE 24-70mm F2.8 GM II', type: 'lens', status: 'active', purchase_price: 49000000 },
-        { id: 'g3', name: 'Đèn Flash Godox V1 Sony', type: 'lighting', status: 'active', purchase_price: 6500000 },
-        { id: 'g4', name: 'Đèn Godox AD200 Pro', type: 'lighting', status: 'active', purchase_price: 8500000 },
-      ]);
-    } catch (err) {
-      console.error('[ROI] Lỗi fetch thiết bị:', err);
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
+  // 2. Fetch danh sách thiết bị nếu người dùng muốn xem tab ROI
   useEffect(() => {
-    fetchStudioGears();
-
-    if (isSupabaseConfigured) {
-      const channel = supabase
-        .channel('realtime:gears_roi')
-        .on(
-          'postgres_changes',
-          { event: '*', schema: 'public', table: 'gears' },
-          () => {
-            fetchStudioGears();
+    const fetchStudioGears = async () => {
+      try {
+        if (isSupabaseConfigured) {
+          let query = supabase.from('gears').select('id, name, type, status, purchase_price');
+          if (user) query = query.eq('photographer_id', user.id);
+          const { data } = await query;
+          if (data && data.length > 0) {
+            setGears(data);
+            return;
           }
-        )
-        .subscribe();
-
-      return () => {
-        supabase.removeChannel(channel);
-      };
-    }
+        }
+        setGears([
+          { id: 'g1', name: 'Body Sony Alpha 7 IV', type: 'camera', status: 'active', purchase_price: 48000000 },
+          { id: 'g2', name: 'Lens Sony 24-70mm GM II', type: 'lens', status: 'active', purchase_price: 49000000 },
+        ]);
+      } catch (e) {}
+    };
+    fetchStudioGears();
   }, [user]);
 
-  // 3. Logic tính toán ROI chuẩn SaaS (Dựa trên Lợi Nhuận Ròng thực tế):
-  // - Tổng Đầu Tư: Toàn bộ giá mua các thiết bị trong kho
   const totalInvestment = gears.reduce((sum, g) => sum + (Number(g.purchase_price) || 0), 0);
-
-  // - Tổng Doanh Thu Đã Thu (Gross Collected): Toàn bộ số tiền ĐÃ THU từ các Booking
   const totalCollected = events.reduce((sum, e) => sum + (Number(e.paidAmount) || 0), 0);
-
-  // - Tổng Chi Phí Show (Expenses): Toàn bộ các khoản chi phí phát sinh
   const totalExpenses = events.reduce((sum, e) => sum + (Number(e.expenses) || 0), 0);
-
-  // - Tổng LỢI NHUẬN RÒNG (Net Profit) = Tổng Doanh Thu Đã Thu - Tổng Chi Phí
   const totalNetProfit = totalCollected - totalExpenses;
-
-  // - Công thức % Hoàn vốn = (Tổng Lợi Nhuận Ròng / Tổng Đầu Tư) * 100
   const roiPercentage = totalInvestment > 0 ? (totalNetProfit / totalInvestment) * 100 : 0;
-  const roundedPercent = Math.round(roiPercentage * 10) / 10;
 
-  // Chuyển màu thông minh theo 3 tầng cho ROI:
-  const isOver100 = roiPercentage >= 100;
-  const isOver50 = roiPercentage >= 50 && roiPercentage < 100;
-
-  // Animation % hiển thị
+  // Hiệu ứng Animation mượt mà khi load số: tăng từ 0% lên % mục tiêu
   useEffect(() => {
     const timer = setTimeout(() => {
       setAnimatedPercent(progressPercent);
@@ -141,36 +87,26 @@ export const RoiProgressBar: React.FC<Props> = ({ events, className = '' }) => {
   }, [progressPercent]);
 
   // ====================================================================
-  // 4. SMART CONFETTI VALIDATION & MODAL CHÚC MỪNG MỐC DOANH THU MỚI
+  // 3. SMART CONFETTI VALIDATION & CELEBRATION MODAL
   // ====================================================================
-  // Để tránh việc nổ pháo hoa mỗi lần load trang:
-  // Lưu trạng thái vinh danh vào localStorage: lensy_celebrated_tier_[tên_tier] = true
-  // Chỉ kích hoạt canvas-confetti VÀ mở Modal vinh danh duy nhất 1 lần khi vượt mốc mới.
+  // Chỉ bắn pháo hoa VÀ hiển thị Modal vinh danh DUY NHẤT 1 LẦN cho mỗi mốc tier mới.
+  // Khi reload lại trang, kiểm tra localStorage (lensy_celebrated_tier_[tên_tier]), tuyệt đối không bắn lại!
   useEffect(() => {
+    // Không celebrate tân binh (rookie)
     if (currentTier.id === 'rookie') return;
 
     const alreadyCelebrated = hasCelebratedTier(currentTier.id);
     if (!alreadyCelebrated) {
+      // Đánh dấu đã vinh danh vào localStorage ngay lập tức
       markTierCelebrated(currentTier.id);
+
+      // Kích hoạt pháo hoa bùng nổ
       triggerCelebrationConfetti();
+
+      // Mở modal vinh danh hoành tráng
       setShowCelebrationModal(true);
     }
   }, [currentTier.id]);
-
-  // Backward compatibility: Gamification Kịch bản 2 pháo hoa nếu ROI đạt 100%
-  useEffect(() => {
-    if (roiPercentage >= 100 && !hasCelebratedRoi.current && !isLoading) {
-      hasCelebratedRoi.current = true;
-      try {
-        confetti({
-          particleCount: 100,
-          spread: 70,
-          origin: { y: 0.6 },
-          colors: ['#10b981', '#34d399', '#6ee7b7', '#f59e0b', '#fbbf24'],
-        });
-      } catch (err) {}
-    }
-  }, [roiPercentage, isLoading]);
 
   return (
     <>
@@ -180,13 +116,13 @@ export const RoiProgressBar: React.FC<Props> = ({ events, className = '' }) => {
         transition={{ duration: 0.45, ease: 'easeOut', delay: 0.15 }}
         className={`relative overflow-hidden rounded-3xl bg-white/60 dark:bg-white/5 backdrop-blur-xl border border-white/60 dark:border-white/10 shadow-[0_8px_32px_0_rgba(0,0,0,0.06)] dark:shadow-[0_8px_32px_0_rgba(0,0,0,0.3)] p-6 sm:p-7 transition-all duration-300 hover:shadow-md hover:-translate-y-0.5 ${className}`}
       >
-        {/* Background Ambient Glow */}
+        {/* Background Ambient Glow tương thích với cấp bậc hiện tại */}
         <div
           className={`absolute -top-16 -right-16 w-64 h-64 rounded-full blur-3xl opacity-25 pointer-events-none transition-all duration-1000 bg-gradient-to-br ${currentTier.gradient}`}
         />
 
         <div className="relative space-y-5">
-          {/* Top Header: Badge, Title & Switch Tab */}
+          {/* Top Header: Badge, Title & Tab Toggle */}
           <div className="flex flex-wrap items-center justify-between gap-3">
             <div className="flex items-center gap-3">
               <div
@@ -217,20 +153,20 @@ export const RoiProgressBar: React.FC<Props> = ({ events, className = '' }) => {
                 <p className="text-xs text-slate-500 dark:text-white/50">
                   Doanh thu YTD {currentYear}: <strong className="text-slate-800 dark:text-white/90 font-mono font-bold">{(ytdRevenue).toLocaleString('vi-VN')} đ</strong>
                   {nextMilestone && (
-                    <span> • Mục tiêu: <span className="font-mono text-amber-500 font-bold">{(nextMilestone).toLocaleString('vi-VN')} đ</span> ({nextTier?.name})</span>
+                    <span> • Mục tiêu kế tiếp: <span className="font-mono text-amber-500 font-bold">{(nextMilestone).toLocaleString('vi-VN')} đ</span> ({nextTier?.name})</span>
                   )}
                 </p>
               </div>
             </div>
 
-            {/* Quick Switch Tabs: Cấp Bậc (Mặc định) vs ROI Thiết Bị */}
+            {/* Quick Switch Tabs & Action Links */}
             <div className="flex items-center gap-2">
               <div className="flex items-center p-1 rounded-2xl bg-white/40 dark:bg-white/5 border border-white/40 dark:border-white/10 backdrop-blur-md">
                 <button
                   type="button"
-                  onClick={() => setActiveTab('tier')}
+                  onClick={() => setViewTab('tier')}
                   className={`px-3 py-1 rounded-xl text-xs font-bold transition-all ${
-                    activeTab === 'tier'
+                    viewTab === 'tier'
                       ? 'bg-amber-500 text-slate-950 shadow-sm'
                       : 'text-slate-600 dark:text-slate-300 hover:text-slate-950 dark:hover:text-white'
                   }`}
@@ -239,9 +175,9 @@ export const RoiProgressBar: React.FC<Props> = ({ events, className = '' }) => {
                 </button>
                 <button
                   type="button"
-                  onClick={() => setActiveTab('roi')}
+                  onClick={() => setViewTab('roi')}
                   className={`px-3 py-1 rounded-xl text-xs font-bold transition-all ${
-                    activeTab === 'roi'
+                    viewTab === 'roi'
                       ? 'bg-amber-500 text-slate-950 shadow-sm'
                       : 'text-slate-600 dark:text-slate-300 hover:text-slate-950 dark:hover:text-white'
                   }`}
@@ -262,7 +198,7 @@ export const RoiProgressBar: React.FC<Props> = ({ events, className = '' }) => {
           </div>
 
           {/* TAB 1: HÀNH TRÌNH THĂNG HẠNG (GROWTH PROGRESS) */}
-          {activeTab === 'tier' ? (
+          {viewTab === 'tier' ? (
             <div className="space-y-4">
               {/* Stat Bar: Chi tiết quãng đường từ Cấp Hiện Tại lên Cấp Kế Tiếp */}
               <div className="p-4 sm:p-5 rounded-2xl bg-white/40 dark:bg-white/5 backdrop-blur-md border border-white/40 dark:border-white/10 flex flex-wrap items-center justify-between gap-3 text-xs sm:text-sm">
@@ -382,7 +318,7 @@ export const RoiProgressBar: React.FC<Props> = ({ events, className = '' }) => {
                   <span>Lãi ròng: <strong className="text-emerald-500 font-mono">{totalNetProfit.toLocaleString('vi-VN')} đ</strong></span>
                 </div>
                 <div className="font-bold text-amber-500">
-                  % Hoàn vốn (ROI): <CountUp start={0} end={roundedPercent} decimals={1} duration={1.2} suffix="%" />
+                  ROI: {Math.round(roiPercentage * 10) / 10}%
                 </div>
               </div>
             </div>
@@ -400,6 +336,3 @@ export const RoiProgressBar: React.FC<Props> = ({ events, className = '' }) => {
     </>
   );
 };
-
-export const GrowthProgressBar = RoiProgressBar;
-export default RoiProgressBar;

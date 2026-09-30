@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Outlet, Link, useLocation } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
+import { useWorkspace } from '../context/WorkspaceContext';
 import { supabase } from '../lib/supabase';
 import {
   Calendar,
@@ -13,15 +14,19 @@ import {
   X,
   Package,
   Building2,
+  Sparkles,
 } from 'lucide-react';
 import { ThemeToggle } from '../components/common/ThemeToggle';
+import { TierBadge } from '../components/dashboard/TierBadge';
+import { TierConfig, TIER_CONFIGS, calculateYtdRevenue, getTierProgress } from '../utils/tierSystem';
 
 export const DashboardLayout: React.FC = () => {
   const { user, signOut } = useAuth();
+  const { currentStudio, studioRole, isStudioAdmin, isStudioMember, isFreelancer } = useWorkspace();
   const location = useLocation();
   const [currentUsername, setCurrentUsername] = useState<string>('johnnylongho');
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
-  const [isStudioAdmin, setIsStudioAdmin] = useState(false);
+  const [studioTier, setStudioTier] = useState<TierConfig>(TIER_CONFIGS.gold);
   const mobileMenuRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -37,39 +42,35 @@ export const DashboardLayout: React.FC = () => {
         }
       });
 
-    // Check if user is studio owner or approved admin
-    const checkAdmin = async () => {
-      try {
-        const { data: owned } = await supabase
-          .from('studios')
-          .select('id')
-          .eq('owner_id', user.id)
-          .limit(1);
-
-        if (owned && owned.length > 0) {
-          setIsStudioAdmin(true);
-          return;
-        }
-
-        const { data: member } = await supabase
-          .from('studio_members')
-          .select('id')
-          .eq('user_id', user.id)
-          .eq('role', 'admin')
-          .eq('status', 'approved')
-          .limit(1);
-
-        if (member && member.length > 0) {
-          setIsStudioAdmin(true);
-        } else {
-          setIsStudioAdmin(false);
-        }
-      } catch (err) {
-        console.error('Lỗi kiểm tra quyền Studio Admin:', err);
+    // Tính toán cấp bậc studio
+    const currentYear = new Date().getFullYear();
+    let query = supabase.from('bookings').select('package_price, paid_amount, status, event_date');
+    if (currentStudio) {
+      query = query.or(`studio_id.eq.${currentStudio.id},photographer_id.eq.${user.id}`);
+    } else {
+      query = query.eq('photographer_id', user.id);
+    }
+    query.then(({ data }) => {
+      if (data && data.length > 0) {
+        const mapped = data.map((b: any) => ({
+          id: '',
+          clientName: '',
+          sessionType: 'wedding' as const,
+          eventDate: b.event_date,
+          startTime: '',
+          endTime: '',
+          location: '',
+          status: b.status,
+          packagePrice: Number(b.package_price || 0),
+          depositAmount: 0,
+          paidAmount: Number(b.paid_amount || 0),
+        }));
+        const ytd = calculateYtdRevenue(mapped, currentYear);
+        const { currentTier } = getTierProgress(ytd, currentYear);
+        setStudioTier(currentTier);
       }
-    };
-    checkAdmin();
-  }, [user]);
+    });
+  }, [user, currentStudio]);
 
   // Đóng mobile menu khi click ra ngoài
   useEffect(() => {
@@ -176,6 +177,7 @@ export const DashboardLayout: React.FC = () => {
                 <span className="text-[9px] uppercase font-bold px-1.5 py-0.5 rounded-full bg-amber-500/10 dark:bg-amber-400/10 text-amber-600 dark:text-amber-400 border border-amber-500/20">
                   CRM
                 </span>
+                <TierBadge tier={studioTier} size="xs" />
               </div>
               <span className="text-[10px] text-gray-400 dark:text-gray-400/80 italic font-medium tracking-wider mt-0.5">
                 by Mirmia Studio
@@ -221,6 +223,28 @@ export const DashboardLayout: React.FC = () => {
 
           {/* Right Header Actions: User Info, Theme Toggle duy nhất, Đăng xuất, Mobile Hamburger */}
           <div className="flex items-center gap-3">
+            {/* Workspace / Studio Indicator Badge */}
+            {currentStudio ? (
+              <Link
+                to="/dashboard/studio-settings"
+                className="hidden xl:flex items-center gap-2 px-3 py-1.5 rounded-xl bg-amber-500/10 border border-amber-500/25 hover:bg-amber-500/15 text-amber-600 dark:text-amber-400 text-xs font-semibold transition-all group"
+                title="Quản trị Studio Workspace"
+              >
+                <Building2 className="w-3.5 h-3.5 text-amber-500 group-hover:scale-110 transition-transform" />
+                <span className="truncate max-w-[140px] font-bold">{currentStudio.name}</span>
+                <TierBadge tier={studioTier} size="xs" />
+                <span className="text-[9px] px-1.5 py-0.5 rounded-md bg-amber-500/20 uppercase font-mono tracking-wider">
+                  {studioRole === 'admin' ? 'Admin' : 'Thợ ảnh'}
+                </span>
+              </Link>
+            ) : (
+              <div className="hidden xl:flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-slate-500/10 border border-slate-500/20 text-slate-500 dark:text-slate-400 text-xs font-semibold">
+                <Camera className="w-3.5 h-3.5" />
+                <span>Freelancer Mode</span>
+                <TierBadge tier={studioTier} size="xs" />
+              </div>
+            )}
+
             {/* Tên User & Email trên Desktop */}
             <div className="hidden lg:flex items-center gap-2.5">
               <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-amber-400 to-yellow-600 text-slate-950 font-bold text-xs flex items-center justify-center flex-shrink-0 shadow-sm">

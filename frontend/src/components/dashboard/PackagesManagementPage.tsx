@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useAuth } from '../../context/AuthContext';
+import { useWorkspace } from '../../context/WorkspaceContext';
 import { supabase, isSupabaseConfigured } from '../../lib/supabase';
 import { PackageItem } from '../../types';
 import { MOCK_PACKAGES } from '../../data/mockData';
@@ -124,6 +125,7 @@ const FEATURE_SUGGESTIONS = [
 
 export const PackagesManagementPage: React.FC = () => {
   const { user } = useAuth();
+  const { currentStudio } = useWorkspace();
   const [packages, setPackages] = useState<PackageItem[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
@@ -174,7 +176,9 @@ export const PackagesManagementPage: React.FC = () => {
           .select('*')
           .order('created_at', { ascending: false });
 
-        if (user) {
+        if (currentStudio) {
+          query = query.or(`studio_id.eq.${currentStudio.id},photographer_id.eq.${user?.id}`);
+        } else if (user) {
           query = query.eq('photographer_id', user.id);
         }
 
@@ -227,7 +231,7 @@ export const PackagesManagementPage: React.FC = () => {
 
   useEffect(() => {
     fetchPackages();
-  }, [user]);
+  }, [user, currentStudio]);
 
   // Lưu state vào local cache dự phòng
   const saveToLocalCache = (updatedList: PackageItem[]) => {
@@ -396,6 +400,7 @@ export const PackagesManagementPage: React.FC = () => {
     try {
       const packagePayload = {
         photographer_id: user?.id || 'a1111111-1111-1111-1111-111111111111',
+        studio_id: currentStudio?.id || null,
         name: trimmedName,
         price: priceNum,
         description: packageDesc.trim() || null,

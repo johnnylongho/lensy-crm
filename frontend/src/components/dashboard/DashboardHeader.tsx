@@ -12,6 +12,8 @@ import {
 import { CalendarEvent } from '../../types';
 import { InstallPwaButton } from './InstallPwaButton';
 import { useAuth } from '../../context/AuthContext';
+import { TierBadge } from './TierBadge';
+import { calculateYtdRevenue, getTierProgress } from '../../utils/tierSystem';
 
 interface Props {
   events: CalendarEvent[];
@@ -59,6 +61,11 @@ export const DashboardHeader: React.FC<Props> = ({
   const totalNetProfit = totalGrossCollected - totalExpenses; // LỢI NHUẬN RÒNG THỰC TẾ
   const netMargin = totalGrossCollected > 0 ? Math.round((totalNetProfit / totalGrossCollected) * 100) : 0;
 
+  // Logic Doanh thu Năm (YTD) & Cấp bậc Huy chương Studio
+  const currentYear = new Date().getFullYear();
+  const ytdRevenue = calculateYtdRevenue(events, currentYear);
+  const { currentTier } = getTierProgress(ytdRevenue, currentYear);
+
   return (
     <motion.div
       initial="hidden"
@@ -80,10 +87,12 @@ export const DashboardHeader: React.FC<Props> = ({
             />
           </div>
           <div>
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-2 flex-wrap">
               <h2 className="text-base sm:text-lg font-bold text-slate-900 dark:text-white/95 tracking-tight">
                 MIRMIA STUDIO & ACADEMY
               </h2>
+              {/* Biểu tượng Huy chương Cấp bậc Studio */}
+              <TierBadge tier={currentTier} size="sm" />
               <span className="px-2 py-0.5 text-[10px] font-bold bg-amber-500/10 dark:bg-amber-500/20 border border-amber-500/20 text-amber-600 dark:text-amber-300 rounded-full">
                 Lensy CRM
               </span>

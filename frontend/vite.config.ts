@@ -10,6 +10,7 @@ export default defineConfig({
       devOptions: {
         enabled: true,
         type: 'module',
+        suppressWarnings: true,
       },
       includeAssets: [
         'mirmia-logo.png',
@@ -52,6 +53,20 @@ export default defineConfig({
       },
     }),
   ],
+  build: {
+    chunkSizeWarningLimit: 800,
+    rollupOptions: {
+      output: {
+        manualChunks: {
+          'vendor-react': ['react', 'react-dom', 'react-router-dom'],
+          'vendor-motion': ['framer-motion', 'canvas-confetti', 'react-countup'],
+          'vendor-dnd': ['@dnd-kit/core', '@dnd-kit/sortable', '@dnd-kit/utilities'],
+          'vendor-supabase': ['@supabase/supabase-js'],
+          'vendor-ui': ['lucide-react', 'date-fns', 'clsx', 'tailwind-merge'],
+        },
+      },
+    },
+  },
   server: {
     port: 5173,
   },

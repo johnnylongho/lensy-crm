@@ -12,7 +12,10 @@ import { WebhookSimulatorModal } from './WebhookSimulatorModal';
 import { ReceiptReviewModal } from './ReceiptReviewModal';
 import { BookingDetailModal } from './BookingDetailModal';
 import { RoiProgressBar } from './RoiProgressBar';
+import { GrowthProgressBar } from './GrowthProgressBar';
 import { ProfitTrendChart } from './ProfitTrendChart';
+import { useAuth } from '../../context/AuthContext';
+import { useWorkspace } from '../../context/WorkspaceContext';
 import { CalendarEvent, BookingStatus } from '../../types';
 import { supabase, isSupabaseConfigured } from '../../lib/supabase';
 import { STATUS_CONFIG } from './BookingStatusSelect';
@@ -28,6 +31,8 @@ export const PhotographerDashboard: React.FC<Props> = ({
   events: initialEvents,
   onViewQuote,
 }) => {
+  const { user } = useAuth();
+  const { currentStudio } = useWorkspace();
   const [events, setEvents] = useState<CalendarEvent[]>(initialEvents);
   const [selectedDate, setSelectedDate] = useState<Date>(new Date('2026-09-25'));
   const [viewMode, setViewMode] = useState<'calendar' | 'kanban'>('calendar');
@@ -58,10 +63,18 @@ export const PhotographerDashboard: React.FC<Props> = ({
     setIsLoading(true);
     try {
       if (isSupabaseConfigured) {
-        const { data, error } = await supabase
+        let bookingsQuery = supabase
           .from('bookings')
           .select('*')
           .order('event_date', { ascending: true });
+
+        if (currentStudio) {
+          bookingsQuery = bookingsQuery.or(`studio_id.eq.${currentStudio.id},photographer_id.eq.${user?.id}`);
+        } else if (user) {
+          bookingsQuery = bookingsQuery.eq('photographer_id', user.id);
+        }
+
+        const { data, error } = await bookingsQuery;
 
         if (error) {
           console.warn('Lỗi truy vấn Supabase:', error.message);
@@ -111,6 +124,8 @@ export const PhotographerDashboard: React.FC<Props> = ({
               assignedGears: b.assigned_gears || [],
               expenses: Number(b.expenses || 0),
               expenseDetails: b.expense_details || [],
+              studio_id: b.studio_id,
+              photographer_id: b.photographer_id,
             };
           });
           setEvents(mappedEvents);
@@ -123,7 +138,6 @@ export const PhotographerDashboard: React.FC<Props> = ({
     }
   };
 
-  // Thiết lập Supabase Fetch và Realtime Subscription khi component mount
   useEffect(() => {
     fetchBookingsFromSupabase();
 
@@ -144,7 +158,7 @@ export const PhotographerDashboard: React.FC<Props> = ({
         supabase.removeChannel(channel);
       };
     }
-  }, []);
+  }, [user, currentStudio]);
 
   // Cập nhật khi props thay đổi
   useEffect(() => {
@@ -376,7 +390,7 @@ export const PhotographerDashboard: React.FC<Props> = ({
         onOpenReceiptReview={booking => setActiveReviewBooking(booking)}
       />
 
-      {/* ROI Progress Bar - Tiến Độ Hoàn Vốn Đầu Tư (Vị trí trên cùng nổi bật) */}
+      {/* Thẻ Hành Trình Thăng Hạng - Cấp Bậc Doanh Thu Studio (Growth Progress / RoiProgressBar) */}
       <RoiProgressBar events={events} />
 
       {/* Biểu Đồ Xu Hướng Lợi Nhuận Ròng (Ưu tiên hiển thị Net Profit - Tiền thật bỏ túi) */}

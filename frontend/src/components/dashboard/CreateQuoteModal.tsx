@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useWorkspace } from '../../context/WorkspaceContext';
 import { supabase, isSupabaseConfigured } from '../../lib/supabase';
 import { STUDIO_GEARS, scanGearConflicts, ConflictScanResult } from '../../lib/conflictScanner';
 import { SessionType, CalendarEvent } from '../../types';
@@ -75,6 +76,9 @@ export const CreateQuoteModal: React.FC<Props> = ({
   existingEvents,
   onQuoteCreated,
 }) => {
+  // Workspace state
+  const { currentStudio } = useWorkspace();
+
   // Form states
   const [clientName, setClientName] = useState('');
   const [clientPhone, setClientPhone] = useState('');
@@ -191,6 +195,7 @@ export const CreateQuoteModal: React.FC<Props> = ({
       status: 'cho_coc',
       quote_token: quoteToken,
       notes: combinedNotes,
+      studio_id: currentStudio?.id || null,
     };
 
     try {
@@ -233,6 +238,7 @@ export const CreateQuoteModal: React.FC<Props> = ({
                   .insert([
                     {
                       photographer_id: photographerId,
+                      studio_id: currentStudio?.id || null,
                       name: newBookingRecord.client_name,
                       phone: newBookingRecord.client_phone,
                       email: newBookingRecord.client_email,
@@ -275,6 +281,7 @@ export const CreateQuoteModal: React.FC<Props> = ({
         depositAmount: newBookingRecord.deposit_amount,
         paidAmount: 0,
         remainingAmount: newBookingRecord.package_price,
+        studio_id: currentStudio?.id,
       };
 
       onQuoteCreated(newCalendarEvent);

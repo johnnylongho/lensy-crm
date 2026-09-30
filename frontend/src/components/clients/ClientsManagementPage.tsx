@@ -1,4 +1,6 @@
 import React, { useState, useEffect, useMemo } from 'react';
+import { useAuth } from '../../context/AuthContext';
+import { useWorkspace } from '../../context/WorkspaceContext';
 import { supabase, isSupabaseConfigured } from '../../lib/supabase';
 import { CalendarEvent, Client } from '../../types';
 import { MOCK_CALENDAR_EVENTS } from '../../data/mockData';
@@ -197,6 +199,8 @@ const MOCK_CLIENTS_DATA: ClientProfileData[] = [
 ];
 
 export const ClientsManagementPage: React.FC = () => {
+  const { user } = useAuth();
+  const { currentStudio } = useWorkspace();
   const [clients, setClients] = useState<ClientProfileData[]>(MOCK_CLIENTS_DATA);
   const [searchQuery, setSearchQuery] = useState('');
   const [filterTier, setFilterTier] = useState<'all' | 'vip' | 'regular' | 'debt'>('all');
@@ -212,16 +216,32 @@ export const ClientsManagementPage: React.FC = () => {
 
     try {
       // 1. Lấy danh sách clients
-      const { data: dbClients } = await supabase
+      let clientsQuery = supabase
         .from('clients')
         .select('*')
         .order('created_at', { ascending: false });
 
+      if (currentStudio) {
+        clientsQuery = clientsQuery.or(`studio_id.eq.${currentStudio.id},photographer_id.eq.${user?.id}`);
+      } else if (user) {
+        clientsQuery = clientsQuery.eq('photographer_id', user.id);
+      }
+
+      const { data: dbClients } = await clientsQuery;
+
       // 2. Lấy danh sách bookings
-      const { data: dbBookings } = await supabase
+      let bookingsQuery = supabase
         .from('bookings')
         .select('*')
         .order('event_date', { ascending: false });
+
+      if (currentStudio) {
+        bookingsQuery = bookingsQuery.or(`studio_id.eq.${currentStudio.id},photographer_id.eq.${user?.id}`);
+      } else if (user) {
+        bookingsQuery = bookingsQuery.eq('photographer_id', user.id);
+      }
+
+      const { data: dbBookings } = await bookingsQuery;
 
       const allBookings = (dbBookings || []) as any[];
       const clientMap = new Map<string, ClientProfileData>();
@@ -347,7 +367,7 @@ export const ClientsManagementPage: React.FC = () => {
 
   useEffect(() => {
     fetchClientsFromSupabase();
-  }, []);
+  }, [user, currentStudio]);
 
   // Thống kê tổng quan KPIs
   const kpiStats = useMemo(() => {

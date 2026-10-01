@@ -22,6 +22,7 @@ import { CalendarEvent, BookingStatus } from '../../types';
 import { supabase, isSupabaseConfigured } from '../../lib/supabase';
 import { STATUS_CONFIG } from './BookingStatusSelect';
 import { Calendar, Kanban, RefreshCw, CheckCircle2, AlertCircle, Upload } from 'lucide-react';
+import { smartSortBookings } from '../../utils/dateSorting';
 import { QuickEditFinancialsModal } from './QuickEditFinancialsModal';
 import { EditCategoryModal } from './EditCategoryModal';
 
@@ -164,7 +165,7 @@ export const PhotographerDashboard: React.FC<Props> = ({
               is_deleted: b.is_deleted,
             };
           });
-          setEvents(mappedEvents);
+          setEvents(smartSortBookings(mappedEvents));
         }
       }
     } catch (err) {

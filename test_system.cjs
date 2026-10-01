@@ -1602,6 +1602,39 @@ if (fs.existsSync(photoDashFile)) {
 }
 
 // --------------------------------------------------------------------
+// 36. KIỂM TRA SẮP XẾP THÔNG MINH & PHÂN TRANG DANH SÁCH LỊCH CHỤP
+// --------------------------------------------------------------------
+console.log('\n▶ 36. Kiểm tra Sắp Xếp Thông Minh & Phân Trang Danh Sách Lịch Chụp...');
+
+const dateSortingFile = path.join(__dirname, 'frontend', 'src', 'utils', 'dateSorting.ts');
+assert(fs.existsSync(dateSortingFile), 'File utils/dateSorting.ts tồn tại');
+
+if (fs.existsSync(dateSortingFile)) {
+  const dsContent = fs.readFileSync(dateSortingFile, 'utf8');
+  assert(dsContent.includes('smartSortBookings'), 'Định nghĩa hàm smartSortBookings');
+  assert(dsContent.includes('sortBookings'), 'Định nghĩa hàm sortBookings');
+  assert(dsContent.includes('BookingSortOption'), 'Khai báo kiểu BookingSortOption');
+  assert(dsContent.includes("'smart'") && dsContent.includes("'furthest'") && dsContent.includes("'newest'"), 'Hỗ trợ đầy đủ 3 tùy chọn sắp xếp: smart, furthest, newest');
+}
+
+if (fs.existsSync(upcomingShootsTarget)) {
+  const usContent = fs.readFileSync(upcomingShootsTarget, 'utf8');
+  assert(usContent.includes('searchQuery') && usContent.includes('setSearchQuery'), 'UpcomingShootsList có ô tìm kiếm nhanh searchQuery');
+  assert(usContent.includes('sortOption') && usContent.includes('setSortOption'), 'UpcomingShootsList có dropdown chọn tiêu chí sắp xếp sortOption');
+  assert(usContent.includes('statusFilter') && usContent.includes('setStatusFilter'), 'UpcomingShootsList có dropdown lọc trạng thái statusFilter');
+  assert(usContent.includes('DEFAULT_PAGE_SIZE'), 'UpcomingShootsList định nghĩa hằng số giới hạn hiển thị mặc định DEFAULT_PAGE_SIZE = 10');
+  assert(usContent.includes('visibleCount') && usContent.includes('setVisibleCount'), 'UpcomingShootsList quản lý state phân trang visibleCount');
+  assert(usContent.includes('Xem thêm 10 lịch cũ hơn') || usContent.includes('Xem thêm'), 'UpcomingShootsList có nút Xem thêm (Load More)');
+  assert(usContent.includes('Thu gọn'), 'UpcomingShootsList có nút Thu gọn danh sách về mặc định');
+  assert(usContent.includes('Không tìm thấy lịch chụp nào phù hợp'), 'UpcomingShootsList xử lý Empty State khi tìm kiếm/lọc không có kết quả');
+}
+
+if (fs.existsSync(photoDashFile)) {
+  const pdContent = fs.readFileSync(photoDashFile, 'utf8');
+  assert(pdContent.includes('smartSortBookings'), 'PhotographerDashboard import và áp dụng smartSortBookings khi nạp dữ liệu');
+}
+
+// --------------------------------------------------------------------
 // TỔNG KẾT
 // --------------------------------------------------------------------
 console.log('\n====================================================================');

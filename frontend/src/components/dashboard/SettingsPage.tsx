@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { motion } from 'framer-motion';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import { supabase, isSupabaseConfigured } from '../../lib/supabase';
@@ -176,6 +177,7 @@ export const SettingsPage: React.FC = () => {
   };
 
   useEffect(() => {
+    setIsLoading(true);
     fetchUserProfile();
   }, [user]);
 
@@ -480,17 +482,29 @@ export const SettingsPage: React.FC = () => {
 
   if (isLoading) {
     return (
-      <div className="min-h-[70vh] flex flex-col items-center justify-center p-6 text-slate-100">
+      <motion.div
+        initial={{ opacity: 0, y: 10 }}
+        animate={{ opacity: 1, y: 0 }}
+        exit={{ opacity: 0, y: -10 }}
+        transition={{ duration: 0.2 }}
+        className="min-h-[70vh] flex flex-col items-center justify-center p-6 text-slate-100"
+      >
         <div className="w-12 h-12 rounded-2xl bg-amber-500/10 border border-amber-500/30 text-amber-400 flex items-center justify-center mb-4 animate-pulse">
           <Loader2 className="w-6 h-6 animate-spin" />
         </div>
         <p className="text-sm font-semibold text-slate-300">Đang tải thông tin cài đặt...</p>
-      </div>
+      </motion.div>
     );
   }
 
   return (
-    <div className="max-w-4xl mx-auto px-4 py-6 sm:py-8 space-y-6">
+    <motion.div
+      initial={{ opacity: 0, y: 10 }}
+      animate={{ opacity: 1, y: 0 }}
+      exit={{ opacity: 0, y: -10 }}
+      transition={{ duration: 0.2 }}
+      className="max-w-4xl mx-auto px-4 py-6 sm:py-8 space-y-6"
+    >
       {/* Toast Notification */}
       {toast && (
         <div className="fixed top-6 right-6 z-50 animate-slideDown max-w-md">
@@ -1106,6 +1120,6 @@ export const SettingsPage: React.FC = () => {
           </button>
         </div>
       </form>
-    </div>
+    </motion.div>
   );
 };

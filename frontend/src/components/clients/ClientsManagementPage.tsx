@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useMemo } from 'react';
+import { motion } from 'framer-motion';
 import { useAuth } from '../../context/AuthContext';
 import { useWorkspace } from '../../context/WorkspaceContext';
 import { supabase, isSupabaseConfigured } from '../../lib/supabase';
@@ -201,18 +202,22 @@ const MOCK_CLIENTS_DATA: ClientProfileData[] = [
 export const ClientsManagementPage: React.FC = () => {
   const { user } = useAuth();
   const { currentStudio } = useWorkspace();
-  const [clients, setClients] = useState<ClientProfileData[]>(MOCK_CLIENTS_DATA);
+  const [clients, setClients] = useState<ClientProfileData[]>([]);
   const [searchQuery, setSearchQuery] = useState('');
   const [filterTier, setFilterTier] = useState<'all' | 'vip' | 'regular' | 'debt'>('all');
   const [selectedClient, setSelectedClient] = useState<ClientProfileData | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
-  const [isLoading, setIsLoading] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
   const [copiedPhone, setCopiedPhone] = useState<string | null>(null);
 
   // Tải dữ liệu từ Supabase (Clients + Bookings) và tính toán LTV
   const fetchClientsFromSupabase = async () => {
-    if (!isSupabaseConfigured) return;
     setIsLoading(true);
+    if (!isSupabaseConfigured) {
+      setClients(MOCK_CLIENTS_DATA);
+      setIsLoading(false);
+      return;
+    }
 
     try {
       // 1. Lấy danh sách clients
@@ -355,9 +360,7 @@ export const ClientsManagementPage: React.FC = () => {
         return b.totalSpent - a.totalSpent;
       });
 
-      if (calculatedClients.length > 0) {
-        setClients(calculatedClients);
-      }
+      setClients(calculatedClients);
     } catch (err) {
       console.error('Lỗi khi tải dữ liệu clients:', err);
     } finally {
@@ -366,7 +369,12 @@ export const ClientsManagementPage: React.FC = () => {
   };
 
   useEffect(() => {
+    setIsLoading(true);
+    setClients([]);
     fetchClientsFromSupabase();
+    return () => {
+      setClients([]);
+    };
   }, [user, currentStudio]);
 
   // Thống kê tổng quan KPIs
@@ -412,7 +420,13 @@ export const ClientsManagementPage: React.FC = () => {
   };
 
   return (
-    <div className="max-w-7xl mx-auto px-4 sm:px-6 py-6 sm:py-8 space-y-7 animate-fadeIn">
+    <motion.div
+      initial={{ opacity: 0, y: 10 }}
+      animate={{ opacity: 1, y: 0 }}
+      exit={{ opacity: 0, y: -10 }}
+      transition={{ duration: 0.2 }}
+      className="max-w-7xl mx-auto px-4 sm:px-6 py-6 sm:py-8 space-y-7"
+    >
       {/* Page Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
@@ -454,9 +468,13 @@ export const ClientsManagementPage: React.FC = () => {
             <Users className="w-3.5 h-3.5 text-blue-500 dark:text-blue-400" />
             <span>Tổng Khách Hàng</span>
           </span>
-          <p className="text-2xl sm:text-3xl font-light font-mono text-slate-900 dark:text-white tracking-tight">
-            {kpiStats.totalClients} <span className="text-xs font-normal text-slate-500 dark:text-white/50">người</span>
-          </p>
+          {isLoading ? (
+            <div className="h-8 w-24 bg-slate-200 dark:bg-white/10 rounded-lg animate-pulse my-1" />
+          ) : (
+            <p className="text-2xl sm:text-3xl font-light font-mono text-slate-900 dark:text-white tracking-tight">
+              {kpiStats.totalClients} <span className="text-xs font-normal text-slate-500 dark:text-white/50">người</span>
+            </p>
+          )}
         </div>
 
         {/* Khách VIP */}
@@ -465,14 +483,18 @@ export const ClientsManagementPage: React.FC = () => {
             <Crown className="w-3.5 h-3.5 text-amber-500" />
             <span>Khách Hàng VIP (👑)</span>
           </span>
-          <div className="flex items-baseline gap-2">
-            <p className="text-2xl sm:text-3xl font-light font-mono text-amber-600 dark:text-amber-300 tracking-tight">
-              {kpiStats.vipCount}
-            </p>
-            <span className="text-xs text-amber-600/80 dark:text-amber-400/80 font-medium">
-              ({kpiStats.totalClients > 0 ? Math.round((kpiStats.vipCount / kpiStats.totalClients) * 100) : 0}% tệp khách)
-            </span>
-          </div>
+          {isLoading ? (
+            <div className="h-8 w-20 bg-amber-500/20 rounded-lg animate-pulse my-1" />
+          ) : (
+            <div className="flex items-baseline gap-2">
+              <p className="text-2xl sm:text-3xl font-light font-mono text-amber-600 dark:text-amber-300 tracking-tight">
+                {kpiStats.vipCount}
+              </p>
+              <span className="text-xs text-amber-600/80 dark:text-amber-400/80 font-medium">
+                ({kpiStats.totalClients > 0 ? Math.round((kpiStats.vipCount / kpiStats.totalClients) * 100) : 0}% tệp khách)
+              </span>
+            </div>
+          )}
         </div>
 
         {/* Tổng Doanh Thu LTV */}
@@ -481,9 +503,13 @@ export const ClientsManagementPage: React.FC = () => {
             <DollarSign className="w-3.5 h-3.5 text-emerald-500 dark:text-emerald-400" />
             <span>Tổng Doanh Thu LTV</span>
           </span>
-          <p className="text-xl sm:text-2xl font-light font-mono text-emerald-600 dark:text-emerald-400 truncate tracking-tight">
-            {kpiStats.totalLtvRevenue.toLocaleString('vi-VN')} đ
-          </p>
+          {isLoading ? (
+            <div className="h-8 w-32 bg-slate-200 dark:bg-white/10 rounded-lg animate-pulse my-1" />
+          ) : (
+            <p className="text-xl sm:text-2xl font-light font-mono text-emerald-600 dark:text-emerald-400 truncate tracking-tight">
+              {kpiStats.totalLtvRevenue.toLocaleString('vi-VN')} đ
+            </p>
+          )}
         </div>
 
         {/* AOV */}
@@ -492,9 +518,13 @@ export const ClientsManagementPage: React.FC = () => {
             <TrendingUp className="w-3.5 h-3.5 text-purple-500 dark:text-purple-400" />
             <span>Giá Trị Trung Bình / Khách</span>
           </span>
-          <p className="text-xl sm:text-2xl font-light font-mono text-purple-600 dark:text-purple-300 truncate tracking-tight">
-            {kpiStats.avgOrderValue.toLocaleString('vi-VN')} đ
-          </p>
+          {isLoading ? (
+            <div className="h-8 w-28 bg-slate-200 dark:bg-white/10 rounded-lg animate-pulse my-1" />
+          ) : (
+            <p className="text-xl sm:text-2xl font-light font-mono text-purple-600 dark:text-purple-300 truncate tracking-tight">
+              {kpiStats.avgOrderValue.toLocaleString('vi-VN')} đ
+            </p>
+          )}
         </div>
       </div>
 
@@ -580,7 +610,27 @@ export const ClientsManagementPage: React.FC = () => {
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-200/80 dark:divide-slate-800/60">
-              {filteredClients.length === 0 ? (
+              {isLoading ? (
+                Array.from({ length: 5 }).map((_, idx) => (
+                  <tr key={`skel-row-${idx}`} className="animate-pulse">
+                    <td className="py-3.5 px-4">
+                      <div className="flex items-center gap-3">
+                        <div className="w-9 h-9 rounded-xl bg-slate-200 dark:bg-white/10" />
+                        <div className="space-y-1.5">
+                          <div className="h-3.5 w-28 bg-slate-200 dark:bg-white/10 rounded" />
+                          <div className="h-2.5 w-36 bg-slate-200 dark:bg-white/5 rounded" />
+                        </div>
+                      </div>
+                    </td>
+                    <td className="py-3.5 px-4"><div className="h-3.5 w-24 bg-slate-200 dark:bg-white/10 rounded" /></td>
+                    <td className="py-3.5 px-4 text-center"><div className="h-5 w-16 mx-auto bg-slate-200 dark:bg-white/10 rounded-full" /></td>
+                    <td className="py-3.5 px-4 text-center"><div className="h-3.5 w-8 mx-auto bg-slate-200 dark:bg-white/10 rounded" /></td>
+                    <td className="py-3.5 px-4 text-right"><div className="h-3.5 w-20 ml-auto bg-slate-200 dark:bg-white/10 rounded" /></td>
+                    <td className="py-3.5 px-4"><div className="h-3.5 w-16 bg-slate-200 dark:bg-white/10 rounded" /></td>
+                    <td className="py-3.5 px-4 text-center"><div className="h-6 w-20 mx-auto bg-slate-200 dark:bg-white/10 rounded-lg" /></td>
+                  </tr>
+                ))
+              ) : filteredClients.length === 0 ? (
                 <tr>
                   <td colSpan={7} className="py-12 text-center text-slate-500">
                     Không tìm thấy khách hàng nào khớp với tìm kiếm hoặc bộ lọc.
@@ -736,7 +786,23 @@ export const ClientsManagementPage: React.FC = () => {
 
       {/* 2. MÀN HÌNH MOBILE: DANH SÁCH THẺ (LIST CARDS) GỌN GÀNG, KHÔNG CẦN CUỘN NGANG */}
       <div className="md:hidden space-y-3">
-        {filteredClients.length === 0 ? (
+        {isLoading ? (
+          Array.from({ length: 3 }).map((_, idx) => (
+            <div
+              key={`skel-card-${idx}`}
+              className="p-4 rounded-2xl bg-white/70 dark:bg-slate-900/80 border border-slate-200/80 dark:border-slate-800 shadow-md space-y-3 animate-pulse"
+            >
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-xl bg-slate-200 dark:bg-white/10" />
+                <div className="space-y-1.5 flex-1">
+                  <div className="h-4 w-36 bg-slate-200 dark:bg-white/10 rounded" />
+                  <div className="h-3 w-24 bg-slate-200 dark:bg-white/5 rounded" />
+                </div>
+              </div>
+              <div className="h-10 bg-slate-200/60 dark:bg-white/5 rounded-xl" />
+            </div>
+          ))
+        ) : filteredClients.length === 0 ? (
           <div className="p-8 text-center text-slate-500 rounded-2xl bg-white/40 dark:bg-white/5 border border-white/40 dark:border-white/10">
             Không tìm thấy khách hàng nào khớp với tìm kiếm hoặc bộ lọc.
           </div>
@@ -862,6 +928,6 @@ export const ClientsManagementPage: React.FC = () => {
         onClose={() => setIsModalOpen(false)}
         client={selectedClient}
       />
-    </div>
+    </motion.div>
   );
 };

@@ -41,7 +41,7 @@ export const PhotographerDashboard: React.FC<Props> = ({
   const [events, setEvents] = useState<CalendarEvent[]>(initialEvents);
   const [selectedDate, setSelectedDate] = useState<Date>(new Date('2026-09-25'));
   const [viewMode, setViewMode] = useState<'calendar' | 'kanban'>('calendar');
-  const [isLoading, setIsLoading] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
   const [activeDebtReminderBooking, setActiveDebtReminderBooking] =
     useState<CalendarEvent | null>(null);
   const [activeReviewBooking, setActiveReviewBooking] =
@@ -166,16 +166,22 @@ export const PhotographerDashboard: React.FC<Props> = ({
             };
           });
           setEvents(smartSortBookings(mappedEvents));
+        } else {
+          setEvents(initialEvents || []);
         }
+      } else {
+        setEvents(initialEvents || []);
       }
     } catch (err) {
       console.error('Không thể kết nối Supabase:', err);
+      setEvents(initialEvents || []);
     } finally {
       setIsLoading(false);
     }
   };
 
   useEffect(() => {
+    setIsLoading(true);
     fetchBookingsFromSupabase();
 
     if (isSupabaseConfigured) {
@@ -378,7 +384,13 @@ export const PhotographerDashboard: React.FC<Props> = ({
   };
 
   return (
-    <div className="w-full max-w-7xl mx-auto px-4 sm:px-6 py-6 sm:py-8 space-y-7 sm:space-y-8 animate-fadeIn">
+    <motion.div
+      initial={{ opacity: 0, y: 10 }}
+      animate={{ opacity: 1, y: 0 }}
+      exit={{ opacity: 0, y: -10 }}
+      transition={{ duration: 0.2 }}
+      className="w-full max-w-7xl mx-auto px-4 sm:px-6 py-6 sm:py-8 space-y-7 sm:space-y-8"
+    >
       {/* Top Floating Toast Notification */}
       {toastNotification && (
         <div className="fixed bottom-5 right-5 z-50 animate-bounce">
@@ -691,6 +703,6 @@ export const PhotographerDashboard: React.FC<Props> = ({
           });
         }}
       />
-    </div>
+    </motion.div>
   );
 };

@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
+import { motion } from 'framer-motion';
 import { useAuth } from '../../context/AuthContext';
 import { useWorkspace } from '../../context/WorkspaceContext';
 import { supabase, isSupabaseConfigured } from '../../lib/supabase';
@@ -230,7 +231,12 @@ export const PackagesManagementPage: React.FC = () => {
   };
 
   useEffect(() => {
+    setIsLoading(true);
+    setPackages([]);
     fetchPackages();
+    return () => {
+      setPackages([]);
+    };
   }, [user, currentStudio]);
 
   // Lưu state vào local cache dự phòng
@@ -591,7 +597,13 @@ export const PackagesManagementPage: React.FC = () => {
   });
 
   return (
-    <div className="space-y-6 pb-16">
+    <motion.div
+      initial={{ opacity: 0, y: 10 }}
+      animate={{ opacity: 1, y: 0 }}
+      exit={{ opacity: 0, y: -10 }}
+      transition={{ duration: 0.2 }}
+      className="space-y-6 pb-16"
+    >
       {/* Toast Notification */}
       {toast && (
         <div
@@ -1382,7 +1394,7 @@ export const PackagesManagementPage: React.FC = () => {
           </div>
         </div>
       )}
-    </div>
+    </motion.div>
   );
 };
 

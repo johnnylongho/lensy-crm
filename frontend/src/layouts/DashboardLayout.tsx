@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Outlet, Link, useLocation } from 'react-router-dom';
+import { AnimatePresence } from 'framer-motion';
 import { useAuth } from '../context/AuthContext';
 import { useWorkspace } from '../context/WorkspaceContext';
 import { supabase } from '../lib/supabase';
@@ -389,7 +390,9 @@ export const DashboardLayout: React.FC = () => {
       {/* 3. MAIN CONTENT AREA (Bung toàn bộ chiều rộng max-w-7xl)             */}
       {/* ==================================================================== */}
       <main className="flex-1 w-full max-w-7xl mx-auto px-3 sm:px-6 lg:px-8 py-6 relative z-10">
-        <Outlet />
+        <AnimatePresence mode="wait">
+          <Outlet key={location.pathname} />
+        </AnimatePresence>
       </main>
     </div>
   );

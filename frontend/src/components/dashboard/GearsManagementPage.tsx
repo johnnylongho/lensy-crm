@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { motion } from 'framer-motion';
 import { Link } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import { useWorkspace } from '../../context/WorkspaceContext';
@@ -160,7 +161,12 @@ export const GearsManagementPage: React.FC = () => {
   };
 
   useEffect(() => {
+    setIsLoading(true);
+    setGears([]);
     fetchGears();
+    return () => {
+      setGears([]);
+    };
   }, [user, currentStudio]);
 
   // Open Modal for Add
@@ -292,7 +298,13 @@ export const GearsManagementPage: React.FC = () => {
   const totalInvestment = gears.reduce((sum, g) => sum + (Number(g.purchase_price) || 0), 0);
 
   return (
-    <div className="max-w-6xl mx-auto px-4 py-6 sm:py-8 space-y-6 text-slate-100">
+    <motion.div
+      initial={{ opacity: 0, y: 10 }}
+      animate={{ opacity: 1, y: 0 }}
+      exit={{ opacity: 0, y: -10 }}
+      transition={{ duration: 0.2 }}
+      className="max-w-6xl mx-auto px-4 py-6 sm:py-8 space-y-6 text-slate-100"
+    >
       {/* Toast Alert */}
       {toast && (
         <div className="fixed top-6 right-6 z-50 animate-slideDown max-w-md">
@@ -879,6 +891,6 @@ export const GearsManagementPage: React.FC = () => {
           </div>
         </div>
       )}
-    </div>
+    </motion.div>
   );
 };

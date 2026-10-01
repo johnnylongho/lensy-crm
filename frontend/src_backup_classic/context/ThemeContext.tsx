@@ -1,20 +1,15 @@
 import React, { createContext, useContext, useEffect, useState } from 'react';
 
 export type Theme = 'light' | 'dark' | 'system';
-export type UiMode = 'clay' | 'classic';
 
 export interface ThemeContextType {
   theme: Theme;
   setTheme: (theme: Theme) => void;
   toggleTheme: () => void;
   isDark: boolean;
-  uiMode: UiMode;
-  setUiMode: (mode: UiMode) => void;
-  toggleUiMode: () => void;
 }
 
 const THEME_STORAGE_KEY = 'lensy-theme';
-const UI_MODE_STORAGE_KEY = 'lensy-ui-mode';
 
 const ThemeContext = createContext<ThemeContextType | undefined>(undefined);
 
@@ -27,16 +22,6 @@ export const ThemeProvider: React.FC<{ children: React.ReactNode }> = ({ childre
       }
     }
     return 'dark'; // Mặc định dark mode cho Lensy Photography CRM
-  });
-
-  const [uiMode, setUiModeState] = useState<UiMode>(() => {
-    if (typeof window !== 'undefined') {
-      const stored = localStorage.getItem(UI_MODE_STORAGE_KEY);
-      if (stored === 'clay' || stored === 'classic') {
-        return stored;
-      }
-    }
-    return 'clay'; // Mặc định giao diện Warm Clay Frosted Glass mới theo yêu cầu
   });
 
   const [systemIsDark, setSystemIsDark] = useState<boolean>(() => {
@@ -68,10 +53,6 @@ export const ThemeProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     localStorage.setItem(THEME_STORAGE_KEY, theme);
   }, [theme, isDark]);
 
-  useEffect(() => {
-    localStorage.setItem(UI_MODE_STORAGE_KEY, uiMode);
-  }, [uiMode]);
-
   const setTheme = (newTheme: Theme) => {
     setThemeState(newTheme);
   };
@@ -80,16 +61,8 @@ export const ThemeProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     setThemeState(prev => (prev === 'dark' ? 'light' : 'dark'));
   };
 
-  const setUiMode = (mode: UiMode) => {
-    setUiModeState(mode);
-  };
-
-  const toggleUiMode = () => {
-    setUiModeState(prev => (prev === 'clay' ? 'classic' : 'clay'));
-  };
-
   return (
-    <ThemeContext.Provider value={{ theme, setTheme, toggleTheme, isDark, uiMode, setUiMode, toggleUiMode }}>
+    <ThemeContext.Provider value={{ theme, setTheme, toggleTheme, isDark }}>
       {children}
     </ThemeContext.Provider>
   );

@@ -18,7 +18,6 @@ import { ProfitTrendChart } from './ProfitTrendChart';
 import { ImportBookingsModal } from './ImportBookingsModal';
 import { useAuth } from '../../context/AuthContext';
 import { useWorkspace } from '../../context/WorkspaceContext';
-import { useTheme } from '../../context/ThemeContext';
 import { CalendarEvent, BookingStatus } from '../../types';
 import { supabase, isSupabaseConfigured } from '../../lib/supabase';
 import { STATUS_CONFIG } from './BookingStatusSelect';
@@ -26,7 +25,6 @@ import { Calendar, Kanban, RefreshCw, CheckCircle2, AlertCircle, Upload } from '
 import { smartSortBookings } from '../../utils/dateSorting';
 import { QuickEditFinancialsModal } from './QuickEditFinancialsModal';
 import { EditCategoryModal } from './EditCategoryModal';
-import { ClayStudioDashboard } from './ClayStudioDashboard';
 
 interface Props {
   events: CalendarEvent[];
@@ -40,7 +38,6 @@ export const PhotographerDashboard: React.FC<Props> = ({
 }) => {
   const { user } = useAuth();
   const { currentStudio } = useWorkspace();
-  const { uiMode } = useTheme();
   const [events, setEvents] = useState<CalendarEvent[]>(initialEvents);
   const [selectedDate, setSelectedDate] = useState<Date>(new Date('2026-09-25'));
   const [viewMode, setViewMode] = useState<'calendar' | 'kanban'>('calendar');
@@ -62,13 +59,6 @@ export const PhotographerDashboard: React.FC<Props> = ({
     type: 'success' | 'error';
     message: string;
   } | null>(null);
-
-  // Lắng nghe sự kiện "+ Tạo Lịch Mới" từ Navbar / Sidebar
-  useEffect(() => {
-    const handleOpenCreate = () => setIsCreateQuoteOpen(true);
-    window.addEventListener('lensy:create-booking', handleOpenCreate);
-    return () => window.removeEventListener('lensy:create-booking', handleOpenCreate);
-  }, []);
 
   // Auto hide toast after 4s
   useEffect(() => {
@@ -399,7 +389,7 @@ export const PhotographerDashboard: React.FC<Props> = ({
       animate={{ opacity: 1, y: 0 }}
       exit={{ opacity: 0, y: -10 }}
       transition={{ duration: 0.2 }}
-      className={uiMode === 'clay' ? 'w-full space-y-6' : 'w-full max-w-7xl mx-auto px-4 sm:px-6 py-6 sm:py-8 space-y-7 sm:space-y-8'}
+      className="w-full max-w-7xl mx-auto px-4 sm:px-6 py-6 sm:py-8 space-y-7 sm:space-y-8"
     >
       {/* Top Floating Toast Notification */}
       {toastNotification && (
@@ -551,171 +541,154 @@ export const PhotographerDashboard: React.FC<Props> = ({
         }}
       />
 
-      {/* Dynamic View: Clay Studio Theme vs Classic View */}
-      {uiMode === 'clay' ? (
-        <ClayStudioDashboard
-          events={events}
-          isLoading={isLoading}
-          onStatusChange={handleStatusChange}
-          onOpenQuote={handleOpenQuote}
-          onOpenCreateQuote={() => setIsCreateQuoteOpen(true)}
-          onOpenDetailModal={event => setActiveDetailBooking(event)}
-          onDeleteBooking={event => setBookingToDelete(event)}
-          onQuickEditFinancials={event => setFinancialsModalBooking(event)}
-          onSelectEventDate={handleSelectEventDate}
-        />
-      ) : (
-        <>
-          {/* Top Header & Key Metrics */}
-          <DashboardHeader
-            events={events}
-            onOpenCreateQuote={() => setIsCreateQuoteOpen(true)}
-            onOpenWebhookSimulator={() => setIsWebhookSimulatorOpen(true)}
-            onOpenReceiptReview={booking => setActiveReviewBooking(booking)}
-            onOpenImportCsv={() => setIsImportModalOpen(true)}
-          />
+      {/* Top Header & Key Metrics */}
+      <DashboardHeader
+        events={events}
+        onOpenCreateQuote={() => setIsCreateQuoteOpen(true)}
+        onOpenWebhookSimulator={() => setIsWebhookSimulatorOpen(true)}
+        onOpenReceiptReview={booking => setActiveReviewBooking(booking)}
+        onOpenImportCsv={() => setIsImportModalOpen(true)}
+      />
 
-          {/* Thẻ Hành Trình Thăng Hạng - Cấp Bậc Doanh Thu Studio (Growth Progress / RoiProgressBar) */}
-          <RoiProgressBar events={events} />
+      {/* Thẻ Hành Trình Thăng Hạng - Cấp Bậc Doanh Thu Studio (Growth Progress / RoiProgressBar) */}
+      <RoiProgressBar events={events} />
 
-          {/* Biểu Đồ Xu Hướng Lợi Nhuận Ròng (Ưu tiên hiển thị Net Profit - Tiền thật bỏ túi) */}
-          <ProfitTrendChart events={events} />
+      {/* Biểu Đồ Xu Hướng Lợi Nhuận Ròng (Ưu tiên hiển thị Net Profit - Tiền thật bỏ túi) */}
+      <ProfitTrendChart events={events} />
 
-          {/* Control Bar: View Switcher (Calendar vs Kanban) & Realtime Status (Liquid Glass) */}
-          <motion.div
-            initial={{ opacity: 0, y: 18 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.45, ease: 'easeOut', delay: 0.3 }}
-            className="flex flex-wrap items-center justify-between gap-4 p-3.5 sm:p-4 rounded-3xl bg-white/60 dark:bg-white/5 backdrop-blur-xl border border-white/60 dark:border-white/10 shadow-[0_8px_32px_0_rgba(0,0,0,0.06)] dark:shadow-[0_8px_32px_0_rgba(0,0,0,0.3)] transition-all duration-300"
+      {/* Control Bar: View Switcher (Calendar vs Kanban) & Realtime Status (Liquid Glass) */}
+      <motion.div
+        initial={{ opacity: 0, y: 18 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.45, ease: 'easeOut', delay: 0.3 }}
+        className="flex flex-wrap items-center justify-between gap-4 p-3.5 sm:p-4 rounded-3xl bg-white/60 dark:bg-white/5 backdrop-blur-xl border border-white/60 dark:border-white/10 shadow-[0_8px_32px_0_rgba(0,0,0,0.06)] dark:shadow-[0_8px_32px_0_rgba(0,0,0,0.3)] transition-all duration-300"
+      >
+        <div className="flex items-center gap-1.5 p-1 rounded-2xl bg-white/40 dark:bg-white/5 backdrop-blur-md border border-white/40 dark:border-white/10 text-xs">
+          <button
+            type="button"
+            onClick={() => setViewMode('calendar')}
+            className={`flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl font-bold transition-all duration-200 ${
+              viewMode === 'calendar'
+                ? 'bg-gradient-to-r from-amber-500 to-yellow-500 text-slate-950 shadow-md shadow-amber-500/20'
+                : 'text-slate-600 dark:text-white/60 hover:text-slate-950 dark:hover:text-white hover:bg-white/40 dark:hover:bg-white/10'
+            }`}
           >
-            <div className="flex items-center gap-1.5 p-1 rounded-2xl bg-white/40 dark:bg-white/5 backdrop-blur-md border border-white/40 dark:border-white/10 text-xs">
-              <button
-                type="button"
-                onClick={() => setViewMode('calendar')}
-                className={`flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl font-bold transition-all duration-200 ${
-                  viewMode === 'calendar'
-                    ? 'bg-gradient-to-r from-amber-500 to-yellow-500 text-slate-950 shadow-md shadow-amber-500/20'
-                    : 'text-slate-600 dark:text-white/60 hover:text-slate-950 dark:hover:text-white hover:bg-white/40 dark:hover:bg-white/10'
-                }`}
-              >
-                <Calendar className="w-3.5 h-3.5" />
-                <span>Lưới Lịch Tháng (Calendar)</span>
-              </button>
+            <Calendar className="w-3.5 h-3.5" />
+            <span>Lưới Lịch Tháng (Calendar)</span>
+          </button>
 
-              <button
-                type="button"
-                onClick={() => setViewMode('kanban')}
-                className={`flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl font-bold transition-all duration-200 ${
-                  viewMode === 'kanban'
-                    ? 'bg-gradient-to-r from-amber-500 to-yellow-500 text-slate-950 shadow-md shadow-amber-500/20'
-                    : 'text-slate-600 dark:text-white/60 hover:text-slate-950 dark:hover:text-white hover:bg-white/40 dark:hover:bg-white/10'
-                }`}
-              >
-                <Kanban className="w-3.5 h-3.5" />
-                <span>Tiến Độ Công Việc (Kanban)</span>
-              </button>
-            </div>
-
-            {/* Realtime Connection Indicator & Refresh Button */}
-            <div className="flex items-center gap-2.5 text-xs">
-              {isSupabaseConfigured ? (
-                <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-emerald-500/10 dark:bg-emerald-500/5 border border-emerald-500/20 text-emerald-600 dark:text-emerald-400 text-[11px] font-medium backdrop-blur-md">
-                  <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
-                  <span>Supabase Realtime: Đang Kết Nối</span>
-                </span>
-              ) : (
-                <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-amber-500/10 dark:bg-amber-500/5 border border-amber-500/20 text-amber-600 dark:text-amber-400 text-[11px] font-medium backdrop-blur-md">
-                  <AlertCircle className="w-3.5 h-3.5" />
-                  <span>Chế độ Demo Mock Store</span>
-                </span>
-              )}
-
-              <button
-                type="button"
-                onClick={() => setIsImportModalOpen(true)}
-                className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-white/30 dark:bg-white/5 hover:bg-white/60 dark:hover:bg-white/10 text-slate-700 dark:text-zinc-200 transition-all border border-white/40 dark:border-white/10 backdrop-blur-md shadow-sm active:scale-95 text-xs font-semibold cursor-pointer"
-                title="Nhập danh sách lịch chụp từ file CSV"
-              >
-                <Upload className="w-3.5 h-3.5 text-amber-500" />
-                <span className="hidden sm:inline">Import CSV</span>
-              </button>
-
-              <button
-                type="button"
-                onClick={fetchBookingsFromSupabase}
-                disabled={isLoading}
-                className="p-2 rounded-xl bg-white/30 dark:bg-white/5 hover:bg-white/50 dark:hover:bg-white/10 text-slate-600 dark:text-white/70 hover:text-slate-900 dark:hover:text-white transition-all border border-white/40 dark:border-white/10 backdrop-blur-md shadow-sm active:scale-95"
-                title="Làm mới dữ liệu từ Supabase"
-              >
-                <RefreshCw className={`w-4 h-4 ${isLoading ? 'animate-spin text-amber-500' : ''}`} />
-              </button>
-            </div>
-          </motion.div>
-
-          {/* Main Display: Calendar Mode vs Kanban Mode */}
-          <motion.div
-            initial={{ opacity: 0, y: 18 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.45, ease: 'easeOut', delay: 0.35 }}
+          <button
+            type="button"
+            onClick={() => setViewMode('kanban')}
+            className={`flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl font-bold transition-all duration-200 ${
+              viewMode === 'kanban'
+                ? 'bg-gradient-to-r from-amber-500 to-yellow-500 text-slate-950 shadow-md shadow-amber-500/20'
+                : 'text-slate-600 dark:text-white/60 hover:text-slate-950 dark:hover:text-white hover:bg-white/40 dark:hover:bg-white/10'
+            }`}
           >
-            {viewMode === 'calendar' ? (
-              <div className="space-y-8 animate-fadeIn">
-                <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-                  <div className="lg:col-span-2 space-y-6">
-                    <CalendarView
-                      events={events}
-                      selectedDate={selectedDate}
-                      onSelectDate={setSelectedDate}
-                    />
-                  </div>
+            <Kanban className="w-3.5 h-3.5" />
+            <span>Tiến Độ Công Việc (Kanban)</span>
+          </button>
+        </div>
 
-                  <div className="lg:col-span-1">
-                    <div className="sticky top-20">
-                      <DayShootsModal
-                        selectedDate={selectedDate}
-                        events={events}
-                        onViewQuote={handleOpenQuote}
-                        onStatusChange={handleStatusChange}
-                        onSelectBooking={setActiveDetailBooking}
-                        onOpenDebtReminder={setActiveDebtReminderBooking}
-                        onEditFinancials={b => setFinancialsModalBooking(b)}
-                        onEditCategory={b => setCategoryModalBooking(b)}
-                      />
-                    </div>
-                  </div>
-                </div>
+        {/* Realtime Connection Indicator & Refresh Button */}
+        <div className="flex items-center gap-2.5 text-xs">
+          {isSupabaseConfigured ? (
+            <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-emerald-500/10 dark:bg-emerald-500/5 border border-emerald-500/20 text-emerald-600 dark:text-emerald-400 text-[11px] font-medium backdrop-blur-md">
+              <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
+              <span>Supabase Realtime: Đang Kết Nối</span>
+            </span>
+          ) : (
+            <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-amber-500/10 dark:bg-amber-500/5 border border-amber-500/20 text-amber-600 dark:text-amber-400 text-[11px] font-medium backdrop-blur-md">
+              <AlertCircle className="w-3.5 h-3.5" />
+              <span>Chế độ Demo Mock Store</span>
+            </span>
+          )}
 
-                {/* Toàn Bộ Lịch Chụp Sắp Tới */}
-                <div className="w-full max-w-7xl mx-auto">
-                  <UpcomingShootsList
+          <button
+            type="button"
+            onClick={() => setIsImportModalOpen(true)}
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-white/30 dark:bg-white/5 hover:bg-white/60 dark:hover:bg-white/10 text-slate-700 dark:text-zinc-200 transition-all border border-white/40 dark:border-white/10 backdrop-blur-md shadow-sm active:scale-95 text-xs font-semibold cursor-pointer"
+            title="Nhập danh sách lịch chụp từ file CSV"
+          >
+            <Upload className="w-3.5 h-3.5 text-amber-500" />
+            <span className="hidden sm:inline">Import CSV</span>
+          </button>
+
+          <button
+            type="button"
+            onClick={fetchBookingsFromSupabase}
+            disabled={isLoading}
+            className="p-2 rounded-xl bg-white/30 dark:bg-white/5 hover:bg-white/50 dark:hover:bg-white/10 text-slate-600 dark:text-white/70 hover:text-slate-900 dark:hover:text-white transition-all border border-white/40 dark:border-white/10 backdrop-blur-md shadow-sm active:scale-95"
+            title="Làm mới dữ liệu từ Supabase"
+          >
+            <RefreshCw className={`w-4 h-4 ${isLoading ? 'animate-spin text-amber-500' : ''}`} />
+          </button>
+        </div>
+      </motion.div>
+
+      {/* Main Display: Calendar Mode vs Kanban Mode */}
+      <motion.div
+        initial={{ opacity: 0, y: 18 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.45, ease: 'easeOut', delay: 0.35 }}
+      >
+        {viewMode === 'calendar' ? (
+          <div className="space-y-8 animate-fadeIn">
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+              <div className="lg:col-span-2 space-y-6">
+                <CalendarView
+                  events={events}
+                  selectedDate={selectedDate}
+                  onSelectDate={setSelectedDate}
+                />
+              </div>
+
+              <div className="lg:col-span-1">
+                <div className="sticky top-20">
+                  <DayShootsModal
+                    selectedDate={selectedDate}
                     events={events}
-                    onSelectEventDate={handleSelectEventDate}
-                    onSelectBooking={setActiveDetailBooking}
+                    onViewQuote={handleOpenQuote}
                     onStatusChange={handleStatusChange}
+                    onSelectBooking={setActiveDetailBooking}
                     onOpenDebtReminder={setActiveDebtReminderBooking}
-                    onOpenReceiptReview={booking => setActiveReviewBooking(booking)}
-                    onDeleteBooking={setBookingToDelete}
                     onEditFinancials={b => setFinancialsModalBooking(b)}
                     onEditCategory={b => setCategoryModalBooking(b)}
                   />
                 </div>
               </div>
-            ) : (
-              <div className="animate-fadeIn">
-                <KanbanView
-                  events={events}
-                  onStatusChange={handleStatusChange}
-                  onSelectBooking={setActiveDetailBooking}
-                  onOpenDebtReminder={setActiveDebtReminderBooking}
-                  onDeleteBooking={setBookingToDelete}
-                  onEditFinancials={b => setFinancialsModalBooking(b)}
-                  onEditCategory={b => setCategoryModalBooking(b)}
-                />
-              </div>
-            )}
-          </motion.div>
-        </>
-      )}
+            </div>
+
+            {/* Toàn Bộ Lịch Chụp Sắp Tới: Container w-full max-w-7xl mx-auto dàn trải đều ra giữa màn hình */}
+            <div className="w-full max-w-7xl mx-auto">
+              <UpcomingShootsList
+                events={events}
+                onSelectEventDate={handleSelectEventDate}
+                onSelectBooking={setActiveDetailBooking}
+                onStatusChange={handleStatusChange}
+                onOpenDebtReminder={setActiveDebtReminderBooking}
+                onOpenReceiptReview={booking => setActiveReviewBooking(booking)}
+                onDeleteBooking={setBookingToDelete}
+                onEditFinancials={b => setFinancialsModalBooking(b)}
+                onEditCategory={b => setCategoryModalBooking(b)}
+              />
+            </div>
+          </div>
+        ) : (
+          <div className="animate-fadeIn">
+            <KanbanView
+              events={events}
+              onStatusChange={handleStatusChange}
+              onSelectBooking={setActiveDetailBooking}
+              onOpenDebtReminder={setActiveDebtReminderBooking}
+              onDeleteBooking={setBookingToDelete}
+              onEditFinancials={b => setFinancialsModalBooking(b)}
+              onEditCategory={b => setCategoryModalBooking(b)}
+            />
+          </div>
+        )}
+      </motion.div>
 
       {/* Modal Nhập Lịch Chụp Từ CSV / Excel */}
       <ImportBookingsModal

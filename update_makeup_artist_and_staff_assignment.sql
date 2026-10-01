@@ -78,35 +78,24 @@ COMMENT ON COLUMN bookings.photographer_id IS 'UUID của Nhiếp ảnh gia (Pho
 -- Đảm bảo cả Thợ chụp và Thợ Makeup đều có thể xem và cập nhật lịch chụp được phân công
 -- ====================================================================
 
--- Cho phép nhân sự phụ trách (photographer_id hoặc makeup_artist_id) xem lịch chụp
+-- Cho phép nhân sự phụ trách (photographer_id hoặc makeup_artist_id) hoặc thành viên studio xem lịch chụp
 DROP POLICY IF EXISTS "Staff can view assigned bookings" ON bookings;
 CREATE POLICY "Staff can view assigned bookings"
     ON bookings FOR SELECT
     USING (
         auth.uid() = photographer_id
         OR auth.uid() = makeup_artist_id
-        OR (studio_id IS NOT NULL AND EXISTS (
-            SELECT 1 FROM studio_members sm 
-            WHERE sm.studio_id = bookings.studio_id 
-              AND sm.user_id = auth.uid() 
-              AND sm.status = 'approved'
-        ))
+        OR (studio_id IS NOT NULL AND is_studio_member(studio_id, auth.uid()))
     );
 
--- Cho phép nhân sự phụ trách cập nhật tiến độ lịch chụp (ví dụ: đánh dấu đã chụp, đã makeup xong)
+-- Cho phép nhân sự phụ trách cập nhật tiến độ lịch chụp (ví dụ: đánh dấu đã chụp, đã makeup xong, hủy/xóa lịch)
 DROP POLICY IF EXISTS "Staff can update assigned bookings" ON bookings;
 CREATE POLICY "Staff can update assigned bookings"
     ON bookings FOR UPDATE
     USING (
         auth.uid() = photographer_id
         OR auth.uid() = makeup_artist_id
-        OR (studio_id IS NOT NULL AND EXISTS (
-            SELECT 1 FROM studio_members sm 
-            WHERE sm.studio_id = bookings.studio_id 
-              AND sm.user_id = auth.uid() 
-              AND sm.role = 'admin'
-              AND sm.status = 'approved'
-        ))
+        OR (studio_id IS NOT NULL AND is_studio_member(studio_id, auth.uid()))
     );
 
 

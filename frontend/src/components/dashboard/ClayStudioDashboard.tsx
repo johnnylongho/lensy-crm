@@ -25,6 +25,11 @@ import {
   Sparkles,
   ArrowUpRight,
   Filter,
+  RefreshCw,
+  Upload,
+  Receipt,
+  BellRing,
+  Radio,
 } from 'lucide-react';
 import {
   ResponsiveContainer,
@@ -53,6 +58,12 @@ interface Props {
   onDeleteBooking: (event: CalendarEvent) => void;
   onQuickEditFinancials?: (event: CalendarEvent) => void;
   onSelectEventDate?: (dateStr: string) => void;
+  onRefreshData?: () => void;
+  onOpenImportCsv?: () => void;
+  onOpenWebhookSimulator?: () => void;
+  onOpenDebtReminder?: (event: CalendarEvent) => void;
+  onOpenReceiptReview?: (event: CalendarEvent) => void;
+  onEditCategory?: (event: CalendarEvent) => void;
 }
 
 interface StaffRank {
@@ -80,6 +91,12 @@ export const ClayStudioDashboard: React.FC<Props> = ({
   onDeleteBooking,
   onQuickEditFinancials,
   onSelectEventDate,
+  onRefreshData,
+  onOpenImportCsv,
+  onOpenWebhookSimulator,
+  onOpenDebtReminder,
+  onOpenReceiptReview,
+  onEditCategory,
 }) => {
   const [chartPeriod, setChartPeriod] = useState<'3m' | '6m' | '12m'>('6m');
   const [searchQuery, setSearchQuery] = useState('');
@@ -554,14 +571,53 @@ export const ClayStudioDashboard: React.FC<Props> = ({
             })}
           </div>
 
-          {/* Quick Action: New Booking Button */}
-          <button
-            onClick={onOpenCreateQuote}
-            className="self-end md:self-auto flex items-center gap-1.5 rounded-xl bg-gradient-to-r from-[#df8653] to-[#c86d3b] px-3.5 py-1.5 text-xs font-bold text-white shadow-xs hover:brightness-105 transition-all"
-          >
-            <Plus className="h-3.5 w-3.5 stroke-[2.5]" />
-            <span>+ Tạo Lịch Mới</span>
-          </button>
+          {/* Quick Actions Bar */}
+          <div className="flex items-center gap-2 self-end md:self-auto flex-wrap">
+            {onRefreshData && (
+              <button
+                type="button"
+                onClick={onRefreshData}
+                disabled={isLoading}
+                className="flex items-center gap-1.5 rounded-xl border border-white/80 dark:border-white/10 bg-white/70 dark:bg-white/5 hover:bg-white dark:hover:bg-white/10 px-3 py-1.5 text-xs font-semibold text-[#5a4e44] dark:text-zinc-200 transition-all shadow-xs active:scale-95 disabled:opacity-50 cursor-pointer"
+                title="Làm mới dữ liệu từ Supabase"
+              >
+                <RefreshCw className={`h-3.5 w-3.5 text-[#df8653] ${isLoading ? 'animate-spin' : ''}`} />
+                <span className="hidden sm:inline">Làm Mới</span>
+              </button>
+            )}
+
+            {onOpenImportCsv && (
+              <button
+                type="button"
+                onClick={onOpenImportCsv}
+                className="flex items-center gap-1.5 rounded-xl border border-white/80 dark:border-white/10 bg-white/70 dark:bg-white/5 hover:bg-white dark:hover:bg-white/10 px-3 py-1.5 text-xs font-semibold text-[#5a4e44] dark:text-zinc-200 transition-all shadow-xs active:scale-95 cursor-pointer"
+                title="Nhập danh sách từ file CSV"
+              >
+                <Upload className="h-3.5 w-3.5 text-[#df8653]" />
+                <span className="hidden sm:inline">Import CSV</span>
+              </button>
+            )}
+
+            {onOpenWebhookSimulator && (
+              <button
+                type="button"
+                onClick={onOpenWebhookSimulator}
+                className="flex items-center gap-1.5 rounded-xl border border-white/80 dark:border-white/10 bg-white/70 dark:bg-white/5 hover:bg-white dark:hover:bg-white/10 px-3 py-1.5 text-xs font-semibold text-[#5a4e44] dark:text-zinc-200 transition-all shadow-xs active:scale-95 cursor-pointer"
+                title="Mô phỏng Webhook chuyển khoản ngân hàng"
+              >
+                <Radio className="h-3.5 w-3.5 text-[#df8653]" />
+                <span className="hidden sm:inline">Mô Phỏng Webhook</span>
+              </button>
+            )}
+
+            <button
+              onClick={onOpenCreateQuote}
+              className="flex items-center gap-1.5 rounded-xl bg-gradient-to-r from-[#df8653] to-[#c86d3b] px-3.5 py-1.5 text-xs font-bold text-white shadow-xs hover:brightness-105 active:scale-95 transition-all cursor-pointer"
+            >
+              <Plus className="h-3.5 w-3.5 stroke-[2.5]" />
+              <span>+ Tạo Lịch Mới</span>
+            </button>
+          </div>
         </div>
 
         {/* ------------------------------------------------------------------- */}
@@ -735,7 +791,9 @@ export const ClayStudioDashboard: React.FC<Props> = ({
                 onViewQuote={onOpenQuote}
                 onStatusChange={onStatusChange}
                 onSelectBooking={onOpenDetailModal}
+                onOpenDebtReminder={onOpenDebtReminder}
                 onEditFinancials={onQuickEditFinancials}
+                onEditCategory={onEditCategory}
               />
             </div>
           </div>
@@ -750,8 +808,10 @@ export const ClayStudioDashboard: React.FC<Props> = ({
               events={events}
               onStatusChange={onStatusChange}
               onSelectBooking={onOpenDetailModal}
+              onOpenDebtReminder={onOpenDebtReminder}
               onDeleteBooking={onDeleteBooking}
               onEditFinancials={onQuickEditFinancials}
+              onEditCategory={onEditCategory}
             />
           </div>
         )}
@@ -879,6 +939,51 @@ export const ClayStudioDashboard: React.FC<Props> = ({
                   <Edit className="w-3.5 h-3.5" />
                   <span>Chỉnh Sửa Toàn Diện</span>
                 </button>
+
+                {/* Nhắc Nợ Qua Zalo */}
+                {onOpenDebtReminder && (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      const b = selectedBooking;
+                      onOpenDebtReminder(b);
+                    }}
+                    className="flex items-center justify-center gap-1.5 rounded-xl border border-amber-300/40 bg-amber-50/70 dark:bg-amber-950/20 px-3 py-2 font-semibold text-amber-800 dark:text-amber-300 hover:bg-amber-100 dark:hover:bg-amber-950/40 transition-colors"
+                  >
+                    <BellRing className="w-3.5 h-3.5 text-amber-600 dark:text-amber-400" />
+                    <span>Nhắc Nợ Zalo</span>
+                  </button>
+                )}
+
+                {/* Duyệt Biên Lai Chuyển Khoản nếu có ảnh */}
+                {onOpenReceiptReview && selectedBooking.receiptUrl && (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      const b = selectedBooking;
+                      onOpenReceiptReview(b);
+                    }}
+                    className="flex items-center justify-center gap-1.5 rounded-xl border border-blue-300/40 bg-blue-50/70 dark:bg-blue-950/20 px-3 py-2 font-semibold text-blue-800 dark:text-blue-300 hover:bg-blue-100 dark:hover:bg-blue-950/40 transition-colors"
+                  >
+                    <Receipt className="w-3.5 h-3.5 text-blue-600 dark:text-blue-400" />
+                    <span>Duyệt Biên Lai</span>
+                  </button>
+                )}
+
+                {/* Sửa Nhanh Thu / Chi */}
+                {onQuickEditFinancials && (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      const b = selectedBooking;
+                      onQuickEditFinancials(b);
+                    }}
+                    className="flex items-center justify-center gap-1.5 rounded-xl border border-gray-200 dark:border-white/10 bg-white dark:bg-white/5 px-3 py-2 font-semibold text-gray-700 dark:text-zinc-300 hover:bg-gray-50 dark:hover:bg-white/10 transition-colors"
+                  >
+                    <Sparkles className="w-3.5 h-3.5 text-[#df8653]" />
+                    <span>Sửa Tiền Cọc/Chi</span>
+                  </button>
+                )}
               </div>
 
               <div className="flex items-center justify-between pt-1">

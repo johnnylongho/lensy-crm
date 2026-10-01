@@ -303,7 +303,7 @@ export const GearsManagementPage: React.FC = () => {
       animate={{ opacity: 1, y: 0 }}
       exit={{ opacity: 0, y: -10 }}
       transition={{ duration: 0.2 }}
-      className="max-w-6xl mx-auto px-4 py-6 sm:py-8 space-y-6 text-slate-100"
+      className="w-full space-y-6 text-slate-100"
     >
       {/* Toast Alert */}
       {toast && (

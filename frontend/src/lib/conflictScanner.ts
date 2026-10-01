@@ -148,7 +148,8 @@ export function scanGearConflicts(
   targetDate: string,
   selectedGearIds: string[],
   existingBookings: any[],
-  currentBookingId?: string
+  currentBookingId?: string,
+  customGearsList?: GearItem[]
 ): ConflictScanResult {
   if (!targetDate || selectedGearIds.length === 0 || !existingBookings) {
     return { hasConflict: false, totalAdditionalRentalCost: 0, conflicts: [] };
@@ -165,12 +166,16 @@ export function scanGearConflicts(
     return bDate === targetDate && bId !== currentBookingId && bStatus !== 'da_huy';
   });
 
+  const availableGears = (customGearsList && customGearsList.length > 0) ? customGearsList : STUDIO_GEARS;
+
   for (const gearId of selectedGearIds) {
-    const gearDef = STUDIO_GEARS.find(g => g.id === gearId);
+    const gearDef = availableGears.find(g => g.id === gearId) || STUDIO_GEARS.find(g => g.id === gearId);
     if (!gearDef) continue;
 
     for (const booking of sameDayBookings) {
-      const assignedGears = extractGearsFromBooking(booking);
+      const assignedGears = (booking.assignedGears || booking.assigned_gears || []).length > 0
+        ? (booking.assignedGears || booking.assigned_gears)
+        : extractGearsFromBooking(booking);
       if (assignedGears.includes(gearId)) {
         conflicts.push({
           gear: gearDef,

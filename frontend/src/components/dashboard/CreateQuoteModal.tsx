@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useWorkspace } from '../../context/WorkspaceContext';
 import { supabase, isSupabaseConfigured } from '../../lib/supabase';
-import { STUDIO_GEARS, scanGearConflicts, ConflictScanResult } from '../../lib/conflictScanner';
+import { scanGearConflicts, ConflictScanResult, GearItem } from '../../lib/conflictScanner';
 import { SessionType, CalendarEvent } from '../../types';
 import {
   X,
@@ -31,44 +31,24 @@ interface Props {
   onQuoteCreated: (newEvent: CalendarEvent) => void;
 }
 
-const SESSION_PRESETS: { type: SessionType; label: string; defaultPrice: number; defaultGears: string[] }[] = [
-  {
-    type: 'wedding',
-    label: 'Phóng Sự Cưới (Wedding)',
-    defaultPrice: 18000000,
-    defaultGears: ['body-sony-a74', 'body-sony-a7rv', 'lens-2470', 'lens-70200', 'flash-godox', 'crew-second-shooter'],
-  },
-  {
-    type: 'prewedding',
-    label: 'Ảnh Cưới Ngoại Cảnh (Pre-wedding)',
-    defaultPrice: 15000000,
-    defaultGears: ['body-sony-a74', 'lens-2470', 'lens-50', 'crew-makeup'],
-  },
-  {
-    type: 'lookbook',
-    label: 'Lookbook Thời Trang (Fashion)',
-    defaultPrice: 8000000,
-    defaultGears: ['body-sony-a7rv', 'lens-2470', 'lens-50', 'flash-godox'],
-  },
-  {
-    type: 'portrait',
-    label: 'Chân Dung Profile / Nghệ Thuật',
-    defaultPrice: 4500000,
-    defaultGears: ['body-sony-a74', 'lens-50'],
-  },
-  {
-    type: 'event',
-    label: 'Sự Kiện & Khai Trương',
-    defaultPrice: 10000000,
-    defaultGears: ['body-sony-a74', 'lens-2470', 'flash-godox'],
-  },
-  {
-    type: 'commercial',
-    label: 'Thương Mại & Quảng Cáo (Brand)',
-    defaultPrice: 20000000,
-    defaultGears: ['body-sony-a7rv', 'lens-2470', 'lens-70200', 'flash-godox', 'crew-second-shooter'],
-  },
-];
+export interface DbPackage {
+  id: string;
+  name: string;
+  price: number;
+  description?: string;
+  features?: string[];
+  is_active?: boolean;
+}
+
+export interface DbGear {
+  id: string;
+  name: string;
+  type?: string;
+  status?: string;
+  serial_number?: string;
+  rental_cost?: number;
+  purchase_price?: number;
+}
 
 export const CreateQuoteModal: React.FC<Props> = ({
   isOpen,
@@ -78,6 +58,13 @@ export const CreateQuoteModal: React.FC<Props> = ({
 }) => {
   // Workspace state
   const { currentStudio } = useWorkspace();
+
+  // Real Database state
+  const [packagesList, setPackagesList] = useState<DbPackage[]>([]);
+  const [gearsList, setGearsList] = useState<DbGear[]>([]);
+  const [isLoadingPackages, setIsLoadingPackages] = useState(false);
+  const [isLoadingGears, setIsLoadingGears] = useState(false);
+  const [selectedPackageId, setSelectedPackageId] = useState<string | null>(null);
 
   // Form states
   const [clientName, setClientName] = useState('');
@@ -91,12 +78,7 @@ export const CreateQuoteModal: React.FC<Props> = ({
   const [location, setLocation] = useState('');
   const [packagePrice, setPackagePrice] = useState(18000000);
   const [depositPercentage, setDepositPercentage] = useState(30);
-  const [selectedGears, setSelectedGears] = useState<string[]>([
-    'body-sony-a74',
-    'lens-2470',
-    'lens-70200',
-    'flash-godox',
-  ]);
+  const [selectedGears, setSelectedGears] = useState<string[]>([]);
   const [notes, setNotes] = useState('');
 
   // Status & Success state
@@ -111,15 +93,120 @@ export const CreateQuoteModal: React.FC<Props> = ({
   } | null>(null);
   const [isCopied, setIsCopied] = useState(false);
 
-  // Khi thay đổi loại gói chụp -> cập nhật gợi ý tiêu đề, giá và thiết bị
-  const handleSelectSessionType = (type: SessionType) => {
-    setSessionType(type);
-    const preset = SESSION_PRESETS.find(p => p.type === type);
-    if (preset) {
-      setSessionTitle(`Gói ${preset.label}`);
-      setPackagePrice(preset.defaultPrice);
-      setSelectedGears(preset.defaultGears);
-    }
+  // Tự động nhận diện sessionType từ tên gói
+  const detectSessionType = (name: string) => {
+    const norm = name.toLowerCase();
+    if (norm.includes('cưới') || norm.includes('wedding')) setSessionType('wedding');
+    else if (norm.includes('prewedding') || norm.includes('ngoại cảnh')) setSessionType('prewedding');
+    else if (norm.includes('lookbook') || norm.includes('thời trang')) setSessionType('lookbook');
+    else if (norm.includes('chân dung') || norm.includes('portrait')) setSessionType('portrait');
+    else if (norm.includes('sự kiện') || norm.includes('event')) setSessionType('event');
+    else if (norm.includes('thương mại') || norm.includes('commercial')) setSessionType('commercial');
+    else setSessionType('portrait');
+  };
+
+  // 2. Kéo Dữ liệu Thật từ Database (Fetch Real Data) với AbortController
+  useEffect(() => {
+    if (!isOpen) return;
+
+    const controller = new AbortController();
+    let isMounted = true;
+
+    const fetchRealData = async () => {
+      setIsLoadingPackages(true);
+      setIsLoadingGears(true);
+
+      try {
+        if (!isSupabaseConfigured) {
+          setIsLoadingPackages(false);
+          setIsLoadingGears(false);
+          return;
+        }
+
+        // a) Fetch danh sách Packages thực tế của Studio
+        let pkgQuery = supabase
+          .from('packages')
+          .select('id, name, price, description, features, is_active')
+          .eq('is_active', true)
+          .abortSignal(controller.signal);
+
+        if (currentStudio?.id) {
+          pkgQuery = pkgQuery.or(`studio_id.eq.${currentStudio.id},studio_id.is.null`);
+        }
+
+        const { data: pkgData, error: pkgError } = await pkgQuery.order('price', { ascending: true });
+        if (!pkgError && pkgData && isMounted) {
+          const parsedPackages: DbPackage[] = pkgData.map((p: any) => ({
+            id: p.id,
+            name: p.name,
+            price: Number(p.price || 0),
+            description: p.description,
+            features: Array.isArray(p.features) ? p.features : (p.features ? JSON.parse(p.features) : []),
+            is_active: p.is_active,
+          }));
+          setPackagesList(parsedPackages);
+
+          // Tự động chọn gói đầu tiên nếu chưa chọn
+          if (parsedPackages.length > 0 && !selectedPackageId) {
+            const first = parsedPackages[0];
+            setSelectedPackageId(first.id);
+            setSessionTitle(`Gói ${first.name}`);
+            setPackagePrice(first.price);
+            detectSessionType(first.name);
+          }
+        }
+
+        // b) Fetch danh sách Gear thực tế trong kho (chỉ lấy các thiết bị có trạng thái khả dụng)
+        let gearQuery = supabase
+          .from('gears')
+          .select('id, name, type, status, serial_number, rental_cost, purchase_price')
+          .neq('status', 'maintenance')
+          .neq('status', 'broken')
+          .abortSignal(controller.signal);
+
+        if (currentStudio?.id) {
+          gearQuery = gearQuery.or(`studio_id.eq.${currentStudio.id},studio_id.is.null`);
+        }
+
+        const { data: gearData, error: gearError } = await gearQuery.order('name', { ascending: true });
+        if (!gearError && gearData && isMounted) {
+          const parsedGears: DbGear[] = gearData.map((g: any) => ({
+            id: g.id,
+            name: g.name,
+            type: g.type,
+            status: g.status,
+            serial_number: g.serial_number,
+            rental_cost: g.rental_cost,
+            purchase_price: g.purchase_price,
+          }));
+          setGearsList(parsedGears);
+        }
+      } catch (err: any) {
+        if (err.name !== 'AbortError') {
+          console.warn('[CreateQuoteModal] Lỗi khi tải dữ liệu từ Supabase:', err);
+        }
+      } finally {
+        if (isMounted) {
+          setIsLoadingPackages(false);
+          setIsLoadingGears(false);
+        }
+      }
+    };
+
+    fetchRealData();
+
+    return () => {
+      isMounted = false;
+      controller.abort();
+    };
+  }, [isOpen, currentStudio?.id]);
+
+  // Khi chọn một gói chụp thực tế từ Database
+  const handleSelectPackage = (pkg: DbPackage) => {
+    setSelectedPackageId(pkg.id);
+    setSessionTitle(`Gói ${pkg.name}`);
+    setPackagePrice(pkg.price);
+    detectSessionType(pkg.name);
   };
 
   // Toggle thiết bị
@@ -132,11 +219,21 @@ export const CreateQuoteModal: React.FC<Props> = ({
   // Tính số tiền cọc (30% hoặc theo % chọn)
   const depositAmount = Math.round((packagePrice * depositPercentage) / 100);
 
+  // Mảng thiết bị hỗ trợ quét xung đột
+  const customGearsList: GearItem[] = gearsList.map(g => ({
+    id: g.id,
+    name: g.name,
+    category: (g.type === 'lens' ? 'lens' : g.type === 'lighting' ? 'lighting' : 'body') as any,
+    rentalCost: g.rental_cost || (g.purchase_price ? Math.round(g.purchase_price * 0.05) : 500000),
+  }));
+
   // Quét xung đột thiết bị theo thời gian thực (USP 1)
   const conflictResult: ConflictScanResult = scanGearConflicts(
     eventDate,
     selectedGears,
-    existingEvents
+    existingEvents,
+    undefined,
+    customGearsList
   );
 
   // Xử lý tự động cộng phí thuê ngoài khi bị đụng thiết bị
@@ -175,9 +272,9 @@ export const CreateQuoteModal: React.FC<Props> = ({
 
     // Tạo chuỗi ghi chú kèm danh sách thiết bị để hỗ trợ Conflict Scanner
     const gearNames = selectedGears
-      .map(id => STUDIO_GEARS.find(g => g.id === id)?.name || id)
+      .map(id => gearsList.find(g => g.id === id)?.name || id)
       .join('; ');
-    const combinedNotes = `[Gears: ${gearNames}] ${notes ? notes : ''}`.trim();
+    const combinedNotes = `[Gears: ${gearNames}] [GearIDs: ${selectedGears.join(',')}] ${notes ? notes : ''}`.trim();
 
     const newBookingRecord: any = {
       client_name: clientName.trim(),
@@ -195,6 +292,8 @@ export const CreateQuoteModal: React.FC<Props> = ({
       status: 'cho_coc',
       quote_token: quoteToken,
       notes: combinedNotes,
+      assigned_gears: selectedGears,
+      package_id: selectedPackageId,
       studio_id: currentStudio?.id || null,
     };
 
@@ -431,30 +530,43 @@ export const CreateQuoteModal: React.FC<Props> = ({
                 </div>
               )}
 
-              {/* 1. Chọn loại gói chụp */}
+              {/* 1. Chọn loại gói chụp thực tế từ Database */}
               <div className="space-y-2">
                 <label className="text-slate-300 font-bold block">
                   1. Chọn Gói Chụp Phù Hợp:
                 </label>
-                <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
-                  {SESSION_PRESETS.map(preset => (
-                    <button
-                      key={preset.type}
-                      type="button"
-                      onClick={() => handleSelectSessionType(preset.type)}
-                      className={`p-2.5 rounded-xl border text-left transition-all ${
-                        sessionType === preset.type
-                          ? 'bg-amber-500/10 border-amber-500 text-amber-300 shadow-sm'
-                          : 'bg-slate-900/60 border-slate-800 text-slate-400 hover:border-slate-700 hover:text-slate-200'
-                      }`}
-                    >
-                      <div className="font-bold text-[11px] truncate">{preset.label}</div>
-                      <div className="text-[10px] text-slate-500 font-mono mt-0.5">
-                        Từ {preset.defaultPrice.toLocaleString('vi-VN')} đ
-                      </div>
-                    </button>
-                  ))}
-                </div>
+                {isLoadingPackages ? (
+                  <div className="text-xs text-slate-400 py-3 italic flex items-center gap-2">
+                    <Loader2 className="w-3.5 h-3.5 animate-spin text-amber-500" />
+                    <span>Đang tải danh sách gói chụp...</span>
+                  </div>
+                ) : packagesList.length > 0 ? (
+                  <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+                    {packagesList.map(pkg => (
+                      <button
+                        key={pkg.id}
+                        type="button"
+                        onClick={() => handleSelectPackage(pkg)}
+                        className={`p-2.5 rounded-xl border text-left transition-all ${
+                          selectedPackageId === pkg.id
+                            ? 'bg-amber-500/10 border-amber-500 text-amber-300 shadow-sm'
+                            : 'bg-slate-900/60 border-slate-800 text-slate-400 hover:border-slate-700 hover:text-slate-200'
+                        }`}
+                      >
+                        <div className="font-bold text-[11px] truncate" title={pkg.name}>
+                          {pkg.name}
+                        </div>
+                        <div className="text-[10px] text-slate-500 font-mono mt-0.5">
+                          Từ {pkg.price.toLocaleString('vi-VN')} đ
+                        </div>
+                      </button>
+                    ))}
+                  </div>
+                ) : (
+                  <div className="p-3 rounded-xl bg-slate-900/50 border border-slate-800 text-slate-400 text-xs">
+                    Chưa có gói dịch vụ nào trong hệ thống. Bạn có thể tự nhập tiêu đề và giá gói ở mục bên dưới.
+                  </div>
+                )}
               </div>
 
               {/* 2. Thông tin khách hàng & Buổi chụp */}
@@ -559,29 +671,42 @@ export const CreateQuoteModal: React.FC<Props> = ({
                   </span>
                 </div>
 
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-                  {STUDIO_GEARS.map(gear => {
-                    const isChecked = selectedGears.includes(gear.id);
-                    return (
-                      <label
-                        key={gear.id}
-                        className={`flex items-center gap-2.5 p-2 rounded-xl border cursor-pointer select-none transition-all ${
-                          isChecked
-                            ? 'bg-indigo-950/40 border-indigo-500/40 text-indigo-200'
-                            : 'bg-slate-950/40 border-slate-800/60 text-slate-400 hover:text-slate-300'
-                        }`}
-                      >
-                        <input
-                          type="checkbox"
-                          checked={isChecked}
-                          onChange={() => handleToggleGear(gear.id)}
-                          className="rounded border-slate-700 text-indigo-500 focus:ring-0"
-                        />
-                        <span className="truncate text-[11px] font-medium">{gear.name}</span>
-                      </label>
-                    );
-                  })}
-                </div>
+                {isLoadingGears ? (
+                  <p className="text-xs text-slate-400 py-3 italic flex items-center gap-2">
+                    <Loader2 className="w-3.5 h-3.5 animate-spin text-amber-500" />
+                    <span>Đang tải danh sách thiết bị...</span>
+                  </p>
+                ) : gearsList.length === 0 ? (
+                  <p className="text-xs text-slate-500 italic py-2">
+                    Chưa có thiết bị nào khả dụng trong kho. Bạn có thể thêm thiết bị trong mục Quản lý Thiết bị.
+                  </p>
+                ) : (
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                    {gearsList.map(gear => {
+                      const isChecked = selectedGears.includes(gear.id);
+                      return (
+                        <label
+                          key={gear.id}
+                          className={`flex items-center gap-2.5 p-2 rounded-xl border cursor-pointer select-none transition-all ${
+                            isChecked
+                              ? 'bg-indigo-950/40 border-indigo-500/40 text-indigo-200'
+                              : 'bg-slate-950/40 border-slate-800/60 text-slate-400 hover:text-slate-300'
+                          }`}
+                        >
+                          <input
+                            type="checkbox"
+                            checked={isChecked}
+                            onChange={() => handleToggleGear(gear.id)}
+                            className="rounded border-slate-700 text-indigo-500 focus:ring-0"
+                          />
+                          <span className="truncate text-[11px] font-medium" title={gear.name}>
+                            {gear.name}
+                          </span>
+                        </label>
+                      );
+                    })}
+                  </div>
+                )}
 
                 {/* CẢNH BÁO XUNG ĐỘT (RED FLAG BANNER - USP 1) */}
                 {conflictResult.hasConflict && (

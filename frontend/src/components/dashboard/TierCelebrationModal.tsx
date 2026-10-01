@@ -57,7 +57,7 @@ export const TierCelebrationModal: React.FC<Props> = ({
           animate={{ opacity: 1 }}
           exit={{ opacity: 0 }}
           onClick={onClose}
-          className="fixed inset-0 bg-black/70 backdrop-blur-md transition-opacity"
+          className="fixed inset-0 bg-black/50 backdrop-blur-md transition-opacity"
         />
 
         {/* Modal Hộp Kính Liquid Glass */}
@@ -66,7 +66,7 @@ export const TierCelebrationModal: React.FC<Props> = ({
           animate={{ opacity: 1, scale: 1, y: 0 }}
           exit={{ opacity: 0, scale: 0.9, y: 20 }}
           transition={{ type: 'spring', damping: 25, stiffness: 300 }}
-          className="relative w-full max-w-lg overflow-hidden rounded-3xl bg-slate-900/95 dark:bg-black/90 border border-white/20 shadow-[0_25px_60px_-15px_rgba(0,0,0,0.7)] p-7 sm:p-9 text-center text-white backdrop-blur-2xl z-10"
+          className="relative w-full max-w-lg overflow-y-auto max-h-[90vh] rounded-3xl bg-slate-900/95 dark:bg-black/90 border border-white/20 shadow-[0_25px_60px_-15px_rgba(0,0,0,0.7)] p-7 sm:p-9 text-center text-white backdrop-blur-2xl z-10"
         >
           {/* Vầng hào quang ánh sáng xoay sau huy chương */}
           <div

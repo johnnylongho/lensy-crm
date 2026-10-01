@@ -418,8 +418,14 @@ export const CreateQuoteModal: React.FC<Props> = ({
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-slate-950/80 backdrop-blur-md overflow-y-auto animate-fadeIn">
-      <div className="relative w-full max-w-2xl bg-[#0c1220] border border-slate-800 rounded-3xl shadow-2xl overflow-hidden my-6 max-h-[92vh] flex flex-col">
+    <div
+      className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-3 sm:p-4 backdrop-blur-sm animate-fadeIn"
+      onClick={onClose}
+    >
+      <div
+        className="relative w-full max-w-2xl bg-[#0c1220] border border-slate-800 rounded-3xl shadow-2xl overflow-hidden max-h-[90vh] overflow-y-auto flex flex-col"
+        onClick={e => e.stopPropagation()}
+      >
         {/* Header Modal */}
         <div className="px-5 py-4 border-b border-slate-800/80 flex items-center justify-between bg-slate-900/60 sticky top-0 z-10 backdrop-blur-sm">
           <div className="flex items-center gap-2.5">

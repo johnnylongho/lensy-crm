@@ -122,15 +122,15 @@ export const QuickEditFinancialsModal: React.FC<Props> = ({
   };
 
   return (
-    <div className="fixed inset-0 z-[70] overflow-y-auto flex items-center justify-center p-4 sm:p-6 animate-fadeIn">
-      {/* Backdrop kính mờ */}
-      <div
-        className="fixed inset-0 bg-slate-950/80 backdrop-blur-md transition-opacity"
-        onClick={onClose}
-      />
-
+    <div
+      className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4 sm:p-6 backdrop-blur-md animate-fadeIn"
+      onClick={onClose}
+    >
       {/* Modal Dialog Card */}
-      <div className="relative w-full max-w-lg bg-slate-900 border border-slate-700/80 rounded-3xl shadow-2xl shadow-black/80 overflow-hidden z-10 animate-scaleUp">
+      <div
+        className="relative w-full max-w-lg bg-slate-900 border border-slate-700/80 rounded-3xl shadow-2xl shadow-black/80 overflow-hidden max-h-[90vh] overflow-y-auto z-10 animate-scaleUp"
+        onClick={e => e.stopPropagation()}
+      >
         {/* Header Modal */}
         <div className="p-5 sm:p-6 border-b border-slate-800 bg-gradient-to-r from-slate-900 via-slate-800/80 to-slate-900 flex items-start justify-between gap-3">
           <div className="space-y-1">

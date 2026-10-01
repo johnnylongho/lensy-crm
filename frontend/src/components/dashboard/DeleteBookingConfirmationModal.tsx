@@ -20,12 +20,16 @@ export const DeleteBookingConfirmationModal: React.FC<Props> = ({
   if (!isOpen || !booking) return null;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/70 backdrop-blur-sm animate-fadeIn">
+    <div
+      className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4 backdrop-blur-sm animate-fadeIn"
+      onClick={onClose}
+    >
       <div 
-        className="w-full max-w-md bg-white dark:bg-slate-900 rounded-3xl border border-slate-200 dark:border-slate-800 shadow-2xl overflow-hidden transition-all transform scale-100"
+        className="w-full max-w-md bg-white dark:bg-slate-900 rounded-3xl border border-slate-200 dark:border-slate-800 shadow-2xl overflow-hidden max-h-[90vh] overflow-y-auto transition-all transform scale-100"
         role="dialog"
         aria-modal="true"
         aria-labelledby="delete-modal-title"
+        onClick={e => e.stopPropagation()}
       >
         {/* Header with red warning styling */}
         <div className="p-6 pb-4 flex items-start gap-4">

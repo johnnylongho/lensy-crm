@@ -442,15 +442,15 @@ export const BookingDetailModal: React.FC<Props> = ({
   const remainingDebt = Math.max(0, booking.packagePrice - (booking.paidAmount || booking.depositAmount));
 
   return (
-    <div className="fixed inset-0 z-50 overflow-hidden animate-fadeIn">
-      {/* Backdrop kính mờ */}
+    <div
+      className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-3 sm:p-4 backdrop-blur-sm animate-fadeIn"
+      onClick={onClose}
+    >
+      {/* Modal Dialog Card: căn giữa, khóa viewport, max-h 90vh tự cuộn */}
       <div
-        className="fixed inset-0 bg-black/60 backdrop-blur-sm transition-opacity"
-        onClick={onClose}
-      />
-
-      {/* Drawer Panel: Slide-over từ bên phải trên Desktop (w-[580px] lg:w-[640px]), Bottom Sheet trên Mobile */}
-      <div className="fixed inset-x-0 bottom-0 md:inset-y-0 md:left-auto md:right-0 w-full md:w-[580px] lg:w-[640px] max-h-[92vh] md:max-h-full h-auto md:h-full bg-slate-900 border-t md:border-t-0 md:border-l border-slate-700/80 shadow-[-16px_0_48px_0_rgba(0,0,0,0.6)] flex flex-col z-50 overflow-hidden rounded-t-3xl md:rounded-t-none md:rounded-l-3xl">
+        className="relative w-full max-w-3xl bg-slate-900 border border-slate-700/80 rounded-3xl shadow-2xl flex flex-col z-50 overflow-hidden max-h-[90vh] overflow-y-auto"
+        onClick={e => e.stopPropagation()}
+      >
         {/* Drawer Header (Cố định trên cùng) */}
         <div className="p-5 sm:p-6 border-b border-slate-800 bg-slate-900/95 backdrop-blur-md flex-shrink-0 flex items-start justify-between gap-3">
           <div className="space-y-1.5 flex-1 min-w-0 pr-2">

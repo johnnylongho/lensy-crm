@@ -189,8 +189,8 @@ export const DashboardLayout: React.FC = () => {
             {/* Logo / Brand Header */}
             <div className="flex items-center justify-between pb-6">
               <Link to="/dashboard" className="flex items-center gap-3 group">
-                <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-gradient-to-tr from-[#c86d3b] to-[#e49366] text-white shadow-[0_4px_14px_rgba(200,109,59,0.35)] group-hover:scale-105 transition-transform">
-                  <Camera className="h-6 w-6 stroke-[2.2]" />
+                <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-white/80 dark:bg-white/10 p-1.5 shadow-[0_4px_14px_rgba(200,109,59,0.25)] border border-white/90 dark:border-white/15 group-hover:scale-105 transition-transform backdrop-blur-md">
+                  <img src="/lensy-logo.png" alt="Lensy CRM" className="h-full w-full object-contain rounded-xl" />
                 </div>
                 <div>
                   <h1 className="text-xl font-bold tracking-tight text-[#1b2234] dark:text-white flex items-center gap-1.5">

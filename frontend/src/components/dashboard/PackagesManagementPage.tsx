@@ -1054,8 +1054,14 @@ export const PackagesManagementPage: React.FC = () => {
       {/* MODAL THÊM / SỬA GÓI DỊCH VỤ                                         */}
       {/* ==================================================================== */}
       {isModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-slate-950/80 backdrop-blur-md overflow-y-auto">
-          <div className="w-full max-w-3xl my-6 rounded-3xl bg-[#080c14] border border-white/15 shadow-2xl p-5 sm:p-7 space-y-6 text-left relative max-h-[92vh] overflow-y-auto">
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-3 sm:p-4 backdrop-blur-md animate-fadeIn"
+          onClick={() => setIsModalOpen(false)}
+        >
+          <div
+            className="w-full max-w-3xl rounded-3xl bg-[#080c14] border border-white/15 shadow-2xl p-5 sm:p-7 space-y-6 text-left relative max-h-[90vh] overflow-y-auto"
+            onClick={e => e.stopPropagation()}
+          >
             {/* Header Modal */}
             <div className="flex items-center justify-between pb-4 border-b border-white/10">
               <div className="flex items-center gap-2.5">

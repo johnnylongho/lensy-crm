@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import {
   CalendarEvent,
   BookingStatus,
@@ -104,6 +104,7 @@ export const ClayStudioDashboard: React.FC<Props> = ({
   const [selectedBooking, setSelectedBooking] = useState<CalendarEvent | null>(null);
   const [dashboardView, setDashboardView] = useState<'table' | 'calendar' | 'kanban' | 'roi'>('table');
   const [selectedCalendarDate, setSelectedCalendarDate] = useState<Date>(new Date());
+  const [visibleCount, setVisibleCount] = useState<number>(10);
 
   // 1. KPI Metrics
   const metrics = useMemo(() => {
@@ -275,6 +276,16 @@ export const ClayStudioDashboard: React.FC<Props> = ({
       return matchesSearch && matchesStatus;
     });
   }, [events, searchQuery, statusFilter]);
+
+  // Reset visibleCount về lại 10 khi người dùng thay đổi bộ lọc (Search hoặc Status Filter)
+  useEffect(() => {
+    setVisibleCount(10);
+  }, [searchQuery, statusFilter]);
+
+  // Giới hạn mảng hiển thị theo phân trang visibleCount
+  const displayedBookings = useMemo(() => {
+    return filteredBookings.slice(0, visibleCount);
+  }, [filteredBookings, visibleCount]);
 
   return (
     <div className="space-y-6">
@@ -669,7 +680,7 @@ export const ClayStudioDashboard: React.FC<Props> = ({
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-[#f2e7df] dark:divide-white/5">
-                  {filteredBookings.map(b => (
+                  {displayedBookings.map(b => (
                     <tr
                       key={b.id}
                       onClick={() => setSelectedBooking(b)}
@@ -769,6 +780,22 @@ export const ClayStudioDashboard: React.FC<Props> = ({
                 </tbody>
               </table>
             </div>
+
+            {/* Nút Xem thêm lịch chụp (Pagination / Load More) */}
+            {visibleCount < filteredBookings.length && (
+              <div className="pt-4 flex justify-center border-t border-[#ebdcd1] dark:border-white/10">
+                <button
+                  type="button"
+                  onClick={() => setVisibleCount(prev => prev + 10)}
+                  className="inline-flex items-center gap-2 px-6 py-2 rounded-xl border border-[#df8653]/40 bg-white/70 dark:bg-white/5 hover:bg-white dark:hover:bg-white/10 text-xs font-bold text-[#c86d3b] dark:text-[#df8653] shadow-xs active:scale-95 transition-all cursor-pointer"
+                >
+                  <span>Xem thêm lịch chụp</span>
+                  <span className="font-mono text-[11px] opacity-75">
+                    ({displayedBookings.length}/{filteredBookings.length})
+                  </span>
+                </button>
+              </div>
+            )}
           </div>
         )}
 
@@ -831,8 +858,14 @@ export const ClayStudioDashboard: React.FC<Props> = ({
       {/* 4. MODAL: BOOKING DETAIL INSPECTOR (FROM THEME, ENHANCED WITH REAL CRM)   */}
       {/* ========================================================================= */}
       {selectedBooking && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40 backdrop-blur-sm animate-fadeIn">
-          <div className="w-full max-w-lg rounded-3xl border border-white/90 dark:border-white/10 bg-white/95 dark:bg-[#181a22]/95 p-6 shadow-2xl backdrop-blur-2xl animate-scaleUp text-xs space-y-4">
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4 backdrop-blur-sm animate-fadeIn"
+          onClick={() => setSelectedBooking(null)}
+        >
+          <div
+            className="w-full max-w-lg rounded-3xl border border-white/90 dark:border-white/10 bg-white/95 dark:bg-[#181a22]/95 p-6 shadow-2xl backdrop-blur-2xl animate-scaleUp text-xs space-y-4 max-h-[90vh] overflow-y-auto"
+            onClick={e => e.stopPropagation()}
+          >
             {/* Modal Header */}
             <div className="flex items-center justify-between pb-3 border-b border-[#f0e2d8] dark:border-white/10">
               <div>

@@ -1205,8 +1205,14 @@ export const StudioSettingsPage: React.FC = () => {
 
           {/* Modal Mời Nhân Sự Mới */}
           {isInviteModalOpen && (
-            <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm animate-fadeIn">
-              <div className="w-full max-w-md p-6 rounded-3xl bg-white dark:bg-zinc-900 border border-gray-200 dark:border-white/10 shadow-2xl space-y-4">
+            <div
+              className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4 backdrop-blur-sm animate-fadeIn"
+              onClick={() => setIsInviteModalOpen(false)}
+            >
+              <div
+                className="w-full max-w-md p-6 rounded-3xl bg-white dark:bg-zinc-900 border border-gray-200 dark:border-white/10 shadow-2xl space-y-4 max-h-[90vh] overflow-y-auto"
+                onClick={e => e.stopPropagation()}
+              >
                 <div className="flex items-center justify-between pb-2 border-b border-gray-100 dark:border-white/10">
                   <div className="flex items-center gap-2">
                     <UserPlus className="w-5 h-5 text-emerald-500" />

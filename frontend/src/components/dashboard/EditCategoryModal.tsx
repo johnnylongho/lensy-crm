@@ -87,15 +87,15 @@ export const EditCategoryModal: React.FC<Props> = ({
   };
 
   return (
-    <div className="fixed inset-0 z-[75] overflow-y-auto flex items-center justify-center p-4 sm:p-6 animate-fadeIn">
-      {/* Backdrop */}
-      <div
-        className="fixed inset-0 bg-slate-950/80 backdrop-blur-md transition-opacity"
-        onClick={onClose}
-      />
-
+    <div
+      className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4 sm:p-6 backdrop-blur-md animate-fadeIn"
+      onClick={onClose}
+    >
       {/* Modal Dialog Card */}
-      <div className="relative w-full max-w-md bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl shadow-2xl overflow-hidden z-10 animate-scaleUp text-slate-800 dark:text-slate-100">
+      <div
+        className="relative w-full max-w-md bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl shadow-2xl overflow-hidden max-h-[90vh] overflow-y-auto z-10 animate-scaleUp text-slate-800 dark:text-slate-100"
+        onClick={e => e.stopPropagation()}
+      >
         {/* Header Modal */}
         <div className="p-5 sm:p-6 border-b border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-900/90 flex items-start justify-between gap-3">
           <div className="space-y-1">

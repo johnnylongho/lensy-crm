@@ -153,10 +153,8 @@ export const UpcomingShootsList: React.FC<Props> = ({
       <div className="grid grid-cols-1 sm:grid-cols-12 gap-3 p-3.5 rounded-2xl bg-white/60 dark:bg-white/[0.03] border border-white/50 dark:border-white/10 backdrop-blur-md shadow-sm">
         
         {/* 1. Ô tìm kiếm nhanh theo Tên khách / SĐT / Gói */}
-        <div className="sm:col-span-5 relative">
-          <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-            <Search className="w-4 h-4 text-slate-400" />
-          </div>
+        <div className="sm:col-span-5 flex items-center gap-2 px-3 py-2 rounded-xl bg-white/80 dark:bg-slate-900/80 border border-slate-200 dark:border-slate-700/80 focus-within:ring-2 focus-within:ring-amber-500/40 focus-within:border-amber-500 transition-all shadow-inner">
+          <Search className="w-4 h-4 text-slate-400 flex-shrink-0" />
           <input
             type="text"
             value={searchQuery}
@@ -165,13 +163,13 @@ export const UpcomingShootsList: React.FC<Props> = ({
               setVisibleCount(DEFAULT_PAGE_SIZE);
             }}
             placeholder="Tìm theo tên khách, SĐT, loại hình..."
-            className="w-full pl-9 pr-8 py-2 rounded-xl bg-white/80 dark:bg-slate-900/80 border border-slate-200 dark:border-slate-700/80 text-xs text-slate-900 dark:text-white placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-amber-500/40 focus:border-amber-500 transition-all shadow-inner"
+            className="w-full bg-transparent border-0 outline-none text-xs text-slate-900 dark:text-white placeholder:text-slate-400 p-0"
           />
           {searchQuery && (
             <button
               type="button"
               onClick={() => setSearchQuery('')}
-              className="absolute inset-y-0 right-0 pr-2.5 flex items-center text-slate-400 hover:text-slate-600 dark:hover:text-white transition-colors"
+              className="text-slate-400 hover:text-slate-600 dark:hover:text-white transition-colors flex-shrink-0"
               title="Xóa tìm kiếm"
             >
               <X className="w-3.5 h-3.5" />
@@ -180,52 +178,44 @@ export const UpcomingShootsList: React.FC<Props> = ({
         </div>
 
         {/* 2. Dropdown Sắp xếp */}
-        <div className="sm:col-span-4 relative">
-          <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-            <ArrowUpDown className="w-3.5 h-3.5 text-amber-500" />
-          </div>
+        <div className="sm:col-span-4 flex items-center gap-2 px-3 py-2 rounded-xl bg-white/80 dark:bg-slate-900/80 border border-slate-200 dark:border-slate-700/80 focus-within:ring-2 focus-within:ring-amber-500/40 focus-within:border-amber-500 transition-all shadow-inner">
+          <ArrowUpDown className="w-3.5 h-3.5 text-amber-500 flex-shrink-0" />
           <select
             value={sortOption}
             onChange={(e) => {
               setSortOption(e.target.value as BookingSortOption);
               setVisibleCount(DEFAULT_PAGE_SIZE);
             }}
-            className="w-full pl-9 pr-8 py-2 rounded-xl bg-white/80 dark:bg-slate-900/80 border border-slate-200 dark:border-slate-700/80 text-xs font-medium text-slate-800 dark:text-slate-200 focus:outline-none focus:ring-2 focus:ring-amber-500/40 focus:border-amber-500 transition-all appearance-none cursor-pointer shadow-inner"
+            className="w-full bg-transparent border-0 outline-none text-xs font-medium text-slate-800 dark:text-slate-200 cursor-pointer p-0"
             title="Chọn tiêu chí sắp xếp lịch chụp"
           >
-            <option value="smart">📅 Sắp tới gần nhất (Ưu tiên hôm nay)</option>
-            <option value="furthest">🗓️ Ngày xa nhất (Tương lai xa)</option>
-            <option value="newest">✨ Mới được tạo (Gần đây nhất)</option>
-            <option value="price_desc">💎 Giá trị hợp đồng cao nhất</option>
+            <option value="smart" className="dark:bg-slate-900">📅 Sắp tới gần nhất (Ưu tiên hôm nay)</option>
+            <option value="furthest" className="dark:bg-slate-900">🗓️ Ngày xa nhất (Tương lai xa)</option>
+            <option value="newest" className="dark:bg-slate-900">✨ Mới được tạo (Gần đây nhất)</option>
+            <option value="price_desc" className="dark:bg-slate-900">💎 Giá trị hợp đồng cao nhất</option>
           </select>
-          <div className="absolute inset-y-0 right-0 pr-2.5 flex items-center pointer-events-none">
-            <ChevronDown className="w-3.5 h-3.5 text-slate-400" />
-          </div>
+          <ChevronDown className="w-3.5 h-3.5 text-slate-400 flex-shrink-0 pointer-events-none" />
         </div>
 
         {/* 3. Dropdown Lọc trạng thái */}
-        <div className="sm:col-span-3 relative">
-          <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-            <Filter className="w-3.5 h-3.5 text-slate-400" />
-          </div>
+        <div className="sm:col-span-3 flex items-center gap-2 px-3 py-2 rounded-xl bg-white/80 dark:bg-slate-900/80 border border-slate-200 dark:border-slate-700/80 focus-within:ring-2 focus-within:ring-amber-500/40 focus-within:border-amber-500 transition-all shadow-inner">
+          <Filter className="w-3.5 h-3.5 text-slate-400 flex-shrink-0" />
           <select
             value={statusFilter}
             onChange={(e) => {
               setStatusFilter(e.target.value);
               setVisibleCount(DEFAULT_PAGE_SIZE);
             }}
-            className="w-full pl-9 pr-8 py-2 rounded-xl bg-white/80 dark:bg-slate-900/80 border border-slate-200 dark:border-slate-700/80 text-xs font-medium text-slate-800 dark:text-slate-200 focus:outline-none focus:ring-2 focus:ring-amber-500/40 focus:border-amber-500 transition-all appearance-none cursor-pointer shadow-inner"
+            className="w-full bg-transparent border-0 outline-none text-xs font-medium text-slate-800 dark:text-slate-200 cursor-pointer p-0"
             title="Lọc lịch chụp theo trạng thái"
           >
-            <option value="all">Tất cả trạng thái</option>
-            <option value="cho_coc">🟡 Mới hỏi (Lead / Chờ cọc)</option>
-            <option value="da_chot">🔵 Đã cọc (Đã chốt lịch)</option>
-            <option value="da_chup">🟣 Đã chụp / Đang sửa</option>
-            <option value="hoan_thanh">🟢 Hoàn tất (Đã trả file)</option>
+            <option value="all" className="dark:bg-slate-900">Tất cả trạng thái</option>
+            <option value="cho_coc" className="dark:bg-slate-900">🟡 Mới hỏi (Lead / Chờ cọc)</option>
+            <option value="da_chot" className="dark:bg-slate-900">🔵 Đã cọc (Đã chốt lịch)</option>
+            <option value="da_chup" className="dark:bg-slate-900">🟣 Đã chụp / Đang sửa</option>
+            <option value="hoan_thanh" className="dark:bg-slate-900">🟢 Hoàn tất (Đã trả file)</option>
           </select>
-          <div className="absolute inset-y-0 right-0 pr-2.5 flex items-center pointer-events-none">
-            <ChevronDown className="w-3.5 h-3.5 text-slate-400" />
-          </div>
+          <ChevronDown className="w-3.5 h-3.5 text-slate-400 flex-shrink-0 pointer-events-none" />
         </div>
 
       </div>
@@ -369,8 +359,8 @@ export const UpcomingShootsList: React.FC<Props> = ({
                   )}
                 </div>
 
-                {/* Cột 3 (Tài chính & Dòng tiền): flex-shrink-0 w-full sm:w-44 */}
-                <div className="flex-shrink-0 w-full md:w-48 bg-slate-900/60 p-3 rounded-xl border border-slate-700/60 space-y-1.5 font-mono">
+                {/* Cột 3 (Tài chính tĩnh): flex-shrink-0 w-64 bg-white/5 p-3 rounded-lg dạng flex justify-between */}
+                <div className="flex-shrink-0 w-64 bg-white/5 p-3 rounded-lg border border-slate-700/60 space-y-1.5 font-mono">
                   <div className="flex justify-between items-center text-slate-300">
                     <div className="flex items-center gap-1.5">
                       <span className="text-gray-400 text-xs font-sans">Tổng gói:</span>

@@ -77,7 +77,7 @@ export const DayShootsModal: React.FC<Props> = ({
             return (
               <div
                 key={item.id}
-                className={`p-4 rounded-2xl border transition-all duration-200 shadow-md space-y-3 ${statusTheme.cardBg} ${statusTheme.cardBorder}`}
+                className={`p-4 rounded-xl border border-gray-200 dark:border-zinc-800 ${statusTheme.accentBorder || 'border-l-4 border-l-blue-500'} bg-white dark:bg-zinc-900 shadow-sm hover:shadow-md transition-shadow duration-200 space-y-3`}
               >
                 {/* Header with Client Name & Status Dropdown */}
                 <div className="flex items-start justify-between gap-2">
@@ -85,7 +85,7 @@ export const DayShootsModal: React.FC<Props> = ({
                     <button
                       type="button"
                       onClick={() => onSelectBooking && onSelectBooking(item)}
-                      className="font-bold text-white text-sm hover:text-amber-400 hover:underline text-left transition-colors"
+                      className="font-semibold text-gray-900 dark:text-gray-50 text-sm hover:text-amber-600 dark:hover:text-amber-400 hover:underline text-left transition-colors"
                       title="Xem chi tiết & Gán thiết bị"
                     >
                       {item.clientName}
@@ -112,7 +112,7 @@ export const DayShootsModal: React.FC<Props> = ({
                         );
                       })()}
                       {item.assignedGears && item.assignedGears.length > 0 && (
-                        <span className="text-[9px] px-1.5 py-0.5 rounded font-bold border bg-sky-950/80 border-sky-500/40 text-sky-300">
+                        <span className="text-[9px] px-1.5 py-0.5 rounded font-bold border bg-sky-50 dark:bg-sky-950/80 border-sky-200 dark:border-sky-500/40 text-sky-700 dark:text-sky-300">
                           {item.assignedGears.length} thiết bị
                         </span>
                       )}
@@ -129,14 +129,14 @@ export const DayShootsModal: React.FC<Props> = ({
                 </div>
 
                 {/* Date & Location */}
-                <div className="space-y-1 text-xs text-slate-300">
+                <div className="space-y-1 text-xs text-gray-500 dark:text-gray-400">
                   <div className="flex items-center gap-2">
-                    <Clock className="w-3.5 h-3.5 text-indigo-400" />
-                    <span>Thời gian: <strong>{item.startTime} - {item.endTime}</strong></span>
+                    <Clock className="w-3.5 h-3.5 text-gray-400 dark:text-gray-500" />
+                    <span>Thời gian: <strong className="text-gray-700 dark:text-gray-300 font-semibold">{item.startTime} - {item.endTime}</strong></span>
                   </div>
 
                   <div className="flex items-center gap-2">
-                    <MapPin className="w-3.5 h-3.5 text-rose-400" />
+                    <MapPin className="w-3.5 h-3.5 text-gray-400 dark:text-gray-500" />
                     <span className="truncate">Địa điểm: {item.location}</span>
                   </div>
                 </div>
@@ -169,9 +169,9 @@ export const DayShootsModal: React.FC<Props> = ({
                     <button
                       type="button"
                       onClick={() => onViewQuote(item.id)}
-                      className="py-1.5 px-2.5 rounded-xl bg-slate-900/90 hover:bg-slate-800 border border-slate-700 text-slate-200 text-xs font-semibold flex items-center justify-center gap-1.5 transition-colors shadow-sm"
+                      className="py-1.5 px-2.5 rounded-xl bg-white dark:bg-zinc-800 hover:bg-gray-50 dark:hover:bg-zinc-700 border border-gray-300 dark:border-zinc-700 text-gray-700 dark:text-gray-200 hover:text-gray-900 dark:hover:text-white text-xs font-medium flex items-center justify-center gap-1.5 transition-colors shadow-sm"
                     >
-                      <Eye className="w-3.5 h-3.5 text-amber-400" /> Báo Giá
+                      <Eye className="w-3.5 h-3.5 text-amber-500 dark:text-amber-400" /> Báo Giá
                     </button>
                   )}
                   <button
@@ -191,10 +191,10 @@ export const DayShootsModal: React.FC<Props> = ({
                       });
                       window.open(url, '_blank');
                     }}
-                    className="py-1.5 px-2.5 rounded-xl bg-slate-900/90 hover:bg-slate-800 border border-slate-700 text-amber-300 text-xs font-semibold flex items-center justify-center gap-1.5 transition-colors shadow-sm"
+                    className="py-1.5 px-2.5 rounded-xl bg-white dark:bg-zinc-800 hover:bg-gray-50 dark:hover:bg-zinc-700 border border-gray-300 dark:border-zinc-700 text-gray-700 dark:text-gray-200 hover:text-gray-900 dark:hover:text-white text-xs font-medium flex items-center justify-center gap-1.5 transition-colors shadow-sm"
                     title="Đồng bộ vào Google Calendar"
                   >
-                    <Calendar className="w-3.5 h-3.5 text-amber-400" /> G-Calendar
+                    <Calendar className="w-3.5 h-3.5 text-amber-500 dark:text-amber-400" /> G-Calendar
                   </button>
                 </div>
               </div>

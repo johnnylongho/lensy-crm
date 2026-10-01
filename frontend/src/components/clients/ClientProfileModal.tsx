@@ -233,26 +233,26 @@ export const ClientProfileModal: React.FC<Props> = ({ isOpen, onClose, client })
                   return (
                     <div
                       key={booking.id || idx}
-                      className="p-3.5 rounded-2xl bg-slate-950/70 border border-slate-800/80 hover:border-slate-700 transition-colors space-y-2 text-xs"
+                      className={`p-3.5 rounded-xl bg-white dark:bg-zinc-900 border border-gray-200 dark:border-zinc-800 ${statusConf.accentBorder || 'border-l-4 border-l-blue-500'} shadow-sm hover:shadow-md transition-shadow space-y-2 text-xs`}
                     >
                       <div className="flex items-start justify-between gap-2">
                         <div>
                           <div className="flex items-center gap-2">
-                            <span className="font-bold text-white text-sm">
+                            <span className="font-semibold text-gray-900 dark:text-gray-50 text-sm">
                               {booking.clientName || client.name}
                             </span>
-                            <span className="text-[10px] uppercase font-bold px-1.5 py-0.5 rounded bg-amber-500/20 text-amber-300 border border-amber-500/30">
+                            <span className="text-[10px] uppercase font-bold px-1.5 py-0.5 rounded bg-amber-50 dark:bg-amber-950/40 text-amber-700 dark:text-amber-300 border border-amber-200 dark:border-amber-800/60">
                               {booking.sessionType}
                             </span>
                           </div>
-                          <div className="flex items-center gap-2 text-[11px] text-slate-400 mt-0.5">
+                          <div className="flex items-center gap-2 text-[11px] text-gray-500 dark:text-gray-400 mt-0.5">
                             <span className="flex items-center gap-1">
-                              <Calendar className="w-3 h-3 text-amber-400" />
+                              <Calendar className="w-3 h-3 text-amber-500 dark:text-amber-400" />
                               {booking.eventDate}
                             </span>
-                            <span className="text-slate-600">•</span>
+                            <span className="text-gray-300 dark:text-gray-600">•</span>
                             <span className="flex items-center gap-1">
-                              <Clock className="w-3 h-3 text-slate-500" />
+                              <Clock className="w-3 h-3 text-gray-400 dark:text-gray-500" />
                               {booking.startTime} - {booking.endTime}
                             </span>
                           </div>
@@ -267,22 +267,22 @@ export const ClientProfileModal: React.FC<Props> = ({ isOpen, onClose, client })
                       </div>
 
                       {/* Location */}
-                      <div className="flex items-center gap-1.5 text-slate-400 text-[11px] truncate">
-                        <MapPin className="w-3 h-3 text-slate-500 flex-shrink-0" />
+                      <div className="flex items-center gap-1.5 text-gray-500 dark:text-gray-400 text-[11px] truncate">
+                        <MapPin className="w-3 h-3 text-gray-400 dark:text-gray-500 flex-shrink-0" />
                         <span className="truncate">{booking.location}</span>
                       </div>
 
                       {/* Pricing breakdown */}
-                      <div className="flex items-center justify-between pt-1 border-t border-slate-800/60 font-mono text-[11px]">
-                        <span className="text-slate-400">
-                          Giá gói: <strong className="text-slate-200">{booking.packagePrice.toLocaleString('vi-VN')} đ</strong>
+                      <div className="flex items-center justify-between pt-1 border-t border-gray-200 dark:border-zinc-800 font-mono text-[11px]">
+                        <span className="text-gray-500 dark:text-gray-400">
+                          Giá gói: <strong className="text-gray-900 dark:text-gray-50 font-semibold">{booking.packagePrice.toLocaleString('vi-VN')} đ</strong>
                         </span>
                         {remaining > 0 ? (
-                          <span className="text-rose-400 font-bold">
+                          <span className="text-rose-600 dark:text-rose-400 font-semibold">
                             Chưa thu: {remaining.toLocaleString('vi-VN')} đ
                           </span>
                         ) : (
-                          <span className="text-emerald-400 font-bold flex items-center gap-1">
+                          <span className="text-emerald-600 dark:text-emerald-400 font-semibold flex items-center gap-1">
                             <CheckCircle2 className="w-3 h-3" />
                             Đã thanh toán đủ
                           </span>

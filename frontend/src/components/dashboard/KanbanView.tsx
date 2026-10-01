@@ -166,21 +166,22 @@ const CompactKanbanCardContent: React.FC<{
 }) => {
   const { remainingDebt } = calculateDebt(item);
   const catCfg = getCategoryConfig(item.category || item.sessionType);
+  const statusTheme = STATUS_CONFIG[item.status] || STATUS_CONFIG.lead;
 
   return (
     <div
       onClick={() => onSelectBooking && onSelectBooking(item)}
-      className={`w-full p-3 rounded-xl border select-none transition-all duration-200 shadow-sm flex flex-col gap-2 text-xs bg-white/80 dark:bg-white/5 backdrop-blur-md border-gray-200 dark:border-white/10 ${
+      className={`w-full p-3 rounded-xl border border-gray-200 dark:border-zinc-800 ${statusTheme.accentBorder || 'border-l-4 border-l-blue-500'} bg-white dark:bg-zinc-900 select-none transition-all duration-200 shadow-sm hover:shadow-md flex flex-col gap-2 text-xs ${
         isOverlay
-          ? 'rotate-2 scale-105 shadow-2xl shadow-amber-500/25 ring-2 ring-amber-400 bg-white/95 dark:bg-slate-900 border-amber-400 cursor-grabbing'
-          : 'hover:scale-[1.02] hover:border-amber-400/70 dark:hover:border-white/30 hover:shadow-md cursor-grab active:cursor-grabbing transform-gpu'
+          ? 'rotate-2 scale-105 shadow-2xl ring-2 ring-amber-400 cursor-grabbing'
+          : 'hover:scale-[1.02] cursor-grab active:cursor-grabbing'
       }`}
     >
       {/* Hàng 1: Tên Khách Hàng (In đậm) & Cụm nút thao tác (Thùng rác, Quick Status, Grip) */}
       <div className="flex items-center justify-between gap-1.5 w-full min-w-0">
         <div className="min-w-0 flex-1 flex items-center gap-1.5 flex-wrap">
           <span
-            className="font-bold text-gray-900 dark:text-white text-xs sm:text-[13px] leading-tight hover:text-amber-500 dark:hover:text-amber-400 transition-colors truncate"
+            className="font-semibold text-gray-900 dark:text-gray-50 text-xs sm:text-[13px] leading-tight hover:text-amber-600 dark:hover:text-amber-400 transition-colors truncate"
             title={`${item.clientName} - Nhấn để mở Drawer chi tiết`}
           >
             {item.clientName}
@@ -216,7 +217,7 @@ const CompactKanbanCardContent: React.FC<{
                 e.stopPropagation();
                 onDeleteBooking(item);
               }}
-              className="p-1 rounded-lg text-gray-400 hover:text-rose-500 hover:bg-rose-50 dark:hover:bg-rose-950/40 transition-colors cursor-pointer"
+              className="p-1 rounded-lg text-gray-400 dark:text-gray-500 hover:text-rose-600 dark:hover:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-950/40 transition-colors cursor-pointer"
               title="Hủy / Xóa lịch chụp này"
             >
               <Trash2 className="w-3.5 h-3.5" />
@@ -303,14 +304,14 @@ const CompactKanbanCardContent: React.FC<{
                   onOpenDebtReminder(item);
                 }
               }}
-              className="text-[10px] font-bold font-mono px-1.5 py-0.5 rounded bg-rose-950 text-rose-300 border border-rose-500/70 flex items-center gap-1 flex-shrink-0 cursor-pointer"
+              className="text-[10px] font-semibold font-mono px-1.5 py-0.5 rounded bg-rose-50 dark:bg-rose-950 text-rose-600 dark:text-rose-300 border border-rose-200 dark:border-rose-900/50 flex items-center gap-1 flex-shrink-0 cursor-pointer"
               title="Còn nợ tiền show"
             >
               <span className="w-1.5 h-1.5 rounded-full bg-rose-500 animate-pulse flex-shrink-0" />
               <span>Nợ: {remainingDebt.toLocaleString('vi-VN')} đ</span>
             </span>
           ) : (
-            <span className="text-[10px] font-medium font-mono px-1.5 py-0.5 rounded bg-emerald-50 dark:bg-emerald-950/60 text-emerald-600 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-900/50 flex items-center gap-1 flex-shrink-0">
+            <span className="text-[10px] font-medium font-mono px-1.5 py-0.5 rounded bg-emerald-50 dark:bg-emerald-950/40 text-emerald-600 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-900/50 flex items-center gap-1 flex-shrink-0">
               <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 flex-shrink-0" />
               <span>Đã đủ 100%</span>
             </span>
@@ -323,7 +324,7 @@ const CompactKanbanCardContent: React.FC<{
                 e.stopPropagation();
                 onEditFinancials(item);
               }}
-              className="p-1 rounded-md text-gray-500 hover:text-white hover:bg-white/10 transition-colors cursor-pointer"
+              className="p-1 rounded-md text-gray-400 hover:text-gray-700 dark:text-gray-500 dark:hover:text-gray-200 hover:bg-gray-100 dark:hover:bg-zinc-800 transition-colors cursor-pointer"
               title="Cập nhật tài chính"
             >
               <Pencil className="w-3 h-3" />

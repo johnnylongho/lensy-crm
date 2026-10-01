@@ -270,20 +270,20 @@ export const UpcomingShootsList: React.FC<Props> = ({
             return (
               <div
                 key={ev.id}
-                className={`rounded-2xl border transition-all duration-200 shadow-md flex flex-col md:flex-row items-start md:items-center justify-between gap-6 w-full p-5 text-xs ${statusTheme.cardBg} ${statusTheme.cardBorder}`}
+                className={`rounded-xl border border-gray-200 dark:border-zinc-800 ${statusTheme.accentBorder || 'border-l-4 border-l-blue-500'} bg-white dark:bg-zinc-900 shadow-sm hover:shadow-md transition-shadow duration-200 flex flex-col md:flex-row items-start md:items-center justify-between gap-6 w-full p-5 text-xs`}
               >
                 {/* Cột 1 (Ngày tháng): flex-shrink-0 w-16 */}
                 <div className="flex-shrink-0 w-16">
                   <button
                     type="button"
                     onClick={() => onSelectEventDate(ev.eventDate)}
-                    className="w-16 h-16 rounded-2xl bg-slate-900/90 border border-slate-700/80 flex flex-col items-center justify-center font-mono text-center hover:border-amber-400 transition-colors shadow-sm"
+                    className="w-16 h-16 rounded-xl bg-gray-50 dark:bg-zinc-800/60 border border-gray-200 dark:border-zinc-700/70 flex flex-col items-center justify-center font-mono text-center hover:border-amber-400 dark:hover:border-amber-400 transition-colors shadow-sm"
                     title="Nhấn để xem trên Lịch ngày này"
                   >
-                    <span className="text-[11px] text-slate-400 uppercase leading-none font-semibold">
+                    <span className="text-[11px] text-gray-500 dark:text-gray-400 uppercase leading-none font-semibold">
                       Th{ev.eventDate.split('-')[1]}
                     </span>
-                    <span className="text-lg font-bold text-white leading-tight mt-0.5">
+                    <span className="text-lg font-bold text-gray-900 dark:text-gray-50 leading-tight mt-0.5">
                       {ev.eventDate.split('-')[2]}
                     </span>
                   </button>
@@ -295,7 +295,7 @@ export const UpcomingShootsList: React.FC<Props> = ({
                     <button
                       type="button"
                       onClick={() => onSelectBooking && onSelectBooking(ev)}
-                      className="font-medium text-gray-900 dark:text-white text-base truncate hover:text-amber-600 dark:hover:text-amber-400 hover:underline text-left transition-colors max-w-full"
+                      className="font-semibold text-gray-900 dark:text-gray-50 text-base truncate hover:text-amber-600 dark:hover:text-amber-400 hover:underline text-left transition-colors max-w-full"
                       title="Nhấn để xem chi tiết & Gắn thiết bị"
                     >
                       {ev.clientName}
@@ -321,27 +321,27 @@ export const UpcomingShootsList: React.FC<Props> = ({
                       );
                     })()}
                     {ev.assignedGears && ev.assignedGears.length > 0 && (
-                      <span className="text-[10px] px-2 py-0.5 rounded font-bold border bg-sky-950/80 border-sky-500/40 text-sky-300 flex items-center gap-1 flex-shrink-0">
-                        <Camera className="w-3 h-3" />
+                      <span className="text-[10px] px-2 py-0.5 rounded font-bold border bg-sky-50 dark:bg-sky-950/80 border-sky-200 dark:border-sky-500/40 text-sky-700 dark:text-sky-300 flex items-center gap-1 flex-shrink-0">
+                        <Camera className="w-3 h-3 text-sky-600 dark:text-sky-400" />
                         <span>{ev.assignedGears.length} máy/lens</span>
                       </span>
                     )}
                   </div>
 
-                  <div className="flex flex-wrap items-center gap-4 text-slate-600 dark:text-slate-300 text-xs">
+                  <div className="flex flex-wrap items-center gap-4 text-gray-500 dark:text-gray-400 text-xs">
                     <span className="flex items-center gap-1.5 flex-shrink-0">
-                      <Clock className="w-3.5 h-3.5 text-slate-400" />
+                      <Clock className="w-3.5 h-3.5 text-gray-400 dark:text-gray-500" />
                       <span>{ev.startTime} - {ev.endTime}</span>
                     </span>
                     <span className="flex items-center gap-1.5 min-w-0" title={ev.location}>
-                      <MapPin className="w-3.5 h-3.5 text-slate-400 flex-shrink-0" />
+                      <MapPin className="w-3.5 h-3.5 text-gray-400 dark:text-gray-500 flex-shrink-0" />
                       <span className="truncate">{ev.location}</span>
                     </span>
                   </div>
 
                   {ev.notes && (
-                    <div className="flex items-center gap-1.5 text-slate-500 dark:text-slate-400 text-xs italic">
-                      <MessageSquareQuote className="w-3.5 h-3.5 flex-shrink-0" />
+                    <div className="flex items-center gap-1.5 text-gray-500 dark:text-gray-400 text-xs italic">
+                      <MessageSquareQuote className="w-3.5 h-3.5 text-gray-400 dark:text-gray-500 flex-shrink-0" />
                       <span className="truncate">{ev.notes}</span>
                     </div>
                   )}
@@ -349,10 +349,10 @@ export const UpcomingShootsList: React.FC<Props> = ({
                   {/* Hiển thị chi phí Job Costing nếu có */}
                   {ev.expenses && ev.expenses > 0 && (
                     <div className="pt-1 flex items-center gap-2 text-[11px] font-mono">
-                      <span className="px-2 py-0.5 rounded bg-rose-500/10 text-rose-400 border border-rose-500/20">
+                      <span className="px-2 py-0.5 rounded bg-rose-50 dark:bg-rose-950/30 text-rose-600 dark:text-rose-400 border border-rose-200 dark:border-rose-900/40">
                         Chi phí: {ev.expenses.toLocaleString('vi-VN')} đ
                       </span>
-                      <span className="px-2 py-0.5 rounded bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 font-bold">
+                      <span className="px-2 py-0.5 rounded bg-emerald-50 dark:bg-emerald-950/30 text-emerald-600 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-900/40 font-semibold">
                         Lãi ròng: {(ev.packagePrice - ev.expenses).toLocaleString('vi-VN')} đ
                       </span>
                     </div>
@@ -360,10 +360,10 @@ export const UpcomingShootsList: React.FC<Props> = ({
                 </div>
 
                 {/* Cột 3 (Tài chính tĩnh): flex-shrink-0 w-64 bg-white/5 p-3 rounded-lg dạng flex justify-between */}
-                <div className="flex-shrink-0 w-64 bg-white/5 p-3 rounded-lg border border-slate-700/60 space-y-1.5 font-mono">
-                  <div className="flex justify-between items-center text-slate-300">
+                <div className="flex-shrink-0 w-64 bg-gray-50/80 dark:bg-zinc-800/40 p-3 rounded-xl border border-gray-200/80 dark:border-zinc-800 space-y-1.5 font-mono">
+                  <div className="flex justify-between items-center text-gray-700 dark:text-gray-300">
                     <div className="flex items-center gap-1.5">
-                      <span className="text-gray-400 text-xs font-sans">Tổng gói:</span>
+                      <span className="text-gray-500 dark:text-gray-400 text-xs font-sans">Tổng gói:</span>
                       {onEditFinancials && (
                         <button
                           type="button"
@@ -371,31 +371,31 @@ export const UpcomingShootsList: React.FC<Props> = ({
                             e.stopPropagation();
                             onEditFinancials(ev);
                           }}
-                          className="p-1 rounded-md bg-amber-500/10 hover:bg-amber-500/20 text-amber-400 border border-amber-500/30 transition-all hover:scale-110 cursor-pointer"
+                          className="p-1 rounded-md bg-amber-500/10 hover:bg-amber-500/20 text-amber-600 dark:text-amber-400 border border-amber-300 dark:border-amber-500/30 transition-all hover:scale-110 cursor-pointer"
                           title="Cập nhật tài chính (Giá trị, Cọc, Ghi chú)"
                         >
                           <Pencil className="w-2.5 h-2.5" />
                         </button>
                       )}
                     </div>
-                    <span className="font-bold text-white text-right">
+                    <span className="font-semibold text-gray-900 dark:text-gray-50 text-right">
                       {ev.packagePrice.toLocaleString('vi-VN')} đ
                     </span>
                   </div>
-                  <div className="flex justify-between items-center text-emerald-400">
-                    <span className="text-gray-400 text-xs font-sans">Đã cọc:</span>
-                    <span className="flex items-center gap-1">
+                  <div className="flex justify-between items-center text-emerald-600 dark:text-emerald-400">
+                    <span className="text-gray-500 dark:text-gray-400 text-xs font-sans">Đã cọc:</span>
+                    <span className="font-semibold text-right flex items-center gap-1">
                       <span>{effectiveDeposit.toLocaleString('vi-VN')} đ</span>
                       {isDeposit30 && (
-                        <span className="text-[9px] px-1 py-0.2 rounded bg-emerald-950 text-emerald-300 border border-emerald-500/30 font-sans">
+                        <span className="text-[9px] px-1 py-0.2 rounded bg-emerald-50 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-300 border border-emerald-300 dark:border-emerald-800/60 font-sans">
                           30%
                         </span>
                       )}
                     </span>
                   </div>
                   <div className="flex justify-between items-center">
-                    <span className="text-gray-400 text-xs font-sans">Nợ đọng:</span>
-                    <span className={`font-bold text-right ${remainingDebt > 0 ? 'text-amber-400' : 'text-emerald-400'}`}>
+                    <span className="text-gray-500 dark:text-gray-400 text-xs font-sans">Nợ đọng:</span>
+                    <span className={`font-semibold text-right ${remainingDebt > 0 ? 'text-rose-600 dark:text-rose-400' : 'text-emerald-600 dark:text-emerald-400'}`}>
                       {remainingDebt === 0 ? '0 đ' : `${remainingDebt.toLocaleString('vi-VN')} đ`}
                     </span>
                   </div>
@@ -407,10 +407,10 @@ export const UpcomingShootsList: React.FC<Props> = ({
                     <button
                       type="button"
                       onClick={() => onSelectBooking(ev)}
-                      className="px-3 py-2 rounded-xl bg-slate-800/80 hover:bg-slate-700 border border-slate-700 text-slate-200 hover:text-amber-400 text-xs font-bold transition-all flex items-center gap-1.5 shadow-sm"
+                      className="px-3 py-2 rounded-xl bg-white dark:bg-zinc-800 hover:bg-gray-50 dark:hover:bg-zinc-700 border border-gray-300 dark:border-zinc-700 text-gray-700 dark:text-gray-200 hover:text-gray-900 dark:hover:text-white text-xs font-medium transition-all flex items-center gap-1.5 shadow-sm"
                       title="Xem chi tiết & Quản lý thiết bị cho show này"
                     >
-                      <Camera className="w-3.5 h-3.5 text-amber-400" />
+                      <Camera className="w-3.5 h-3.5 text-amber-500 dark:text-amber-400" />
                       <span>Gắn Thiết Bị</span>
                     </button>
                   )}
@@ -438,7 +438,7 @@ export const UpcomingShootsList: React.FC<Props> = ({
                       });
                       window.open(url, '_blank');
                     }}
-                    className="p-2 rounded-xl bg-slate-800/80 hover:bg-slate-700 text-slate-300 hover:text-amber-400 transition-colors flex-shrink-0"
+                    className="p-2 rounded-xl bg-white dark:bg-zinc-800 hover:bg-gray-50 dark:hover:bg-zinc-700 border border-gray-300 dark:border-zinc-700 text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white transition-colors flex-shrink-0 shadow-sm"
                     title="Đồng bộ show này lên Google Calendar"
                   >
                     <Calendar className="w-4 h-4" />
@@ -446,7 +446,7 @@ export const UpcomingShootsList: React.FC<Props> = ({
                   <button
                     type="button"
                     onClick={() => onSelectEventDate(ev.eventDate)}
-                    className="p-2 rounded-xl bg-slate-800/80 hover:bg-slate-700 text-slate-300 hover:text-white transition-colors flex-shrink-0"
+                    className="p-2 rounded-xl bg-white dark:bg-zinc-800 hover:bg-gray-50 dark:hover:bg-zinc-700 border border-gray-300 dark:border-zinc-700 text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white transition-colors flex-shrink-0 shadow-sm"
                     title="Xem lịch chi tiết ngày này"
                   >
                     <ArrowRight className="w-4 h-4" />
@@ -455,7 +455,7 @@ export const UpcomingShootsList: React.FC<Props> = ({
                     <button
                       type="button"
                       onClick={() => onDeleteBooking(ev)}
-                      className="p-2 rounded-xl bg-slate-800/80 hover:bg-rose-500/20 text-slate-400 hover:text-rose-400 border border-slate-700/80 hover:border-rose-500/40 transition-colors flex-shrink-0 cursor-pointer"
+                      className="p-2 rounded-xl bg-white dark:bg-zinc-800 border border-gray-300 dark:border-zinc-700 text-gray-400 dark:text-gray-500 hover:bg-rose-50 dark:hover:bg-rose-950/30 hover:border-rose-300 dark:hover:border-rose-800 hover:text-rose-600 dark:hover:text-rose-400 transition-colors flex-shrink-0 cursor-pointer shadow-sm"
                       title="Hủy / Xóa lịch chụp này"
                     >
                       <Trash2 className="w-4 h-4" />

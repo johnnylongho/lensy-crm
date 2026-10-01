@@ -1,0 +1,8 @@
+{
+  "name": "Lensy - Photography Studio CRM",
+  "description": "Clean minimalist SaaS CRM and studio operations dashboard for modern photography teams.",
+  "requestFramePermissions": [],
+  "majorCapabilities": [
+    "MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"
+  ]
+}

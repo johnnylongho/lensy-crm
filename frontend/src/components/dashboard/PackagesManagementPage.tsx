@@ -4,7 +4,7 @@ import { useAuth } from '../../context/AuthContext';
 import { useWorkspace } from '../../context/WorkspaceContext';
 import { supabase, isSupabaseConfigured } from '../../lib/supabase';
 import { PackageItem } from '../../types';
-import { MOCK_PACKAGES } from '../../data/mockData';
+// Mock data removed
 import {
   Package,
   Plus,
@@ -57,7 +57,7 @@ const QUICK_PRESETS: Array<{
     price: 18000000,
     description: 'Trọn gói chụp ngày cưới với 2 thợ chính, bắt trọn từng khoảnh khắc cảm xúc thăng hoa và đẳng cấp nghệ thuật.',
     features: [
-      '2 Thợ chụp chính máy Sony A7 IV + Lens GM cao cấp',
+      '2 Thợ chụp chính máy Full-Frame cao cấp + Lens chuyên dụng',
       'Chụp không giới hạn số lượng file trong buổi lễ & tiệc',
       'Chỉnh sửa màu toàn bộ ảnh gốc (blend màu chuẩn Studio)',
       'Retouch chi tiết 80 ảnh chân dung cô dâu chú rể & gia đình',
@@ -192,7 +192,7 @@ export const PackagesManagementPage: React.FC = () => {
             if (localSaved) {
               setPackages(JSON.parse(localSaved));
             } else {
-              setPackages(MOCK_PACKAGES);
+              setPackages([]);
             }
           } else {
             throw error;
@@ -213,17 +213,17 @@ export const PackagesManagementPage: React.FC = () => {
           if (localSaved) {
             setPackages(JSON.parse(localSaved));
           } else {
-            setPackages(MOCK_PACKAGES);
+            setPackages([]);
           }
         }
       } else {
         const localSaved = localStorage.getItem('lensy_packages_local');
-        setPackages(localSaved ? JSON.parse(localSaved) : MOCK_PACKAGES);
+        setPackages(localSaved ? JSON.parse(localSaved) : []);
       }
     } catch (err: any) {
       console.error('Lỗi khi fetch gói dịch vụ:', err);
       const localSaved = localStorage.getItem('lensy_packages_local');
-      setPackages(localSaved ? JSON.parse(localSaved) : MOCK_PACKAGES);
+      setPackages(localSaved ? JSON.parse(localSaved) : []);
       setToast({ type: 'error', message: 'Không thể tải gói từ Supabase: ' + err.message });
     } finally {
       setIsLoading(false);
@@ -1055,11 +1055,11 @@ export const PackagesManagementPage: React.FC = () => {
       {/* ==================================================================== */}
       {isModalOpen && (
         <div
-          className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-3 sm:p-4 backdrop-blur-md animate-fadeIn"
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 overflow-hidden"
           onClick={() => setIsModalOpen(false)}
         >
           <div
-            className="w-full max-w-3xl rounded-3xl bg-[#080c14] border border-white/15 shadow-2xl p-5 sm:p-7 space-y-6 text-left relative max-h-[90vh] overflow-y-auto"
+            className="relative z-10 w-full max-w-3xl rounded-3xl bg-[#080c14] border border-white/15 shadow-2xl p-5 sm:p-7 space-y-6 text-left max-h-[90vh] overflow-y-auto"
             onClick={e => e.stopPropagation()}
           >
             {/* Header Modal */}
@@ -1184,7 +1184,7 @@ export const PackagesManagementPage: React.FC = () => {
                 <div className="flex items-center gap-2">
                   <input
                     type="text"
-                    placeholder="Nhập quyền lợi mới (VD: 2 Thợ chính Sony A7 IV + Lens GM)..."
+                    placeholder="Nhập quyền lợi mới (VD: 2 Thợ chính Full-Frame + Lens tiêu cự vàng)..."
                     value={newFeatureText}
                     onChange={e => setNewFeatureText(e.target.value)}
                     onKeyDown={e => {

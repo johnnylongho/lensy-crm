@@ -83,11 +83,11 @@ export const CompletedShootsHistoryModal: React.FC<Props> = ({
 
   return (
     <div
-      className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-3 sm:p-6 backdrop-blur-md animate-fadeIn"
+      className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 overflow-hidden"
       onClick={onClose}
     >
       <div
-        className="w-full max-w-4xl max-h-[90vh] bg-white dark:bg-slate-900 rounded-3xl border border-slate-200 dark:border-slate-800 shadow-2xl flex flex-col overflow-y-auto animate-scaleUp"
+        className="relative z-10 w-full max-w-4xl max-h-[90vh] bg-white dark:bg-slate-900 rounded-3xl border border-slate-200 dark:border-slate-800 shadow-2xl flex flex-col overflow-y-auto animate-scaleUp"
         role="dialog"
         aria-modal="true"
         onClick={e => e.stopPropagation()}

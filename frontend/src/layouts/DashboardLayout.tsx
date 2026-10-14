@@ -21,22 +21,32 @@ import {
   Plus,
   Calendar as CalendarIcon,
   Sparkles,
+  Zap,
 } from 'lucide-react';
 import { ThemeToggle } from '../components/common/ThemeToggle';
 import { TierBadge } from '../components/dashboard/TierBadge';
 import { TierConfig, TIER_CONFIGS, calculateYtdRevenue, getTierProgress } from '../utils/tierSystem';
+import { QuickPassShowModal } from '../components/dashboard/QuickPassShowModal';
 
 export const DashboardLayout: React.FC = () => {
   const { user, signOut } = useAuth();
-  const { currentStudio, studioRole, isStudioAdmin } = useWorkspace();
+  const { currentStudio, studioRole, isStudioAdmin, isFreelancer } = useWorkspace();
   const location = useLocation();
 
   const [currentUsername, setCurrentUsername] = useState<string>('johnnylongho');
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [isUserMenuOpen, setIsUserMenuOpen] = useState(false);
+  const [isPassShowOpen, setIsPassShowOpen] = useState(false);
   const [studioTier, setStudioTier] = useState<TierConfig>(TIER_CONFIGS.gold);
   const mobileMenuRef = useRef<HTMLDivElement>(null);
   const userMenuRef = useRef<HTMLDivElement>(null);
+
+  // Lắng nghe sự kiện mở modal pass show từ mọi component
+  useEffect(() => {
+    const handlePassShow = () => setIsPassShowOpen(true);
+    window.addEventListener('lensy:pass-show', handlePassShow);
+    return () => window.removeEventListener('lensy:pass-show', handlePassShow);
+  }, []);
 
   useEffect(() => {
     if (!user) return;
@@ -120,12 +130,16 @@ export const DashboardLayout: React.FC = () => {
       icon: Users,
       isActive: location.pathname.startsWith('/dashboard/clients'),
     },
-    {
-      to: '/dashboard/gears',
-      label: 'Thiết Bị',
-      icon: SlidersHorizontal,
-      isActive: location.pathname.startsWith('/dashboard/gears'),
-    },
+    ...(!isFreelancer
+      ? [
+          {
+            to: '/dashboard/gears',
+            label: 'Thiết Bị',
+            icon: SlidersHorizontal,
+            isActive: location.pathname.startsWith('/dashboard/gears'),
+          },
+        ]
+      : []),
     {
       to: '/dashboard/settings',
       label: 'Cài Đặt',
@@ -158,317 +172,357 @@ export const DashboardLayout: React.FC = () => {
   };
 
   return (
-    <div className="relative min-h-screen w-full overflow-x-hidden bg-gradient-to-br from-[#eed7c7] via-[#f7e8dc] to-[#e4cbbe] dark:from-[#131418] dark:via-[#191b22] dark:to-[#111216] p-3 sm:p-5 lg:p-7 font-sans selection:bg-[#df8653] selection:text-white transition-colors duration-300">
-      {/* Decorative Warm Ambient Light Orbs for Glassmorphism Depth */}
-      <div className="pointer-events-none fixed -top-40 -left-40 h-[600px] w-[600px] rounded-full bg-gradient-to-br from-[#f8baa0]/40 dark:from-[#c86d3b]/20 to-transparent blur-[120px]" />
-      <div className="pointer-events-none fixed top-1/3 -right-40 h-[650px] w-[650px] rounded-full bg-gradient-to-tl from-[#e8a382]/35 dark:from-[#e49366]/15 via-[#f0c3aa]/20 to-transparent blur-[140px]" />
-      <div className="pointer-events-none fixed -bottom-32 left-1/4 h-[500px] w-[500px] rounded-full bg-gradient-to-tr from-[#deb199]/40 dark:from-[#965a3c]/20 to-transparent blur-[120px]" />
+    <div className="flex h-screen w-full overflow-hidden bg-gray-50 dark:bg-zinc-950 font-sans selection:bg-[#df8653] selection:text-white transition-colors duration-200">
+      {/* Mobile Backdrop */}
+      {isMobileMenuOpen && (
+        <div
+          className="fixed inset-0 z-40 bg-black/50 lg:hidden backdrop-blur-xs transition-opacity"
+          onClick={() => setIsMobileMenuOpen(false)}
+        />
+      )}
 
-      {/* Decorative Ribbon curve behind the glass sheet */}
-      <div className="pointer-events-none fixed top-10 left-10 h-full w-full opacity-25 dark:opacity-10">
-        <svg
-          viewBox="0 0 1200 900"
-          fill="none"
-          className="h-full w-full stroke-orange-300/40"
-          strokeWidth="6"
-        >
-          <path d="M-100,500 C200,300 400,750 800,400 C1100,100 1300,500 1500,300" />
-          <path d="M-50,550 C250,350 450,800 850,450 C1150,150 1350,550 1550,350" strokeWidth="2" strokeDasharray="8 8" />
-        </svg>
-      </div>
+      {/* ===================================================================== */}
+      {/* 1. LEFT SIDEBAR                                                       */}
+      {/* ===================================================================== */}
+      <aside
+        ref={mobileMenuRef}
+        className={`fixed inset-y-0 left-0 z-50 lg:static flex-shrink-0 w-64 lg:w-64 shrink-0 h-full overflow-y-auto border-r border-gray-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 p-4 sm:p-5 flex flex-col justify-between transition-transform duration-200 lg:translate-x-0 ${
+          isMobileMenuOpen ? 'translate-x-0 shadow-2xl' : '-translate-x-full lg:translate-x-0'
+        }`}
+      >
+        <div className="space-y-6">
+          {/* Logo / Brand Header */}
+          <div className="flex items-center justify-between pb-4 border-b border-gray-100 dark:border-zinc-800/80">
+            <Link to="/dashboard" className="flex items-center gap-3 group">
+              <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-orange-50 dark:bg-orange-950/40 p-1.5 border border-orange-200/60 dark:border-orange-800/40 group-hover:scale-105 transition-transform">
+                <img src="/lensy-logo.png" alt="Lensy CRM" className="h-full w-full object-contain rounded-lg" />
+              </div>
+              <div>
+                <h1 className="text-xl font-bold tracking-tight text-gray-900 dark:text-white flex items-center gap-1.5">
+                  <span>Lensy</span>
+                  <span className="text-[9px] font-bold px-1.5 py-0.5 rounded-full bg-orange-500/15 text-orange-600 dark:text-orange-400 uppercase border border-orange-500/25">
+                    CRM
+                  </span>
+                </h1>
+                <p className="text-[10px] font-semibold uppercase tracking-wider text-gray-400 dark:text-zinc-500">
+                  Studio Management
+                </p>
+              </div>
+            </Link>
 
-      {/* ========================================================================= */}
-      {/* MAIN FROSTED GLASS CONTAINER                                              */}
-      {/* ========================================================================= */}
-      <div className="relative mx-auto max-w-[1540px] rounded-[32px] sm:rounded-[38px] border border-white/60 dark:border-white/10 clay-glass-container p-4 sm:p-6 lg:p-8 backdrop-blur-2xl transition-all shadow-[0_25px_70px_rgba(150,90,60,0.12),0_10px_25px_rgba(0,0,0,0.04)]">
-        <div className="flex flex-col lg:flex-row gap-6 lg:gap-8">
-          {/* ===================================================================== */}
-          {/* 1. LEFT SIDEBAR                                                       */}
-          {/* ===================================================================== */}
-          <aside className="lg:w-64 shrink-0">
-            {/* Logo / Brand Header */}
-            <div className="flex items-center justify-between pb-6">
-              <Link to="/dashboard" className="flex items-center gap-3 group">
-                <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-white/80 dark:bg-white/10 p-1.5 shadow-[0_4px_14px_rgba(200,109,59,0.25)] border border-white/90 dark:border-white/15 group-hover:scale-105 transition-transform backdrop-blur-md">
-                  <img src="/lensy-logo.png" alt="Lensy CRM" className="h-full w-full object-contain rounded-xl" />
+            {/* Mobile close button */}
+            <button
+              type="button"
+              onClick={() => setIsMobileMenuOpen(false)}
+              className="lg:hidden rounded-lg p-1.5 text-gray-400 hover:text-gray-700 dark:hover:text-white hover:bg-gray-100 dark:hover:bg-zinc-800 transition-colors cursor-pointer"
+              aria-label="Đóng menu"
+            >
+              <X className="h-5 w-5" />
+            </button>
+          </div>
+
+          {/* Navigation Menus */}
+          <div>
+            <div className="px-3 mb-2 text-[11px] font-semibold tracking-wider text-gray-400 dark:text-zinc-500 uppercase">
+              Menu Chính
+            </div>
+            <nav className="space-y-1">
+              {navItems.map(item => {
+                const Icon = item.icon;
+                const isActive = item.isActive;
+                return (
+                  <Link
+                    key={item.to}
+                    to={item.to}
+                    onClick={() => setIsMobileMenuOpen(false)}
+                    className={`group flex w-full items-center gap-3 rounded-xl px-3 py-2 text-sm font-semibold transition-all duration-200 ${
+                      isActive
+                        ? 'bg-gray-100 dark:bg-zinc-800 text-gray-900 dark:text-white font-bold'
+                        : 'text-gray-600 dark:text-zinc-400 hover:bg-gray-50 dark:hover:bg-zinc-800/50 hover:text-gray-900 dark:hover:text-white'
+                    }`}
+                  >
+                    <div
+                      className={`flex h-6 w-6 items-center justify-center rounded-lg transition-colors ${
+                        isActive
+                          ? 'bg-orange-500 text-white shadow-xs'
+                          : 'text-gray-400 dark:text-zinc-500 group-hover:text-gray-700 dark:group-hover:text-white'
+                      }`}
+                    >
+                      <Icon className="h-3.5 w-3.5" />
+                    </div>
+                    <span>{item.label}</span>
+                  </Link>
+                );
+              })}
+            </nav>
+          </div>
+
+          {/* Operations & Team Management Sub-menu (Chỉ dành cho Studio) */}
+          {!isFreelancer && (
+            <div>
+              <div className="px-3 mb-2 text-[11px] font-semibold tracking-wider text-gray-400 dark:text-zinc-500 uppercase">
+                Vận Hành & Dịch Vụ
+              </div>
+              <div className="space-y-1 text-sm font-medium">
+                {[
+                  { label: 'Hiệu Suất Ekip', icon: TrendingUp, to: '/dashboard' },
+                  { label: 'Khách Hàng & Hợp Đồng', icon: Users, to: '/dashboard/clients' },
+                  { label: 'Kho Thiết Bị & Khấu Hao', icon: SlidersHorizontal, to: '/dashboard/gears' },
+                  { label: 'Bảng Giá & Gói Dịch Vụ', icon: Package, to: '/dashboard/packages' },
+                ].map((sub, idx) => {
+                  const Icon = sub.icon;
+                  return (
+                    <Link
+                      key={idx}
+                      to={sub.to}
+                      onClick={() => setIsMobileMenuOpen(false)}
+                      className="flex w-full items-center gap-2.5 rounded-lg px-3 py-1.5 text-xs text-gray-600 dark:text-zinc-400 hover:bg-gray-50 dark:hover:bg-zinc-800/50 hover:text-gray-900 dark:hover:text-white transition-colors"
+                    >
+                      <Icon className="h-3.5 w-3.5 text-gray-400 dark:text-zinc-500" />
+                      <span>{sub.label}</span>
+                    </Link>
+                  );
+                })}
+              </div>
+            </div>
+          )}
+
+          {isFreelancer && (
+            <div className="rounded-xl border border-amber-500/25 bg-amber-500/10 p-3 space-y-1 text-xs">
+              <div className="font-bold text-amber-500 flex items-center gap-1.5">
+                <Camera className="w-3.5 h-3.5" />
+                <span>Chế Độ Thợ Tự Do</span>
+              </div>
+              <p className="text-[11px] text-gray-600 dark:text-zinc-400 leading-tight">
+                Giao diện tinh giản, tập trung lịch chụp cá nhân, khách hàng và doanh thu solo.
+              </p>
+            </div>
+          )}
+        </div>
+
+        {/* Bottom widgets of Sidebar */}
+        <div className="pt-6 space-y-3">
+          {/* Studio Bays Status Pill (Chỉ hiển thị cho Studio) */}
+          {!isFreelancer && (
+            <div className="rounded-xl border border-gray-200 dark:border-zinc-800 bg-gray-50 dark:bg-zinc-800/40 p-3">
+              <div className="flex items-center justify-between text-xs font-bold text-gray-800 dark:text-white mb-2">
+                <span className="flex items-center gap-1.5">
+                  <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
+                  <span>Studio Bays</span>
+                </span>
+                <span className="text-[10px] text-emerald-700 dark:text-emerald-400 bg-emerald-100/70 dark:bg-emerald-950/40 border border-emerald-300/40 rounded-full px-2 py-0.5 font-medium">
+                  2/3 Sẵn sàng
+                </span>
+              </div>
+              <div className="space-y-1 text-[11px]">
+                <div className="flex justify-between items-center text-gray-600 dark:text-zinc-400">
+                  <span>Bay 1 (Cyclorama)</span>
+                  <span className="font-semibold text-orange-600 dark:text-orange-400">Đang Chụp</span>
                 </div>
-                <div>
-                  <h1 className="text-xl font-bold tracking-tight text-[#1b2234] dark:text-white flex items-center gap-1.5">
-                    <span>Lensy</span>
-                    <span className="text-[9px] font-bold px-1.5 py-0.5 rounded-full bg-[#df8653]/15 text-[#c86d3b] dark:text-[#df8653] uppercase border border-[#df8653]/25">
-                      CRM
-                    </span>
-                  </h1>
-                  <p className="text-[10px] font-semibold uppercase tracking-wider text-[#8b776a] dark:text-zinc-400">
-                    Studio Management
-                  </p>
+                <div className="flex justify-between items-center text-gray-600 dark:text-zinc-400">
+                  <span>Bay 2 (Daylight Loft)</span>
+                  <span className="font-semibold text-emerald-600 dark:text-emerald-400">Sẵn Sàng</span>
                 </div>
-              </Link>
+                <div className="flex justify-between items-center text-gray-600 dark:text-zinc-400">
+                  <span>Bay 3 (Sanctuary Garden)</span>
+                  <span className="font-semibold text-emerald-600 dark:text-emerald-400">Sẵn Sàng</span>
+                </div>
+              </div>
+            </div>
+          )}
 
-              {/* Mobile menu button */}
+          {/* Public Booking Link Banner */}
+          <div className="rounded-xl border border-orange-200/60 dark:border-orange-950/40 bg-orange-50/50 dark:bg-orange-950/20 p-3">
+            <div className="text-[10px] font-bold uppercase tracking-wider text-orange-600 dark:text-orange-400 mb-1">
+              Link Đặt Lịch Online
+            </div>
+            <p className="text-[11px] text-gray-500 dark:text-zinc-400 mb-2">
+              Gửi link này cho khách xem báo giá và chốt cọc tự động.
+            </p>
+            <a
+              href={`/book/${currentUsername}`}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="flex items-center justify-between px-2.5 py-1.5 rounded-lg bg-white dark:bg-zinc-900 border border-gray-200 dark:border-zinc-700 text-xs font-semibold text-gray-900 dark:text-white shadow-2xs hover:border-orange-500 transition-all"
+            >
+              <span className="truncate max-w-[130px] font-mono text-[11px]">@{currentUsername}</span>
+              <ExternalLink className="w-3.5 h-3.5 text-orange-600 dark:text-orange-400 shrink-0" />
+            </a>
+          </div>
+        </div>
+      </aside>
+
+      {/* ===================================================================== */}
+      {/* 2. MAIN CONTENT AREA                                                  */}
+      {/* ===================================================================== */}
+      <main className="flex-1 h-full overflow-y-auto p-6 md:p-8">
+        {/* Header: Page Title + Actions + Profile Pill */}
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
+          <div className="flex items-center gap-3">
+            {/* Mobile menu trigger */}
+            <button
+              type="button"
+              onClick={() => setIsMobileMenuOpen(true)}
+              className="lg:hidden p-2 rounded-xl border border-gray-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 text-gray-700 dark:text-zinc-200 hover:bg-gray-100 dark:hover:bg-zinc-800 transition-colors cursor-pointer"
+              aria-label="Mở menu"
+            >
+              <Menu className="h-5 w-5" />
+            </button>
+            <div>
+              <h2 className="text-2xl sm:text-3xl font-extrabold tracking-tight text-gray-900 dark:text-white">
+                {getPageTitle()}
+              </h2>
+              <p className="text-xs text-gray-500 dark:text-zinc-400 mt-0.5">
+                Hệ thống quản lý lịch chụp, dòng tiền và vận hành Studio chuyên nghiệp
+              </p>
+            </div>
+          </div>
+
+          {/* Top Action Buttons & Profile Card Pill */}
+          <div className="flex items-center gap-2.5 sm:gap-3 flex-wrap">
+            {/* Button: + Pass Show (Tạo lịch thủ công nhanh) */}
+            <button
+              type="button"
+              onClick={() => setIsPassShowOpen(true)}
+              className="inline-flex items-center gap-1.5 rounded-xl bg-amber-500/15 hover:bg-amber-500/25 border border-amber-500/40 text-amber-700 dark:text-amber-300 px-3 py-2 text-xs font-bold shadow-xs active:scale-95 transition-all cursor-pointer"
+              title="Tạo lịch chụp thủ công / Nhận pass show"
+            >
+              <Zap className="h-4 w-4 stroke-[2.5] text-amber-500" />
+              <span>Pass Show</span>
+            </button>
+
+            {/* Button: + Tạo Lịch Mới */}
+            <button
+              type="button"
+              onClick={handleOpenNewBooking}
+              className="inline-flex items-center gap-1.5 rounded-xl bg-orange-600 hover:bg-orange-500 px-3.5 py-2 text-xs font-bold text-white shadow-xs hover:brightness-105 active:scale-95 transition-all cursor-pointer"
+            >
+              <Plus className="h-4 w-4 stroke-[2.5]" />
+              <span>Tạo Lịch Mới</span>
+            </button>
+
+            {/* Theme Mode Toggle (Dark/Light) */}
+            <ThemeToggle size="sm" />
+
+            {/* Profile Card Pill in top right */}
+            <div className="relative" ref={userMenuRef}>
               <button
                 type="button"
-                onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
-                className="lg:hidden rounded-xl border border-white/60 dark:border-white/10 bg-white/60 dark:bg-white/10 p-2 text-[#463d36] dark:text-white backdrop-blur-md"
+                onClick={() => setIsUserMenuOpen(!isUserMenuOpen)}
+                className="flex items-center gap-2.5 rounded-full border border-gray-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 px-3 py-1.5 shadow-2xs hover:bg-gray-50 dark:hover:bg-zinc-800 transition-all cursor-pointer"
               >
-                {isMobileMenuOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
+                <div className="flex h-8 w-8 items-center justify-center rounded-full bg-orange-500 text-xs font-bold text-white shadow-xs">
+                  {userInitials}
+                </div>
+                <div className="hidden sm:block text-left">
+                  <div className="text-xs font-bold text-gray-900 dark:text-white leading-tight">
+                    {userFullName}
+                  </div>
+                  <div className="text-[10px] text-gray-500 dark:text-zinc-400 leading-tight">
+                    {isFreelancer ? 'Thợ Tự Do (Freelancer)' : (currentStudio?.name || 'Studio Admin')}
+                  </div>
+                </div>
+                <ChevronDown className={`h-3.5 w-3.5 text-gray-400 dark:text-zinc-400 transition-transform ${isUserMenuOpen ? 'rotate-180' : ''}`} />
               </button>
-            </div>
 
-            {/* Navigation Menus */}
-            <div
-              className={`space-y-6 lg:block ${
-                isMobileMenuOpen ? 'block' : 'hidden'
-              }`}
-              ref={mobileMenuRef}
-            >
-              {/* Main Menu */}
-              <div>
-                <div className="px-3 mb-2.5 text-[11px] font-semibold tracking-wider text-[#98877b] dark:text-zinc-400 uppercase">
-                  Menu Chính
-                </div>
-                <nav className="space-y-1">
-                  {navItems.map(item => {
-                    const Icon = item.icon;
-                    const isActive = item.isActive;
-                    return (
+              {/* Dropdown Menu */}
+              {isUserMenuOpen && (
+                <div className="absolute right-0 top-full mt-2 w-64 rounded-2xl bg-white dark:bg-zinc-900 border border-gray-200 dark:border-zinc-800 shadow-xl p-2 z-50 text-xs space-y-1">
+                  <div className="p-3 rounded-xl bg-gray-50 dark:bg-zinc-800/60 space-y-1">
+                    <div className="flex items-center justify-between gap-2">
+                      <p className="font-bold text-gray-900 dark:text-white truncate">{userFullName}</p>
+                      <TierBadge tier={studioTier} size="xs" />
+                    </div>
+                    <p className="text-[11px] text-gray-500 dark:text-zinc-400 font-mono truncate">{user?.email}</p>
+                    {isFreelancer ? (
+                      <div className="pt-1.5 mt-1 border-t border-gray-200 dark:border-zinc-700/60 flex items-center justify-between text-[10px]">
+                        <span className="text-gray-600 dark:text-zinc-400 flex items-center gap-1">
+                          <Camera className="w-3 h-3 text-amber-500" />
+                          <span className="font-semibold">Thợ Ảnh Tự Do</span>
+                        </span>
+                        <span className="px-1.5 py-0.5 rounded bg-amber-500/15 text-amber-600 dark:text-amber-400 font-mono uppercase font-bold">
+                          Freelancer
+                        </span>
+                      </div>
+                    ) : currentStudio && (
+                      <div className="pt-1.5 mt-1 border-t border-gray-200 dark:border-zinc-700/60 flex items-center justify-between text-[10px]">
+                        <span className="text-gray-600 dark:text-zinc-400 flex items-center gap-1">
+                          <Building2 className="w-3 h-3 text-orange-600" />
+                          <span className="truncate max-w-[120px] font-semibold">{currentStudio.name}</span>
+                        </span>
+                        <span className="px-1.5 py-0.5 rounded bg-orange-500/15 text-orange-600 dark:text-orange-400 font-mono uppercase font-bold">
+                          {studioRole === 'admin' ? 'Admin' : 'Thợ ảnh'}
+                        </span>
+                      </div>
+                    )}
+                  </div>
+
+                  <div className="pt-1 space-y-0.5">
+                    <Link
+                      to="/dashboard/settings"
+                      onClick={() => setIsUserMenuOpen(false)}
+                      className="flex items-center gap-2.5 px-3 py-2 rounded-xl text-gray-700 dark:text-zinc-300 hover:bg-gray-100 dark:hover:bg-zinc-800 font-medium transition-colors"
+                    >
+                      <Settings className="w-4 h-4 text-gray-400" />
+                      <span>Cài Đặt Hồ Sơ</span>
+                    </Link>
+
+                    {isStudioAdmin && (
                       <Link
-                        key={item.to}
-                        to={item.to}
-                        onClick={() => setIsMobileMenuOpen(false)}
-                        className={`group flex w-full items-center gap-3 rounded-2xl px-4 py-2.5 text-sm font-semibold transition-all duration-200 ${
-                          isActive
-                            ? 'border border-white/90 dark:border-white/15 bg-white/85 dark:bg-white/15 text-[#1a2030] dark:text-white shadow-[0_4px_16px_rgba(180,140,120,0.15)] dark:shadow-[0_4px_16px_rgba(0,0,0,0.4)] backdrop-blur-md'
-                            : 'text-[#5d564f] dark:text-zinc-400 hover:bg-white/40 dark:hover:bg-white/5 hover:text-[#1a2030] dark:hover:text-white'
-                        }`}
+                        to="/dashboard/studio-settings"
+                        onClick={() => setIsUserMenuOpen(false)}
+                        className="flex items-center gap-2.5 px-3 py-2 rounded-xl text-gray-700 dark:text-zinc-300 hover:bg-gray-100 dark:hover:bg-zinc-800 font-medium transition-colors"
                       >
-                        <div
-                          className={`flex h-7 w-7 items-center justify-center rounded-xl transition-colors ${
-                            isActive
-                              ? 'bg-[#1b2234] dark:bg-[#c86d3b] text-white shadow-xs'
-                              : 'text-[#7d7167] dark:text-zinc-400 group-hover:text-[#1a2030] dark:group-hover:text-white'
-                          }`}
-                        >
-                          <Icon className="h-4 w-4" />
-                        </div>
-                        <span>{item.label}</span>
+                        <Building2 className="w-4 h-4 text-orange-600" />
+                        <span>Quản Trị Studio</span>
                       </Link>
-                    );
-                  })}
-                </nav>
-              </div>
+                    )}
 
-              {/* Operations & Team Management Sub-menu */}
-              <div>
-                <div className="px-3 mb-2.5 text-[11px] font-semibold tracking-wider text-[#98877b] dark:text-zinc-400 uppercase">
-                  Vận Hành & Dịch Vụ
-                </div>
-                <div className="space-y-1 text-sm font-medium text-[#5d564f] dark:text-zinc-400">
-                  {[
-                    { label: 'Hiệu Suất Ekip', icon: TrendingUp, to: '/dashboard' },
-                    { label: 'Khách Hàng & Hợp Đồng', icon: Users, to: '/dashboard/clients' },
-                    { label: 'Kho Thiết Bị & Khấu Hao', icon: SlidersHorizontal, to: '/dashboard/gears' },
-                    { label: 'Bảng Giá & Gói Dịch Vụ', icon: Package, to: '/dashboard/packages' },
-                  ].map((sub, idx) => {
-                    const Icon = sub.icon;
-                    return (
-                      <Link
-                        key={idx}
-                        to={sub.to}
-                        onClick={() => setIsMobileMenuOpen(false)}
-                        className="flex w-full items-center gap-3 rounded-xl px-4 py-2 text-xs text-[#5d564f] dark:text-zinc-400 hover:bg-white/35 dark:hover:bg-white/5 hover:text-[#1a2030] dark:hover:text-white transition-colors"
-                      >
-                        <Icon className="h-3.5 w-3.5 text-[#8f7e73] dark:text-zinc-400" />
-                        <span>{sub.label}</span>
-                      </Link>
-                    );
-                  })}
-                </div>
-              </div>
-
-              {/* Studio Bays Status Pill */}
-              <div className="rounded-2xl border border-white/60 dark:border-white/10 bg-white/40 dark:bg-white/5 p-3.5 backdrop-blur-md shadow-xs">
-                <div className="flex items-center justify-between text-xs font-bold text-[#2a241f] dark:text-white mb-2">
-                  <span className="flex items-center gap-1.5">
-                    <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
-                    <span>Studio Bays</span>
-                  </span>
-                  <span className="text-[10px] text-emerald-700 dark:text-emerald-400 bg-emerald-100/70 dark:bg-emerald-950/40 border border-emerald-300/40 rounded-full px-2 py-0.5">
-                    2/3 Sẵn sàng
-                  </span>
-                </div>
-                <div className="space-y-1.5 text-[11px]">
-                  <div className="flex justify-between items-center text-[#554b43] dark:text-zinc-400">
-                    <span>Bay 1 (Cyclorama)</span>
-                    <span className="font-semibold text-[#c86d3b]">Đang Chụp</span>
+                    <a
+                      href={`/book/${currentUsername}`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      onClick={() => setIsUserMenuOpen(false)}
+                      className="flex items-center justify-between px-3 py-2 rounded-xl text-gray-700 dark:text-zinc-300 hover:bg-gray-100 dark:hover:bg-zinc-800 font-medium transition-colors"
+                    >
+                      <span className="flex items-center gap-2">
+                        <ExternalLink className="w-4 h-4 text-orange-600" />
+                        <span>Trang Đặt Lịch</span>
+                      </span>
+                      <span className="text-[10px] font-mono text-gray-400">@{currentUsername}</span>
+                    </a>
                   </div>
-                  <div className="flex justify-between items-center text-[#554b43] dark:text-zinc-400">
-                    <span>Bay 2 (Daylight Loft)</span>
-                    <span className="font-semibold text-emerald-600 dark:text-emerald-400">Sẵn Sàng</span>
-                  </div>
-                  <div className="flex justify-between items-center text-[#554b43] dark:text-zinc-400">
-                    <span>Bay 3 (Sanctuary Garden)</span>
-                    <span className="font-semibold text-emerald-600 dark:text-emerald-400">Sẵn Sàng</span>
-                  </div>
-                </div>
-              </div>
 
-              {/* Public Booking Link Banner */}
-              <div className="rounded-2xl border border-white/60 dark:border-white/10 bg-gradient-to-tr from-[#faf3ed] to-white/70 dark:from-white/5 dark:to-white/10 p-3.5 backdrop-blur-md">
-                <div className="text-[10px] font-bold uppercase tracking-wider text-[#c86d3b] dark:text-[#df8653] mb-1">
-                  Link Đặt Lịch Online
-                </div>
-                <p className="text-[11px] text-[#6d5b4f] dark:text-zinc-400 mb-2.5">
-                  Gửi link này cho khách xem báo giá và chốt cọc tự động.
-                </p>
-                <a
-                  href={`/book/${currentUsername}`}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="flex items-center justify-between px-3 py-1.5 rounded-xl bg-white dark:bg-white/10 border border-white/80 dark:border-white/10 text-xs font-bold text-[#1b2234] dark:text-white shadow-xs hover:border-[#df8653] transition-all"
-                >
-                  <span className="truncate max-w-[130px] font-mono text-[11px]">@{currentUsername}</span>
-                  <ExternalLink className="w-3.5 h-3.5 text-[#c86d3b] dark:text-[#df8653] shrink-0" />
-                </a>
-              </div>
-            </div>
-          </aside>
+                  <div className="h-px bg-gray-200 dark:bg-zinc-800 my-1" />
 
-          {/* ===================================================================== */}
-          {/* 2. MAIN CONTENT AREA                                                  */}
-          {/* ===================================================================== */}
-          <main className="flex-1 space-y-6 min-w-0">
-            {/* Header: Page Title + Actions + Profile Pill */}
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-              <div>
-                <h2 className="text-2xl sm:text-3xl font-extrabold tracking-tight text-[#1b2234] dark:text-white">
-                  {getPageTitle()}
-                </h2>
-                <p className="text-xs text-[#827367] dark:text-zinc-400 mt-0.5">
-                  Hệ thống quản lý lịch chụp, dòng tiền và vận hành Studio chuyên nghiệp
-                </p>
-              </div>
-
-              {/* Top Action Buttons & Profile Card Pill */}
-              <div className="flex items-center gap-2.5 sm:gap-3 flex-wrap">
-                {/* Button: + Tạo Lịch Mới */}
-                <button
-                  type="button"
-                  onClick={handleOpenNewBooking}
-                  className="inline-flex items-center gap-1.5 rounded-2xl bg-gradient-to-r from-[#df8653] to-[#c86d3b] px-3.5 py-2 text-xs font-bold text-white shadow-[0_4px_16px_rgba(200,109,59,0.35)] hover:brightness-105 active:scale-95 transition-all cursor-pointer"
-                >
-                  <Plus className="h-4 w-4 stroke-[2.5]" />
-                  <span>Tạo Lịch Mới</span>
-                </button>
-
-                {/* Theme Mode Toggle (Dark/Light) */}
-                <ThemeToggle size="sm" />
-
-                {/* Profile Card Pill in top right */}
-                <div className="relative" ref={userMenuRef}>
                   <button
                     type="button"
-                    onClick={() => setIsUserMenuOpen(!isUserMenuOpen)}
-                    className="flex items-center gap-2.5 rounded-full border border-white/80 dark:border-white/10 bg-white/70 dark:bg-white/10 px-3 py-1.5 shadow-[0_2px_12px_rgba(0,0,0,0.03)] backdrop-blur-md hover:bg-white/90 dark:hover:bg-white/20 transition-all cursor-pointer"
+                    onClick={() => {
+                      setIsUserMenuOpen(false);
+                      signOut();
+                    }}
+                    className="w-full flex items-center gap-2.5 px-3 py-2 rounded-xl text-rose-500 hover:bg-rose-50 dark:hover:bg-rose-950/30 font-medium transition-colors cursor-pointer"
                   >
-                    <div className="flex h-8 w-8 items-center justify-center rounded-full bg-gradient-to-tr from-[#c86d3b] to-[#df8653] text-xs font-bold text-white shadow-xs">
-                      {userInitials}
-                    </div>
-                    <div className="hidden sm:block text-left">
-                      <div className="text-xs font-bold text-[#1b2234] dark:text-white leading-tight">
-                        {userFullName}
-                      </div>
-                      <div className="text-[10px] text-[#8b776a] dark:text-zinc-400 leading-tight">
-                        {currentStudio?.name || 'Studio Admin'}
-                      </div>
-                    </div>
-                    <ChevronDown className={`h-3.5 w-3.5 text-[#7c7066] dark:text-zinc-400 transition-transform ${isUserMenuOpen ? 'rotate-180' : ''}`} />
+                    <LogOut className="w-4 h-4" />
+                    <span>Đăng xuất</span>
                   </button>
-
-                  {/* Dropdown Menu */}
-                  {isUserMenuOpen && (
-                    <div className="absolute right-0 top-full mt-2.5 w-64 rounded-2xl bg-white/95 dark:bg-[#121318]/95 backdrop-blur-2xl border border-white/90 dark:border-white/10 shadow-2xl p-2 z-50 text-xs space-y-1">
-                      <div className="p-3 rounded-xl bg-[#faf3ed] dark:bg-white/5 space-y-1">
-                        <div className="flex items-center justify-between gap-2">
-                          <p className="font-bold text-[#1b2234] dark:text-white truncate">{userFullName}</p>
-                          <TierBadge tier={studioTier} size="xs" />
-                        </div>
-                        <p className="text-[11px] text-[#8b776a] dark:text-zinc-400 font-mono truncate">{user?.email}</p>
-                        {currentStudio && (
-                          <div className="pt-1.5 mt-1 border-t border-[#f0dfd3] dark:border-white/5 flex items-center justify-between text-[10px]">
-                            <span className="text-[#6d5b4f] dark:text-zinc-400 flex items-center gap-1">
-                              <Building2 className="w-3 h-3 text-[#c86d3b]" />
-                              <span className="truncate max-w-[120px] font-semibold">{currentStudio.name}</span>
-                            </span>
-                            <span className="px-1.5 py-0.5 rounded bg-[#df8653]/15 text-[#c86d3b] font-mono uppercase font-bold">
-                              {studioRole === 'admin' ? 'Admin' : 'Thợ ảnh'}
-                            </span>
-                          </div>
-                        )}
-                      </div>
-
-                      <div className="pt-1 space-y-0.5">
-                        <Link
-                          to="/dashboard/settings"
-                          onClick={() => setIsUserMenuOpen(false)}
-                          className="flex items-center gap-2.5 px-3 py-2 rounded-xl text-[#463d36] dark:text-zinc-300 hover:bg-[#faf3ed] dark:hover:bg-white/5 font-medium transition-colors"
-                        >
-                          <Settings className="w-4 h-4 text-[#8b776a]" />
-                          <span>Cài Đặt Hồ Sơ</span>
-                        </Link>
-
-                        {isStudioAdmin && (
-                          <Link
-                            to="/dashboard/studio-settings"
-                            onClick={() => setIsUserMenuOpen(false)}
-                            className="flex items-center gap-2.5 px-3 py-2 rounded-xl text-[#463d36] dark:text-zinc-300 hover:bg-[#faf3ed] dark:hover:bg-white/5 font-medium transition-colors"
-                          >
-                            <Building2 className="w-4 h-4 text-[#c86d3b]" />
-                            <span>Quản Trị Studio</span>
-                          </Link>
-                        )}
-
-                        <a
-                          href={`/book/${currentUsername}`}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          onClick={() => setIsUserMenuOpen(false)}
-                          className="flex items-center justify-between px-3 py-2 rounded-xl text-[#463d36] dark:text-zinc-300 hover:bg-[#faf3ed] dark:hover:bg-white/5 font-medium transition-colors"
-                        >
-                          <span className="flex items-center gap-2">
-                            <ExternalLink className="w-4 h-4 text-[#c86d3b]" />
-                            <span>Trang Đặt Lịch</span>
-                          </span>
-                          <span className="text-[10px] font-mono text-[#8b776a]">@{currentUsername}</span>
-                        </a>
-                      </div>
-
-                      <div className="h-px bg-[#ebdcd1] dark:bg-white/10 my-1" />
-
-                      <button
-                        type="button"
-                        onClick={() => {
-                          setIsUserMenuOpen(false);
-                          signOut();
-                        }}
-                        className="w-full flex items-center gap-2.5 px-3 py-2 rounded-xl text-rose-500 hover:bg-rose-500/10 font-medium transition-colors cursor-pointer"
-                      >
-                        <LogOut className="w-4 h-4" />
-                        <span>Đăng xuất</span>
-                      </button>
-                    </div>
-                  )}
                 </div>
-              </div>
+              )}
             </div>
-
-            {/* Outlet: Renders PhotographerDashboard or child routes */}
-            <AnimatePresence mode="wait">
-              <Outlet key={location.pathname} />
-            </AnimatePresence>
-          </main>
+          </div>
         </div>
-      </div>
+
+        {/* Outlet: Renders PhotographerDashboard or child routes */}
+        <AnimatePresence mode="wait">
+          <Outlet key={location.pathname} />
+        </AnimatePresence>
+
+        {/* Modal: Tạo lịch thủ công / Pass show */}
+        <QuickPassShowModal
+          isOpen={isPassShowOpen}
+          onClose={() => setIsPassShowOpen(false)}
+        />
+      </main>
     </div>
   );
 };

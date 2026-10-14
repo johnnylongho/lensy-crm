@@ -136,10 +136,29 @@
 
 ---
 
+### ✅ Giai Đoạn Đột Phá: Cổng Khách Hàng (Client Portal) & Bàn Giao File Ảnh (ĐÃ XONG 100%)
+*   **1. CSDL & Model Bàn Giao (`update_bookings_delivery.sql` & `types/index.ts`):**
+    *   Bổ sung 3 trường cốt lõi vào bảng `bookings`: `drive_delivery_link` (link tải ảnh), `delivery_date` (ngày giao ảnh), `delivery_notes` (mật khẩu/hướng dẫn).
+*   **2. Thanh Tiến Độ Hành Trình Show Chụp (`ClientProjectJourney.tsx`):**
+    *   File: `frontend/src/components/quote/ClientProjectJourney.tsx`
+    *   Mô hình 4 chặng trực quan: *Chốt Lịch & Cọc* ➔ *Ngày Bấm Máy* ➔ *Hậu Kỳ & Chỉnh Màu* ➔ *Bàn Giao & Tải Ảnh*.
+    *   Phong cách Warm Clay Frosted Glass, tự động nhận diện tiến trình dựa theo trạng thái booking thực tế.
+*   **3. Phân Hệ Tải Ảnh & Quyết Toán Nợ (`ClientDeliverySection.tsx` & `DepositModal.tsx`):**
+    *   File: `frontend/src/components/quote/ClientDeliverySection.tsx`
+    *   Nút CTA nổi bật: **" Tải Trọn Bộ Ảnh Gốc & Retouch"**, tự động nhận diện nền tảng Google Drive, Pixieset, Dropbox.
+    *   Sao chép mật khẩu 1-chạm, hướng dẫn bảo quản lưu trữ 12 tháng.
+    *   Tích hợp thanh toán quyết toán nốt khoản nợ còn lại (`remainingAmount`) trực tiếp bằng VietQR động.
+*   **4. Phân Hệ Quản Trị Studio Bàn Giao Ảnh (`BookingDetailModal.tsx`):**
+    *   File: `frontend/src/components/dashboard/BookingDetailModal.tsx` (Tab 3: *🎁 Bàn Giao Ảnh*)
+    *   Nhập link đám mây, mật khẩu, ngày giao, tùy chọn chuyển trạng thái tự động sang `da_tra_file`.
+    *   Nút **"📋 Sao Chép Link Portal"** và **"💬 Gửi Zalo Bàn Giao 1-Chạm"** qua hàm `generatePhotoDeliveryMessage`.
+
+---
+
 ### 📊 BẢNG TỔNG KẾT KIỂM THỬ HỆ THỐNG
-*   **Hệ thống Test Suites:** 28 Phases kiểm tra toàn diện (`test_system.cjs`).
-*   **Kết quả:** **282/282 tiêu chí ĐẠT (100% PASS)**.
-*   **Build Production:** `tsc && vite build` thành công trong 7.68s, 0 lỗi, bundle tối ưu.
+*   **Hệ thống Test Suites:** 37 Phases kiểm tra toàn diện (`test_system.cjs`).
+*   **Kết quả:** **440/440 tiêu chí ĐẠT (100% PASS - Tuyệt đối)**.
+*   **Build Production:** `tsc && vite build` thành công trong 12.02s, 0 lỗi TypeScript, PWA precache sẵn sàng.
 
 
 

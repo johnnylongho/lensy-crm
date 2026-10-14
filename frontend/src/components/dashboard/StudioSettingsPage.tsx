@@ -24,7 +24,10 @@ import {
   PlusCircle,
   Camera,
   UserPlus,
+  BadgeCheck,
+  ExternalLink,
 } from 'lucide-react';
+import { VerifiedBadge } from '../common/VerifiedBadge';
 
 export const StudioSettingsPage: React.FC = () => {
   const { user } = useAuth();
@@ -148,23 +151,7 @@ export const StudioSettingsPage: React.FC = () => {
         setLogoUrl(mockStudio.logo_url || '');
         setVerifiedStatus(mockStudio.verified_status);
 
-        setPendingMembers([
-          {
-            id: 'req-001',
-            studio_id: 'mock-studio-001',
-            user_id: 'user-002',
-            role: 'photographer',
-            status: 'pending',
-            created_at: new Date(Date.now() - 3600000 * 2).toISOString(),
-            user: {
-              id: 'user-002',
-              full_name: 'Trần Văn Hoàng (Hoang Photography)',
-              email: 'hoang.photo@gmail.com',
-              phone: '0988776655',
-              avatar_url: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=200&q=80',
-            },
-          },
-        ]);
+        setPendingMembers([]);
 
         setApprovedMembers([
           {
@@ -173,13 +160,17 @@ export const StudioSettingsPage: React.FC = () => {
             user_id: user.id,
             role: 'admin',
             status: 'approved',
-            created_at: new Date(Date.now() - 86400000 * 30).toISOString(),
+            facebook_url: user.user_metadata?.facebook_url || null,
+            is_verified: user.user_metadata?.is_verified || false,
+            created_at: new Date().toISOString(),
             user: {
               id: user.id,
               full_name: user.user_metadata?.full_name || 'Johnny Long Hồ',
               email: user.email || 'longho@mirmia.vn',
-              phone: '0901234567',
-              avatar_url: '/mirmia-logo.png',
+              phone: user.user_metadata?.phone || '0901234567',
+              avatar_url: user.user_metadata?.avatar_url || '/mirmia-logo.png',
+              facebook_url: user.user_metadata?.facebook_url || null,
+              is_verified: user.user_metadata?.is_verified || false,
             },
           },
         ]);
@@ -205,6 +196,8 @@ export const StudioSettingsPage: React.FC = () => {
           user_id,
           role,
           status,
+          facebook_url,
+          is_verified,
           created_at,
           updated_at,
           users:user_id (
@@ -212,7 +205,9 @@ export const StudioSettingsPage: React.FC = () => {
             full_name,
             email,
             phone,
-            avatar_url
+            avatar_url,
+            facebook_url,
+            is_verified
           )
         `)
         .eq('studio_id', studioId)
@@ -233,9 +228,15 @@ export const StudioSettingsPage: React.FC = () => {
           user_id: row.user_id,
           role: row.role,
           status: row.status,
+          facebook_url: row.facebook_url || row.users?.facebook_url || null,
+          is_verified: row.is_verified || row.users?.is_verified || false,
           created_at: row.created_at,
           updated_at: row.updated_at,
-          user: row.users,
+          user: row.users ? {
+            ...row.users,
+            facebook_url: row.users.facebook_url || row.facebook_url || null,
+            is_verified: row.users.is_verified || row.is_verified || false,
+          } : undefined,
         };
         if (row.status === 'pending') {
           pending.push(item);
@@ -580,6 +581,64 @@ export const StudioSettingsPage: React.FC = () => {
       setToast({
         type: 'error',
         message: 'Lỗi gỡ bỏ: ' + err.message,
+      });
+    } finally {
+      setIsProcessingMemberId(null);
+    }
+  };
+
+  // Duyệt / Xác thực Thợ ảnh (Verification via Facebook)
+  const handleVerifyMember = async (member: StudioMember) => {
+    setIsProcessingMemberId(member.id);
+    try {
+      if (isSupabaseConfigured) {
+        // Cập nhật bảng studio_members
+        const { error: smErr } = await supabase
+          .from('studio_members')
+          .update({
+            is_verified: true,
+            updated_at: new Date().toISOString(),
+          })
+          .eq('id', member.id);
+
+        if (smErr) console.warn('Lỗi cập nhật studio_members:', smErr);
+
+        // Cập nhật bảng users nếu có user_id
+        if (member.user_id) {
+          const { error: uErr } = await supabase
+            .from('users')
+            .update({
+              is_verified: true,
+              updated_at: new Date().toISOString(),
+            })
+            .eq('id', member.user_id);
+
+          if (uErr) console.warn('Lỗi cập nhật users:', uErr);
+        }
+      }
+
+      // Cập nhật state nội bộ
+      setApprovedMembers(prev =>
+        prev.map(m =>
+          m.id === member.id
+            ? {
+                ...m,
+                is_verified: true,
+                user: m.user ? { ...m.user, is_verified: true } : undefined,
+              }
+            : m
+        )
+      );
+
+      setToast({
+        type: 'success',
+        message: `Đã xác thực danh tính & cấp tích xanh cho "${member.user?.full_name || 'Thợ ảnh'}".`,
+      });
+    } catch (err: any) {
+      console.error('Lỗi khi duyệt xác thực thành viên:', err);
+      setToast({
+        type: 'error',
+        message: 'Lỗi xác thực: ' + (err.message || 'Không thể cập nhật'),
       });
     } finally {
       setIsProcessingMemberId(null);
@@ -1054,8 +1113,9 @@ export const StudioSettingsPage: React.FC = () => {
                   {approvedMembers
                     .filter(m => m.role === 'photographer' || m.role === 'admin')
                     .map(member => (
-                      <div key={member.id} className="py-3 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-                        <div className="flex items-center gap-3">
+                      <div key={member.id} className="py-3.5 flex flex-col md:flex-row md:items-center justify-between gap-3">
+                        {/* 1. Thông tin cá nhân & Vai trò */}
+                        <div className="flex items-center gap-3 min-w-[220px]">
                           <div className="w-10 h-10 rounded-full overflow-hidden bg-slate-800 border border-amber-500/30 flex-shrink-0">
                             <img
                               src={member.user?.avatar_url || '/mirmia-logo.png'}
@@ -1067,10 +1127,13 @@ export const StudioSettingsPage: React.FC = () => {
                             />
                           </div>
                           <div>
-                            <div className="flex items-center gap-2">
+                            <div className="flex items-center gap-1.5 flex-wrap">
                               <span className="text-xs sm:text-sm font-bold text-slate-900 dark:text-white">
                                 {member.user?.full_name || 'Thợ ảnh'}
                               </span>
+                              {(member.is_verified || member.user?.is_verified) && (
+                                <VerifiedBadge className="w-4 h-4" />
+                              )}
                               <span className={`text-[10px] px-2 py-0.5 rounded-full font-bold border ${
                                 member.role === 'admin'
                                   ? 'bg-amber-500/20 text-amber-400 border-amber-500/30'
@@ -1085,7 +1148,70 @@ export const StudioSettingsPage: React.FC = () => {
                           </div>
                         </div>
 
-                        <div className="flex items-center gap-2 self-end sm:self-center">
+                        {/* 2. Cột Facebook với icon 🔗 */}
+                        <div className="flex items-center gap-2">
+                          <span className="text-[11px] text-slate-400 md:hidden">Facebook:</span>
+                          {(() => {
+                            const fbUrl = member.facebook_url || member.user?.facebook_url;
+                            if (fbUrl) {
+                              const href = fbUrl.startsWith('http') ? fbUrl : `https://${fbUrl}`;
+                              return (
+                                <a
+                                  href={href}
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                  className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-blue-50/80 dark:bg-blue-500/10 text-blue-600 dark:text-blue-400 text-xs font-semibold hover:bg-blue-100 dark:hover:bg-blue-500/20 border border-blue-500/20 transition-all hover:scale-[1.02]"
+                                  title={fbUrl}
+                                >
+                                  <span>🔗</span>
+                                  <span className="max-w-[120px] sm:max-w-[150px] truncate">Facebook</span>
+                                  <ExternalLink className="w-3 h-3 text-blue-500" />
+                                </a>
+                              );
+                            }
+                            return (
+                              <span className="text-[11px] text-slate-400 dark:text-slate-500 italic">
+                                Chưa gắn Facebook
+                              </span>
+                            );
+                          })()}
+                        </div>
+
+                        {/* 3. Cột Trạng thái */}
+                        <div className="flex items-center gap-2">
+                          <span className="text-[11px] text-slate-400 md:hidden">Trạng thái:</span>
+                          {(member.is_verified || member.user?.is_verified) ? (
+                            <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] font-bold bg-blue-500/10 text-blue-600 dark:text-blue-400 border border-blue-500/20">
+                              <BadgeCheck className="w-3.5 h-3.5 text-blue-500" />
+                              <span>Đã xác thực</span>
+                            </span>
+                          ) : (
+                            <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] font-medium bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/20">
+                              <Clock className="w-3.5 h-3.5 text-amber-500" />
+                              <span>Chưa xác thực</span>
+                            </span>
+                          )}
+                        </div>
+
+                        {/* 4. Hành động: Duyệt/Xác thực, Đổi vai trò, Gỡ bỏ */}
+                        <div className="flex items-center gap-2 flex-wrap self-end md:self-center">
+                          {/* Nút Outline Blue Duyệt / Xác Thực nếu chưa xác thực */}
+                          {!(member.is_verified || member.user?.is_verified) && (
+                            <button
+                              type="button"
+                              disabled={isProcessingMemberId === member.id}
+                              onClick={() => handleVerifyMember(member)}
+                              className="px-3 py-1.5 rounded-xl border border-blue-500 text-blue-600 dark:text-blue-400 hover:bg-blue-500/10 active:scale-95 text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer shadow-sm shadow-blue-500/10"
+                            >
+                              {isProcessingMemberId === member.id ? (
+                                <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                              ) : (
+                                <ShieldCheck className="w-3.5 h-3.5 text-blue-500" />
+                              )}
+                              <span>Duyệt / Xác Thực</span>
+                            </button>
+                          )}
+
                           {/* Role Selector */}
                           <select
                             value={member.role}
@@ -1147,8 +1273,9 @@ export const StudioSettingsPage: React.FC = () => {
                   {approvedMembers
                     .filter(m => m.role === 'makeup_artist')
                     .map(member => (
-                      <div key={member.id} className="py-3 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-                        <div className="flex items-center gap-3">
+                      <div key={member.id} className="py-3.5 flex flex-col md:flex-row md:items-center justify-between gap-3">
+                        {/* 1. Thông tin cá nhân & Vai trò */}
+                        <div className="flex items-center gap-3 min-w-[220px]">
                           <div className="w-10 h-10 rounded-full overflow-hidden bg-slate-800 border border-fuchsia-500/30 flex-shrink-0">
                             <img
                               src={member.user?.avatar_url || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150'}
@@ -1160,10 +1287,13 @@ export const StudioSettingsPage: React.FC = () => {
                             />
                           </div>
                           <div>
-                            <div className="flex items-center gap-2">
+                            <div className="flex items-center gap-1.5 flex-wrap">
                               <span className="text-xs sm:text-sm font-bold text-slate-900 dark:text-white">
                                 {member.user?.full_name || 'Thợ Makeup'}
                               </span>
+                              {(member.is_verified || member.user?.is_verified) && (
+                                <VerifiedBadge className="w-4 h-4" />
+                              )}
                               <span className="text-[10px] px-2 py-0.5 rounded-full font-bold border bg-fuchsia-500/20 text-fuchsia-400 border-fuchsia-500/30">
                                 Thợ Makeup (MUA)
                               </span>
@@ -1174,7 +1304,70 @@ export const StudioSettingsPage: React.FC = () => {
                           </div>
                         </div>
 
-                        <div className="flex items-center gap-2 self-end sm:self-center">
+                        {/* 2. Cột Facebook với icon 🔗 */}
+                        <div className="flex items-center gap-2">
+                          <span className="text-[11px] text-slate-400 md:hidden">Facebook:</span>
+                          {(() => {
+                            const fbUrl = member.facebook_url || member.user?.facebook_url;
+                            if (fbUrl) {
+                              const href = fbUrl.startsWith('http') ? fbUrl : `https://${fbUrl}`;
+                              return (
+                                <a
+                                  href={href}
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                  className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-blue-50/80 dark:bg-blue-500/10 text-blue-600 dark:text-blue-400 text-xs font-semibold hover:bg-blue-100 dark:hover:bg-blue-500/20 border border-blue-500/20 transition-all hover:scale-[1.02]"
+                                  title={fbUrl}
+                                >
+                                  <span>🔗</span>
+                                  <span className="max-w-[120px] sm:max-w-[150px] truncate">Facebook</span>
+                                  <ExternalLink className="w-3 h-3 text-blue-500" />
+                                </a>
+                              );
+                            }
+                            return (
+                              <span className="text-[11px] text-slate-400 dark:text-slate-500 italic">
+                                Chưa gắn Facebook
+                              </span>
+                            );
+                          })()}
+                        </div>
+
+                        {/* 3. Cột Trạng thái */}
+                        <div className="flex items-center gap-2">
+                          <span className="text-[11px] text-slate-400 md:hidden">Trạng thái:</span>
+                          {(member.is_verified || member.user?.is_verified) ? (
+                            <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] font-bold bg-blue-500/10 text-blue-600 dark:text-blue-400 border border-blue-500/20">
+                              <BadgeCheck className="w-3.5 h-3.5 text-blue-500" />
+                              <span>Đã xác thực</span>
+                            </span>
+                          ) : (
+                            <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] font-medium bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/20">
+                              <Clock className="w-3.5 h-3.5 text-amber-500" />
+                              <span>Chưa xác thực</span>
+                            </span>
+                          )}
+                        </div>
+
+                        {/* 4. Hành động */}
+                        <div className="flex items-center gap-2 flex-wrap self-end md:self-center">
+                          {/* Nút Outline Blue Duyệt / Xác Thực nếu chưa xác thực */}
+                          {!(member.is_verified || member.user?.is_verified) && (
+                            <button
+                              type="button"
+                              disabled={isProcessingMemberId === member.id}
+                              onClick={() => handleVerifyMember(member)}
+                              className="px-3 py-1.5 rounded-xl border border-blue-500 text-blue-600 dark:text-blue-400 hover:bg-blue-500/10 active:scale-95 text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer shadow-sm shadow-blue-500/10"
+                            >
+                              {isProcessingMemberId === member.id ? (
+                                <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                              ) : (
+                                <ShieldCheck className="w-3.5 h-3.5 text-blue-500" />
+                              )}
+                              <span>Duyệt / Xác Thực</span>
+                            </button>
+                          )}
+
                           {/* Role Selector */}
                           <select
                             value={member.role}
@@ -1206,11 +1399,11 @@ export const StudioSettingsPage: React.FC = () => {
           {/* Modal Mời Nhân Sự Mới */}
           {isInviteModalOpen && (
             <div
-              className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4 backdrop-blur-sm animate-fadeIn"
+              className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 overflow-hidden"
               onClick={() => setIsInviteModalOpen(false)}
             >
               <div
-                className="w-full max-w-md p-6 rounded-3xl bg-white dark:bg-zinc-900 border border-gray-200 dark:border-white/10 shadow-2xl space-y-4 max-h-[90vh] overflow-y-auto"
+                className="relative z-10 w-full max-w-md p-6 rounded-3xl bg-white dark:bg-zinc-900 border border-gray-200 dark:border-white/10 shadow-2xl space-y-4 max-h-[90vh] overflow-y-auto"
                 onClick={e => e.stopPropagation()}
               >
                 <div className="flex items-center justify-between pb-2 border-b border-gray-100 dark:border-white/10">

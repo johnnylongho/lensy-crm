@@ -51,7 +51,7 @@ Mirmia Studio xin trân trọng thông báo: Chúng tôi đã nhận được kh
 • Số tiền còn lại: ${data.remainingAmount.toLocaleString('vi-VN')} đ (Thanh toán sau khi bàn giao ảnh)
 
 ✨ ĐỘI NGŨ THỰC HIỆN ĐÃ ĐƯỢC PHÂN CÔNG:
-Toàn bộ thiết bị chính (Body Full-frame Sony & Ống kính G-Master) cùng ekip đã được khóa lịch riêng cho Anh/Chị vào ngày ${data.eventDate}.
+Toàn bộ thiết bị chính (Body Full-frame chuyên nghiệp & Hệ thống ống kính cao cấp) cùng ekip đã được khóa lịch riêng cho Anh/Chị vào ngày ${data.eventDate}.
 
 🔗 Xem lại chi tiết quyền lợi gói chụp & hướng dẫn chuẩn bị:
 ${data.quoteUrl || `https://lensy.mirmia.vn/quote/${data.quoteToken || ''}`}
@@ -83,4 +83,35 @@ export function openZaloChat(phone?: string, messageText?: string): void {
   } else {
     window.open(zaloUrl, '_blank');
   }
+}
+
+/**
+ * Tạo mẫu tin nhắn thông báo bàn giao file ảnh hoàn tất gửi qua Zalo
+ */
+export function generatePhotoDeliveryMessage(data: {
+  clientName: string;
+  sessionType: string;
+  portalUrl: string;
+  deliveryNotes?: string;
+  remainingAmount?: number;
+  studioName?: string;
+}): string {
+  const studio = data.studioName || 'MIRMIA STUDIO & ACADEMY';
+  const remainingStr = Number(data.remainingAmount || 0) > 0
+    ? `\n• Số tiền còn lại cần quyết toán: ${Number(data.remainingAmount).toLocaleString('vi-VN')} đ`
+    : '\n• Tình trạng thanh toán: Đã hoàn tất 100%';
+
+  return `🎁 [${studio}] - THÔNG BÁO BÀN GIAO BỘ ẢNH HOÀN THIỆN!
+
+Kính gửi: Anh/Chị ${data.clientName},
+
+Ekip ${studio} xin vui mừng thông báo: Bộ ảnh ${data.sessionType} của Anh/Chị đã được hoàn tất hậu kỳ và sẵn sàng bàn giao!
+
+🌟 XEM & TẢI TRỌN BỘ ẢNH TẠI CỔNG KHÁCH HÀNG:
+🔗 ${data.portalUrl}
+${data.deliveryNotes ? `\n📌 Ghi chú bàn giao / Mật khẩu: ${data.deliveryNotes}` : ''}${remainingStr}
+
+💡 Khuyến nghị: Anh/Chị nên mở link bằng máy tính để tải trọn bộ file dung lượng gốc và xem hướng dẫn bảo quản ảnh an toàn.
+
+${studio} chân thành cảm ơn Anh/Chị đã tin tưởng và lựa chọn đồng hành cùng chúng tôi! Chúc Anh/Chị có những khoảnh khắc thật đẹp và ý nghĩa!`;
 }

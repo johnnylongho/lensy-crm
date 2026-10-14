@@ -37,6 +37,7 @@ export const LoginPage: React.FC = () => {
   const [email, setEmail] = useState<string>('');
   const [password, setPassword] = useState<string>('');
   const [fullName, setFullName] = useState<string>('');
+  const [accountType, setAccountType] = useState<'freelancer' | 'studio'>('freelancer');
   const [showPassword, setShowPassword] = useState<boolean>(false);
   const [isLoading, setIsLoading] = useState<boolean>(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
@@ -73,7 +74,7 @@ export const LoginPage: React.FC = () => {
 
         navigate(from, { replace: true });
       } else {
-        const { error, user } = await signUp(email, password, fullName);
+        const { error, user } = await signUp(email, password, fullName, accountType);
         if (error) {
           setErrorMessage(error.message || 'Đăng ký không thành công.');
           return;
@@ -204,20 +205,64 @@ export const LoginPage: React.FC = () => {
         {/* Auth Form */}
         <form onSubmit={handleSubmit} className="space-y-4 text-xs">
           {mode === 'signup' && (
-            <div className="space-y-1.5">
-              <label className="font-bold text-slate-300 block">Họ Tên Thợ Ảnh / Tên Studio:</label>
-              <div className="relative">
-                <User className="w-4 h-4 text-slate-500 absolute left-3.5 top-1/2 -translate-y-1/2" />
-                <input
-                  type="text"
-                  required
-                  value={fullName}
-                  onChange={e => setFullName(e.target.value)}
-                  placeholder="Ví dụ: Hoàng Long (Mirmia Photography)"
-                  className="w-full pl-10 pr-4 py-2.5 rounded-xl bg-slate-950 border border-slate-800 text-white placeholder:text-slate-600 focus:outline-none focus:ring-1 focus:ring-amber-400 focus:border-amber-400 transition-all text-xs"
-                />
+            <>
+              <div className="space-y-1.5">
+                <label className="font-bold text-slate-300 block">Loại Hình Hoạt Động:</label>
+                <div className="grid grid-cols-2 gap-2">
+                  <button
+                    type="button"
+                    onClick={() => setAccountType('freelancer')}
+                    className={`p-2.5 rounded-xl border text-left transition-all cursor-pointer ${
+                      accountType === 'freelancer'
+                        ? 'bg-amber-500/15 border-amber-500/60 text-white shadow-xs'
+                        : 'bg-slate-950 border-slate-800 text-slate-400 hover:text-white'
+                    }`}
+                  >
+                    <div className="font-bold text-xs flex items-center gap-1.5">
+                      <Camera className="w-3.5 h-3.5 text-amber-400" />
+                      <span>Cá Nhân (Freelance)</span>
+                    </div>
+                    <p className="text-[10px] text-slate-400 mt-1 leading-tight">
+                      Tinh gọn: Lịch chụp, khách hàng, báo giá & doanh thu
+                    </p>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setAccountType('studio')}
+                    className={`p-2.5 rounded-xl border text-left transition-all cursor-pointer ${
+                      accountType === 'studio'
+                        ? 'bg-amber-500/15 border-amber-500/60 text-white shadow-xs'
+                        : 'bg-slate-950 border-slate-800 text-slate-400 hover:text-white'
+                    }`}
+                  >
+                    <div className="font-bold text-xs flex items-center gap-1.5">
+                      <Sparkles className="w-3.5 h-3.5 text-amber-400" />
+                      <span>Doanh Nghiệp (Studio)</span>
+                    </div>
+                    <p className="text-[10px] text-slate-400 mt-1 leading-tight">
+                      Toàn diện: Quản lý kho thiết bị, ekip & studio bays
+                    </p>
+                  </button>
+                </div>
               </div>
-            </div>
+
+              <div className="space-y-1.5">
+                <label className="font-bold text-slate-300 block">
+                  {accountType === 'freelancer' ? 'Họ Tên Thợ Ảnh:' : 'Tên Studio / Doanh Nghiệp:'}
+                </label>
+                <div className="relative">
+                  <User className="w-4 h-4 text-slate-500 absolute left-3.5 top-1/2 -translate-y-1/2" />
+                  <input
+                    type="text"
+                    required
+                    value={fullName}
+                    onChange={e => setFullName(e.target.value)}
+                    placeholder={accountType === 'freelancer' ? 'Ví dụ: Hoàng Long Photography' : 'Ví dụ: MIRMIA STUDIO & ACADEMY'}
+                    className="w-full pl-10 pr-4 py-2.5 rounded-xl bg-slate-950 border border-slate-800 text-white placeholder:text-slate-600 focus:outline-none focus:ring-1 focus:ring-amber-400 focus:border-amber-400 transition-all text-xs"
+                  />
+                </div>
+              </div>
+            </>
           )}
 
           <div className="space-y-1.5">

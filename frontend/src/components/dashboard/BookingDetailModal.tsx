@@ -35,7 +35,19 @@ import {
   UserCheck,
   Palette,
   Pencil,
+  Download,
+  FolderArchive,
+  ExternalLink,
+  Link as LinkIcon,
+  Copy,
+  Check,
+  Share2,
+  Gift,
+  Send,
 } from 'lucide-react';
+import { openZaloChat, generatePhotoDeliveryMessage } from '../../lib/zaloMessenger';
+import { VerifiedBadge } from '../common/VerifiedBadge';
+import { generateGoogleCalendarUrl, downloadIcsFile } from '../../utils/googleCalendarSync';
 
 interface Props {
   isOpen: boolean;
@@ -58,13 +70,20 @@ export const BookingDetailModal: React.FC<Props> = ({
 }) => {
   const { user } = useAuth();
   const { currentStudio } = useWorkspace();
-  const [activeTab, setActiveTab] = useState<'gears' | 'expenses'>('gears');
+  const [activeTab, setActiveTab] = useState<'gears' | 'expenses' | 'delivery'>('gears');
   const [gears, setGears] = useState<GearItem[]>([]);
   const [isLoadingGears, setIsLoadingGears] = useState(false);
   const [selectedGearIds, setSelectedGearIds] = useState<string[]>([]);
   const [isOverrideConfirmed, setIsOverrideConfirmed] = useState(false);
   const [gearSearch, setGearSearch] = useState('');
   const [gearCategory, setGearCategory] = useState<string>('all');
+
+  // Photo Delivery (Bàn giao file ảnh & Client Portal) States
+  const [deliveryLink, setDeliveryLink] = useState('');
+  const [deliveryNotes, setDeliveryNotes] = useState('');
+  const [deliveryDate, setDeliveryDate] = useState('');
+  const [markAsDelivered, setMarkAsDelivered] = useState(false);
+  const [copiedPortalLink, setCopiedPortalLink] = useState(false);
 
   // Staff Assignment (Phân công nhân sự) States
   const [assignedPhotographerId, setAssignedPhotographerId] = useState<string>('');
@@ -104,6 +123,10 @@ export const BookingDetailModal: React.FC<Props> = ({
       setAssignedMakeupId(booking.makeup_artist_id || (booking.makeup_artist?.id || ''));
       setSelectedCategory(normalizeCategory(booking.category || booking.sessionType));
       setPackageType(booking.package_type || '');
+      setDeliveryLink(booking.drive_delivery_link || '');
+      setDeliveryNotes(booking.delivery_notes || '');
+      setDeliveryDate(booking.delivery_date ? booking.delivery_date.substring(0, 10) : new Date().toISOString().substring(0, 10));
+      setMarkAsDelivered(booking.status === 'da_tra_file' || booking.status === 'done' || booking.status === 'hoan_thanh');
     }
   }, [booking]);
 
@@ -122,12 +145,16 @@ export const BookingDetailModal: React.FC<Props> = ({
               user_id,
               role,
               status,
+              facebook_url,
+              is_verified,
               users:user_id (
                 id,
                 full_name,
                 avatar_url,
                 phone,
-                email
+                email,
+                facebook_url,
+                is_verified
               )
             `)
             .eq('studio_id', currentStudio.id)
@@ -140,7 +167,13 @@ export const BookingDetailModal: React.FC<Props> = ({
               user_id: r.user_id,
               role: r.role,
               status: r.status,
-              user: r.users,
+              facebook_url: r.facebook_url || r.users?.facebook_url || null,
+              is_verified: r.is_verified || r.users?.is_verified || false,
+              user: r.users ? {
+                ...r.users,
+                facebook_url: r.users.facebook_url || r.facebook_url || null,
+                is_verified: r.users.is_verified || r.is_verified || false,
+              } : undefined,
             })));
             return;
           }
@@ -154,12 +187,16 @@ export const BookingDetailModal: React.FC<Props> = ({
             user_id: 'u-photo-1',
             role: 'photographer',
             status: 'approved',
+            facebook_url: 'https://facebook.com/johnnylongho',
+            is_verified: true,
             user: {
               id: 'u-photo-1',
               full_name: 'Johnny Long (Lead Photo)',
               email: 'johnny@lensy.io',
               phone: '0901234567',
               avatar_url: '/mirmia-logo.png',
+              facebook_url: 'https://facebook.com/johnnylongho',
+              is_verified: true,
             },
           },
           {
@@ -223,22 +260,17 @@ export const BookingDetailModal: React.FC<Props> = ({
         if (isSupabaseConfigured) {
           let query = supabase.from('gears').select('*').order('created_at', { ascending: false });
           if (user) {
-            query = query.eq('photographer_id', user.id);
+            query = query.or(`photographer_id.eq.${user.id},studio_id.is.null`);
           }
           const { data, error } = await query;
           if (error) throw error;
           setGears(data || []);
         } else {
-          setGears([
-            { id: 'g1', name: 'Sony Alpha 7 IV (Chính)', type: 'camera', status: 'active' },
-            { id: 'g2', name: 'Sony Alpha 7R V (Phụ)', type: 'camera', status: 'active' },
-            { id: 'g3', name: 'Lens FE 24-70mm F2.8 GM II', type: 'lens', status: 'active' },
-            { id: 'g4', name: 'Lens FE 70-200mm F2.8 GM OSS II', type: 'lens', status: 'active' },
-            { id: 'g5', name: 'Đèn Studio Godox AD600 Pro', type: 'lighting', status: 'active' },
-          ]);
+          setGears([]);
         }
       } catch (err: any) {
         console.error('Lỗi khi tải danh sách thiết bị:', err);
+        setGears([]);
       } finally {
         setIsLoadingGears(false);
       }
@@ -347,19 +379,27 @@ export const BookingDetailModal: React.FC<Props> = ({
     try {
       if (isSupabaseConfigured) {
         const canonicalCategory = normalizeCategory(selectedCategory);
+        const nextStatus = markAsDelivered && booking.status !== 'done' && booking.status !== 'hoan_thanh' ? 'da_tra_file' : booking.status;
+        
+        const updatePayload: any = {
+          assigned_gears: selectedGearIds,
+          expenses: totalExpenses,
+          expense_details: expenseItems,
+          photographer_id: assignedPhotographerId || null,
+          makeup_artist_id: assignedMakeupId || null,
+          category: canonicalCategory,
+          session_type: canonicalCategory,
+          package_type: packageType.trim() || null,
+          drive_delivery_link: deliveryLink.trim() || null,
+          delivery_notes: deliveryNotes.trim() || null,
+          delivery_date: deliveryDate ? new Date(deliveryDate).toISOString() : null,
+          status: nextStatus,
+          updated_at: new Date().toISOString(),
+        };
+
         const { error } = await supabase
           .from('bookings')
-          .update({
-            assigned_gears: selectedGearIds,
-            expenses: totalExpenses,
-            expense_details: expenseItems,
-            photographer_id: assignedPhotographerId || null,
-            makeup_artist_id: assignedMakeupId || null,
-            category: canonicalCategory,
-            session_type: canonicalCategory,
-            package_type: packageType.trim() || null,
-            updated_at: new Date().toISOString(),
-          })
+          .update(updatePayload)
           .eq('id', booking.id);
 
         if (error) {
@@ -373,6 +413,10 @@ export const BookingDetailModal: React.FC<Props> = ({
               photographer_id: assignedPhotographerId || null,
               makeup_artist_id: assignedMakeupId || null,
               session_type: canonicalCategory,
+              drive_delivery_link: deliveryLink.trim() || null,
+              delivery_notes: deliveryNotes.trim() || null,
+              delivery_date: deliveryDate ? new Date(deliveryDate).toISOString() : null,
+              status: nextStatus,
               updated_at: new Date().toISOString(),
             })
             .eq('id', booking.id);
@@ -381,6 +425,7 @@ export const BookingDetailModal: React.FC<Props> = ({
       }
 
       const canonicalCategory = normalizeCategory(selectedCategory);
+      const nextStatus = markAsDelivered && booking.status !== 'done' && booking.status !== 'hoan_thanh' ? 'da_tra_file' : booking.status;
 
       // Tìm thông tin staff tương ứng để update UI ngay lập tức
       const assignedPhotoMember = studioMembers.find(m => m.user_id === assignedPhotographerId || m.id === assignedPhotographerId);
@@ -392,6 +437,8 @@ export const BookingDetailModal: React.FC<Props> = ({
         avatar_url: assignedPhotoMember.user.avatar_url,
         phone: assignedPhotoMember.user.phone,
         email: assignedPhotoMember.user.email,
+        is_verified: assignedPhotoMember.user.is_verified || assignedPhotoMember.is_verified || false,
+        facebook_url: assignedPhotoMember.user.facebook_url || assignedPhotoMember.facebook_url || null,
       } : (assignedPhotographerId ? (booking.photographer || null) : null);
 
       const updatedMuaInfo: StaffInfo | null = assignedMuaMember?.user ? {
@@ -400,6 +447,8 @@ export const BookingDetailModal: React.FC<Props> = ({
         avatar_url: assignedMuaMember.user.avatar_url,
         phone: assignedMuaMember.user.phone,
         email: assignedMuaMember.user.email,
+        is_verified: assignedMuaMember.user.is_verified || assignedMuaMember.is_verified || false,
+        facebook_url: assignedMuaMember.user.facebook_url || assignedMuaMember.facebook_url || null,
       } : (assignedMakeupId ? (booking.makeup_artist || null) : null);
 
       // Cập nhật state cho parent
@@ -415,6 +464,10 @@ export const BookingDetailModal: React.FC<Props> = ({
         makeup_artist_id: assignedMakeupId || undefined,
         photographer: updatedPhotoInfo,
         makeup_artist: updatedMuaInfo,
+        drive_delivery_link: deliveryLink.trim() || undefined,
+        delivery_notes: deliveryNotes.trim() || undefined,
+        delivery_date: deliveryDate ? new Date(deliveryDate).toISOString() : undefined,
+        status: nextStatus,
       };
 
       if (onBookingUpdated) {
@@ -424,8 +477,8 @@ export const BookingDetailModal: React.FC<Props> = ({
       setToastMessage({
         type: 'success',
         text: activeConflicts.length > 0
-          ? '⚠️ Đã ghi đè thiết bị và lưu phân công nhân sự thành công!'
-          : '🎉 Đã lưu thiết bị, hạch toán chi phí & phân công nhân sự thành công!',
+          ? '⚠️ Đã ghi đè thiết bị và lưu thông tin show thành công!'
+          : '🎉 Đã lưu thiết bị, hạch toán, nhân sự & thông tin bàn giao ảnh thành công!',
       });
     } catch (err: any) {
       console.error('Lỗi khi lưu booking:', err);
@@ -443,12 +496,12 @@ export const BookingDetailModal: React.FC<Props> = ({
 
   return (
     <div
-      className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-3 sm:p-4 backdrop-blur-sm animate-fadeIn"
+      className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 overflow-hidden"
       onClick={onClose}
     >
       {/* Modal Dialog Card: căn giữa, khóa viewport, max-h 90vh tự cuộn */}
       <div
-        className="relative w-full max-w-3xl bg-slate-900 border border-slate-700/80 rounded-3xl shadow-2xl flex flex-col z-50 overflow-hidden max-h-[90vh] overflow-y-auto"
+        className="relative z-10 w-full max-w-3xl bg-slate-900 border border-slate-700/80 rounded-3xl shadow-2xl flex flex-col max-h-[90vh] overflow-y-auto"
         onClick={e => e.stopPropagation()}
       >
         {/* Drawer Header (Cố định trên cùng) */}
@@ -490,6 +543,31 @@ export const BookingDetailModal: React.FC<Props> = ({
                 <MapPin className="w-3.5 h-3.5 flex-shrink-0" />
                 <span className="truncate">{booking.location}</span>
               </span>
+            </div>
+
+            {/* Action Bar: Google Calendar & iCal Export */}
+            <div className="flex flex-wrap items-center gap-2 pt-1.5">
+              <a
+                href={generateGoogleCalendarUrl(booking)}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-amber-500/10 hover:bg-amber-500/20 border border-amber-500/30 text-amber-300 hover:text-amber-200 text-[11px] font-semibold transition-all shadow-xs"
+                title="Mở Google Calendar và tự động điền lịch chụp"
+              >
+                <Calendar className="w-3 h-3 text-amber-400" />
+                <span>Google Calendar</span>
+                <ExternalLink className="w-2.5 h-2.5 opacity-70" />
+              </a>
+
+              <button
+                type="button"
+                onClick={() => downloadIcsFile(booking)}
+                className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-slate-800 hover:bg-slate-700 border border-slate-700 text-slate-300 hover:text-white text-[11px] font-semibold transition-all shadow-xs cursor-pointer"
+                title="Tải file .ics để đồng bộ Apple Calendar, Outlook"
+              >
+                <Download className="w-3 h-3 text-slate-400" />
+                <span>Xuất file .ics</span>
+              </button>
             </div>
           </div>
 
@@ -627,57 +705,67 @@ export const BookingDetailModal: React.FC<Props> = ({
           {/* Quick Staff Preview Banner */}
           {(assignedPhotographerId || assignedMakeupId) && (
             <div className="flex flex-wrap items-center gap-4 pt-2 border-t border-slate-800/80 text-xs">
-              {assignedPhotographerId && (
-                <div className="flex items-center gap-2">
-                  <div className="w-6 h-6 rounded-full overflow-hidden bg-amber-500/20 border border-amber-500/30 flex-shrink-0">
-                    <img
-                      src={
-                        studioMembers.find(m => (m.user_id === assignedPhotographerId || m.id === assignedPhotographerId))?.user?.avatar_url ||
-                        booking.photographer?.avatar_url ||
-                        '/mirmia-logo.png'
-                      }
-                      alt="Photographer"
-                      className="w-full h-full object-cover"
-                      onError={e => {
-                        (e.target as HTMLImageElement).src = '/mirmia-logo.png';
-                      }}
-                    />
+              {assignedPhotographerId && (() => {
+                const photoMember = studioMembers.find(m => (m.user_id === assignedPhotographerId || m.id === assignedPhotographerId));
+                const isPhotoVerified = photoMember?.is_verified || photoMember?.user?.is_verified || booking.photographer?.is_verified;
+                return (
+                  <div className="flex items-center gap-2">
+                    <div className="w-6 h-6 rounded-full overflow-hidden bg-amber-500/20 border border-amber-500/30 flex-shrink-0">
+                      <img
+                        src={
+                          photoMember?.user?.avatar_url ||
+                          booking.photographer?.avatar_url ||
+                          '/mirmia-logo.png'
+                        }
+                        alt="Photographer"
+                        className="w-full h-full object-cover"
+                        onError={e => {
+                          (e.target as HTMLImageElement).src = '/mirmia-logo.png';
+                        }}
+                      />
+                    </div>
+                    <span className="text-[11px] text-slate-300 flex items-center gap-1">
+                      Thợ chụp: <strong className="text-amber-400">{
+                        photoMember?.user?.full_name ||
+                        booking.photographer?.full_name ||
+                        'Đã phân công'
+                      }</strong>
+                      {isPhotoVerified && <VerifiedBadge className="w-3.5 h-3.5" />}
+                    </span>
                   </div>
-                  <span className="text-[11px] text-slate-300">
-                    Thợ chụp: <strong className="text-amber-400">{
-                      studioMembers.find(m => (m.user_id === assignedPhotographerId || m.id === assignedPhotographerId))?.user?.full_name ||
-                      booking.photographer?.full_name ||
-                      'Đã phân công'
-                    }</strong>
-                  </span>
-                </div>
-              )}
+                );
+              })()}
 
-              {assignedMakeupId && (
-                <div className="flex items-center gap-2">
-                  <div className="w-6 h-6 rounded-full overflow-hidden bg-fuchsia-500/20 border border-fuchsia-500/30 flex-shrink-0">
-                    <img
-                      src={
-                        studioMembers.find(m => (m.user_id === assignedMakeupId || m.id === assignedMakeupId))?.user?.avatar_url ||
-                        booking.makeup_artist?.avatar_url ||
-                        'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150'
-                      }
-                      alt="MUA"
-                      className="w-full h-full object-cover"
-                      onError={e => {
-                        (e.target as HTMLImageElement).src = '/mirmia-logo.png';
-                      }}
-                    />
+              {assignedMakeupId && (() => {
+                const muaMember = studioMembers.find(m => (m.user_id === assignedMakeupId || m.id === assignedMakeupId));
+                const isMuaVerified = muaMember?.is_verified || muaMember?.user?.is_verified || booking.makeup_artist?.is_verified;
+                return (
+                  <div className="flex items-center gap-2">
+                    <div className="w-6 h-6 rounded-full overflow-hidden bg-fuchsia-500/20 border border-fuchsia-500/30 flex-shrink-0">
+                      <img
+                        src={
+                          muaMember?.user?.avatar_url ||
+                          booking.makeup_artist?.avatar_url ||
+                          'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150'
+                        }
+                        alt="MUA"
+                        className="w-full h-full object-cover"
+                        onError={e => {
+                          (e.target as HTMLImageElement).src = '/mirmia-logo.png';
+                        }}
+                      />
+                    </div>
+                    <span className="text-[11px] text-slate-300 flex items-center gap-1">
+                      MUA: <strong className="text-fuchsia-400">{
+                        muaMember?.user?.full_name ||
+                        booking.makeup_artist?.full_name ||
+                        'Đã phân công'
+                      }</strong>
+                      {isMuaVerified && <VerifiedBadge className="w-3.5 h-3.5" />}
+                    </span>
                   </div>
-                  <span className="text-[11px] text-slate-300">
-                    MUA: <strong className="text-fuchsia-400">{
-                      studioMembers.find(m => (m.user_id === assignedMakeupId || m.id === assignedMakeupId))?.user?.full_name ||
-                      booking.makeup_artist?.full_name ||
-                      'Đã phân công'
-                    }</strong>
-                  </span>
-                </div>
-              )}
+                );
+              })()}
             </div>
           )}
         </div>
@@ -769,10 +857,26 @@ export const BookingDetailModal: React.FC<Props> = ({
             }`}
           >
             <Receipt className="w-3.5 h-3.5" />
-            <span>Hạch Toán Chi Phí (Job Costing)</span>
+            <span>Hạch Toán Chi Phí</span>
             <span className={`px-1.5 py-0.2 rounded-full text-[10px] font-mono ${activeTab === 'expenses' ? 'bg-slate-950 text-emerald-400' : 'bg-slate-900 text-slate-400'}`}>
               {expenseItems.length}
             </span>
+          </button>
+
+          <button
+            type="button"
+            onClick={() => setActiveTab('delivery')}
+            className={`flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-xs font-bold transition-all ${
+              activeTab === 'delivery'
+                ? 'bg-rose-500 text-slate-950 shadow-md shadow-rose-500/20'
+                : 'text-slate-400 hover:text-white bg-slate-950/60 border border-slate-800'
+            }`}
+          >
+            <Gift className="w-3.5 h-3.5" />
+            <span>Bàn Giao Ảnh (Delivery)</span>
+            {deliveryLink && (
+              <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" title="Đã có link bàn giao" />
+            )}
           </button>
         </div>
 
@@ -1210,6 +1314,200 @@ export const BookingDetailModal: React.FC<Props> = ({
               ))}
             </div>
           )}
+        </div>
+      </div>
+    )}
+
+    {/* ==================================================================== */}
+    {/* TAB 3: BÀN GIAO FILE ẢNH & CLIENT PORTAL (PHOTO DELIVERY)           */}
+    {/* ==================================================================== */}
+    {activeTab === 'delivery' && (
+      <div className="space-y-4 animate-fadeIn">
+        <div className="p-4 sm:p-5 rounded-2xl bg-slate-950/70 border border-slate-800 space-y-4">
+          <div className="flex flex-wrap items-center justify-between gap-2 border-b border-slate-800 pb-3">
+            <div className="flex items-center gap-2">
+              <Gift className="w-4 h-4 text-rose-400" />
+              <h4 className="text-xs font-bold uppercase tracking-wider text-white">
+                Bàn Giao File Ảnh & Link Tải Trực Tuyến
+              </h4>
+            </div>
+            {deliveryLink ? (
+              <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 flex items-center gap-1">
+                <CheckCircle2 className="w-3 h-3" />
+                <span>Đã có link tải</span>
+              </span>
+            ) : (
+              <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-amber-500/20 text-amber-300 border border-amber-500/40">
+                Chưa có link tải
+              </span>
+            )}
+          </div>
+
+          {/* Ô Nhập Link Bàn Giao */}
+          <div className="space-y-1.5">
+            <label className="text-[11px] font-bold text-slate-300 flex items-center justify-between">
+              <span className="flex items-center gap-1.5">
+                <LinkIcon className="w-3.5 h-3.5 text-amber-400" />
+                <span>Link Tải Ảnh (Google Drive / Pixieset / Dropbox):</span>
+              </span>
+              {deliveryLink && (
+                <a
+                  href={deliveryLink}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-amber-400 hover:text-amber-300 font-bold inline-flex items-center gap-1 transition-colors"
+                >
+                  <ExternalLink className="w-3 h-3" />
+                  <span>Mở thử link</span>
+                </a>
+              )}
+            </label>
+            <div className="relative">
+              <input
+                type="url"
+                value={deliveryLink}
+                onChange={e => setDeliveryLink(e.target.value)}
+                placeholder="https://drive.google.com/drive/folders/... hoặc https://pixieset.com/..."
+                className="w-full pl-3.5 pr-24 py-2.5 rounded-xl bg-slate-900 border border-slate-800 text-xs font-mono text-amber-300 placeholder-slate-600 outline-none focus:border-amber-400"
+              />
+              {deliveryLink && (
+                <div className="absolute right-2 top-1/2 -translate-y-1/2">
+                  <span className="text-[10px] font-bold px-2 py-0.5 rounded bg-slate-800 text-slate-300 border border-slate-700">
+                    {deliveryLink.includes('drive.google.com')
+                      ? 'Drive'
+                      : deliveryLink.includes('pixieset.com')
+                      ? 'Pixieset'
+                      : deliveryLink.includes('dropbox.com')
+                      ? 'Dropbox'
+                      : 'Cloud'}
+                  </span>
+                </div>
+              )}
+            </div>
+            <p className="text-[11px] text-slate-500 leading-relaxed">
+              Khách hàng có thể truy cập link này trực tiếp trên Cổng Khách Hàng (Client Portal) để tải trọn bộ ảnh gốc & retouch.
+            </p>
+          </div>
+
+          {/* Ghi chú bàn giao & Mật khẩu */}
+          <div className="space-y-1.5">
+            <label className="text-[11px] font-bold text-slate-300 flex items-center gap-1.5">
+              <Sparkles className="w-3.5 h-3.5 text-purple-400" />
+              <span>Ghi Chú Bàn Giao & Mật Khẩu (Nếu có):</span>
+            </label>
+            <textarea
+              rows={2}
+              value={deliveryNotes}
+              onChange={e => setDeliveryNotes(e.target.value)}
+              placeholder="VD: Mật khẩu giải nén: 1234. Bộ ảnh được lưu trữ an toàn trong 1 năm..."
+              className="w-full px-3.5 py-2.5 rounded-xl bg-slate-900 border border-slate-800 text-xs text-slate-200 placeholder-slate-600 outline-none focus:border-purple-400 resize-none"
+            />
+          </div>
+
+          {/* Ngày Bàn Giao & Tùy chọn trạng thái */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-1">
+            <div className="space-y-1.5">
+              <label className="text-[11px] font-bold text-slate-300 flex items-center gap-1.5">
+                <Calendar className="w-3.5 h-3.5 text-slate-400" />
+                <span>Ngày Bàn Giao:</span>
+              </label>
+              <input
+                type="date"
+                value={deliveryDate}
+                onChange={e => setDeliveryDate(e.target.value)}
+                className="w-full px-3 py-2 rounded-xl bg-slate-900 border border-slate-800 text-xs font-semibold text-slate-200 outline-none focus:border-amber-400 cursor-pointer"
+              />
+            </div>
+
+            <div className="flex items-center pt-5">
+              <label className="flex items-center gap-2 cursor-pointer select-none">
+                <input
+                  type="checkbox"
+                  checked={markAsDelivered}
+                  onChange={e => setMarkAsDelivered(e.target.checked)}
+                  className="w-4 h-4 rounded border-slate-700 bg-slate-900 text-emerald-500 focus:ring-emerald-400 cursor-pointer"
+                />
+                <span className="text-xs text-slate-200 font-semibold">
+                  Cập nhật trạng thái sang <strong className="text-emerald-400">Đã trả file</strong> khi lưu
+                </span>
+              </label>
+            </div>
+          </div>
+        </div>
+
+        {/* Khối Chia Sẻ Nhanh Cho Khách Hàng (Quick Share Portal & Zalo) */}
+        <div className="p-4 sm:p-5 rounded-2xl bg-gradient-to-r from-amber-500/10 via-amber-500/5 to-transparent border border-amber-500/30 space-y-3">
+          <div className="flex items-center justify-between gap-2">
+            <span className="text-xs font-bold uppercase tracking-wider text-amber-300 flex items-center gap-1.5">
+              <Share2 className="w-4 h-4 text-amber-400" />
+              <span>Gửi Cổng Khách Hàng (Client Portal)</span>
+            </span>
+            <span className="text-[10px] text-slate-400 font-mono">
+              Token: {booking.quoteToken}
+            </span>
+          </div>
+
+          <p className="text-xs text-slate-300 leading-relaxed">
+            Khách hàng xem thanh tiến độ, tải ảnh chất lượng cao và quyết toán số tiền còn lại trực tiếp qua link này:
+          </p>
+
+          <div className="flex flex-wrap items-center gap-2 pt-1">
+            {/* 1. Nút Copy Link Portal */}
+            <button
+              type="button"
+              onClick={() => {
+                const portalUrl = `${window.location.origin}/quote/${booking.quoteToken}`;
+                navigator.clipboard.writeText(portalUrl);
+                setCopiedPortalLink(true);
+                setTimeout(() => setCopiedPortalLink(false), 2500);
+              }}
+              className="flex-1 sm:flex-none px-3.5 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-bold inline-flex items-center justify-center gap-1.5 border border-slate-700 transition-colors"
+            >
+              {copiedPortalLink ? (
+                <>
+                  <Check className="w-3.5 h-3.5 text-emerald-400" />
+                  <span className="text-emerald-400">Đã chép link Portal!</span>
+                </>
+              ) : (
+                <>
+                  <Copy className="w-3.5 h-3.5 text-slate-400" />
+                  <span>Sao Chép Link Portal</span>
+                </>
+              )}
+            </button>
+
+            {/* 2. Nút Xem Thử Portal */}
+            <a
+              href={`/quote/${booking.quoteToken}`}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="px-3.5 py-2 rounded-xl bg-slate-900 hover:bg-slate-800 text-slate-300 text-xs font-bold inline-flex items-center justify-center gap-1.5 border border-slate-800 transition-colors"
+            >
+              <ExternalLink className="w-3.5 h-3.5 text-amber-400" />
+              <span>Xem Thử Portal</span>
+            </a>
+
+            {/* 3. Nút Gửi Zalo 1-Chạm */}
+            <button
+              type="button"
+              onClick={() => {
+                const portalUrl = `${window.location.origin}/quote/${booking.quoteToken}`;
+                const msg = generatePhotoDeliveryMessage({
+                  clientName: booking.clientName,
+                  sessionType: booking.category || booking.sessionType,
+                  portalUrl: portalUrl,
+                  deliveryNotes: deliveryNotes,
+                  remainingAmount: booking.remainingAmount,
+                  studioName: currentStudio?.name || 'MIRMIA STUDIO & ACADEMY',
+                });
+                openZaloChat(booking.clientPhone, msg);
+              }}
+              className="flex-1 sm:flex-none px-4 py-2 rounded-xl bg-blue-600 hover:bg-blue-500 text-white text-xs font-bold inline-flex items-center justify-center gap-1.5 shadow-md shadow-blue-600/30 transition-all hover:scale-[1.01]"
+            >
+              <Send className="w-3.5 h-3.5" />
+              <span>Gửi Zalo Bàn Giao 1-Chạm</span>
+            </button>
+          </div>
         </div>
       </div>
     )}

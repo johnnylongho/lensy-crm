@@ -100,16 +100,15 @@ export const GearsManagementPage: React.FC = () => {
 
   // Quick Preset Templates for Freelancers & Studio (Kèm giá tham khảo thị trường)
   const STUDIO_PRESETS: Array<{ name: string; type: GearType; price: number }> = [
-    { name: 'Sony Alpha 7 IV (Chính)', type: 'camera', price: 48000000 },
-    { name: 'Sony Alpha 7R V (High-Res)', type: 'camera', price: 75000000 },
+    { name: 'Canon EOS R', type: 'camera', price: 28000000 },
     { name: 'Canon EOS R6 Mark II', type: 'camera', price: 52000000 },
-    { name: 'Sony FE 24-70mm f/2.8 GM II', type: 'lens', price: 49000000 },
-    { name: 'Sony FE 70-200mm f/2.8 GM OSS II', type: 'lens', price: 62000000 },
-    { name: 'Sony FE 50mm f/1.2 GM', type: 'lens', price: 42000000 },
+    { name: 'Canon RF 85mm f/2 Macro IS STM', type: 'lens', price: 14500000 },
+    { name: 'Canon RF 24-70mm f/2.8L IS USM', type: 'lens', price: 49000000 },
+    { name: 'Đèn Flash Godox V860iii + Trigger X2T', type: 'lighting', price: 4800000 },
     { name: 'Đèn Studio Godox AD600 Pro', type: 'lighting', price: 16500000 },
-    { name: 'Đèn Flash Godox V1 Sony', type: 'lighting', price: 6500000 },
+    { name: 'Micro Gochek Ultra s24', type: 'audio', price: 1800000 },
+    { name: 'Filter Black Mist 1/4', type: 'accessory', price: 1200000 },
     { name: 'Gimbal DJI RS3 Pro', type: 'accessory', price: 18000000 },
-    { name: 'Micro Thu Âm DJI Mic 2', type: 'audio', price: 7500000 },
   ];
 
   // Toast
@@ -145,12 +144,7 @@ export const GearsManagementPage: React.FC = () => {
         if (error) throw error;
         setGears(data || []);
       } else {
-        // Mock fallback với purchase_price đầy đủ
-        setGears([
-          { id: '1', name: 'Sony Alpha 7 IV', type: 'camera', status: 'active', purchase_price: 48000000 },
-          { id: '2', name: 'Sony FE 24-70mm f/2.8 GM II', type: 'lens', status: 'active', purchase_price: 49000000 },
-          { id: '3', name: 'Đèn Studio Godox AD600 Pro', type: 'lighting', status: 'active', purchase_price: 16500000 },
-        ]);
+        setGears([]);
       }
     } catch (err: any) {
       console.error('Lỗi khi fetch danh sách thiết bị:', err);
@@ -725,11 +719,11 @@ export const GearsManagementPage: React.FC = () => {
       {/* Add / Edit Gear Modal */}
       {isModalOpen && (
         <div
-          className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4 backdrop-blur-md animate-fadeIn"
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 overflow-hidden"
           onClick={() => setIsModalOpen(false)}
         >
           <div
-            className="relative w-full max-w-md rounded-3xl bg-slate-900 border border-slate-700 shadow-2xl p-6 space-y-5 text-slate-100 max-h-[90vh] overflow-y-auto"
+            className="relative z-10 w-full max-w-md rounded-3xl bg-slate-900 border border-slate-700 shadow-2xl p-6 space-y-5 text-slate-100 max-h-[90vh] overflow-y-auto"
             onClick={e => e.stopPropagation()}
           >
             <button
@@ -791,7 +785,7 @@ export const GearsManagementPage: React.FC = () => {
                   required
                   value={gearName}
                   onChange={e => setGearName(e.target.value)}
-                  placeholder="VD: Sony Alpha 7 IV hoặc Lens FE 24-70mm GM II"
+                  placeholder="VD: Canon EOS R hoặc Lens RF 85mm f/2"
                   className="w-full px-3.5 py-2.5 rounded-xl bg-slate-950 border border-slate-800 focus:border-amber-400 text-xs text-white placeholder-slate-600 transition-all outline-none"
                 />
               </div>

@@ -4,7 +4,6 @@ import { useAuth } from '../../context/AuthContext';
 import { useWorkspace } from '../../context/WorkspaceContext';
 import { supabase, isSupabaseConfigured } from '../../lib/supabase';
 import { CalendarEvent, Client } from '../../types';
-import { MOCK_CALENDAR_EVENTS } from '../../data/mockData';
 import { ClientProfileModal, ClientProfileData } from './ClientProfileModal';
 import {
   Users,
@@ -27,177 +26,7 @@ import {
   Award,
 } from 'lucide-react';
 
-// Dữ liệu mẫu chuẩn Studio khi chạy Offline / Chưa kết nối Supabase
-const MOCK_CLIENTS_DATA: ClientProfileData[] = [
-  {
-    id: 'cli-1',
-    name: 'Anh Minh & Chị Thảo',
-    phone: '0987654321',
-    email: 'minhthao.wedding@gmail.com',
-    created_at: '2026-08-10',
-    totalBookings: 2,
-    totalSpent: 40000000,
-    totalRemainingDebt: 12600000,
-    isVip: true,
-    tier: 'vip',
-    lastBookingDate: '2026-10-18',
-    bookings: [
-      {
-        id: 'ev-sub-1',
-        clientName: 'Anh Minh & Chị Thảo',
-        sessionType: 'prewedding',
-        eventDate: '2026-08-20',
-        startTime: '06:00',
-        endTime: '18:00',
-        location: 'Hồ Cốc & Phim Trường Paris',
-        status: 'done',
-        packagePrice: 22000000,
-        depositAmount: 10000000,
-        paidAmount: 22000000,
-        quoteToken: 'q-minh-thao-prewedding',
-      },
-      {
-        id: 'ev-sub-2',
-        clientName: 'Anh Minh & Chị Thảo',
-        sessionType: 'wedding',
-        eventDate: '2026-10-18',
-        startTime: '07:00',
-        endTime: '14:00',
-        location: 'White Palace, TP.HCM',
-        status: 'deposited',
-        packagePrice: 18000000,
-        depositAmount: 5400000,
-        paidAmount: 5400000,
-        quoteToken: 'q-minh-thao-wedding',
-      },
-    ],
-  },
-  {
-    id: 'cli-2',
-    name: 'ChicMode Fashion Brand',
-    phone: '0918889999',
-    email: 'marketing@chicmode.vn',
-    created_at: '2026-07-15',
-    totalBookings: 2,
-    totalSpent: 23500000,
-    totalRemainingDebt: 0,
-    isVip: true,
-    tier: 'vip',
-    lastBookingDate: '2026-10-24',
-    bookings: [
-      {
-        id: 'ev-sub-3',
-        clientName: 'ChicMode Fashion Brand',
-        sessionType: 'lookbook',
-        eventDate: '2026-09-22',
-        startTime: '13:30',
-        endTime: '17:30',
-        location: 'Studio Lam Vũ, Q.3',
-        status: 'done',
-        packagePrice: 7500000,
-        depositAmount: 3000000,
-        paidAmount: 7500000,
-      },
-      {
-        id: 'ev-sub-4',
-        clientName: 'ChicMode Fashion Brand',
-        sessionType: 'commercial',
-        eventDate: '2026-10-24',
-        startTime: '08:00',
-        endTime: '17:00',
-        location: 'Phim trường Long Island, Q.9',
-        status: 'editing',
-        packagePrice: 16000000,
-        depositAmount: 8000000,
-        paidAmount: 16000000,
-      },
-    ],
-  },
-  {
-    id: 'cli-3',
-    name: 'Khai Trương Showroom BrandX',
-    phone: '0909112233',
-    email: 'events@brandx.vn',
-    created_at: '2026-09-01',
-    totalBookings: 1,
-    totalSpent: 15000000,
-    totalRemainingDebt: 10000000,
-    isVip: false,
-    tier: 'regular',
-    lastBookingDate: '2026-09-28',
-    bookings: [
-      {
-        id: 'ev-sub-5',
-        clientName: 'Khai Trương Showroom BrandX',
-        sessionType: 'event',
-        eventDate: '2026-09-28',
-        startTime: '09:00',
-        endTime: '16:00',
-        location: 'Landmark 81, Bình Thạnh',
-        status: 'deposited',
-        packagePrice: 15000000,
-        depositAmount: 5000000,
-        paidAmount: 5000000,
-      },
-    ],
-  },
-  {
-    id: 'cli-4',
-    name: 'Anh Tuấn & Chị Mai',
-    phone: '0934567890',
-    email: 'tuanmai.wedding@gmail.com',
-    created_at: '2026-09-05',
-    totalBookings: 1,
-    totalSpent: 12000000,
-    totalRemainingDebt: 8000000,
-    isVip: false,
-    tier: 'regular',
-    lastBookingDate: '2026-09-25',
-    bookings: [
-      {
-        id: 'ev-sub-6',
-        clientName: 'Anh Tuấn & Chị Mai',
-        sessionType: 'wedding',
-        eventDate: '2026-09-25',
-        startTime: '07:30',
-        endTime: '13:30',
-        location: 'White Palace Hoàng Văn Thụ',
-        status: 'deposited',
-        packagePrice: 12000000,
-        depositAmount: 4000000,
-        paidAmount: 4000000,
-      },
-    ],
-  },
-  {
-    id: 'cli-5',
-    name: 'Nguyễn Hoàng Long',
-    phone: '0903334455',
-    email: 'long.nh@vietcorp.com',
-    created_at: '2026-09-18',
-    totalBookings: 1,
-    totalSpent: 4500000,
-    totalRemainingDebt: 4500000,
-    isVip: false,
-    tier: 'lead',
-    lastBookingDate: '2026-10-10',
-    bookings: [
-      {
-        id: 'ev-sub-7',
-        clientName: 'Nguyễn Hoàng Long',
-        sessionType: 'portrait',
-        eventDate: '2026-10-10',
-        startTime: '10:00',
-        endTime: '12:00',
-        location: 'The Coffee House Signature, Q.1',
-        status: 'lead',
-        packagePrice: 4500000,
-        depositAmount: 1500000,
-        paidAmount: 0,
-      },
-    ],
-  },
-];
+const MOCK_CLIENTS_DATA: ClientProfileData[] = [];
 
 export const ClientsManagementPage: React.FC = () => {
   const { user } = useAuth();
@@ -214,7 +43,7 @@ export const ClientsManagementPage: React.FC = () => {
   const fetchClientsFromSupabase = async () => {
     setIsLoading(true);
     if (!isSupabaseConfigured) {
-      setClients(MOCK_CLIENTS_DATA);
+      setClients([]);
       setIsLoading(false);
       return;
     }

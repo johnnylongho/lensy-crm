@@ -23,6 +23,7 @@ import { BookingStatusSelect, STATUS_CONFIG } from './BookingStatusSelect';
 import { generateGoogleCalendarUrl } from '../../lib/calendarIntegration';
 import { getCategoryConfig } from '../../utils/categoryConfig';
 import { BookingSortOption, sortBookings } from '../../utils/dateSorting';
+import { VerifiedBadge } from '../common/VerifiedBadge';
 
 interface Props {
   events: CalendarEvent[];
@@ -111,7 +112,7 @@ export const UpcomingShootsList: React.FC<Props> = ({
   };
 
   return (
-    <div className="w-full max-w-7xl mx-auto rounded-3xl bg-white/70 dark:bg-white/5 backdrop-blur-2xl border border-white/60 dark:border-white/10 shadow-[0_8px_32px_0_rgba(0,0,0,0.04)] dark:shadow-[0_8px_32px_0_rgba(0,0,0,0.4)] p-6 sm:p-8 space-y-6 transition-all duration-300">
+    <div className="w-full rounded-3xl bg-white/70 dark:bg-white/5 backdrop-blur-2xl border border-white/60 dark:border-white/10 shadow-[0_8px_32px_0_rgba(0,0,0,0.04)] dark:shadow-[0_8px_32px_0_rgba(0,0,0,0.4)] p-6 sm:p-8 space-y-6 transition-all duration-300">
       
       {/* HEADER KHU VỰC */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-4 border-b border-white/40 dark:border-white/10">
@@ -324,6 +325,18 @@ export const UpcomingShootsList: React.FC<Props> = ({
                       <span className="text-[10px] px-2 py-0.5 rounded font-bold border bg-sky-50 dark:bg-sky-950/80 border-sky-200 dark:border-sky-500/40 text-sky-700 dark:text-sky-300 flex items-center gap-1 flex-shrink-0">
                         <Camera className="w-3 h-3 text-sky-600 dark:text-sky-400" />
                         <span>{ev.assignedGears.length} máy/lens</span>
+                      </span>
+                    )}
+                    {ev.photographer && (
+                      <span className="text-[10px] px-2 py-0.5 rounded font-bold border bg-amber-50 dark:bg-amber-950/60 border-amber-200 dark:border-amber-500/30 text-amber-700 dark:text-amber-300 flex items-center gap-1 flex-shrink-0" title={`Thợ ảnh: ${ev.photographer.full_name}`}>
+                        <span>{ev.photographer.full_name}</span>
+                        {ev.photographer.is_verified && <VerifiedBadge className="w-3 h-3" />}
+                      </span>
+                    )}
+                    {ev.makeup_artist && (
+                      <span className="text-[10px] px-2 py-0.5 rounded font-bold border bg-fuchsia-50 dark:bg-fuchsia-950/60 border-fuchsia-200 dark:border-fuchsia-500/30 text-fuchsia-700 dark:text-fuchsia-300 flex items-center gap-1 flex-shrink-0" title={`MUA: ${ev.makeup_artist.full_name}`}>
+                        <span>{ev.makeup_artist.full_name}</span>
+                        {ev.makeup_artist.is_verified && <VerifiedBadge className="w-3 h-3" />}
                       </span>
                     )}
                   </div>

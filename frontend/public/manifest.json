@@ -1,0 +1,30 @@
+{
+  "name": "Lensy CRM",
+  "short_name": "Lensy",
+  "description": "Lensy - Smart CRM for Freelance Photographers & Boutique Studios",
+  "start_url": "/dashboard",
+  "scope": "/",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#080c14",
+  "theme_color": "#df8653",
+  "icons": [
+    {
+      "src": "/pwa-192x192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/pwa-512x512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/lensy-logo.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    }
+  ]
+}

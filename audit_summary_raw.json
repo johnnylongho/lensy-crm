@@ -1,0 +1,353 @@
+{
+  "users": {
+    "count": 1,
+    "sample": [
+      {
+        "id": "87239d64-5964-47b1-a146-f12f3d41de9e",
+        "email": "contact.johnnylongho@gmail.com",
+        "full_name": "Johnny Long Hồ",
+        "phone": "0794677369",
+        "studio_name": "MIRMIA STUDIO & ACADEMY",
+        "avatar_url": null,
+        "role": "photographer",
+        "bank_name": "MB Bank (Quân Đội)",
+        "bank_account_number": "013917977777",
+        "bank_account_name": "HO HOANG LONG",
+        "created_at": "2026-09-23T15:35:35.663006+00:00",
+        "updated_at": "2026-09-25T05:05:36.647469+00:00",
+        "username": "johnnylongho",
+        "account_type": "studio_member"
+      }
+    ]
+  },
+  "studios": {
+    "count": 1,
+    "sample": [
+      {
+        "id": "a0000000-0000-0000-0000-000000000001",
+        "name": "MIRMIA STUDIO & ACADEMY WORKSPACE",
+        "logo_url": "/mirmia-logo.png",
+        "verified_status": true,
+        "owner_id": "87239d64-5964-47b1-a146-f12f3d41de9e",
+        "created_at": "2026-09-25T05:05:36.647469+00:00",
+        "updated_at": "2026-09-25T05:05:36.647469+00:00"
+      }
+    ]
+  },
+  "studio_members": {
+    "count": 1,
+    "sample": [
+      {
+        "id": "6123c82b-e9c4-4ece-ae2c-54802ebc3a5e",
+        "studio_id": "a0000000-0000-0000-0000-000000000001",
+        "user_id": "87239d64-5964-47b1-a146-f12f3d41de9e",
+        "role": "admin",
+        "status": "approved",
+        "created_at": "2026-09-25T05:05:36.647469+00:00",
+        "updated_at": "2026-09-25T05:05:36.647469+00:00"
+      }
+    ]
+  },
+  "bookings": {
+    "count": 39,
+    "sample": [
+      {
+        "id": "70ccbdf4-11df-43d3-8a72-30588b5584e8",
+        "photographer_id": "87239d64-5964-47b1-a146-f12f3d41de9e",
+        "client_name": "c My Du",
+        "client_phone": "0900000000",
+        "client_email": null,
+        "session_type": "portrait",
+        "session_title": "Lịch chụp c My Du",
+        "event_date": "2026-02-07",
+        "start_time": "19:00:00",
+        "end_time": "22:00:00",
+        "location": "Tại Studio",
+        "package_price": 0,
+        "deposit_amount": 0,
+        "paid_amount": 0,
+        "remaining_amount": 0,
+        "status": "done",
+        "quote_token": "qt_1790782278441_o1yagk5",
+        "drive_delivery_link": null,
+        "delivery_date": null,
+        "notes": null,
+        "created_at": "2026-09-30T15:31:18.597705+00:00",
+        "updated_at": "2026-10-01T02:29:19.192712+00:00",
+        "assigned_gears": [],
+        "expenses": 0,
+        "expense_details": [],
+        "client_id": null,
+        "studio_id": "a0000000-0000-0000-0000-000000000001",
+        "category": "portrait",
+        "package_type": null,
+        "is_deleted": false,
+        "makeup_artist_id": null
+      },
+      {
+        "id": "9fec8965-8401-4f3a-a76e-d503d68f5700",
+        "photographer_id": "87239d64-5964-47b1-a146-f12f3d41de9e",
+        "client_name": "c My Du",
+        "client_phone": "0900000000",
+        "client_email": null,
+        "session_type": "portrait",
+        "session_title": "Lịch chụp c My Du",
+        "event_date": "2026-02-08",
+        "start_time": "18:00:00",
+        "end_time": "21:00:00",
+        "location": "Tại Studio",
+        "package_price": 0,
+        "deposit_amount": 0,
+        "paid_amount": 0,
+        "remaining_amount": 0,
+        "status": "done",
+        "quote_token": "qt_1790782278441_ofbvany",
+        "drive_delivery_link": null,
+        "delivery_date": null,
+        "notes": null,
+        "created_at": "2026-09-30T15:31:18.597705+00:00",
+        "updated_at": "2026-10-01T02:29:19.192712+00:00",
+        "assigned_gears": [],
+        "expenses": 0,
+        "expense_details": [],
+        "client_id": null,
+        "studio_id": "a0000000-0000-0000-0000-000000000001",
+        "category": "portrait",
+        "package_type": null,
+        "is_deleted": false,
+        "makeup_artist_id": null
+      },
+      {
+        "id": "7cc947df-4f9e-456d-985c-d609ccb36962",
+        "photographer_id": "87239d64-5964-47b1-a146-f12f3d41de9e",
+        "client_name": "vợ",
+        "client_phone": "0900000000",
+        "client_email": null,
+        "session_type": "portrait",
+        "session_title": "Lịch chụp vợ",
+        "event_date": "2026-01-25",
+        "start_time": "09:00:00",
+        "end_time": "12:00:00",
+        "location": "Tại Studio",
+        "package_price": 0,
+        "deposit_amount": 0,
+        "paid_amount": 0,
+        "remaining_amount": 0,
+        "status": "cancelled",
+        "quote_token": "qt_1790782278441_rpt4a83",
+        "drive_delivery_link": null,
+        "delivery_date": null,
+        "notes": null,
+        "created_at": "2026-09-30T15:31:18.597705+00:00",
+        "updated_at": "2026-10-01T03:20:57.967368+00:00",
+        "assigned_gears": [],
+        "expenses": 0,
+        "expense_details": [],
+        "client_id": null,
+        "studio_id": "a0000000-0000-0000-0000-000000000001",
+        "category": "portrait",
+        "package_type": null,
+        "is_deleted": true,
+        "makeup_artist_id": null
+      },
+      {
+        "id": "3ae6a931-9a33-48ab-a26d-b9a961bcb7fb",
+        "photographer_id": "87239d64-5964-47b1-a146-f12f3d41de9e",
+        "client_name": "Phú tiktok",
+        "client_phone": "0900000000",
+        "client_email": null,
+        "session_type": "outdoor",
+        "session_title": "Lịch chụp Phú tiktok",
+        "event_date": "2026-01-24",
+        "start_time": "09:00:00",
+        "end_time": "12:00:00",
+        "location": "Chợ Đầm",
+        "package_price": 300000,
+        "deposit_amount": 300000,
+        "paid_amount": 300000,
+        "remaining_amount": 0,
+        "status": "done",
+        "quote_token": "qt_1790782278441_jnw3y7h",
+        "drive_delivery_link": null,
+        "delivery_date": null,
+        "notes": "chụp đẹp khách lì xì",
+        "created_at": "2026-09-30T15:31:18.597705+00:00",
+        "updated_at": "2026-10-01T03:22:31.324539+00:00",
+        "assigned_gears": [
+          "27cbc763-29f9-4b8d-8405-203c4f25fb9b",
+          "e15ef1b4-c192-4411-bb0d-302962c5daab"
+        ],
+        "expenses": 0,
+        "expense_details": [],
+        "client_id": null,
+        "studio_id": "a0000000-0000-0000-0000-000000000001",
+        "category": "outdoor",
+        "package_type": "collab",
+        "is_deleted": false,
+        "makeup_artist_id": null
+      },
+      {
+        "id": "2c13ddea-7527-4c87-8be4-fb6c5d5c8574",
+        "photographer_id": "87239d64-5964-47b1-a146-f12f3d41de9e",
+        "client_name": "Thanh Thúy",
+        "client_phone": "0900000000",
+        "client_email": null,
+        "session_type": "outdoor",
+        "session_title": "Lịch chụp Thanh Thúy",
+        "event_date": "2026-01-31",
+        "start_time": "15:00:00",
+        "end_time": "18:00:00",
+        "location": "Tại Studio",
+        "package_price": 0,
+        "deposit_amount": 0,
+        "paid_amount": 0,
+        "remaining_amount": 0,
+        "status": "done",
+        "quote_token": "qt_1790782278441_4iymlfa",
+        "drive_delivery_link": null,
+        "delivery_date": null,
+        "notes": null,
+        "created_at": "2026-09-30T15:31:18.597705+00:00",
+        "updated_at": "2026-10-01T03:24:46.679878+00:00",
+        "assigned_gears": [],
+        "expenses": 0,
+        "expense_details": [],
+        "client_id": null,
+        "studio_id": "a0000000-0000-0000-0000-000000000001",
+        "category": "outdoor",
+        "package_type": "collab",
+        "is_deleted": false,
+        "makeup_artist_id": null
+      }
+    ]
+  },
+  "gears": {
+    "count": 5,
+    "sample": [
+      {
+        "id": "e15ef1b4-c192-4411-bb0d-302962c5daab",
+        "photographer_id": "87239d64-5964-47b1-a146-f12f3d41de9e",
+        "name": "Canon EOS R",
+        "type": "camera",
+        "status": "active",
+        "created_at": "2026-09-24T03:46:09.117983+00:00",
+        "purchase_price": 16800000,
+        "studio_id": "a0000000-0000-0000-0000-000000000001"
+      },
+      {
+        "id": "27cbc763-29f9-4b8d-8405-203c4f25fb9b",
+        "photographer_id": "87239d64-5964-47b1-a146-f12f3d41de9e",
+        "name": "Canon RF 85mm f2 Macro  IS STM",
+        "type": "lens",
+        "status": "active",
+        "created_at": "2026-09-24T03:47:19.572222+00:00",
+        "purchase_price": 13250000,
+        "studio_id": "a0000000-0000-0000-0000-000000000001"
+      },
+      {
+        "id": "84de24c0-ca08-4f4b-8365-a9fbe74540f5",
+        "photographer_id": "87239d64-5964-47b1-a146-f12f3d41de9e",
+        "name": "Godox V860iii (C) + Trigger X2T",
+        "type": "lighting",
+        "status": "active",
+        "created_at": "2026-09-24T03:48:02.93245+00:00",
+        "purchase_price": 3721000,
+        "studio_id": "a0000000-0000-0000-0000-000000000001"
+      },
+      {
+        "id": "18f8b6ee-4fe1-4441-8f06-0dc50ff45c8e",
+        "photographer_id": "87239d64-5964-47b1-a146-f12f3d41de9e",
+        "name": "Micro Gochek Ultra s24",
+        "type": "audio",
+        "status": "active",
+        "created_at": "2026-09-23T15:56:25.723075+00:00",
+        "purchase_price": 1279000,
+        "studio_id": "a0000000-0000-0000-0000-000000000001"
+      },
+      {
+        "id": "adddaa6b-d558-4f26-bcd8-3fb609a2f473",
+        "photographer_id": "87239d64-5964-47b1-a146-f12f3d41de9e",
+        "name": "Filter Black Mist 1/4 K&F",
+        "type": "lens",
+        "status": "active",
+        "created_at": "2026-09-30T16:14:33.393302+00:00",
+        "purchase_price": 800000,
+        "studio_id": "a0000000-0000-0000-0000-000000000001"
+      }
+    ]
+  },
+  "clients": {
+    "count": 2,
+    "sample": [
+      {
+        "id": "a2bfdaa9-50b1-47f6-9659-c85f7f5b1bac",
+        "photographer_id": "87239d64-5964-47b1-a146-f12f3d41de9e",
+        "name": "Trần B",
+        "phone": "0311664588",
+        "email": null,
+        "created_at": "2026-09-24T14:24:30.674195+00:00",
+        "updated_at": "2026-09-30T10:48:52.775547+00:00",
+        "studio_id": "a0000000-0000-0000-0000-000000000001"
+      },
+      {
+        "id": "b13d3b55-99de-4660-b21c-4ce7d660b131",
+        "photographer_id": "87239d64-5964-47b1-a146-f12f3d41de9e",
+        "name": "Tiên",
+        "phone": "0794510739",
+        "email": null,
+        "created_at": "2026-09-24T16:20:59.024042+00:00",
+        "updated_at": "2026-09-30T10:48:52.775547+00:00",
+        "studio_id": "a0000000-0000-0000-0000-000000000001"
+      }
+    ]
+  },
+  "packages": {
+    "count": 2,
+    "sample": [
+      {
+        "id": "b3ac6439-c8f2-4f74-aa8e-215d61e942b7",
+        "photographer_id": "87239d64-5964-47b1-a146-f12f3d41de9e",
+        "studio_id": "a0000000-0000-0000-0000-000000000001",
+        "name": "Beauty | Concept tại Studio",
+        "price": 1800000,
+        "description": "Retouch 10 ảnh đẹp nhất",
+        "features": [
+          "Chụp không giới hạn số lượng file",
+          "Bàn giao toàn bộ file qua Google Drive",
+          "Bao gồm makeup chuyên nghiệp",
+          "Retouch 10 ảnh đẹp nhất",
+          "Chụp không giới hạn thời gian"
+        ],
+        "image_urls": [
+          "https://images.unsplash.com/photo-1519741497674-611481863552?auto=format&fit=crop&w=1200&q=80"
+        ],
+        "is_active": true,
+        "created_at": "2026-10-01T04:27:11.096608+00:00",
+        "updated_at": "2026-10-01T04:27:10.293+00:00"
+      },
+      {
+        "id": "29c74fa4-eafe-4601-9409-9b9868778f57",
+        "photographer_id": "87239d64-5964-47b1-a146-f12f3d41de9e",
+        "studio_id": "a0000000-0000-0000-0000-000000000001",
+        "name": "Chụp Pre-Grad | Chụp kỷ yếu",
+        "price": 1200000,
+        "description": null,
+        "features": [
+          "Bàn giao toàn bộ file qua Google Drive",
+          "1 Thợ chính + 1 Thợ phụ đánh sáng",
+          "Chụp không giới hạn file gốc",
+          "Retouch 10 ảnh đẹp nhất",
+          "Không giới hạn thời gian",
+          "Hỗ trợ Make up + phụ kiện",
+          "Hỗ trợ tạo dáng, take care 1:1"
+        ],
+        "image_urls": [
+          "https://images.unsplash.com/photo-1519741497674-611481863552?auto=format&fit=crop&w=1200&q=80"
+        ],
+        "is_active": true,
+        "created_at": "2026-10-01T08:11:19.224409+00:00",
+        "updated_at": "2026-10-01T08:11:18.574+00:00"
+      }
+    ]
+  }
+}

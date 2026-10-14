@@ -76,15 +76,11 @@ export const RoiProgressBar: React.FC<Props> = ({ events, className = '', defaul
         }
       }
 
-      // Fallback mock gears với giá mua thực tế để trải nghiệm trực quan ngay cả khi chưa kết nối
-      setGears([
-        { id: 'g1', name: 'Body Sony Alpha 7 IV #1', type: 'camera', status: 'active', purchase_price: 48000000 },
-        { id: 'g2', name: 'Lens Sony FE 24-70mm F2.8 GM II', type: 'lens', status: 'active', purchase_price: 49000000 },
-        { id: 'g3', name: 'Đèn Flash Godox V1 Sony', type: 'lighting', status: 'active', purchase_price: 6500000 },
-        { id: 'g4', name: 'Đèn Godox AD200 Pro', type: 'lighting', status: 'active', purchase_price: 8500000 },
-      ]);
+      // Không dùng mock gears - kết nối 100% dữ liệu thực tế
+      setGears([]);
     } catch (err) {
       console.error('[ROI] Lỗi fetch thiết bị:', err);
+      setGears([]);
     } finally {
       setIsLoading(false);
     }

@@ -9,9 +9,10 @@ import { QuotePriceSummary } from './QuotePriceSummary';
 import { ClientBookingForm } from './ClientBookingForm';
 import { DepositModal } from './DepositModal';
 import { PackagePricingSection } from './PackagePricingSection';
+import { ClientProjectJourney } from './ClientProjectJourney';
+import { ClientDeliverySection } from './ClientDeliverySection';
 import { QuoteData, SessionType, PackageItem } from '../../types';
 import { supabase, isSupabaseConfigured } from '../../lib/supabase';
-import { MOCK_QUOTE, MOCK_PACKAGES } from '../../data/mockData';
 import {
   Phone,
   MessageCircle,
@@ -23,6 +24,7 @@ import {
   Sparkles,
   ShieldCheck,
 } from 'lucide-react';
+import { VerifiedBadge } from '../common/VerifiedBadge';
 
 interface Props {
   initialQuote?: QuoteData;
@@ -44,7 +46,7 @@ function getDefaultInclusionsAndDeliverables(sessionType: SessionType) {
           {
             id: 'inc-2',
             title: 'Hệ Máy Full-Frame & Ống Kính Cao Cấp',
-            description: 'Sony A7 IV & A7R V cùng hệ ống kính G-Master chuyên chụp thiếu sáng tại sảnh tiệc.',
+            description: 'Hệ thống Body máy ảnh Full-Frame chuyên nghiệp cùng ống kính tiêu cự vàng chuyên chụp thiếu sáng tại sảnh tiệc.',
           },
           {
             id: 'inc-3',
@@ -103,7 +105,7 @@ function getDefaultInclusionsAndDeliverables(sessionType: SessionType) {
           {
             id: 'inc-2',
             title: 'Thiết Bị Cao Cấp & Đèn Tản Sáng',
-            description: 'Hệ máy Sony A7 IV cùng ống kính chân dung xóa phông cao cấp.',
+            description: 'Hệ máy ảnh Full-Frame chuyên nghiệp cùng ống kính chân dung xóa phông cao cấp.',
           },
           {
             id: 'inc-3',
@@ -120,19 +122,68 @@ function getDefaultInclusionsAndDeliverables(sessionType: SessionType) {
   }
 }
 
+const DEFAULT_FALLBACK_QUOTE: QuoteData = {
+  id: 'lensy-studio-booking',
+  quoteToken: 'booking',
+  studioName: 'MIRMIA STUDIO & ACADEMY',
+  studioLogoText: 'MIRMIA',
+  photographerName: 'Johnny Long Hồ',
+  photographerPhone: '0901234567',
+  photographerEmail: 'contact@mirmia.vn',
+  clientName: 'Khách Hàng',
+  clientPhone: '',
+  sessionType: 'wedding',
+  sessionTitle: 'Gói Chụp Ảnh Studio & Ngoại Cảnh',
+  eventDate: new Date().toISOString().split('T')[0],
+  startTime: '08:00',
+  endTime: '12:00',
+  location: 'Tại Studio',
+  packagePrice: 15000000,
+  depositPercentage: 30,
+  depositAmount: 4500000,
+  remainingAmount: 10500000,
+  status: 'cho_coc',
+  inclusions: [
+    {
+      id: 'inc-1',
+      title: 'Nhiếp Ảnh Gia Chuyên Nghiệp',
+      description: 'Chụp không giới hạn và bắt trọn từng khoảnh khắc cảm xúc chân thực nhất.',
+    },
+    {
+      id: 'inc-2',
+      title: 'Hệ Máy Full-Frame & Đèn Chuyên Nghiệp',
+      description: 'Thiết bị chuyên nghiệp chụp thiếu sáng và kiểm soát ánh sáng cao cấp.',
+    },
+  ],
+  equipmentList: ['Body Canon EOS R', 'Lens Canon RF 85mm f/2', 'Đèn Godox V860iii'],
+  deliverables: [
+    'Toàn bộ file gốc chất lượng cao',
+    'Ảnh chỉnh sửa màu sắc chi tiết',
+    'Link Cloud lưu trữ riêng biệt an toàn',
+  ],
+  validUntil: new Date(Date.now() + 86400000 * 7).toISOString().split('T')[0],
+  bankInfo: {
+    bankName: 'MB Bank',
+    accountNumber: '0901234567',
+    accountName: 'HO HOANG LONG',
+  },
+};
+
 export const QuoteView: React.FC<Props> = ({
-  initialQuote = MOCK_QUOTE,
+  initialQuote = DEFAULT_FALLBACK_QUOTE,
   onQuoteStatusChange,
   onBookingSubmit,
 }) => {
   const { token, username, id } = useParams<{ token?: string; username?: string; id?: string }>();
   const [quote, setQuote] = useState<QuoteData>(initialQuote);
   const [photographerId, setPhotographerId] = useState<string | null>(null);
+  const [isPhotographerVerified, setIsPhotographerVerified] = useState<boolean>(true);
   const isBookingPage = Boolean(username) || Boolean(id);
   const [isLoading, setIsLoading] = useState(Boolean(token || username || id));
   const [isNotFound, setIsNotFound] = useState(false);
   const [isStudioNotFound, setIsStudioNotFound] = useState(false);
   const [isDepositModalOpen, setIsDepositModalOpen] = useState(false);
+  const [paymentModalType, setPaymentModalType] = useState<'deposit' | 'final'>('deposit');
   const [packages, setPackages] = useState<PackageItem[]>([]);
   const [selectedPackage, setSelectedPackage] = useState<PackageItem | null>(null);
   const [verifiedStudio, setVerifiedStudio] = useState<{ name: string; logoUrl?: string } | null>(null);
@@ -201,6 +252,9 @@ export const QuoteView: React.FC<Props> = ({
 
           if (userData) {
             setPhotographerId(userData.id);
+            if (userData.is_verified !== undefined) {
+              setIsPhotographerVerified(Boolean(userData.is_verified));
+            }
           }
 
           let displayStudioName = studioData?.name || userData?.studio_name || 'MIRMIA STUDIO & ACADEMY';
@@ -298,7 +352,7 @@ export const QuoteView: React.FC<Props> = ({
                 if (parsed.length > 0) pkgList = parsed;
               }
               if (pkgList.length === 0) {
-                pkgList = MOCK_PACKAGES;
+                pkgList = [];
               }
             }
 
@@ -308,8 +362,8 @@ export const QuoteView: React.FC<Props> = ({
             }
           } catch (pkgErr) {
             console.warn('Lỗi khi fetch gói dịch vụ:', pkgErr);
-            setPackages(MOCK_PACKAGES);
-            setSelectedPackage(MOCK_PACKAGES[0]);
+            setPackages([]);
+            
           }
         } else {
           // Demo fallback
@@ -323,8 +377,8 @@ export const QuoteView: React.FC<Props> = ({
             photographerName: 'Johnny Long Hồ',
             photographerPhone: '0901234567',
           }));
-          setPackages(MOCK_PACKAGES);
-          setSelectedPackage(MOCK_PACKAGES[0]);
+          setPackages([]);
+          
         }
       } catch (err) {
         console.error('Lỗi truy vấn Studio:', err);
@@ -349,12 +403,7 @@ export const QuoteView: React.FC<Props> = ({
     }
 
     // Nếu token trùng với mock data mặc định
-    if (token === MOCK_QUOTE.quoteToken) {
-      setQuote(MOCK_QUOTE);
-      setIsLoading(false);
-      setIsNotFound(false);
-      return;
-    }
+    // Mock quote fallback removed
 
     const fetchQuoteByToken = async () => {
       setIsLoading(true);
@@ -386,16 +435,11 @@ export const QuoteView: React.FC<Props> = ({
           const sessionType: SessionType = data.session_type || 'wedding';
           const { inclusions, deliverables } = getDefaultInclusionsAndDeliverables(sessionType);
 
-          // Trích xuất thiết bị từ notes nếu có
-          let equipmentList = [
-            'Body Sony Alpha 7 IV (Primary)',
-            'Body Sony Alpha 7R V (Backup/Secondary)',
-            'Lens FE 24-70mm F2.8 GM II',
-            'Lens FE 70-200mm F2.8 GM OSS II',
-            'Hệ thống Đèn Flash Godox V1 + AD200 Pro',
-          ];
-
-          if (data.notes && data.notes.includes('[Gears:')) {
+          // Trích xuất thiết bị thực tế từ assigned_gears hoặc notes
+          let equipmentList: string[] = [];
+          if (data.assigned_gears && Array.isArray(data.assigned_gears) && data.assigned_gears.length > 0) {
+            equipmentList = data.assigned_gears.map((g: any) => (typeof g === 'string' ? g : g.name || g.id));
+          } else if (data.notes && data.notes.includes('[Gears:')) {
             const match = data.notes.match(/\[Gears:\s*([^\]]+)\]/);
             if (match && match[1]) {
               equipmentList = match[1].split(';').map((s: string) => s.trim());
@@ -429,6 +473,9 @@ export const QuoteView: React.FC<Props> = ({
                 if (userData.bank_name) bankInfo.bankName = userData.bank_name;
                 if (userData.bank_account_number) bankInfo.accountNumber = userData.bank_account_number;
                 if (userData.bank_account_name) bankInfo.accountName = userData.bank_account_name;
+                if (userData.is_verified !== undefined) {
+                  setIsPhotographerVerified(Boolean(userData.is_verified));
+                }
               }
             } catch (userErr) {
               console.warn('Không thể tải thông tin thợ ảnh:', userErr);
@@ -463,6 +510,9 @@ export const QuoteView: React.FC<Props> = ({
             specialNotes: data.notes?.replace(/\[Gears:[^\]]+\]\s*/, '') || undefined,
             validUntil: '2026-11-15',
             bankInfo: bankInfo,
+            drive_delivery_link: data.drive_delivery_link || undefined,
+            delivery_date: data.delivery_date || undefined,
+            delivery_notes: data.delivery_notes || undefined,
           };
 
           setQuote(dynamicQuote);
@@ -668,8 +718,10 @@ export const QuoteView: React.FC<Props> = ({
                   {quote.studioName}
                 </h1>
                 {quote.photographerName && (
-                  <p className="text-xs text-slate-400">
-                    Nhiếp ảnh gia chính: <span className="text-slate-200 font-semibold">{quote.photographerName}</span>
+                  <p className="text-xs text-slate-400 flex items-center justify-center gap-1.5 mt-0.5">
+                    <span>Nhiếp ảnh gia chính:</span>
+                    <span className="text-slate-200 font-semibold">{quote.photographerName}</span>
+                    {isPhotographerVerified && <VerifiedBadge className="w-3.5 h-3.5" />}
                   </p>
                 )}
               </div>
@@ -702,6 +754,18 @@ export const QuoteView: React.FC<Props> = ({
             {/* Quote Header */}
             <QuoteHeader quote={quote} />
 
+            {/* Client Project Stepper & Journey */}
+            <ClientProjectJourney quote={quote} />
+
+            {/* Photo Delivery Showcase & Download Callout */}
+            <ClientDeliverySection
+              quote={quote}
+              onOpenPaymentModal={() => {
+                setPaymentModalType('final');
+                setIsDepositModalOpen(true);
+              }}
+            />
+
             {/* Session Primary Info */}
             <QuoteSessionInfo quote={quote} />
 
@@ -717,7 +781,10 @@ export const QuoteView: React.FC<Props> = ({
             {/* Price Breakdown & Deposit Trigger */}
             <QuotePriceSummary
               quote={quote}
-              onOpenDepositModal={() => setIsDepositModalOpen(true)}
+              onOpenDepositModal={() => {
+                setPaymentModalType('deposit');
+                setIsDepositModalOpen(true);
+              }}
             />
           </>
         )}
@@ -745,8 +812,9 @@ export const QuoteView: React.FC<Props> = ({
 
         {/* Photographer Contact Card */}
         <div className="rounded-3xl bg-slate-900/40 border border-slate-800/80 p-5 text-center space-y-3">
-          <h4 className="text-xs font-bold uppercase tracking-wider text-slate-400">
-            Hỗ Trợ & Tư Vấn Trực Tiếp
+          <h4 className="text-xs font-bold uppercase tracking-wider text-slate-400 flex items-center justify-center gap-1.5">
+            <span>Hỗ Trợ & Tư Vấn Trực Tiếp</span>
+            {isPhotographerVerified && <VerifiedBadge className="w-3.5 h-3.5" />}
           </h4>
           <p className="text-xs text-slate-300">
             Có bất kỳ thắc mắc hoặc cần điều chỉnh timeline, quý khách hãy liên hệ với thợ ảnh chính:
@@ -820,6 +888,7 @@ export const QuoteView: React.FC<Props> = ({
       <DepositModal
         quote={quote}
         isOpen={isDepositModalOpen}
+        paymentType={paymentModalType}
         onClose={() => setIsDepositModalOpen(false)}
         onConfirmDeposit={handleConfirmDeposit}
       />

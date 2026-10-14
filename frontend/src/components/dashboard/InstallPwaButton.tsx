@@ -118,11 +118,11 @@ export const InstallPwaButton: React.FC = () => {
       {/* Modal hướng dẫn cài đặt khi trình duyệt không kích hoạt prompt tự động */}
       {showGuideModal && (
         <div
-          className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4 backdrop-blur-sm animate-fadeIn"
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 overflow-hidden"
           onClick={() => setShowGuideModal(false)}
         >
           <div
-            className="relative w-full max-w-md rounded-3xl bg-slate-900 border border-slate-700 p-6 space-y-4 shadow-2xl text-slate-100 max-h-[90vh] overflow-y-auto"
+            className="relative z-10 w-full max-w-md rounded-3xl bg-slate-900 border border-slate-700 p-6 space-y-4 shadow-2xl text-slate-100 max-h-[90vh] overflow-y-auto"
             onClick={e => e.stopPropagation()}
           >
             <button

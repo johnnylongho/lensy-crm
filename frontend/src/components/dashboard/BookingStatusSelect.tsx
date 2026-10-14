@@ -113,6 +113,17 @@ export const STATUS_CONFIG: Record<
     accentBorder: 'border-l-4 border-l-orange-400 dark:border-l-orange-400',
     desc: 'Khách đã gửi ảnh bill cọc, chờ studio duyệt',
   },
+  confirmed: {
+    label: 'Đã xác nhận',
+    badgeBg: 'bg-emerald-50 dark:bg-emerald-950/40',
+    textColor: 'text-emerald-800 dark:text-emerald-300',
+    borderColor: 'border-emerald-200 dark:border-emerald-800/60',
+    dotColor: 'bg-emerald-500',
+    cardBg: 'bg-white dark:bg-zinc-900',
+    cardBorder: 'border border-gray-200 dark:border-zinc-800',
+    accentBorder: 'border-l-4 border-l-emerald-500 dark:border-l-emerald-500',
+    desc: 'Lịch chụp đã được xác nhận chắc chắn',
+  },
   da_chot: {
     label: 'Đã nhận cọc',
     badgeBg: 'bg-blue-50 dark:bg-blue-950/40',

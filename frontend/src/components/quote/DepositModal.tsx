@@ -26,9 +26,10 @@ interface Props {
   isOpen: boolean;
   onClose: () => void;
   onConfirmDeposit: () => void;
+  paymentType?: 'deposit' | 'final';
 }
 
-export const DepositModal: React.FC<Props> = ({ quote, isOpen, onClose, onConfirmDeposit }) => {
+export const DepositModal: React.FC<Props> = ({ quote, isOpen, onClose, onConfirmDeposit, paymentType = 'deposit' }) => {
   const [copiedAccount, setCopiedAccount] = useState(false);
   const [copiedAmount, setCopiedAmount] = useState(false);
   const [copiedContent, setCopiedContent] = useState(false);
@@ -37,6 +38,9 @@ export const DepositModal: React.FC<Props> = ({ quote, isOpen, onClose, onConfir
   const [isPendingReview, setIsPendingReview] = useState(false);
   const [isUploading, setIsUploading] = useState(false);
   const [receiptImage, setReceiptImage] = useState<string | null>(null);
+
+  const isFinal = paymentType === 'final';
+  const effectiveAmount = isFinal ? Math.max(0, Number(quote.remainingAmount || 0)) : quote.depositAmount;
 
   // Lắng nghe Realtime từ Supabase: Khi thợ ảnh duyệt cọc (chuyển sang 'da_chot'), màn hình khách tự động chuyển sang Chúc Mừng
   useEffect(() => {
@@ -53,7 +57,7 @@ export const DepositModal: React.FC<Props> = ({ quote, isOpen, onClose, onConfir
           filter: `quote_token=eq.${quote.quoteToken}`,
         },
         (payload: any) => {
-          if (payload.new && payload.new.status === 'da_chot') {
+          if (payload.new && (payload.new.status === 'da_chot' || payload.new.status === 'hoan_thanh' || payload.new.status === 'done')) {
             setIsPendingReview(false);
             setIsSuccess(true);
             onConfirmDeposit();
@@ -69,8 +73,8 @@ export const DepositModal: React.FC<Props> = ({ quote, isOpen, onClose, onConfir
 
   if (!isOpen) return null;
 
-  const transferContent = `COC ${quote.quoteToken}`;
-  const qrUrl = `https://api.vietqr.io/image/970422-${quote.bankInfo.accountNumber}-compact.png?amount=${quote.depositAmount}&addInfo=${encodeURIComponent(transferContent)}&accountName=${encodeURIComponent(quote.bankInfo.accountName)}`;
+  const transferContent = isFinal ? `QT ${quote.quoteToken}` : `COC ${quote.quoteToken}`;
+  const qrUrl = `https://api.vietqr.io/image/970422-${quote.bankInfo.accountNumber}-compact.png?amount=${effectiveAmount}&addInfo=${encodeURIComponent(transferContent)}&accountName=${encodeURIComponent(quote.bankInfo.accountName)}`;
 
   const handleCopy = (text: string, setter: (val: boolean) => void) => {
     navigator.clipboard.writeText(text);
@@ -173,11 +177,11 @@ export const DepositModal: React.FC<Props> = ({ quote, isOpen, onClose, onConfir
 
   return (
     <div
-      className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4 backdrop-blur-md animate-fadeIn"
+      className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 overflow-hidden"
       onClick={onClose}
     >
       <div
-        className="relative w-full max-w-md rounded-3xl bg-slate-900 border border-slate-700/80 p-5 sm:p-6 shadow-2xl space-y-5 text-slate-100 max-h-[90vh] overflow-y-auto"
+        className="relative z-10 w-full max-w-md rounded-3xl bg-slate-900 border border-slate-700/80 p-5 sm:p-6 shadow-2xl space-y-5 text-slate-100 max-h-[90vh] overflow-y-auto"
         onClick={e => e.stopPropagation()}
       >
         {/* Close Button */}
@@ -302,11 +306,15 @@ export const DepositModal: React.FC<Props> = ({ quote, isOpen, onClose, onConfir
             <div className="text-center space-y-1 pt-1">
               <div className="inline-flex items-center gap-1.5 px-3 py-0.5 rounded-full bg-amber-500/10 border border-amber-500/20 text-amber-400 text-xs font-semibold">
                 <QrCode className="w-3.5 h-3.5" />
-                Cổng Chuyển Khoản & Xác Nhận Cọc
+                {isFinal ? 'Cổng Quyết Toán Hợp Đồng' : 'Cổng Chuyển Khoản & Xác Nhận Cọc'}
               </div>
-              <h3 className="text-lg font-bold text-white">Đặt Cọc Giữ Lịch Chụp</h3>
+              <h3 className="text-lg font-bold text-white">
+                {isFinal ? 'Thanh Toán Quyết Toán Còn Lại' : 'Đặt Cọc Giữ Lịch Chụp'}
+              </h3>
               <p className="text-xs text-slate-400">
-                Quét mã VietQR và gửi ảnh biên lai để Studio khóa lịch ngay
+                {isFinal
+                  ? 'Quét mã VietQR để thanh toán nốt số tiền còn lại sau khi nhận ảnh'
+                  : 'Quét mã VietQR và gửi ảnh biên lai để Studio khóa lịch ngay'}
               </p>
             </div>
 
@@ -314,7 +322,7 @@ export const DepositModal: React.FC<Props> = ({ quote, isOpen, onClose, onConfir
             <div className="p-3 bg-white rounded-2xl w-48 h-48 mx-auto shadow-lg flex items-center justify-center relative">
               <img
                 src={qrUrl}
-                alt="VietQR Chuyển Khoản Cọc"
+                alt={isFinal ? 'VietQR Quyết Toán Còn Lại' : 'VietQR Chuyển Khoản Cọc'}
                 className="w-full h-full object-contain"
               />
             </div>
@@ -356,13 +364,13 @@ export const DepositModal: React.FC<Props> = ({ quote, isOpen, onClose, onConfir
               </div>
 
               <div className="flex items-center justify-between pb-2 border-b border-slate-800">
-                <span className="text-slate-400">Số tiền cọc (30%):</span>
+                <span className="text-slate-400">{isFinal ? 'Số tiền quyết toán còn lại:' : 'Số tiền cọc (30%):'}</span>
                 <div className="flex items-center gap-2">
                   <span className="font-mono font-bold text-emerald-400 text-sm">
-                    {quote.depositAmount.toLocaleString('vi-VN')} đ
+                    {effectiveAmount.toLocaleString('vi-VN')} đ
                   </span>
                   <button
-                    onClick={() => handleCopy(String(quote.depositAmount), setCopiedAmount)}
+                    onClick={() => handleCopy(String(effectiveAmount), setCopiedAmount)}
                     className="p-1 text-slate-400 hover:text-white"
                     title="Copy số tiền"
                   >

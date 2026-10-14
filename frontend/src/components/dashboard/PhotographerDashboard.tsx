@@ -81,14 +81,18 @@ export const PhotographerDashboard: React.FC<Props> = ({
               full_name,
               avatar_url,
               phone,
-              email
+              email,
+              facebook_url,
+              is_verified
             ),
             makeup_artist:users!makeup_artist_id (
               id,
               full_name,
               avatar_url,
               phone,
-              email
+              email,
+              facebook_url,
+              is_verified
             )
           `)
           .order('event_date', { ascending: true });
@@ -164,7 +168,16 @@ export const PhotographerDashboard: React.FC<Props> = ({
               is_deleted: b.is_deleted,
             };
           });
-          setEvents(smartSortBookings(mappedEvents));
+          const sorted = smartSortBookings(mappedEvents);
+          setEvents(sorted);
+          try {
+            localStorage.setItem('lensy_cached_bookings', JSON.stringify(sorted));
+            const todayStr = new Date().toISOString().split('T')[0];
+            const todayShoots = sorted.filter(e => e.eventDate === todayStr);
+            localStorage.setItem('lensy_cached_today_shoots', JSON.stringify(todayShoots));
+          } catch (e) {
+            console.warn('Lỗi lưu cache localStorage:', e);
+          }
         } else {
           setEvents(initialEvents || []);
         }
@@ -172,7 +185,17 @@ export const PhotographerDashboard: React.FC<Props> = ({
         setEvents(initialEvents || []);
       }
     } catch (err) {
-      console.error('Không thể kết nối Supabase:', err);
+      console.warn('Không thể kết nối Supabase, kích hoạt đọc cache ngoại tuyến:', err);
+      try {
+        const cached = localStorage.getItem('lensy_cached_bookings');
+        if (cached) {
+          const parsed = JSON.parse(cached);
+          if (Array.isArray(parsed) && parsed.length > 0) {
+            setEvents(parsed);
+            return;
+          }
+        }
+      } catch (e) {}
       setEvents(initialEvents || []);
     } finally {
       setIsLoading(false);

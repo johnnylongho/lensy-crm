@@ -6,23 +6,17 @@
 export interface GearItem {
   id: string;
   name: string;
-  category: 'body' | 'lens' | 'lighting' | 'crew';
+  category: 'body' | 'lens' | 'lighting' | 'crew' | 'accessory' | 'audio';
   rentalCost: number; // Chi phí thuê ngoài ước tính (VNĐ) khi bị đụng thiết bị
 }
 
 // Danh mục thiết bị & nhân sự tiêu chuẩn của Mirmia Studio & Freelancers
 export const STUDIO_GEARS: GearItem[] = [
   {
-    id: 'body-sony-a74',
-    name: 'Body Sony Alpha 7 IV (Chính)',
+    id: 'body-canon-r',
+    name: 'Body Canon EOS R (Chính)',
     category: 'body',
-    rentalCost: 800000,
-  },
-  {
-    id: 'body-sony-a7rv',
-    name: 'Body Sony Alpha 7R V (Phụ/Cao Cấp)',
-    category: 'body',
-    rentalCost: 1200000,
+    rentalCost: 500000,
   },
   {
     id: 'body-canon-r6',
@@ -31,28 +25,34 @@ export const STUDIO_GEARS: GearItem[] = [
     rentalCost: 750000,
   },
   {
+    id: 'lens-rf85',
+    name: 'Lens Canon RF 85mm f/2 Macro IS STM',
+    category: 'lens',
+    rentalCost: 300000,
+  },
+  {
     id: 'lens-2470',
-    name: 'Lens FE 24-70mm F2.8 GM II (Đa dụng)',
+    name: 'Lens Canon RF 24-70mm f/2.8L IS USM',
     category: 'lens',
     rentalCost: 500000,
   },
   {
-    id: 'lens-70200',
-    name: 'Lens FE 70-200mm F2.8 GM OSS II (Tele)',
-    category: 'lens',
-    rentalCost: 650000,
-  },
-  {
-    id: 'lens-50',
-    name: 'Lens FE 50mm F1.2 GM (Chân dung xóa phông)',
-    category: 'lens',
-    rentalCost: 450000,
-  },
-  {
     id: 'flash-godox',
-    name: 'Bộ Đèn Flash Godox V1 + AD200 Pro',
+    name: 'Đèn Flash Godox V860iii + Trigger X2T',
     category: 'lighting',
-    rentalCost: 350000,
+    rentalCost: 250000,
+  },
+  {
+    id: 'mic-gochek',
+    name: 'Micro Gochek Ultra s24',
+    category: 'accessory',
+    rentalCost: 150000,
+  },
+  {
+    id: 'filter-blackmist',
+    name: 'Filter Black Mist 1/4',
+    category: 'accessory',
+    rentalCost: 100000,
   },
   {
     id: 'crew-second-shooter',
@@ -97,26 +97,26 @@ export function extractGearsFromBooking(booking: any): string[] {
   const sessionType = (booking.session_type || booking.sessionType || '').toLowerCase();
 
   // 1. Phân tích qua từ khóa trong ghi chú
-  if (notes.includes('a74') || notes.includes('a7 iv') || notes.includes('sony-a74')) {
-    gears.push('body-sony-a74');
-  }
-  if (notes.includes('a7rv') || notes.includes('a7r v') || notes.includes('sony-a7rv')) {
-    gears.push('body-sony-a7rv');
+  if (notes.includes('canon-r') || notes.includes('eos r') || notes.includes('canon r')) {
+    gears.push('body-canon-r');
   }
   if (notes.includes('canon-r6') || notes.includes('r6')) {
     gears.push('body-canon-r6');
   }
+  if (notes.includes('85mm') || notes.includes('rf 85') || notes.includes('rf85')) {
+    gears.push('lens-rf85');
+  }
   if (notes.includes('24-70') || notes.includes('2470')) {
     gears.push('lens-2470');
   }
-  if (notes.includes('70-200') || notes.includes('70200')) {
-    gears.push('lens-70200');
-  }
-  if (notes.includes('50mm') || notes.includes('50 f1.2')) {
-    gears.push('lens-50');
-  }
-  if (notes.includes('flash') || notes.includes('godox')) {
+  if (notes.includes('flash') || notes.includes('godox') || notes.includes('v860')) {
     gears.push('flash-godox');
+  }
+  if (notes.includes('gochek') || notes.includes('micro') || notes.includes('mic')) {
+    gears.push('mic-gochek');
+  }
+  if (notes.includes('black mist') || notes.includes('filter')) {
+    gears.push('filter-blackmist');
   }
   if (notes.includes('thợ phụ') || notes.includes('second shooter')) {
     gears.push('crew-second-shooter');
@@ -128,13 +128,11 @@ export function extractGearsFromBooking(booking: any): string[] {
   // 2. Mặc định phân bổ thiết bị cốt lõi theo loại buổi chụp nếu chưa ghi rõ
   if (gears.length === 0) {
     if (sessionType === 'wedding' || sessionType === 'prewedding') {
-      gears.push('body-sony-a74', 'lens-2470', 'lens-70200', 'flash-godox');
-    } else if (sessionType === 'lookbook' || sessionType === 'commercial') {
-      gears.push('body-sony-a7rv', 'lens-2470', 'flash-godox');
-    } else if (sessionType === 'portrait') {
-      gears.push('body-sony-a74', 'lens-50');
+      gears.push('body-canon-r', 'lens-2470', 'flash-godox');
+    } else if (sessionType === 'portrait' || sessionType === 'grad') {
+      gears.push('body-canon-r', 'lens-rf85', 'filter-blackmist');
     } else {
-      gears.push('body-sony-a74', 'lens-2470');
+      gears.push('body-canon-r', 'lens-rf85', 'flash-godox');
     }
   }
 

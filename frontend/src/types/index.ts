@@ -6,6 +6,7 @@ export type BookingStatus =
   | 'done'             // 5. Hoàn tất (Done)
   | 'cho_coc'
   | 'cho_xac_nhan_coc'
+  | 'confirmed'
   | 'da_chot'
   | 'da_tra_file'
   | 'hoan_thanh'
@@ -57,6 +58,9 @@ export interface QuoteData {
   receiptUrl?: string;
   depositTransferredAt?: string;
   studio_id?: string;
+  drive_delivery_link?: string;
+  delivery_date?: string;
+  delivery_notes?: string;
 }
 
 export interface ExpenseItem {
@@ -70,6 +74,7 @@ export interface CalendarEvent {
   clientName: string;
   clientPhone?: string;
   sessionType: SessionType;
+  sessionTitle?: string;
   eventDate: string; // YYYY-MM-DD
   startTime: string;
   endTime: string;
@@ -94,6 +99,9 @@ export interface CalendarEvent {
   makeup_artist?: StaffInfo | null; // Thông tin thợ makeup kèm tên, avatar
   category?: string; // Loại hình chụp (Studio, Outdoor, Event, Wedding, Lookbook, Portrait, Pre-wedding...)
   package_type?: string; // Gói chụp
+  drive_delivery_link?: string; // Đường dẫn Google Drive / Pixieset để khách tải file
+  delivery_date?: string; // Ngày bàn giao ảnh
+  delivery_notes?: string; // Ghi chú bàn giao (mật khẩu, hạn lưu trữ...)
   created_at?: string;
   updated_at?: string;
   is_deleted?: boolean;
@@ -105,6 +113,8 @@ export interface StaffInfo {
   avatar_url?: string | null;
   phone?: string;
   email?: string;
+  is_verified?: boolean;
+  facebook_url?: string | null;
 }
 
 export interface Client {
@@ -169,6 +179,8 @@ export interface StudioMember {
   user_id: string;
   role: StudioRole;
   status: MemberStatus;
+  is_verified?: boolean;
+  facebook_url?: string | null;
   created_at?: string;
   updated_at?: string;
   studio?: Studio;
@@ -178,6 +190,8 @@ export interface StudioMember {
     email: string;
     avatar_url?: string;
     phone?: string;
+    is_verified?: boolean;
+    facebook_url?: string | null;
   };
 }
 

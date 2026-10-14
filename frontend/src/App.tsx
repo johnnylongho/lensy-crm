@@ -7,7 +7,7 @@ import { PrivateRoute } from './components/auth/PrivateRoute';
 import { DashboardLayout } from './layouts/DashboardLayout';
 import { PublicLayout } from './layouts/PublicLayout';
 import { PageLoadingFallback } from './components/common/PageLoadingFallback';
-import { MOCK_QUOTE, MOCK_CALENDAR_EVENTS } from './data/mockData';
+import { OfflineBanner } from './components/common/OfflineBanner';
 import { CalendarEvent, QuoteData } from './types';
 
 // Code-splitting via React.lazy: Tách các chunks độc lập tối ưu tốc độ tải
@@ -22,19 +22,14 @@ const StudioSettingsPage = lazy(() => import('./components/dashboard/StudioSetti
 const ClientsManagementPage = lazy(() => import('./components/clients/ClientsManagementPage').then(m => ({ default: m.ClientsManagementPage })));
 
 export function App() {
-  const [quote, setQuote] = useState<QuoteData>(MOCK_QUOTE);
-  const [calendarEvents, setCalendarEvents] = useState<CalendarEvent[]>(MOCK_CALENDAR_EVENTS);
+  const [quote, setQuote] = useState<QuoteData | null>(null);
+  const [calendarEvents, setCalendarEvents] = useState<CalendarEvent[]>([]);
 
   // Khi khách chốt cọc trên Quote Link, cập nhật trạng thái
   const handleQuoteStatusChange = (newStatus: QuoteData['status']) => {
-    setQuote(prev => ({ ...prev, status: newStatus }));
-    setCalendarEvents(prev =>
-      prev.map(ev =>
-        ev.clientName.includes('Minh & Thảo')
-          ? { ...ev, status: newStatus, depositAmount: quote.depositAmount }
-          : ev
-      )
-    );
+    if (quote) {
+      setQuote(prev => prev ? { ...prev, status: newStatus } : null);
+    }
   };
 
   // Khi khách hàng gửi yêu cầu đặt lịch mới
@@ -59,6 +54,7 @@ export function App() {
       <AuthProvider>
         <WorkspaceProvider>
           <BrowserRouter>
+            <OfflineBanner />
             <Suspense fallback={<PageLoadingFallback />}>
               <Routes>
           {/* ==================================================================== */}
@@ -76,19 +72,41 @@ export function App() {
               path="/book/:username"
               element={
                 <QuoteView
-                  initialQuote={quote}
+                  initialQuote={quote || undefined}
                   onQuoteStatusChange={handleQuoteStatusChange}
                   onBookingSubmit={handleNewBooking}
                 />
               }
             />
 
-            {/* Trang đặt lịch theo Mã định danh Studio (Public Studio Booking Link) */}
+            {/* Trang đặt lịch theo Mã định danh / Slug Studio (Multi-tenant Studio Booking Link) */}
+            <Route
+              path="/book/studio/:slug"
+              element={
+                <QuoteView
+                  initialQuote={quote || undefined}
+                  onQuoteStatusChange={handleQuoteStatusChange}
+                  onBookingSubmit={handleNewBooking}
+                />
+              }
+            />
+
+            <Route
+              path="/studio/:slug"
+              element={
+                <QuoteView
+                  initialQuote={quote || undefined}
+                  onQuoteStatusChange={handleQuoteStatusChange}
+                  onBookingSubmit={handleNewBooking}
+                />
+              }
+            />
+
             <Route
               path="/book/studio/:id"
               element={
                 <QuoteView
-                  initialQuote={quote}
+                  initialQuote={quote || undefined}
                   onQuoteStatusChange={handleQuoteStatusChange}
                   onBookingSubmit={handleNewBooking}
                 />
@@ -100,7 +118,7 @@ export function App() {
               path="/quote/:token"
               element={
                 <QuoteView
-                  initialQuote={quote}
+                  initialQuote={quote || undefined}
                   onQuoteStatusChange={handleQuoteStatusChange}
                   onBookingSubmit={handleNewBooking}
                 />
@@ -112,7 +130,7 @@ export function App() {
               path="/quote"
               element={
                 <QuoteView
-                  initialQuote={quote}
+                  initialQuote={quote || undefined}
                   onQuoteStatusChange={handleQuoteStatusChange}
                   onBookingSubmit={handleNewBooking}
                 />

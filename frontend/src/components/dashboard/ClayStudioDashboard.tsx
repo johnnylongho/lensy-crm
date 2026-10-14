@@ -46,7 +46,9 @@ import { KanbanView } from './KanbanView';
 import { ProfitTrendChart } from './ProfitTrendChart';
 import { GrowthProgressBar } from './GrowthProgressBar';
 import { DayShootsModal } from './DayShootsModal';
+import { BookingStatusSelect } from './BookingStatusSelect';
 import { formatCurrencyVND } from '../../utils/currency';
+import { VerifiedBadge } from '../common/VerifiedBadge';
 
 interface Props {
   events: CalendarEvent[];
@@ -174,7 +176,7 @@ export const ClayStudioDashboard: React.FC<Props> = ({
     const staffMap: Record<string, { name: string; count: number; role: string }> = {};
 
     events.forEach(e => {
-      const name = (e.photographer?.full_name || 'Louis Gutkowski').trim();
+      const name = (e.photographer?.full_name || 'Johnny Long Hồ').trim();
       if (!staffMap[name]) {
         staffMap[name] = { name, count: 0, role: 'Lead Wedding Photographer' };
       }
@@ -189,13 +191,6 @@ export const ClayStudioDashboard: React.FC<Props> = ({
       }
     });
 
-    const defaultStaff: StaffRank[] = [
-      { id: 's1', name: 'Louis Gutkowski', role: 'Lead Wedding Photographer', avatarBg: 'bg-gradient-to-tr from-amber-600 to-amber-400 text-white', initials: 'LG', tasksCompleted: 28 },
-      { id: 's2', name: 'Marlene Kuhlman', role: 'Senior Portrait & Fashion', avatarBg: 'bg-gradient-to-tr from-stone-600 to-stone-400 text-white', initials: 'MK', tasksCompleted: 24 },
-      { id: 's3', name: 'Kristi Lueilwitz', role: 'Commercial & Editorial', avatarBg: 'bg-gradient-to-tr from-orange-600 to-orange-400 text-white', initials: 'KL', tasksCompleted: 19 },
-      { id: 's4', name: 'Abel Pollich', role: 'Head MUA & Stylist', avatarBg: 'bg-gradient-to-tr from-zinc-700 to-zinc-500 text-white', initials: 'AP', tasksCompleted: 16 },
-    ];
-
     const aggregated = Object.values(staffMap).map((s, idx) => ({
       id: `staff-${idx}`,
       name: s.name,
@@ -205,10 +200,12 @@ export const ClayStudioDashboard: React.FC<Props> = ({
       tasksCompleted: s.count,
     }));
 
-    if (aggregated.length >= 2) {
+    if (aggregated.length > 0) {
       return aggregated.sort((a, b) => b.tasksCompleted - a.tasksCompleted).slice(0, 4);
     }
-    return defaultStaff;
+    return [
+      { id: 's1', name: 'Johnny Long Hồ', role: 'Lead Photographer & Studio Owner', avatarBg: 'bg-gradient-to-tr from-amber-600 to-amber-400 text-white', initials: 'LH', tasksCompleted: events.length },
+    ];
   }, [events]);
 
   // 4. Lịch Chụp Sắp Tới (Upcoming Shoots)
@@ -277,15 +274,12 @@ export const ClayStudioDashboard: React.FC<Props> = ({
     });
   }, [events, searchQuery, statusFilter]);
 
+  const bookings = filteredBookings;
+
   // Reset visibleCount về lại 10 khi người dùng thay đổi bộ lọc (Search hoặc Status Filter)
   useEffect(() => {
     setVisibleCount(10);
   }, [searchQuery, statusFilter]);
-
-  // Giới hạn mảng hiển thị theo phân trang visibleCount
-  const displayedBookings = useMemo(() => {
-    return filteredBookings.slice(0, visibleCount);
-  }, [filteredBookings, visibleCount]);
 
   return (
     <div className="space-y-6">
@@ -455,8 +449,9 @@ export const ClayStudioDashboard: React.FC<Props> = ({
                       </span>
                     </div>
                     <div className="min-w-0 flex-1">
-                      <div className="text-xs font-bold text-[#1b2234] dark:text-white truncate">
-                        {staff.name}
+                      <div className="text-xs font-bold text-[#1b2234] dark:text-white truncate flex items-center gap-1">
+                        <span>{staff.name}</span>
+                        <VerifiedBadge className="w-3.5 h-3.5 shrink-0" />
                       </div>
                       <div className="text-[11px] text-[#85766c] dark:text-zinc-400 truncate">
                         {staff.tasksCompleted} show hoàn thành
@@ -666,7 +661,8 @@ export const ClayStudioDashboard: React.FC<Props> = ({
             </div>
 
             {/* Table Content */}
-            <div className="overflow-x-auto">
+            {/* 1. Desktop Table View */}
+            <div className="hidden md:block overflow-x-auto">
               <table className="w-full text-left text-xs">
                 <thead>
                   <tr className="border-b border-[#ebdcd1] dark:border-white/10 text-[11px] font-semibold text-[#8b796d] dark:text-zinc-400">
@@ -680,7 +676,7 @@ export const ClayStudioDashboard: React.FC<Props> = ({
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-[#f2e7df] dark:divide-white/5">
-                  {displayedBookings.map(b => (
+                  {bookings.slice(0, visibleCount).map(b => (
                     <tr
                       key={b.id}
                       onClick={() => setSelectedBooking(b)}
@@ -704,8 +700,11 @@ export const ClayStudioDashboard: React.FC<Props> = ({
                       {/* Package & Photographer */}
                       <td className="py-3.5 text-[#5d5248] dark:text-zinc-300 font-medium">
                         <div>{b.sessionType || b.category || 'Gói Studio'}</div>
-                        <div className="text-[10px] text-[#8b796d] dark:text-zinc-400">
-                          {b.photographer?.full_name || 'Louis Gutkowski'}
+                        <div className="text-[10px] text-[#8b796d] dark:text-zinc-400 flex items-center gap-1">
+                          <span>{b.photographer?.full_name || 'Johnny Long Hồ'}</span>
+                          {(b.photographer?.is_verified ?? true) && (
+                            <VerifiedBadge className="w-3 h-3 shrink-0" />
+                          )}
                         </div>
                       </td>
 
@@ -718,35 +717,12 @@ export const ClayStudioDashboard: React.FC<Props> = ({
                       </td>
 
                       {/* Status */}
-                      <td className="py-3.5">
-                        <span
-                          className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-0.5 text-[10px] font-bold ${
-                            b.status === 'hoan_thanh' || b.status === 'done'
-                              ? 'bg-emerald-100/80 dark:bg-emerald-950/40 text-emerald-800 dark:text-emerald-300 border border-emerald-300/50'
-                              : b.status === 'da_chot' || b.status === 'deposited'
-                              ? 'bg-amber-100/80 dark:bg-amber-950/40 text-amber-900 dark:text-amber-300 border border-amber-300/50'
-                              : 'bg-orange-100/80 dark:bg-orange-950/40 text-orange-900 dark:text-orange-300 border border-orange-300/50'
-                          }`}
-                        >
-                          <span
-                            className={`h-1.5 w-1.5 rounded-full ${
-                              b.status === 'hoan_thanh' || b.status === 'done'
-                                ? 'bg-emerald-600'
-                                : b.status === 'da_chot' || b.status === 'deposited'
-                                ? 'bg-amber-600'
-                                : 'bg-orange-600'
-                            }`}
-                          />
-                          {b.status === 'hoan_thanh' || b.status === 'done'
-                            ? 'Hoàn thành'
-                            : b.status === 'da_chot' || b.status === 'deposited'
-                            ? 'Đã cọc'
-                            : b.status === 'shot'
-                            ? 'Đã chụp'
-                            : b.status === 'editing'
-                            ? 'Đang sửa'
-                            : 'Chờ cọc'}
-                        </span>
+                      <td className="py-3.5" onClick={e => e.stopPropagation()}>
+                        <BookingStatusSelect
+                          status={b.status}
+                          onChange={newStatus => onStatusChange(b.id, newStatus)}
+                          size="sm"
+                        />
                       </td>
 
                       {/* Amount */}
@@ -756,21 +732,28 @@ export const ClayStudioDashboard: React.FC<Props> = ({
 
                       {/* Action */}
                       <td className="py-3.5 text-center text-[#8b796d]">
-                        <button
-                          type="button"
-                          onClick={e => {
-                            e.stopPropagation();
-                            setSelectedBooking(b);
-                          }}
-                          className="rounded-lg p-1 hover:bg-white/80 dark:hover:bg-white/10"
-                          title="Xem chi tiết"
-                        >
-                          <MoreVertical className="h-4 w-4" />
-                        </button>
+                        <div className="flex items-center justify-center gap-1" onClick={e => e.stopPropagation()}>
+                          <button
+                            type="button"
+                            onClick={() => setSelectedBooking(b)}
+                            className="rounded-lg p-1 text-[#8b796d] hover:text-[#1b2234] dark:hover:text-white hover:bg-white/80 dark:hover:bg-white/10 transition-colors"
+                            title="Xem chi tiết"
+                          >
+                            <MoreVertical className="h-4 w-4" />
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => onDeleteBooking(b)}
+                            className="rounded-lg p-1 text-slate-400 hover:text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-950/40 transition-colors"
+                            title="Xóa / Hủy lịch chụp"
+                          >
+                            <Trash2 className="h-3.5 w-3.5" />
+                          </button>
+                        </div>
                       </td>
                     </tr>
                   ))}
-                  {filteredBookings.length === 0 && (
+                  {bookings.length === 0 && (
                     <tr>
                       <td colSpan={7} className="py-8 text-center text-xs text-[#8b796d]">
                         Không tìm thấy lịch chụp nào phù hợp.
@@ -781,18 +764,70 @@ export const ClayStudioDashboard: React.FC<Props> = ({
               </table>
             </div>
 
+            {/* 2. Mobile Card View (Tránh cuộn ngang trên điện thoại) */}
+            <div className="md:hidden space-y-3">
+              {bookings.slice(0, visibleCount).map(b => (
+                <div
+                  key={`card-${b.id}`}
+                  onClick={() => setSelectedBooking(b)}
+                  className="p-3.5 rounded-2xl bg-white/70 dark:bg-zinc-900/70 border border-[#ebdcd1] dark:border-white/10 shadow-xs space-y-2.5 cursor-pointer hover:border-amber-500/50 transition-all"
+                >
+                  <div className="flex items-start justify-between gap-2">
+                    <div>
+                      <span className="font-mono text-[10px] font-bold text-[#df8653]">
+                        #{b.id.substring(0, 8)}
+                      </span>
+                      <h4 className="font-bold text-sm text-[#1b2234] dark:text-white leading-tight">
+                        {b.clientName}
+                      </h4>
+                      {b.clientPhone && (
+                        <p className="text-[11px] text-[#8b796d] dark:text-zinc-400 font-mono mt-0.5">
+                          {b.clientPhone}
+                        </p>
+                      )}
+                    </div>
+                    <div className="text-right">
+                      <span className="font-mono font-bold text-sm text-[#1b2234] dark:text-white block">
+                        {formatVND(b.packagePrice)}
+                      </span>
+                      <span className="text-[10px] font-mono text-[#8b796d] dark:text-zinc-400">
+                        {b.eventDate}
+                      </span>
+                    </div>
+                  </div>
+
+                  <div className="flex flex-wrap items-center justify-between gap-2 pt-2 border-t border-[#f2e7df] dark:border-white/5 text-xs">
+                    <div className="text-[11px] text-[#5d5248] dark:text-zinc-300">
+                      <span>{b.sessionType || b.category || 'Gói Studio'}</span>
+                      <span className="mx-1.5">•</span>
+                      <span>{b.startTime} - {b.endTime}</span>
+                    </div>
+                    <div onClick={e => e.stopPropagation()}>
+                      <BookingStatusSelect
+                        status={b.status}
+                        onChange={newStatus => onStatusChange(b.id, newStatus)}
+                        size="sm"
+                      />
+                    </div>
+                  </div>
+                </div>
+              ))}
+              {bookings.length === 0 && (
+                <div className="py-8 text-center text-xs text-[#8b796d]">
+                  Không tìm thấy lịch chụp nào phù hợp.
+                </div>
+              )}
+            </div>
+
             {/* Nút Xem thêm lịch chụp (Pagination / Load More) */}
-            {visibleCount < filteredBookings.length && (
-              <div className="pt-4 flex justify-center border-t border-[#ebdcd1] dark:border-white/10">
+            {visibleCount < bookings.length && (
+              <div className="flex justify-center mt-4">
                 <button
                   type="button"
                   onClick={() => setVisibleCount(prev => prev + 10)}
-                  className="inline-flex items-center gap-2 px-6 py-2 rounded-xl border border-[#df8653]/40 bg-white/70 dark:bg-white/5 hover:bg-white dark:hover:bg-white/10 text-xs font-bold text-[#c86d3b] dark:text-[#df8653] shadow-xs active:scale-95 transition-all cursor-pointer"
+                  className="px-4 py-2 border rounded text-sm text-gray-600 hover:bg-gray-50 dark:text-zinc-300 dark:border-white/10 dark:hover:bg-white/5 cursor-pointer"
                 >
-                  <span>Xem thêm lịch chụp</span>
-                  <span className="font-mono text-[11px] opacity-75">
-                    ({displayedBookings.length}/{filteredBookings.length})
-                  </span>
+                  Xem thêm lịch chụp
                 </button>
               </div>
             )}
@@ -859,11 +894,11 @@ export const ClayStudioDashboard: React.FC<Props> = ({
       {/* ========================================================================= */}
       {selectedBooking && (
         <div
-          className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4 backdrop-blur-sm animate-fadeIn"
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 overflow-hidden"
           onClick={() => setSelectedBooking(null)}
         >
           <div
-            className="w-full max-w-lg rounded-3xl border border-white/90 dark:border-white/10 bg-white/95 dark:bg-[#181a22]/95 p-6 shadow-2xl backdrop-blur-2xl animate-scaleUp text-xs space-y-4 max-h-[90vh] overflow-y-auto"
+            className="relative z-10 w-full max-w-lg rounded-3xl border border-white/90 dark:border-white/10 bg-white/95 dark:bg-[#181a22]/95 p-6 shadow-2xl backdrop-blur-2xl animate-scaleUp text-xs space-y-4 max-h-[90vh] overflow-y-auto"
             onClick={e => e.stopPropagation()}
           >
             {/* Modal Header */}
@@ -895,8 +930,11 @@ export const ClayStudioDashboard: React.FC<Props> = ({
                 </div>
                 <div>
                   <span className="text-[10px] uppercase font-bold text-[#8b796d] dark:text-zinc-400">Nhiếp Ảnh Gia</span>
-                  <div className="font-bold text-[#1b2234] dark:text-white mt-0.5">
-                    {selectedBooking.photographer?.full_name || 'Louis Gutkowski'}
+                  <div className="font-bold text-[#1b2234] dark:text-white mt-0.5 flex items-center gap-1.5">
+                    <span>{selectedBooking.photographer?.full_name || 'Johnny Long Hồ'}</span>
+                    {(selectedBooking.photographer?.is_verified ?? true) && (
+                      <VerifiedBadge className="w-3.5 h-3.5 shrink-0" />
+                    )}
                   </div>
                 </div>
                 <div className="col-span-2">

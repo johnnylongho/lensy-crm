@@ -275,7 +275,7 @@ export const LandingPage: React.FC = () => {
                       <span className="text-emerald-400 font-bold text-[11px]">Đã cọc 30%</span>
                     </div>
                     <p className="text-[11px] text-slate-400">
-                      24/10/2026 • Phim trường Santorini • Sony A7IV + 24-70 GM
+                      24/10/2026 • Phim trường Santorini • Canon EOS R + RF 85mm f/2
                     </p>
                     <div className="flex items-center justify-between text-[11px] pt-1 border-t border-white/5">
                       <span className="text-slate-400">Hợp đồng: 18.000.000₫</span>

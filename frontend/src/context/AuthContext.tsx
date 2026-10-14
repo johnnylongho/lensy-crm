@@ -10,7 +10,8 @@ interface AuthContextType {
   signUp: (
     email: string,
     password: string,
-    fullName?: string
+    fullName?: string,
+    accountType?: 'freelancer' | 'studio'
   ) => Promise<{ error: Error | null; user: User | null }>;
   signOut: () => Promise<void>;
 }
@@ -79,12 +80,20 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   };
 
   // Hàm Đăng ký tài khoản mới bằng Email & Mật khẩu
-  const signUp = async (email: string, password: string, fullName?: string) => {
+  const signUp = async (
+    email: string,
+    password: string,
+    fullName?: string,
+    accountType: 'freelancer' | 'studio' = 'freelancer'
+  ) => {
     if (!isSupabaseConfigured) {
       const mockUser = {
         id: 'mock-user-id',
         email,
-        user_metadata: { full_name: fullName || 'Mirmia Photographer' },
+        user_metadata: {
+          full_name: fullName || 'Thợ ảnh Lensy',
+          account_type: accountType,
+        },
       } as any;
       setUser(mockUser);
       return { error: null, user: mockUser };
@@ -96,8 +105,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         password,
         options: {
           data: {
-            full_name: fullName || 'Mirmia Photographer',
-            studio_name: 'MIRMIA STUDIO & ACADEMY',
+            full_name: fullName || 'Thợ ảnh Lensy',
+            account_type: accountType,
+            studio_name: accountType === 'studio' ? `${fullName || 'Studio'} Workspace` : undefined,
           },
         },
       });

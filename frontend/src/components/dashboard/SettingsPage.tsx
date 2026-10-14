@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { motion } from 'framer-motion';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
@@ -25,6 +25,9 @@ import {
   Clock,
   XCircle,
   LogOut,
+  Camera,
+  Globe,
+  BadgeCheck,
 } from 'lucide-react';
 
 // Danh sách gợi ý các ngân hàng phổ biến tại Việt Nam
@@ -60,6 +63,10 @@ export const SettingsPage: React.FC = () => {
   const [fullName, setFullName] = useState('');
   const [phone, setPhone] = useState('');
   const [avatarUrl, setAvatarUrl] = useState('');
+  const [facebookUrl, setFacebookUrl] = useState('');
+  const [isVerified, setIsVerified] = useState(false);
+  const [isUploadingAvatar, setIsUploadingAvatar] = useState(false);
+  const avatarInputRef = useRef<HTMLInputElement>(null);
   const [bankName, setBankName] = useState('MB Bank');
   const [bankAccountNumber, setBankAccountNumber] = useState('');
   const [bankAccountName, setBankAccountName] = useState('');
@@ -116,6 +123,8 @@ export const SettingsPage: React.FC = () => {
           setFullName(data.full_name || '');
           setPhone(data.phone || '');
           setAvatarUrl(data.avatar_url || '');
+          setFacebookUrl(data.facebook_url || '');
+          setIsVerified(Boolean(data.is_verified));
           setBankName(data.bank_name || 'MB Bank');
           setBankAccountNumber(data.bank_account_number || '');
           setBankAccountName(data.bank_account_name || '');
@@ -373,7 +382,106 @@ export const SettingsPage: React.FC = () => {
     }
   };
 
-  // 6. Hàm lưu toàn bộ cài đặt profile vào bảng users
+  // 6. Xử lý upload Avatar lên Supabase Storage bucket 'avatars' (tối đa 2MB)
+  const handleAvatarFileSelected = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    // Validate size: tối đa 2MB (2 * 1024 * 1024 bytes)
+    if (file.size > 2 * 1024 * 1024) {
+      setToast({
+        type: 'error',
+        message: 'Kích thước ảnh đại diện tối đa là 2MB. Vui lòng chọn ảnh nhẹ hơn!',
+      });
+      if (e.target) e.target.value = '';
+      return;
+    }
+
+    if (!file.type.startsWith('image/')) {
+      setToast({
+        type: 'error',
+        message: 'Vui lòng chọn file hình ảnh hợp lệ (PNG, JPG, WEBP).',
+      });
+      if (e.target) e.target.value = '';
+      return;
+    }
+
+    setIsUploadingAvatar(true);
+    setToast(null);
+
+    try {
+      if (isSupabaseConfigured && user) {
+        const fileExt = file.name.split('.').pop() || 'jpg';
+        const fileName = `${user.id}_${Date.now()}.${fileExt}`;
+        const filePath = `${user.id}/${fileName}`;
+
+        // 1. Upload to Supabase Storage 'avatars' bucket
+        const { error: uploadError } = await supabase.storage
+          .from('avatars')
+          .upload(filePath, file, {
+            cacheControl: '3600',
+            upsert: true,
+          });
+
+        if (uploadError) {
+          throw uploadError;
+        }
+
+        // 2. Lấy Public URL
+        const { data: publicUrlData } = supabase.storage
+          .from('avatars')
+          .getPublicUrl(filePath);
+
+        const newAvatarUrl = publicUrlData?.publicUrl;
+        if (!newAvatarUrl) {
+          throw new Error('Không thể lấy đường dẫn ảnh công khai từ Supabase Storage.');
+        }
+
+        // 3. Cập nhật ngay vào database
+        const { error: dbError } = await supabase
+          .from('users')
+          .update({
+            avatar_url: newAvatarUrl,
+            updated_at: new Date().toISOString(),
+          })
+          .eq('id', user.id);
+
+        if (dbError) {
+          throw dbError;
+        }
+
+        setAvatarUrl(newAvatarUrl);
+        setToast({
+          type: 'success',
+          message: '🎉 Cập nhật ảnh đại diện thành công!',
+        });
+      } else {
+        // Fallback preview khi offline hoặc mock demo
+        const reader = new FileReader();
+        reader.onload = ev => {
+          if (ev.target?.result) {
+            setAvatarUrl(ev.target.result as string);
+            setToast({
+              type: 'success',
+              message: '🎉 [Demo] Đã cập nhật ảnh đại diện thành công!',
+            });
+          }
+        };
+        reader.readAsDataURL(file);
+      }
+    } catch (err: any) {
+      console.error('Lỗi khi upload avatar:', err);
+      setToast({
+        type: 'error',
+        message: `Lỗi tải ảnh đại diện: ${err.message || 'Vui lòng thử lại.'}`,
+      });
+    } finally {
+      setIsUploadingAvatar(false);
+      if (e.target) e.target.value = '';
+    }
+  };
+
+  // 7. Hàm lưu toàn bộ cài đặt profile vào bảng users
   const handleSaveSettings = async (e: React.FormEvent) => {
     e.preventDefault();
 
@@ -428,6 +536,7 @@ export const SettingsPage: React.FC = () => {
             account_type: accountType,
             studio_name: studioName.trim() || 'MIRMIA STUDIO',
             avatar_url: avatarUrl.trim() || null,
+            facebook_url: facebookUrl.trim() || null,
             username: cleanUsername,
             full_name: fullName.trim(),
             phone: phone.trim(),
@@ -441,6 +550,15 @@ export const SettingsPage: React.FC = () => {
         if (updateError) {
           throw updateError;
         }
+
+        // Cập nhật bổ sung vào studio_members nếu đã gia nhập studio
+        await supabase
+          .from('studio_members')
+          .update({
+            facebook_url: facebookUrl.trim() || null,
+            updated_at: new Date().toISOString(),
+          })
+          .eq('user_id', user.id);
 
         setToast({
           type: 'success',
@@ -933,7 +1051,7 @@ export const SettingsPage: React.FC = () => {
         {/* ==================================================================== */}
         {/* SECTION 2: THÔNG TIN CÁ NHÂN & LIÊN HỆ                             */}
         {/* ==================================================================== */}
-        <div className="p-5 sm:p-7 rounded-3xl bg-white/60 dark:bg-white/5 backdrop-blur-xl border border-white/60 dark:border-white/10 shadow-[0_8px_32px_0_rgba(0,0,0,0.25)] space-y-5">
+        <div className="p-5 sm:p-7 rounded-3xl bg-white/60 dark:bg-white/5 backdrop-blur-xl border border-white/60 dark:border-white/10 shadow-[0_8px_32px_0_rgba(0,0,0,0.25)] space-y-6">
           <div className="flex items-center gap-2.5 pb-3 border-b border-slate-200/60 dark:border-white/10">
             <Building2 className="w-5 h-5 text-amber-500 dark:text-amber-400" />
             <div>
@@ -943,6 +1061,79 @@ export const SettingsPage: React.FC = () => {
               <p className="text-[11px] text-slate-500 dark:text-white/50">
                 Hiển thị trên Thư báo giá, Form đặt lịch và Hợp đồng điện tử
               </p>
+            </div>
+          </div>
+
+          {/* AVATAR UPLOAD BLOCK */}
+          <div className="flex flex-col sm:flex-row items-center sm:items-start gap-5 p-4 rounded-2xl bg-slate-50/80 dark:bg-white/[0.03] border border-slate-200/60 dark:border-white/10">
+            <div
+              onClick={() => !isUploadingAvatar && avatarInputRef.current?.click()}
+              className="relative w-24 h-24 sm:w-28 sm:h-28 rounded-full overflow-hidden shadow-lg border-2 border-amber-400/50 group cursor-pointer shrink-0"
+              title="Nhấn để đổi ảnh đại diện"
+            >
+              {avatarUrl ? (
+                <img
+                  src={avatarUrl}
+                  alt={fullName || 'Avatar'}
+                  className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
+                />
+              ) : (
+                <div className="w-full h-full bg-gradient-to-tr from-amber-500 to-orange-400 flex items-center justify-center text-white text-2xl font-bold">
+                  {(fullName || 'L').charAt(0).toUpperCase()}
+                </div>
+              )}
+
+              {/* Hover Dark Overlay with Camera Icon */}
+              <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity duration-200 flex flex-col items-center justify-center text-white text-center p-1">
+                <Camera className="w-6 h-6 text-white mb-1 drop-shadow" />
+                <span className="text-[10px] font-semibold tracking-wide">Đổi Ảnh</span>
+              </div>
+
+              {/* Uploading Spinner Overlay */}
+              {isUploadingAvatar && (
+                <div className="absolute inset-0 bg-black/75 flex flex-col items-center justify-center text-white z-20">
+                  <Loader2 className="w-6 h-6 animate-spin text-amber-400 mb-1" />
+                  <span className="text-[10px] font-medium text-amber-300">Đang tải...</span>
+                </div>
+              )}
+            </div>
+
+            <input
+              ref={avatarInputRef}
+              type="file"
+              accept="image/*"
+              onChange={handleAvatarFileSelected}
+              className="hidden"
+            />
+
+            <div className="flex-1 text-center sm:text-left space-y-2">
+              <div className="flex flex-wrap items-center justify-center sm:justify-start gap-2">
+                <h3 className="text-sm font-bold text-slate-800 dark:text-white">
+                  Ảnh Đại Diện Hồ Sơ
+                </h3>
+                {isVerified ? (
+                  <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-blue-500/10 text-blue-600 dark:text-blue-400 border border-blue-500/20">
+                    <BadgeCheck className="w-3.5 h-3.5 text-blue-500" />
+                    Đã xác thực thợ ảnh
+                  </span>
+                ) : (
+                  <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-medium bg-slate-200/60 dark:bg-white/10 text-slate-600 dark:text-slate-400">
+                    Chưa xác thực
+                  </span>
+                )}
+              </div>
+              <p className="text-xs text-slate-500 dark:text-slate-400 max-w-md">
+                Ảnh đại diện xuất hiện trong danh sách ekip, thư báo giá gửi khách và lịch chụp Kanban. Dung lượng file tối đa <strong>2MB</strong> (định dạng JPG, PNG, WEBP).
+              </p>
+              <button
+                type="button"
+                disabled={isUploadingAvatar}
+                onClick={() => avatarInputRef.current?.click()}
+                className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold rounded-xl bg-slate-200/80 hover:bg-slate-300/80 dark:bg-white/10 dark:hover:bg-white/20 text-slate-800 dark:text-white transition-all"
+              >
+                <Camera className="w-3.5 h-3.5 text-amber-500 dark:text-amber-400" />
+                <span>Tải ảnh từ máy tính</span>
+              </button>
             </div>
           </div>
 
@@ -985,7 +1176,7 @@ export const SettingsPage: React.FC = () => {
             </div>
 
             {/* Số điện thoại / Zalo */}
-            <div className="space-y-1.5 sm:col-span-2">
+            <div className="space-y-1.5">
               <label className="text-xs font-bold text-slate-700 dark:text-slate-300 flex items-center gap-1.5">
                 <Phone className="w-3.5 h-3.5 text-amber-500 dark:text-amber-400" />
                 <span>Số Điện Thoại / Hotline Zalo *</span>
@@ -998,6 +1189,42 @@ export const SettingsPage: React.FC = () => {
                 placeholder="VD: 0901234567"
                 className="w-full px-3.5 py-2.5 rounded-xl bg-slate-100/90 dark:bg-black/40 border border-slate-200 dark:border-white/10 focus:border-amber-400 focus:ring-1 focus:ring-amber-400 text-xs text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-slate-600 transition-all outline-none font-medium"
               />
+            </div>
+
+            {/* Link Facebook Cá Nhân & Trạng Thái Xác Thực */}
+            <div className="space-y-1.5">
+              <div className="flex items-center justify-between">
+                <label className="text-xs font-bold text-slate-700 dark:text-slate-300 flex items-center gap-1.5">
+                  <Globe className="w-3.5 h-3.5 text-blue-500" />
+                  <span>Link Facebook Cá Nhân</span>
+                </label>
+                {/* Trạng thái xác thực */}
+                {isVerified ? (
+                  <span className="text-[10px] font-bold text-blue-600 dark:text-blue-400 flex items-center gap-1">
+                    <BadgeCheck className="w-3 h-3 text-blue-500" />
+                    Trạng thái: Đã xác thực
+                  </span>
+                ) : facebookUrl && facebookUrl.trim() ? (
+                  <span className="text-[10px] font-semibold text-amber-600 dark:text-amber-400 flex items-center gap-1">
+                    <span className="w-1.5 h-1.5 rounded-full bg-amber-400 animate-pulse"></span>
+                    Trạng thái: Chờ duyệt
+                  </span>
+                ) : (
+                  <span className="text-[10px] text-slate-400 dark:text-slate-500">
+                    Trạng thái: Chưa xác thực
+                  </span>
+                )}
+              </div>
+              <input
+                type="url"
+                value={facebookUrl}
+                onChange={e => setFacebookUrl(e.target.value)}
+                placeholder="https://facebook.com/username-cua-ban"
+                className="w-full px-3.5 py-2.5 rounded-xl bg-slate-100/90 dark:bg-black/40 border border-slate-200 dark:border-white/10 focus:border-blue-400 focus:ring-1 focus:ring-blue-400 text-xs text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-slate-600 transition-all outline-none font-medium"
+              />
+              <p className="text-[10px] text-slate-400 dark:text-slate-500">
+                Chủ Studio sẽ kiểm tra trang cá nhân Facebook này để cấp tích xanh xác thực danh tính thợ ảnh.
+              </p>
             </div>
           </div>
         </div>

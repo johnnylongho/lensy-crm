@@ -13,6 +13,7 @@ import { BookingStatusSelect, STATUS_CONFIG } from './BookingStatusSelect';
 import { ZaloNotificationModal } from './ZaloNotificationModal';
 import { CompletedShootsHistoryModal } from './CompletedShootsHistoryModal';
 import { getCategoryConfig } from '../../utils/categoryConfig';
+import { VerifiedBadge } from '../common/VerifiedBadge';
 import {
   DndContext,
   DragOverlay,
@@ -258,33 +259,47 @@ const CompactKanbanCardContent: React.FC<{
           {(item.photographer || item.makeup_artist) && (
             <div className="flex items-center -space-x-1.5 flex-shrink-0" title="Nhân sự phụ trách">
               {item.photographer && (
-                <div
-                  className="w-5 h-5 rounded-full overflow-hidden border border-amber-500/70 bg-amber-500/20 shadow-sm"
-                  title={`Thợ chụp: ${item.photographer.full_name}`}
-                >
-                  <img
-                    src={item.photographer.avatar_url || '/mirmia-logo.png'}
-                    alt={item.photographer.full_name}
-                    className="w-full h-full object-cover"
-                    onError={(e) => {
-                      (e.target as HTMLImageElement).src = '/mirmia-logo.png';
-                    }}
-                  />
+                <div className="relative">
+                  <div
+                    className="w-5 h-5 rounded-full overflow-hidden border border-amber-500/70 bg-amber-500/20 shadow-sm"
+                    title={`Thợ chụp: ${item.photographer.full_name}${item.photographer.is_verified ? ' (Đã xác thực)' : ''}`}
+                  >
+                    <img
+                      src={item.photographer.avatar_url || '/mirmia-logo.png'}
+                      alt={item.photographer.full_name}
+                      className="w-full h-full object-cover"
+                      onError={(e) => {
+                        (e.target as HTMLImageElement).src = '/mirmia-logo.png';
+                      }}
+                    />
+                  </div>
+                  {item.photographer.is_verified && (
+                    <span className="absolute -bottom-1 -right-1 bg-white dark:bg-slate-900 rounded-full flex items-center justify-center pointer-events-none">
+                      <VerifiedBadge className="w-2.5 h-2.5" />
+                    </span>
+                  )}
                 </div>
               )}
               {item.makeup_artist && (
-                <div
-                  className="w-5 h-5 rounded-full overflow-hidden border border-fuchsia-500/70 bg-fuchsia-500/20 shadow-sm"
-                  title={`Thợ Makeup (MUA): ${item.makeup_artist.full_name}`}
-                >
-                  <img
-                    src={item.makeup_artist.avatar_url || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150'}
-                    alt={item.makeup_artist.full_name}
-                    className="w-full h-full object-cover"
-                    onError={(e) => {
-                      (e.target as HTMLImageElement).src = '/mirmia-logo.png';
-                    }}
-                  />
+                <div className="relative">
+                  <div
+                    className="w-5 h-5 rounded-full overflow-hidden border border-fuchsia-500/70 bg-fuchsia-500/20 shadow-sm"
+                    title={`Thợ Makeup (MUA): ${item.makeup_artist.full_name}${item.makeup_artist.is_verified ? ' (Đã xác thực)' : ''}`}
+                  >
+                    <img
+                      src={item.makeup_artist.avatar_url || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150'}
+                      alt={item.makeup_artist.full_name}
+                      className="w-full h-full object-cover"
+                      onError={(e) => {
+                        (e.target as HTMLImageElement).src = '/mirmia-logo.png';
+                      }}
+                    />
+                  </div>
+                  {item.makeup_artist.is_verified && (
+                    <span className="absolute -bottom-1 -right-1 bg-white dark:bg-slate-900 rounded-full flex items-center justify-center pointer-events-none">
+                      <VerifiedBadge className="w-2.5 h-2.5" />
+                    </span>
+                  )}
                 </div>
               )}
             </div>

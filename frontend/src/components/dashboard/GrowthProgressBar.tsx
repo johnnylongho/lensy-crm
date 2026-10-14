@@ -58,11 +58,10 @@ export const GrowthProgressBar: React.FC<Props> = ({ events, className = '', def
             return;
           }
         }
-        setGears([
-          { id: 'g1', name: 'Body Sony Alpha 7 IV', type: 'camera', status: 'active', purchase_price: 48000000 },
-          { id: 'g2', name: 'Lens Sony 24-70mm GM II', type: 'lens', status: 'active', purchase_price: 49000000 },
-        ]);
-      } catch (e) {}
+        setGears([]);
+      } catch (e) {
+        setGears([]);
+      }
     };
     fetchStudioGears();
   }, [user]);

@@ -97,26 +97,51 @@ export const ClientsManagementPage: React.FC = () => {
         });
       });
 
-      // Map bookings vào clients (theo client_id hoặc client_phone)
+      // Hàm nhận diện số điện thoại rác/mặc định (placeholder)
+      const isPlaceholderPhone = (phone?: string | null): boolean => {
+        if (!phone) return true;
+        const cleaned = phone.replace(/[^0-9]/g, '');
+        if (cleaned.length < 9) return true;
+        if (/^0+(\d)\1{5,}$/.test(cleaned)) return true; // e.g. 0900000000, 0000000000
+        if (cleaned === '0900000000' || cleaned === '0000000000' || cleaned === '0123456789') return true;
+        return false;
+      };
+
+      // Map bookings vào clients (theo client_id, hoặc phone hợp lệ, hoặc tên khách hàng)
       allBookings.forEach(b => {
         let matchedClient: ClientProfileData | undefined;
 
+        // 1. Ưu tiên khớp theo client_id
         if (b.client_id && clientMap.has(b.client_id)) {
           matchedClient = clientMap.get(b.client_id);
-        } else {
-          // Tìm theo phone nếu client_id chưa được gán
+        }
+
+        // 2. Khớp theo số điện thoại hợp lệ (nếu không phải là số giữ chỗ)
+        if (!matchedClient && !isPlaceholderPhone(b.client_phone)) {
+          const cleanPhone = (b.client_phone || '').replace(/[^0-9]/g, '');
           matchedClient = Array.from(clientMap.values()).find(
-            c => c.phone.replace(/[^0-9]/g, '') === (b.client_phone || '').replace(/[^0-9]/g, '')
+            c => !isPlaceholderPhone(c.phone) && c.phone.replace(/[^0-9]/g, '') === cleanPhone
           );
         }
 
-        // Nếu booking thuộc về khách hàng chưa có trong bảng clients (dữ liệu cũ), tự tạo hồ sơ tạm
-        if (!matchedClient && b.client_phone) {
-          const tempId = `cli-${b.client_phone}`;
+        // 3. Khớp theo tên khách hàng (chuẩn hóa không phân biệt hoa thường)
+        const cleanBookingName = (b.client_name || '').trim().toLowerCase();
+        if (!matchedClient && cleanBookingName) {
+          matchedClient = Array.from(clientMap.values()).find(
+            c => (c.name || '').trim().toLowerCase() === cleanBookingName
+          );
+        }
+
+        // 4. Nếu booking thuộc về khách hàng mới chưa có trong map, khởi tạo hồ sơ riêng biệt
+        if (!matchedClient) {
+          const tempId = !isPlaceholderPhone(b.client_phone)
+            ? `cli-${(b.client_phone || '').replace(/[^0-9]/g, '')}`
+            : `cli-name-${encodeURIComponent(cleanBookingName || b.id)}`;
+
           matchedClient = {
             id: tempId,
             name: b.client_name || 'Khách hàng',
-            phone: b.client_phone,
+            phone: b.client_phone || '',
             email: b.client_email || undefined,
             created_at: b.created_at || b.event_date,
             totalBookings: 0,

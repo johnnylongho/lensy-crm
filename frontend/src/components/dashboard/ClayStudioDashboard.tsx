@@ -114,7 +114,7 @@ export const ClayStudioDashboard: React.FC<Props> = ({
   const [visibleCount, setVisibleCount] = useState<number>(10);
 
   const { user } = useAuth();
-  const { currentStudio } = useWorkspace();
+  const { currentStudio, isStudioAdmin, isStudioMember, isFreelancer, accountType } = useWorkspace();
 
   // Helper format compact M (VD: 28.5M)
   const formatCompactM = (amount: number) => {
@@ -133,28 +133,74 @@ export const ClayStudioDashboard: React.FC<Props> = ({
 
   const userName = user?.user_metadata?.full_name || user?.email?.split('@')[0] || 'Sang';
 
-  const todayDateVi = useMemo(() => {
-    const now = new Date();
-    const str = format(now, 'EEEE, dd/MM', { locale: vi });
-    return str.charAt(0).toUpperCase() + str.slice(1);
+  // State thời gian thực (tự động cập nhật mỗi phút)
+  const [currentDate, setCurrentDate] = useState<Date>(new Date());
+
+  useEffect(() => {
+    const timer = setInterval(() => {
+      setCurrentDate(new Date());
+    }, 60000);
+    return () => clearInterval(timer);
   }, []);
 
-  const todayStr = useMemo(() => format(new Date(), 'yyyy-MM-dd'), []);
-  const yesterdayStr = useMemo(() => format(new Date(Date.now() - 86400000), 'yyyy-MM-dd'), []);
+  // Hàm lấy chuỗi YYYY-MM-DD theo giờ địa phương
+  const getLocalDateString = (d: Date = new Date()): string => {
+    const year = d.getFullYear();
+    const month = String(d.getMonth() + 1).padStart(2, '0');
+    const day = String(d.getDate()).padStart(2, '0');
+    return `${year}-${month}-${day}`;
+  };
 
-  // Lịch hôm nay
+  // Chuẩn hóa bất kỳ chuỗi eventDate nào về YYYY-MM-DD
+  const normalizeEventDate = (dateVal?: string | null): string => {
+    if (!dateVal) return '';
+    if (dateVal.length >= 10 && dateVal.includes('-')) {
+      return dateVal.substring(0, 10);
+    }
+    return dateVal;
+  };
+
+  // Hàm tính doanh thu thực thu của một event (tiền thực tế đã thu)
+  const getEventActualRevenue = (e: CalendarEvent): number => {
+    const paid = Number(e.paidAmount || 0);
+    const dep = Number(e.depositAmount || 0);
+    if (paid > 0) return paid;
+    if (dep > 0) return dep;
+    // Nếu trạng thái là hoàn tất / đã trả file / đã chụp mà không ghi paid_amount thì lấy packagePrice
+    const s = String(e.status);
+    if (s === 'hoan_thanh' || s === 'done' || s === 'da_tra_file' || s === 'shot' || s === 'da_chup') {
+      return Number(e.packagePrice || 0);
+    }
+    // Các lịch chưa cọc / lead không tính vào doanh thu thực thu
+    return 0;
+  };
+
+  const todayDateVi = useMemo(() => {
+    const str = format(currentDate, 'EEEE, dd/MM/yyyy', { locale: vi });
+    return str.charAt(0).toUpperCase() + str.slice(1);
+  }, [currentDate]);
+
+  const todayStr = useMemo(() => getLocalDateString(currentDate), [currentDate]);
+  const yesterdayStr = useMemo(() => {
+    const y = new Date(currentDate.getFullYear(), currentDate.getMonth(), currentDate.getDate() - 1);
+    return getLocalDateString(y);
+  }, [currentDate]);
+
+  // Lịch hôm nay CHÍNH XÁC theo thời gian thực
   const todayShoots = useMemo(() => {
     return events
-      .filter(
-        e => !e.is_deleted && e.status !== 'cancelled' && e.status !== 'da_huy' && e.eventDate === todayStr
-      )
+      .filter(e => {
+        if (e.is_deleted || e.status === 'cancelled' || e.status === 'da_huy') return false;
+        return normalizeEventDate(e.eventDate) === todayStr;
+      })
       .sort((a, b) => (a.startTime || '00:00').localeCompare(b.startTime || '00:00'));
   }, [events, todayStr]);
 
   const yesterdayCount = useMemo(() => {
-    return events.filter(
-      e => !e.is_deleted && e.status !== 'cancelled' && e.status !== 'da_huy' && e.eventDate === yesterdayStr
-    ).length;
+    return events.filter(e => {
+      if (e.is_deleted || e.status === 'cancelled' || e.status === 'da_huy') return false;
+      return normalizeEventDate(e.eventDate) === yesterdayStr;
+    }).length;
   }, [events, yesterdayStr]);
 
   const todayDelta = todayShoots.length - yesterdayCount;
@@ -173,17 +219,16 @@ export const ClayStudioDashboard: React.FC<Props> = ({
   }, [todayShoots]);
 
   // Doanh thu tháng này và tháng trước
-  const currentMonthKey = useMemo(() => format(new Date(), 'yyyy-MM'), []);
+  const currentMonthKey = useMemo(() => format(currentDate, 'yyyy-MM'), [currentDate]);
   const prevMonthKey = useMemo(() => {
-    const d = new Date();
-    d.setMonth(d.getMonth() - 1);
+    const d = new Date(currentDate.getFullYear(), currentDate.getMonth() - 1, 1);
     return format(d, 'yyyy-MM');
-  }, []);
+  }, [currentDate]);
 
   const currentMonthRev = useMemo(() => {
     return events.reduce((sum, e) => {
-      if (!e.is_deleted && e.status !== 'cancelled' && e.status !== 'da_huy' && e.eventDate?.startsWith(currentMonthKey)) {
-        return sum + Number(e.paidAmount || e.depositAmount || e.packagePrice || 0);
+      if (!e.is_deleted && e.status !== 'cancelled' && e.status !== 'da_huy' && normalizeEventDate(e.eventDate).startsWith(currentMonthKey)) {
+        return sum + getEventActualRevenue(e);
       }
       return sum;
     }, 0);
@@ -191,8 +236,8 @@ export const ClayStudioDashboard: React.FC<Props> = ({
 
   const prevMonthRev = useMemo(() => {
     return events.reduce((sum, e) => {
-      if (!e.is_deleted && e.status !== 'cancelled' && e.status !== 'da_huy' && e.eventDate?.startsWith(prevMonthKey)) {
-        return sum + Number(e.paidAmount || e.depositAmount || e.packagePrice || 0);
+      if (!e.is_deleted && e.status !== 'cancelled' && e.status !== 'da_huy' && normalizeEventDate(e.eventDate).startsWith(prevMonthKey)) {
+        return sum + getEventActualRevenue(e);
       }
       return sum;
     }, 0);
@@ -203,38 +248,30 @@ export const ClayStudioDashboard: React.FC<Props> = ({
   // Hoàn thành tháng
   const completedMonthCount = useMemo(() => {
     return events.filter(
-      e => !e.is_deleted && (e.status === 'hoan_thanh' || e.status === 'done' || e.status === 'da_tra_file') && e.eventDate?.startsWith(currentMonthKey)
+      e => !e.is_deleted && (e.status === 'hoan_thanh' || e.status === 'done' || e.status === 'da_tra_file') && normalizeEventDate(e.eventDate).startsWith(currentMonthKey)
     ).length;
   }, [events, currentMonthKey]);
 
-  // Biểu đồ 7 ngày qua
+  // Biểu đồ & Tổng doanh thu 7 ngày qua (từ 6 ngày trước đến hôm nay) chuẩn thời gian thực
   const last7DaysData = useMemo(() => {
     const result: { dateKey: string; label: string; revenue: number }[] = [];
-    const now = new Date();
     for (let i = 6; i >= 0; i--) {
-      const d = new Date(now.getTime() - i * 86400000);
-      const dateKey = format(d, 'yyyy-MM-dd');
+      const d = new Date(currentDate.getFullYear(), currentDate.getMonth(), currentDate.getDate() - i);
+      const dateKey = getLocalDateString(d);
       const label = format(d, 'dd/MM');
       let dayRev = 0;
       events.forEach(e => {
-        if (!e.is_deleted && e.status !== 'cancelled' && e.status !== 'da_huy' && e.eventDate === dateKey) {
-          dayRev += Number(e.paidAmount || e.depositAmount || e.packagePrice || 0);
+        if (!e.is_deleted && e.status !== 'cancelled' && e.status !== 'da_huy') {
+          if (normalizeEventDate(e.eventDate) === dateKey) {
+            dayRev += getEventActualRevenue(e);
+          }
         }
       });
       result.push({ dateKey, label, revenue: dayRev });
     }
     const total = result.reduce((sum, item) => sum + item.revenue, 0);
     return { data: result, total };
-  }, [events]);
-
-  // Danh sách hiển thị ca chụp cho widget
-  const displayShootsList = useMemo(() => {
-    if (todayShoots.length > 0) return todayShoots;
-    const sorted = [...events]
-      .filter(e => !e.is_deleted && e.status !== 'cancelled' && e.status !== 'da_huy')
-      .sort((a, b) => new Date(a.eventDate).getTime() - new Date(b.eventDate).getTime());
-    return sorted.slice(0, 5);
-  }, [todayShoots, events]);
+  }, [events, currentDate]);
 
   // 1. KPI Metrics
   const metrics = useMemo(() => {
@@ -412,13 +449,25 @@ export const ClayStudioDashboard: React.FC<Props> = ({
   return (
     <div className="space-y-6">
       {/* ===================================================================== */}
-      {/* 1. TOP HEADER: FRAMEVIS GREETING & ADD BOOKING BUTTON                */}
+      {/* 1. TOP HEADER: ROLE-SPECIFIC GREETING & BUTTON                        */}
       {/* ===================================================================== */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-1">
         <div className="space-y-1.5">
           {/* Season / Workspace Pill */}
           <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-xl bg-white/80 dark:bg-white/10 border border-slate-200/80 dark:border-white/15 shadow-2xs text-xs font-semibold text-slate-700 dark:text-zinc-200 cursor-pointer hover:bg-white transition-all">
-            <span>{currentStudio?.name || 'summer-2025'}</span>
+            {isStudioAdmin ? (
+              <span className="flex items-center gap-1 text-orange-600 dark:text-orange-400 font-bold">
+                👑 Quản Lý: {currentStudio?.name || 'Studio Workspace'}
+              </span>
+            ) : isStudioMember ? (
+              <span className="flex items-center gap-1 text-emerald-600 dark:text-emerald-400 font-bold">
+                📸 Ekip: {currentStudio?.name || 'Studio Member Team'}
+              </span>
+            ) : (
+              <span className="flex items-center gap-1 text-amber-600 dark:text-amber-400 font-bold">
+                🎯 Freelancer: Lịch Cá Nhân
+              </span>
+            )}
             <ChevronDown className="w-3.5 h-3.5 text-slate-400" />
           </div>
 
@@ -429,31 +478,39 @@ export const ClayStudioDashboard: React.FC<Props> = ({
           </h2>
 
           <p className="text-xs sm:text-sm text-slate-500 dark:text-zinc-400 font-medium">
-            Hôm nay <strong className="text-slate-700 dark:text-zinc-200">{todayDateVi}</strong> — studio có{' '}
-            <strong className="text-purple-600 dark:text-purple-400">{todayShoots.length} buổi chụp</strong>.
+            Hôm nay <strong className="text-slate-700 dark:text-zinc-200">{todayDateVi}</strong> —{' '}
+            {isStudioMember ? (
+              <>Bạn có <strong className="text-emerald-600 dark:text-emerald-400">{todayShoots.length} ca chụp cần thực hiện</strong>.</>
+            ) : isFreelancer ? (
+              <>Bạn có <strong className="text-amber-600 dark:text-amber-400">{todayShoots.length} lịch chụp cá nhân</strong>.</>
+            ) : (
+              <>Studio có <strong className="text-purple-600 dark:text-purple-400">{todayShoots.length} buổi chụp</strong>.</>
+            )}
           </p>
         </div>
 
-        {/* Action Controls: Vibrant Framevis Button */}
+        {/* Action Controls */}
         <div className="flex items-center gap-3">
           {user && (
-            <div className="hidden sm:flex h-10 w-10 items-center justify-center rounded-full bg-purple-600 text-white font-bold text-xs shadow-md">
+            <div className={`hidden sm:flex h-10 w-10 items-center justify-center rounded-full text-white font-bold text-xs shadow-md ${
+              isStudioMember ? 'bg-emerald-600' : isFreelancer ? 'bg-amber-600' : 'bg-purple-600'
+            }`}>
               {(userName || 'SL').slice(0, 2).toUpperCase()}
             </div>
           )}
           <button
             type="button"
             onClick={onOpenCreateQuote}
-            className="relative overflow-hidden px-5 py-2.5 rounded-2xl bg-gradient-to-r from-purple-600 via-fuchsia-600 to-pink-500 hover:from-purple-500 hover:to-pink-400 text-white text-xs sm:text-sm font-bold flex items-center gap-2 shadow-lg shadow-purple-500/25 active:scale-95 transition-all cursor-pointer group"
+            className="relative overflow-hidden px-5 py-2.5 rounded-2xl bg-gradient-to-r from-orange-500 via-[#df8653] to-amber-500 hover:from-orange-600 hover:to-amber-600 text-white text-xs sm:text-sm font-bold flex items-center gap-2 shadow-lg shadow-orange-500/25 active:scale-95 transition-all cursor-pointer group"
           >
             <Plus className="w-4 h-4 stroke-[2.5]" />
-            <span>+ Thêm lịch hẹn</span>
+            <span>Thêm lịch hẹn</span>
           </button>
         </div>
       </div>
 
       {/* ===================================================================== */}
-      {/* 2. 4 METRIC CARDS (FRAMEVIS STANDARDS)                               */}
+      {/* 2. 4 METRIC CARDS (ROLE-AWARE KPI)                                   */}
       {/* ===================================================================== */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
         {/* Card 1: Lịch hẹn hôm nay */}
@@ -471,7 +528,7 @@ export const ClayStudioDashboard: React.FC<Props> = ({
               {todayShoots.length}
             </div>
             <div className="text-xs font-semibold text-slate-800 dark:text-zinc-200 mt-1">
-              Lịch hẹn hôm nay
+              {isStudioMember ? 'Ca chụp hôm nay' : 'Lịch hẹn hôm nay'}
             </div>
             <div className="text-[11px] text-slate-400 dark:text-zinc-500">
               so với hôm qua
@@ -479,30 +536,54 @@ export const ClayStudioDashboard: React.FC<Props> = ({
           </div>
         </div>
 
-        {/* Card 2: Doanh thu tháng */}
-        <div className="rounded-2xl border border-slate-200/80 dark:border-white/10 bg-white/80 dark:bg-[#1a1c23]/80 p-5 shadow-[0_4px_20px_rgba(0,0,0,0.03)] backdrop-blur-xl flex flex-col justify-between">
-          <div className="flex items-center justify-between mb-3">
-            <div className="w-10 h-10 rounded-xl bg-emerald-50 dark:bg-emerald-950/40 text-emerald-600 dark:text-emerald-400 flex items-center justify-center">
-              <TrendingUp className="w-5 h-5 stroke-[2.2]" />
+        {/* Card 2: Doanh thu thực thu (Ẩn với thành viên studio, thay bằng ca đang tác chiến) */}
+        {isStudioMember ? (
+          <div className="rounded-2xl border border-slate-200/80 dark:border-white/10 bg-white/80 dark:bg-[#1a1c23]/80 p-5 shadow-[0_4px_20px_rgba(0,0,0,0.03)] backdrop-blur-xl flex flex-col justify-between">
+            <div className="flex items-center justify-between mb-3">
+              <div className="w-10 h-10 rounded-xl bg-emerald-50 dark:bg-emerald-950/40 text-emerald-600 dark:text-emerald-400 flex items-center justify-center">
+                <Briefcase className="w-5 h-5 stroke-[2.2]" />
+              </div>
+              <span className="inline-flex items-center text-[10px] font-extrabold text-emerald-700 dark:text-emerald-300 bg-emerald-100 dark:bg-emerald-950/60 px-2 py-0.5 rounded-full">
+                tác chiến
+              </span>
             </div>
-            <span className="inline-flex items-center text-[11px] font-bold text-emerald-700 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-950/40 px-2 py-0.5 rounded-full">
-              ▲ {monthGrowthPct}%
-            </span>
+            <div>
+              <div className="text-2xl sm:text-3xl font-extrabold text-slate-900 dark:text-white tabular-nums tracking-tight">
+                {events.filter(e => !e.is_deleted && (e.status === 'shot' || e.status === 'editing' || e.status === 'da_tra_file')).length}
+              </div>
+              <div className="text-xs font-semibold text-slate-800 dark:text-zinc-200 mt-1">
+                Ca đang chụp & sửa
+              </div>
+              <div className="text-[11px] text-slate-400 dark:text-zinc-500">
+                tiến độ ekip
+              </div>
+            </div>
           </div>
-          <div>
-            <div className="text-2xl sm:text-3xl font-extrabold text-slate-900 dark:text-white tabular-nums tracking-tight">
-              {formatCompactM(currentMonthRev || metrics.totalRevenue)}
+        ) : (
+          <div className="rounded-2xl border border-slate-200/80 dark:border-white/10 bg-white/80 dark:bg-[#1a1c23]/80 p-5 shadow-[0_4px_20px_rgba(0,0,0,0.03)] backdrop-blur-xl flex flex-col justify-between">
+            <div className="flex items-center justify-between mb-3">
+              <div className="w-10 h-10 rounded-xl bg-emerald-50 dark:bg-emerald-950/40 text-emerald-600 dark:text-emerald-400 flex items-center justify-center">
+                <TrendingUp className="w-5 h-5 stroke-[2.2]" />
+              </div>
+              <span className="inline-flex items-center text-[11px] font-bold text-emerald-700 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-950/40 px-2 py-0.5 rounded-full">
+                ▲ {monthGrowthPct}%
+              </span>
             </div>
-            <div className="text-xs font-semibold text-slate-800 dark:text-zinc-200 mt-1">
-              Doanh thu tháng
-            </div>
-            <div className="text-[11px] text-slate-400 dark:text-zinc-500">
-              so với tháng trước
+            <div>
+              <div className="text-2xl sm:text-3xl font-extrabold text-slate-900 dark:text-white tabular-nums tracking-tight">
+                {formatCompactM(currentMonthRev || metrics.totalRevenue)}
+              </div>
+              <div className="text-xs font-semibold text-slate-800 dark:text-zinc-200 mt-1">
+                {isFreelancer ? 'Thực thu cá nhân' : 'Doanh thu thực thu'}
+              </div>
+              <div className="text-[11px] text-slate-400 dark:text-zinc-500">
+                dòng tiền thực tế đã thu
+              </div>
             </div>
           </div>
-        </div>
+        )}
 
-        {/* Card 3: Chờ xác nhận (Tag cần xử lý) */}
+        {/* Card 3: Chờ xác nhận cọc */}
         <div className="rounded-2xl border border-slate-200/80 dark:border-white/10 bg-white/80 dark:bg-[#1a1c23]/80 p-5 shadow-[0_4px_20px_rgba(0,0,0,0.03)] backdrop-blur-xl flex flex-col justify-between">
           <div className="flex items-center justify-between mb-3">
             <div className="w-10 h-10 rounded-xl bg-amber-50 dark:bg-amber-950/40 text-amber-600 dark:text-amber-400 flex items-center justify-center">
@@ -517,10 +598,10 @@ export const ClayStudioDashboard: React.FC<Props> = ({
               {pendingCount}
             </div>
             <div className="text-xs font-semibold text-slate-800 dark:text-zinc-200 mt-1">
-              Chờ xác nhận
+              Chờ chốt cọc
             </div>
             <div className="text-[11px] text-slate-400 dark:text-zinc-500">
-              trong hôm nay
+              khách book chưa chốt
             </div>
           </div>
         </div>
@@ -543,82 +624,130 @@ export const ClayStudioDashboard: React.FC<Props> = ({
               Hoàn thành tháng
             </div>
             <div className="text-[11px] text-slate-400 dark:text-zinc-500">
-              buổi đã giao
+              buổi chụp đã giao file
             </div>
           </div>
         </div>
       </div>
 
       {/* ===================================================================== */}
-      {/* 3. MIDDLE ROW: DOANH THU 7 NGÀY (LINE CHART) + LỊCH HÔM NAY (TIMELINE) */}
+      {/* 3. MIDDLE ROW: DOANH THU HOẶC TIẾN ĐỘ EKIP + LỊCH HÔM NAY              */}
       {/* ===================================================================== */}
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
-        {/* Cột Trái (7 cols): Biểu Đồ Doanh Thu 7 Ngày Qua */}
+        {/* Cột Trái (7 cols): Biểu Đồ Doanh Thu Hoặc Bảng Tiến Độ Ekip */}
         <div className="lg:col-span-7 rounded-3xl border border-slate-200/80 dark:border-white/10 bg-white/80 dark:bg-[#1a1c23]/80 p-6 shadow-[0_6px_24px_rgba(0,0,0,0.03)] backdrop-blur-xl flex flex-col justify-between">
-          <div className="flex items-center justify-between mb-4">
-            <div>
-              <h3 className="text-base font-bold text-slate-900 dark:text-white">Doanh thu</h3>
-              <p className="text-xs text-slate-400 dark:text-zinc-500">Tổng 7 ngày qua</p>
-            </div>
-            <div className="text-xl sm:text-2xl font-black text-purple-600 dark:text-purple-400 tabular-nums">
-              {formatVND(last7DaysData.total > 0 ? last7DaysData.total : 29300000)}
-            </div>
-          </div>
+          {isStudioMember ? (
+            /* DÀNH CHO THÀNH VIÊN STUDIO: TIẾN ĐỘ TÁC CHIẾN EKIP */
+            <div className="space-y-4">
+              <div className="flex items-center justify-between border-b border-slate-100 dark:border-white/10 pb-3">
+                <div>
+                  <h3 className="text-base font-bold text-slate-900 dark:text-white flex items-center gap-2">
+                    <span>Tiến Độ Bàn Giao File & Show Đang Xử Lý</span>
+                    <span className="text-[10px] px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-600 dark:text-emerald-400 font-bold">
+                      Ekip Task
+                    </span>
+                  </h3>
+                  <p className="text-xs text-slate-400 dark:text-zinc-500">Các buổi chụp cần chụp máy & bàn giao hình ảnh</p>
+                </div>
+              </div>
 
-          {/* AreaChart mượt mà chuẩn Framevis */}
-          <div className="h-48 sm:h-56 w-full pt-2">
-            <ResponsiveContainer width="100%" height="100%">
-              <AreaChart data={last7DaysData.data} margin={{ top: 10, right: 10, left: -25, bottom: 0 }}>
-                <defs>
-                  <linearGradient id="framevisRevGrad" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="5%" stopColor="#a855f7" stopOpacity={0.35} />
-                    <stop offset="95%" stopColor="#a855f7" stopOpacity={0.0} />
-                  </linearGradient>
-                </defs>
-                <XAxis dataKey="label" axisLine={false} tickLine={false} tick={{ fill: '#8b7c72', fontSize: 11 }} />
-                <YAxis
-                  axisLine={false}
-                  tickLine={false}
-                  tickFormatter={val => formatCompactM(val)}
-                  tick={{ fill: '#8b7c72', fontSize: 10 }}
-                />
-                <Tooltip
-                  content={({ active, payload }) => {
-                    if (active && payload && payload.length) {
-                      const item = payload[0].payload;
-                      return (
-                        <div className="rounded-xl border border-slate-200 bg-white/95 dark:bg-[#181a20] p-2.5 shadow-md backdrop-blur-md text-xs">
-                          <div className="font-bold text-slate-900 dark:text-white">Ngày {item.label}</div>
-                          <div className="mt-0.5 text-purple-600 font-bold">{formatVND(item.revenue)}</div>
-                        </div>
-                      );
-                    }
-                    return null;
-                  }}
-                />
-                <Area
-                  type="monotone"
-                  dataKey="revenue"
-                  stroke="#9333ea"
-                  strokeWidth={3}
-                  fillOpacity={1}
-                  fill="url(#framevisRevGrad)"
-                  dot={{ r: 4, fill: '#9333ea', strokeWidth: 2, stroke: '#ffffff' }}
-                  activeDot={{ r: 6 }}
-                />
-              </AreaChart>
-            </ResponsiveContainer>
-          </div>
+              <div className="space-y-2.5 max-h-52 overflow-y-auto pr-1">
+                {events.filter(e => !e.is_deleted && e.status !== 'cancelled' && e.status !== 'da_huy').slice(0, 4).map(e => (
+                  <div key={e.id} className="p-3 rounded-2xl bg-slate-50 dark:bg-white/5 border border-slate-200/60 dark:border-white/10 flex items-center justify-between text-xs">
+                    <div className="space-y-0.5">
+                      <div className="font-bold text-slate-800 dark:text-white flex items-center gap-2">
+                        <span>{e.clientName}</span>
+                        <span className="text-[10px] font-mono text-slate-400">({e.eventDate})</span>
+                      </div>
+                      <div className="text-[11px] text-slate-500 dark:text-zinc-400">
+                        {e.sessionTitle || e.sessionType || 'Gói Studio'} • {e.location || 'Studio'}
+                      </div>
+                    </div>
+                    <span className="px-2.5 py-1 rounded-full text-[10px] font-bold bg-orange-500/10 text-orange-600 dark:text-orange-400 border border-orange-500/25">
+                      {e.status}
+                    </span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          ) : (
+            /* DÀNH CHO QUẢN LÝ STUDIO & FREELANCER: BIỂU ĐỒ DOANH THU THỰC THU */
+            <>
+              <div className="flex items-center justify-between mb-4">
+                <div>
+                  <h3 className="text-base font-bold text-slate-900 dark:text-white">
+                    {isFreelancer ? 'Dòng Tiền Thực Thu Solo' : 'Doanh Thu Thực Thu Studio'}
+                  </h3>
+                  <p className="text-xs text-slate-400 dark:text-zinc-500">
+                    Tổng 7 ngày qua (chỉ tính tiền thực tế đã thu)
+                  </p>
+                </div>
+                <div className="text-xl sm:text-2xl font-black text-orange-600 dark:text-orange-400 tabular-nums">
+                  {formatVND(last7DaysData.total)}
+                </div>
+              </div>
+
+              {/* AreaChart mượt mà */}
+              <div className="h-48 sm:h-56 w-full pt-2">
+                <ResponsiveContainer width="100%" height="100%">
+                  <AreaChart data={last7DaysData.data} margin={{ top: 10, right: 10, left: -25, bottom: 0 }}>
+                    <defs>
+                      <linearGradient id="framevisRevGrad" x1="0" y1="0" x2="0" y2="1">
+                        <stop offset="5%" stopColor="#df8653" stopOpacity={0.4} />
+                        <stop offset="95%" stopColor="#df8653" stopOpacity={0.0} />
+                      </linearGradient>
+                    </defs>
+                    <XAxis dataKey="label" axisLine={false} tickLine={false} tick={{ fill: '#8b7c72', fontSize: 11 }} />
+                    <YAxis
+                      axisLine={false}
+                      tickLine={false}
+                      tickFormatter={val => formatCompactM(val)}
+                      tick={{ fill: '#8b7c72', fontSize: 10 }}
+                    />
+                    <Tooltip
+                      content={({ active, payload }) => {
+                        if (active && payload && payload.length) {
+                          const item = payload[0].payload;
+                          return (
+                            <div className="rounded-xl border border-slate-200 bg-white/95 dark:bg-[#181a20] p-2.5 shadow-md backdrop-blur-md text-xs">
+                              <div className="font-bold text-slate-900 dark:text-white">Ngày {item.label}</div>
+                              <div className="mt-0.5 text-orange-600 font-bold">{formatVND(item.revenue)}</div>
+                            </div>
+                          );
+                        }
+                        return null;
+                      }}
+                    />
+                    <Area
+                      type="monotone"
+                      dataKey="revenue"
+                      stroke="#df8653"
+                      strokeWidth={3}
+                      fillOpacity={1}
+                      fill="url(#framevisRevGrad)"
+                      dot={{ r: 4, fill: '#df8653', strokeWidth: 2, stroke: '#ffffff' }}
+                      activeDot={{ r: 6 }}
+                    />
+                  </AreaChart>
+                </ResponsiveContainer>
+              </div>
+            </>
+          )}
         </div>
 
         {/* Cột Phải (5 cols): Lịch Hôm Nay (Today's Timeline) */}
         <div className="lg:col-span-5 rounded-3xl border border-slate-200/80 dark:border-white/10 bg-white/80 dark:bg-[#1a1c23]/80 p-6 shadow-[0_6px_24px_rgba(0,0,0,0.03)] backdrop-blur-xl flex flex-col justify-between">
           <div className="flex items-center justify-between pb-3 border-b border-slate-100 dark:border-white/5 mb-3">
             <div>
-              <h3 className="text-base font-bold text-slate-900 dark:text-white">Lịch hôm nay</h3>
-              <p className="text-xs text-slate-400 dark:text-zinc-500">
-                {todayShoots.length > 0 ? todayShoots.length : displayShootsList.length} buổi •{' '}
-                {todayPendingShoots.length} chờ xác nhận
+              <div className="flex items-center gap-2">
+                <h3 className="text-base font-bold text-slate-900 dark:text-white">Lịch hôm nay</h3>
+                <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 border border-emerald-500/25 flex items-center gap-1">
+                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
+                  Live
+                </span>
+              </div>
+              <p className="text-xs text-slate-400 dark:text-zinc-500 mt-0.5">
+                {todayDateVi} • {todayShoots.length} buổi chụp
               </p>
             </div>
             <button
@@ -629,10 +758,10 @@ export const ClayStudioDashboard: React.FC<Props> = ({
             </button>
           </div>
 
-          {/* Danh sách Timeline ca chụp */}
+          {/* Danh sách Timeline ca chụp hôm nay theo thời gian thực */}
           <div className="space-y-2.5 max-h-56 overflow-y-auto pr-1">
-            {displayShootsList.length > 0 ? (
-              displayShootsList.map(shoot => {
+            {todayShoots.length > 0 ? (
+              todayShoots.map(shoot => {
                 const initials = (shoot.clientName || 'Khách')
                   .split(' ')
                   .map(w => w[0]?.toUpperCase())
@@ -688,11 +817,20 @@ export const ClayStudioDashboard: React.FC<Props> = ({
                 );
               })
             ) : (
-              <div className="text-center py-8 text-xs text-slate-400">
-                Chưa có ca chụp nào hôm nay.
+              <div className="py-7 flex flex-col items-center justify-center text-center">
+                <div className="w-11 h-11 rounded-2xl bg-purple-50 dark:bg-purple-950/40 border border-purple-200/50 dark:border-purple-800/40 flex items-center justify-center text-purple-600 dark:text-purple-400 mb-2">
+                  <CalendarIcon className="w-5 h-5" />
+                </div>
+                <p className="text-xs font-bold text-slate-800 dark:text-zinc-200">
+                  Hôm nay chưa có ca chụp nào
+                </p>
+                <p className="text-[11px] text-slate-400 dark:text-zinc-500 mt-0.5">
+                  Mọi lịch chụp mới phát sinh hôm nay sẽ hiển thị tại đây theo thời gian thực.
+                </p>
                 <button
+                  type="button"
                   onClick={onOpenCreateQuote}
-                  className="block mx-auto mt-2 text-purple-600 font-bold hover:underline"
+                  className="mt-3 px-3.5 py-1.5 rounded-xl bg-purple-600 hover:bg-purple-500 text-white font-bold text-xs transition-colors cursor-pointer shadow-sm"
                 >
                   + Lên lịch chụp ngay
                 </button>
@@ -710,10 +848,10 @@ export const ClayStudioDashboard: React.FC<Props> = ({
         <div className="flex flex-col md:flex-row md:items-center justify-between pb-4 border-b border-[#ebdcd1] dark:border-white/10 gap-4">
           <div className="flex items-center gap-2 overflow-x-auto pb-1 md:pb-0">
             {[
-              { id: 'table', label: 'Danh Sách Lịch Chụp', icon: Briefcase },
+              { id: 'table', label: isStudioMember ? 'Ca Chụp Phân Công' : isFreelancer ? 'Lịch Chụp Cá Nhân' : 'Danh Sách Lịch Chụp', icon: Briefcase },
               { id: 'calendar', label: 'Lịch Tháng (Calendar)', icon: CalendarIcon },
               { id: 'kanban', label: 'Quy Trình (Kanban)', icon: Kanban },
-              { id: 'roi', label: 'Tài Chính & ROI', icon: TrendingUp },
+              ...(!isStudioMember ? [{ id: 'roi', label: isFreelancer ? 'Dòng Tiền Cá Nhân' : 'Tài Chính & ROI', icon: TrendingUp }] : []),
             ].map(tab => {
               const Icon = tab.icon;
               const isActive = dashboardView === tab.id;
@@ -778,7 +916,7 @@ export const ClayStudioDashboard: React.FC<Props> = ({
               className="flex items-center gap-1.5 rounded-xl bg-gradient-to-r from-[#df8653] to-[#c86d3b] px-3.5 py-1.5 text-xs font-bold text-white shadow-xs hover:brightness-105 active:scale-95 transition-all cursor-pointer"
             >
               <Plus className="h-3.5 w-3.5 stroke-[2.5]" />
-              <span>+ Tạo Lịch Mới</span>
+              <span>Tạo Lịch Mới</span>
             </button>
           </div>
         </div>

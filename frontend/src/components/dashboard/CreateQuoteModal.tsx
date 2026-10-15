@@ -289,11 +289,11 @@ export const CreateQuoteModal: React.FC<Props> = ({
       package_price: packagePrice,
       deposit_amount: depositAmount,
       paid_amount: 0,
-      status: 'cho_coc',
+      status: 'lead',
       quote_token: quoteToken,
       notes: combinedNotes,
       assigned_gears: selectedGears,
-      package_id: selectedPackageId,
+      package_type: packagesList.find(p => p.id === selectedPackageId)?.name || sessionTitle.trim(),
       studio_id: currentStudio?.id || null,
     };
 
@@ -356,14 +356,27 @@ export const CreateQuoteModal: React.FC<Props> = ({
           console.warn('[CreateQuoteModal]: Bỏ qua bước Client CRM do lỗi:', crmErr);
         }
 
-        const { data, error } = await supabase
+        // Thực hiện Insert với cơ chế Fallback an toàn cho bookings_status_check
+        let insertRes = await supabase
           .from('bookings')
           .insert([newBookingRecord])
           .select()
           .single();
 
-        if (error) throw error;
-        if (data) createdId = data.id;
+        // Nếu database Supabase có constraint cũ chưa cập nhật, thử fallback status
+        if (insertRes.error && (insertRes.error.message?.includes('bookings_status_check') || insertRes.error.code === '23514')) {
+          console.warn('[CreateQuoteModal] Phát hiện constraint status, kích hoạt retry fallback...');
+          const fallbackStatus = newBookingRecord.status === 'lead' ? 'cho_coc' : 'lead';
+          newBookingRecord.status = fallbackStatus;
+          insertRes = await supabase
+            .from('bookings')
+            .insert([newBookingRecord])
+            .select()
+            .single();
+        }
+
+        if (insertRes.error) throw insertRes.error;
+        if (insertRes.data) createdId = insertRes.data.id;
       }
 
       const newCalendarEvent: CalendarEvent = {

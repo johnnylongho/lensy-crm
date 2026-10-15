@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { useAuth } from '../../context/AuthContext';
+import { useAuth, AccountType } from '../../context/AuthContext';
 import { useNavigate, useLocation, Link } from 'react-router-dom';
 import {
   Mail,
@@ -10,13 +10,15 @@ import {
   EyeOff,
   Sparkles,
   Camera,
+  Users,
+  Building2,
   AlertCircle,
   CheckCircle2,
   ChevronLeft,
 } from 'lucide-react';
 
 export const LoginPage: React.FC = () => {
-  const { signIn, signUp, user } = useAuth();
+  const { signIn, signUp } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
 
@@ -34,10 +36,12 @@ export const LoginPage: React.FC = () => {
       setMode('login');
     }
   }, [location.search]);
+
   const [email, setEmail] = useState<string>('');
   const [password, setPassword] = useState<string>('');
   const [fullName, setFullName] = useState<string>('');
-  const [accountType, setAccountType] = useState<'freelancer' | 'studio'>('freelancer');
+  const [studioName, setStudioName] = useState<string>('');
+  const [accountType, setAccountType] = useState<AccountType>('freelancer');
   const [showPassword, setShowPassword] = useState<boolean>(false);
   const [isLoading, setIsLoading] = useState<boolean>(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
@@ -74,7 +78,9 @@ export const LoginPage: React.FC = () => {
 
         navigate(from, { replace: true });
       } else {
-        const { error, user } = await signUp(email, password, fullName, accountType);
+        const { error, user } = await signUp(email, password, fullName, accountType, {
+          studioName: studioName.trim() || undefined,
+        });
         if (error) {
           setErrorMessage(error.message || 'Đăng ký không thành công.');
           return;
@@ -82,10 +88,10 @@ export const LoginPage: React.FC = () => {
 
         if (user && !user.confirmed_at && user.identities?.length) {
           setSuccessMessage(
-            '🎉 Đăng ký thành công! Nếu hệ thống yêu cầu xác nhận email, vui lòng kiểm tra hộp thư đến của bạn để kích hoạt tài khoản.'
+            'Đăng ký thành công! Nếu hệ thống yêu cầu xác nhận email, vui lòng kiểm tra hộp thư đến để kích hoạt tài khoản.'
           );
         } else {
-          setSuccessMessage('🎉 Đăng ký tài khoản thành công! Đang chuyển hướng vào Dashboard...');
+          setSuccessMessage('Đăng ký tài khoản thành công! Đang chuyển hướng vào Dashboard...');
           setTimeout(() => {
             navigate('/dashboard', { replace: true });
           }, 1200);
@@ -115,10 +121,10 @@ export const LoginPage: React.FC = () => {
   return (
     <div className="min-h-screen bg-[#080c14] text-slate-100 flex flex-col justify-center items-center px-4 py-12 relative overflow-hidden">
       {/* Background ambient lighting */}
-      <div className="absolute top-1/4 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[550px] h-[550px] bg-gradient-to-tr from-amber-500/10 via-rose-500/10 to-indigo-500/10 blur-[130px] pointer-events-none rounded-full" />
+      <div className="absolute top-1/4 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[550px] h-[550px] bg-gradient-to-tr from-orange-500/10 via-amber-500/10 to-indigo-500/10 blur-[130px] pointer-events-none rounded-full" />
 
-      {/* Back to Quote Link Bar */}
-      <div className="w-full max-w-md mb-6 flex items-center justify-between z-10">
+      {/* Back to Home Link Bar */}
+      <div className="w-full max-w-lg mb-6 flex items-center justify-between z-10">
         <Link
           to="/"
           className="inline-flex items-center gap-1.5 text-xs text-slate-400 hover:text-white transition-colors"
@@ -126,12 +132,12 @@ export const LoginPage: React.FC = () => {
           <ChevronLeft className="w-4 h-4" />
           <span>Về Trang Chủ Lensy</span>
         </Link>
-        <span className="text-[10px] text-slate-500 font-mono">Lensy v1.0 • SaaS Ready</span>
+        <span className="text-[10px] text-slate-500 font-mono">Lensy v1.0 • Multi-Role Ready</span>
       </div>
 
       {/* Main Login Card */}
-      <div className="w-full max-w-md rounded-3xl bg-white/70 dark:bg-white/5 backdrop-blur-xl border border-white/60 dark:border-white/10 p-6 sm:p-8 shadow-[0_8px_32px_0_rgba(0,0,0,0.35)] relative z-10 space-y-6">
-        {/* Brand Header: Lensy Logo H-16 W-16 */}
+      <div className="w-full max-w-lg rounded-3xl bg-white/70 dark:bg-white/5 backdrop-blur-xl border border-white/60 dark:border-white/10 p-6 sm:p-8 shadow-[0_8px_32px_0_rgba(0,0,0,0.35)] relative z-10 space-y-6">
+        {/* Brand Header */}
         <div className="text-center space-y-3">
           <div className="w-16 h-16 mx-auto flex items-center justify-center">
             <img
@@ -142,13 +148,13 @@ export const LoginPage: React.FC = () => {
           </div>
           <div>
             <h2 className="text-xl sm:text-2xl font-extrabold text-slate-900 dark:text-white tracking-tight flex items-center justify-center gap-2">
-              <span>Đăng nhập Lensy</span>
-              <span className="text-[10px] uppercase font-bold px-2 py-0.5 rounded-full bg-amber-500/10 dark:bg-amber-500/20 border border-amber-500/30 text-amber-600 dark:text-amber-300">
+              <span>Đăng nhập Lensy CRM</span>
+              <span className="text-[10px] uppercase font-bold px-2 py-0.5 rounded-full bg-orange-500/10 dark:bg-orange-500/20 border border-orange-500/30 text-orange-600 dark:text-orange-400">
                 PRO
               </span>
             </h2>
             <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
-              Hệ thống trợ lý số độc quyền cho Thợ ảnh & Boutique Studio
+              Hệ thống trợ lý số độc quyền cho Freelancer, Ekip & Quản Lý Studio
             </p>
           </div>
         </div>
@@ -162,9 +168,9 @@ export const LoginPage: React.FC = () => {
               setErrorMessage(null);
               setSuccessMessage(null);
             }}
-            className={`py-2 rounded-xl font-bold transition-all ${
+            className={`py-2 rounded-xl font-bold transition-all cursor-pointer ${
               mode === 'login'
-                ? 'bg-amber-500 text-slate-950 shadow-md shadow-amber-500/20'
+                ? 'bg-[#df8653] text-white shadow-md shadow-orange-500/20'
                 : 'text-slate-400 hover:text-white'
             }`}
           >
@@ -177,9 +183,9 @@ export const LoginPage: React.FC = () => {
               setErrorMessage(null);
               setSuccessMessage(null);
             }}
-            className={`py-2 rounded-xl font-bold transition-all ${
+            className={`py-2 rounded-xl font-bold transition-all cursor-pointer ${
               mode === 'signup'
-                ? 'bg-amber-500 text-slate-950 shadow-md shadow-amber-500/20'
+                ? 'bg-[#df8653] text-white shadow-md shadow-orange-500/20'
                 : 'text-slate-400 hover:text-white'
             }`}
           >
@@ -206,49 +212,92 @@ export const LoginPage: React.FC = () => {
         <form onSubmit={handleSubmit} className="space-y-4 text-xs">
           {mode === 'signup' && (
             <>
-              <div className="space-y-1.5">
-                <label className="font-bold text-slate-300 block">Loại Hình Hoạt Động:</label>
-                <div className="grid grid-cols-2 gap-2">
+              {/* PHÂN LOẠI 3 NHÓM TÀI KHOẢN */}
+              <div className="space-y-2">
+                <label className="font-bold text-slate-300 block">Chọn Phân Loại Tài Khoản:</label>
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
+                  {/* Freelancer */}
                   <button
                     type="button"
                     onClick={() => setAccountType('freelancer')}
-                    className={`p-2.5 rounded-xl border text-left transition-all cursor-pointer ${
+                    className={`p-3 rounded-2xl border text-left transition-all cursor-pointer flex flex-col justify-between ${
                       accountType === 'freelancer'
-                        ? 'bg-amber-500/15 border-amber-500/60 text-white shadow-xs'
-                        : 'bg-slate-950 border-slate-800 text-slate-400 hover:text-white'
+                        ? 'bg-amber-500/15 border-amber-500/70 text-white shadow-sm ring-1 ring-amber-500/40'
+                        : 'bg-slate-950/80 border-slate-800 text-slate-400 hover:text-white hover:border-slate-700'
                     }`}
                   >
-                    <div className="font-bold text-xs flex items-center gap-1.5">
-                      <Camera className="w-3.5 h-3.5 text-amber-400" />
-                      <span>Cá Nhân (Freelance)</span>
+                    <div>
+                      <div className="font-bold text-xs flex items-center gap-1.5 text-amber-400">
+                        <Camera className="w-3.5 h-3.5" />
+                        <span>Freelancer</span>
+                      </div>
+                      <p className="text-[10px] text-slate-400 mt-1 leading-tight">
+                        Thợ ảnh tự do: Lịch cá nhân, CRM khách & dòng tiền thực thu
+                      </p>
                     </div>
-                    <p className="text-[10px] text-slate-400 mt-1 leading-tight">
-                      Tinh gọn: Lịch chụp, khách hàng, báo giá & doanh thu
-                    </p>
+                    <span className="text-[9px] font-semibold text-amber-500/80 mt-2 block">
+                      Giao diện solo
+                    </span>
                   </button>
+
+                  {/* Thành viên studio */}
                   <button
                     type="button"
-                    onClick={() => setAccountType('studio')}
-                    className={`p-2.5 rounded-xl border text-left transition-all cursor-pointer ${
-                      accountType === 'studio'
-                        ? 'bg-amber-500/15 border-amber-500/60 text-white shadow-xs'
-                        : 'bg-slate-950 border-slate-800 text-slate-400 hover:text-white'
+                    onClick={() => setAccountType('studio_member')}
+                    className={`p-3 rounded-2xl border text-left transition-all cursor-pointer flex flex-col justify-between ${
+                      accountType === 'studio_member'
+                        ? 'bg-emerald-500/15 border-emerald-500/70 text-white shadow-sm ring-1 ring-emerald-500/40'
+                        : 'bg-slate-950/80 border-slate-800 text-slate-400 hover:text-white hover:border-slate-700'
                     }`}
                   >
-                    <div className="font-bold text-xs flex items-center gap-1.5">
-                      <Sparkles className="w-3.5 h-3.5 text-amber-400" />
-                      <span>Doanh Nghiệp (Studio)</span>
+                    <div>
+                      <div className="font-bold text-xs flex items-center gap-1.5 text-emerald-400">
+                        <Users className="w-3.5 h-3.5" />
+                        <span>Thành Viên</span>
+                      </div>
+                      <p className="text-[10px] text-slate-400 mt-1 leading-tight">
+                        Ekip Studio: Nhận ca phân công, mượn máy, cập nhật show
+                      </p>
                     </div>
-                    <p className="text-[10px] text-slate-400 mt-1 leading-tight">
-                      Toàn diện: Quản lý kho thiết bị, ekip & studio bays
-                    </p>
+                    <span className="text-[9px] font-semibold text-emerald-500/80 mt-2 block">
+                      Giao diện tác chiến
+                    </span>
+                  </button>
+
+                  {/* Quản lý studio */}
+                  <button
+                    type="button"
+                    onClick={() => setAccountType('studio_admin')}
+                    className={`p-3 rounded-2xl border text-left transition-all cursor-pointer flex flex-col justify-between ${
+                      accountType === 'studio_admin'
+                        ? 'bg-orange-500/15 border-[#df8653] text-white shadow-sm ring-1 ring-orange-500/40'
+                        : 'bg-slate-950/80 border-slate-800 text-slate-400 hover:text-white hover:border-slate-700'
+                    }`}
+                  >
+                    <div>
+                      <div className="font-bold text-xs flex items-center gap-1.5 text-[#df8653]">
+                        <Building2 className="w-3.5 h-3.5" />
+                        <span>Quản Lý Studio</span>
+                      </div>
+                      <p className="text-[10px] text-slate-400 mt-1 leading-tight">
+                        Chủ studio: Toàn quyền doanh thu, kho máy, phân ekip
+                      </p>
+                    </div>
+                    <span className="text-[9px] font-semibold text-orange-500/80 mt-2 block">
+                      Toàn quyền quản trị
+                    </span>
                   </button>
                 </div>
               </div>
 
+              {/* Tên họ người dùng */}
               <div className="space-y-1.5">
                 <label className="font-bold text-slate-300 block">
-                  {accountType === 'freelancer' ? 'Họ Tên Thợ Ảnh:' : 'Tên Studio / Doanh Nghiệp:'}
+                  {accountType === 'freelancer'
+                    ? 'Họ Tên Thợ Ảnh / Nghệ Danh:'
+                    : accountType === 'studio_member'
+                    ? 'Họ Tên Thành Viên Ekip:'
+                    : 'Họ Tên Quản Lý / Chủ Studio:'}
                 </label>
                 <div className="relative">
                   <User className="w-4 h-4 text-slate-500 absolute left-3.5 top-1/2 -translate-y-1/2" />
@@ -257,11 +306,39 @@ export const LoginPage: React.FC = () => {
                     required
                     value={fullName}
                     onChange={e => setFullName(e.target.value)}
-                    placeholder={accountType === 'freelancer' ? 'Ví dụ: Hoàng Long Photography' : 'Ví dụ: MIRMIA STUDIO & ACADEMY'}
-                    className="w-full pl-10 pr-4 py-2.5 rounded-xl bg-slate-950 border border-slate-800 text-white placeholder:text-slate-600 focus:outline-none focus:ring-1 focus:ring-amber-400 focus:border-amber-400 transition-all text-xs"
+                    placeholder={
+                      accountType === 'freelancer'
+                        ? 'Ví dụ: Hoàng Long Photography'
+                        : accountType === 'studio_member'
+                        ? 'Ví dụ: Nguyễn Văn Hưng (Photographer)'
+                        : 'Ví dụ: Lê Hoàng Sang'
+                    }
+                    className="w-full pl-10 pr-4 py-2.5 rounded-xl bg-slate-950 border border-slate-800 text-white placeholder:text-slate-600 focus:outline-none focus:ring-1 focus:ring-orange-500 focus:border-orange-500 transition-all text-xs"
                   />
                 </div>
               </div>
+
+              {/* Tên Studio (cho studio_admin hoặc studio_member) */}
+              {(accountType === 'studio_admin' || accountType === 'studio_member') && (
+                <div className="space-y-1.5 animate-fadeIn">
+                  <label className="font-bold text-slate-300 block">
+                    {accountType === 'studio_admin'
+                      ? 'Tên Studio / Doanh Nghiệp Bạn Quản Lý:'
+                      : 'Tên Studio Đang Làm Việc / Cộng Tác:'}
+                  </label>
+                  <div className="relative">
+                    <Building2 className="w-4 h-4 text-slate-500 absolute left-3.5 top-1/2 -translate-y-1/2" />
+                    <input
+                      type="text"
+                      required
+                      value={studioName}
+                      onChange={e => setStudioName(e.target.value)}
+                      placeholder="Ví dụ: MIRMIA STUDIO & ACADEMY"
+                      className="w-full pl-10 pr-4 py-2.5 rounded-xl bg-slate-950 border border-slate-800 text-white placeholder:text-slate-600 focus:outline-none focus:ring-1 focus:ring-orange-500 focus:border-orange-500 transition-all text-xs"
+                    />
+                  </div>
+                </div>
+              )}
             </>
           )}
 
@@ -275,7 +352,7 @@ export const LoginPage: React.FC = () => {
                 value={email}
                 onChange={e => setEmail(e.target.value)}
                 placeholder="photographer@lensy.vn"
-                className="w-full pl-10 pr-4 py-2.5 rounded-xl bg-slate-950 border border-slate-800 text-white placeholder:text-slate-600 focus:outline-none focus:ring-1 focus:ring-amber-400 focus:border-amber-400 transition-all text-xs"
+                className="w-full pl-10 pr-4 py-2.5 rounded-xl bg-slate-950 border border-slate-800 text-white placeholder:text-slate-600 focus:outline-none focus:ring-1 focus:ring-orange-500 focus:border-orange-500 transition-all text-xs"
               />
             </div>
           </div>
@@ -295,12 +372,12 @@ export const LoginPage: React.FC = () => {
                 value={password}
                 onChange={e => setPassword(e.target.value)}
                 placeholder="Tối thiểu 6 ký tự"
-                className="w-full pl-10 pr-10 py-2.5 rounded-xl bg-slate-950 border border-slate-800 text-white placeholder:text-slate-600 focus:outline-none focus:ring-1 focus:ring-amber-400 focus:border-amber-400 transition-all text-xs font-mono"
+                className="w-full pl-10 pr-10 py-2.5 rounded-xl bg-slate-950 border border-slate-800 text-white placeholder:text-slate-600 focus:outline-none focus:ring-1 focus:ring-orange-500 focus:border-orange-500 transition-all text-xs font-mono"
               />
               <button
                 type="button"
                 onClick={() => setShowPassword(!showPassword)}
-                className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-500 hover:text-slate-300 transition-colors"
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-500 hover:text-slate-300 transition-colors cursor-pointer"
               >
                 {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
               </button>
@@ -311,16 +388,24 @@ export const LoginPage: React.FC = () => {
           <button
             type="submit"
             disabled={isLoading}
-            className="w-full py-3 px-4 rounded-xl bg-gradient-to-r from-amber-500 via-amber-400 to-yellow-500 hover:from-amber-400 hover:to-yellow-400 text-slate-950 font-extrabold text-xs flex items-center justify-center gap-2 shadow-lg shadow-amber-500/20 transition-all hover:scale-[1.02] active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed mt-2"
+            className="w-full py-3 px-4 rounded-xl bg-gradient-to-r from-orange-500 via-[#df8653] to-amber-500 hover:from-orange-600 hover:to-amber-600 text-white font-extrabold text-xs flex items-center justify-center gap-2 shadow-lg shadow-orange-500/25 transition-all hover:scale-[1.01] active:scale-[0.99] disabled:opacity-50 disabled:cursor-not-allowed mt-2 cursor-pointer"
           >
             {isLoading ? (
               <span className="flex items-center gap-2">
-                <span className="w-4 h-4 border-2 border-slate-950 border-t-transparent rounded-full animate-spin" />
+                <span className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
                 <span>Đang xử lý...</span>
               </span>
             ) : (
               <>
-                <span>{mode === 'login' ? 'ĐĂNG NHẬP VÀO DASHBOARD' : 'TẠO TÀI KHOẢN MỚI'}</span>
+                <span>
+                  {mode === 'login'
+                    ? 'ĐĂNG NHẬP VÀO DASHBOARD'
+                    : accountType === 'freelancer'
+                    ? 'TẠO TÀI KHOẢN FREELANCER'
+                    : accountType === 'studio_member'
+                    ? 'GIA NHẬP VỚI VAI TRÒ THÀNH VIÊN'
+                    : 'KHỞI TẠO TÀI KHOẢN QUẢN LÝ STUDIO'}
+                </span>
                 <ArrowRight className="w-4 h-4" />
               </>
             )}
@@ -337,7 +422,7 @@ export const LoginPage: React.FC = () => {
                 setMode(mode === 'login' ? 'signup' : 'login');
                 setErrorMessage(null);
               }}
-              className="text-amber-400 hover:text-amber-300 font-bold ml-1 transition-colors"
+              className="text-[#df8653] hover:text-orange-400 font-bold ml-1 transition-colors cursor-pointer"
             >
               {mode === 'login' ? 'Đăng ký ngay' : 'Đăng nhập tại đây'}
             </button>
@@ -346,9 +431,9 @@ export const LoginPage: React.FC = () => {
           <button
             type="button"
             onClick={handleQuickDemo}
-            className="w-full py-2 px-3 rounded-xl bg-slate-950 hover:bg-slate-800 border border-slate-800 hover:border-slate-700 text-slate-400 hover:text-slate-200 text-[11px] font-semibold transition-all flex items-center justify-center gap-1.5"
+            className="w-full py-2 px-3 rounded-xl bg-slate-950 hover:bg-slate-800 border border-slate-800 hover:border-slate-700 text-slate-400 hover:text-slate-200 text-[11px] font-semibold transition-all flex items-center justify-center gap-1.5 cursor-pointer"
           >
-            <Sparkles className="w-3.5 h-3.5 text-amber-400" />
+            <Sparkles className="w-3.5 h-3.5 text-orange-400" />
             <span>Thử đăng nhập nhanh bằng tài khoản Demo</span>
           </button>
         </div>
@@ -356,7 +441,7 @@ export const LoginPage: React.FC = () => {
 
       {/* Footer Branding */}
       <footer className="mt-8 text-center text-xs text-gray-500 z-10">
-        <p>Phát triển bởi Mirmia Studio & Academy</p>
+        <p>Lensy CRM • Bản quyền thuộc Mirmia Studio & Academy</p>
       </footer>
     </div>
   );

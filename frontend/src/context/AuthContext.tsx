@@ -2,6 +2,8 @@ import React, { createContext, useContext, useState, useEffect } from 'react';
 import { User, Session } from '@supabase/supabase-js';
 import { supabase, isSupabaseConfigured } from '../lib/supabase';
 
+export type AccountType = 'freelancer' | 'studio_member' | 'studio_admin';
+
 interface AuthContextType {
   user: User | null;
   session: Session | null;
@@ -11,7 +13,8 @@ interface AuthContextType {
     email: string,
     password: string,
     fullName?: string,
-    accountType?: 'freelancer' | 'studio'
+    accountType?: AccountType | 'studio',
+    extraInfo?: { studioName?: string; phone?: string }
   ) => Promise<{ error: Error | null; user: User | null }>;
   signOut: () => Promise<void>;
 }
@@ -57,7 +60,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       const mockUser = {
         id: 'mock-user-id',
         email,
-        user_metadata: { full_name: 'Mirmia Photographer (Demo)' },
+        user_metadata: {
+          full_name: 'Mirmia Studio Manager',
+          account_type: 'studio_admin',
+        },
       } as any;
       setUser(mockUser);
       return { error: null };
@@ -79,21 +85,41 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   };
 
-  // Hàm Đăng ký tài khoản mới bằng Email & Mật khẩu
+  // Hàm Đăng ký tài khoản mới với 3 phân loại: Freelancer, Thành viên Studio, Quản lý Studio
   const signUp = async (
     email: string,
     password: string,
     fullName?: string,
-    accountType: 'freelancer' | 'studio' = 'freelancer'
+    accountType: AccountType | 'studio' = 'freelancer',
+    extraInfo?: { studioName?: string; phone?: string }
   ) => {
+    // Chuẩn hóa loại tài khoản: 'studio' cũ map thành 'studio_admin'
+    const normalizedType: AccountType = accountType === 'studio' ? 'studio_admin' : accountType;
+
+    const metadata: Record<string, any> = {
+      full_name: fullName || 'Thợ ảnh Lensy',
+      account_type: normalizedType,
+    };
+
+    if (normalizedType === 'studio_admin') {
+      metadata.studio_name = extraInfo?.studioName || `${fullName || 'Studio'} Workspace`;
+      metadata.is_studio_owner = true;
+    } else if (normalizedType === 'studio_member') {
+      metadata.studio_name = extraInfo?.studioName || 'Studio Cộng Tác';
+      metadata.is_studio_owner = false;
+    } else {
+      metadata.is_studio_owner = false;
+    }
+
+    if (extraInfo?.phone) {
+      metadata.phone = extraInfo.phone;
+    }
+
     if (!isSupabaseConfigured) {
       const mockUser = {
         id: 'mock-user-id',
         email,
-        user_metadata: {
-          full_name: fullName || 'Thợ ảnh Lensy',
-          account_type: accountType,
-        },
+        user_metadata: metadata,
       } as any;
       setUser(mockUser);
       return { error: null, user: mockUser };
@@ -104,11 +130,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         email,
         password,
         options: {
-          data: {
-            full_name: fullName || 'Thợ ảnh Lensy',
-            account_type: accountType,
-            studio_name: accountType === 'studio' ? `${fullName || 'Studio'} Workspace` : undefined,
-          },
+          data: metadata,
         },
       });
 

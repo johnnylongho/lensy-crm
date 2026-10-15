@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { parseISO } from 'date-fns';
 import { DebtReminderModal } from './DebtReminderModal';
@@ -17,7 +18,8 @@ import { CheckCircle2, AlertCircle } from 'lucide-react';
 import { smartSortBookings } from '../../utils/dateSorting';
 import { QuickEditFinancialsModal } from './QuickEditFinancialsModal';
 import { EditCategoryModal } from './EditCategoryModal';
-import { ClayStudioDashboard } from './ClayStudioDashboard';
+// @ts-ignore
+import { Dashboard } from './Dashboard';
 
 interface Props {
   events: CalendarEvent[];
@@ -52,12 +54,27 @@ export const PhotographerDashboard: React.FC<Props> = ({
     message: string;
   } | null>(null);
 
-  // Lắng nghe sự kiện "+ Tạo Lịch Mới" từ Navbar / Sidebar
+  const [searchParams, setSearchParams] = useSearchParams();
+
+  // Lắng nghe sự kiện "+ Tạo Lịch Mới" từ Navbar / Sidebar hoặc qua URL Query param
   useEffect(() => {
     const handleOpenCreate = () => setIsCreateQuoteOpen(true);
     window.addEventListener('lensy:create-booking', handleOpenCreate);
+
+    if (searchParams.get('action') === 'new-booking') {
+      setIsCreateQuoteOpen(true);
+      setSearchParams(
+        prev => {
+          const next = new URLSearchParams(prev);
+          next.delete('action');
+          return next;
+        },
+        { replace: true }
+      );
+    }
+
     return () => window.removeEventListener('lensy:create-booking', handleOpenCreate);
-  }, []);
+  }, [searchParams, setSearchParams]);
 
   // Auto hide toast after 4s
   useEffect(() => {
@@ -567,23 +584,23 @@ export const PhotographerDashboard: React.FC<Props> = ({
         }}
       />
 
-      {/* Permanent Warm Clay Frosted Glass Studio Dashboard */}
-      <ClayStudioDashboard
+      {/* RBAC-Aware Studio Dashboard with <ClayStudioDashboard /> and <MemberDashboard /> */}
+      <Dashboard
         events={events}
         isLoading={isLoading}
         onStatusChange={handleStatusChange}
         onOpenQuote={handleOpenQuote}
         onOpenCreateQuote={() => setIsCreateQuoteOpen(true)}
-        onOpenDetailModal={event => setActiveDetailBooking(event)}
-        onDeleteBooking={event => setBookingToDelete(event)}
-        onQuickEditFinancials={event => setFinancialsModalBooking(event)}
+        onOpenDetailModal={(event: CalendarEvent) => setActiveDetailBooking(event)}
+        onDeleteBooking={(event: CalendarEvent) => setBookingToDelete(event)}
+        onQuickEditFinancials={(event: CalendarEvent) => setFinancialsModalBooking(event)}
         onSelectEventDate={handleSelectEventDate}
         onRefreshData={fetchBookingsFromSupabase}
         onOpenImportCsv={() => setIsImportModalOpen(true)}
         onOpenWebhookSimulator={() => setIsWebhookSimulatorOpen(true)}
-        onOpenDebtReminder={event => setActiveDebtReminderBooking(event)}
-        onOpenReceiptReview={booking => setActiveReviewBooking(booking)}
-        onEditCategory={event => setCategoryModalBooking(event)}
+        onOpenDebtReminder={(event: CalendarEvent) => setActiveDebtReminderBooking(event)}
+        onOpenReceiptReview={(booking: CalendarEvent) => setActiveReviewBooking(booking)}
+        onEditCategory={(event: CalendarEvent) => setCategoryModalBooking(event)}
       />
 
       {/* Modal Nhập Lịch Chụp Từ CSV / Excel */}

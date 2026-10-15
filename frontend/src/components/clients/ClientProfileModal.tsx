@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { CalendarEvent } from '../../types';
 import { STATUS_CONFIG } from '../dashboard/BookingStatusSelect';
 import { supabase, isSupabaseConfigured } from '../../lib/supabase';
+import { formatCurrencyVND, parseCurrencyVND } from '../../utils/currency';
 import {
   X,
   Phone,
@@ -770,7 +771,7 @@ export const ClientProfileModal: React.FC<Props> = ({
                 title="Bổ sung ca chụp hoặc giao dịch thực thu cho khách"
               >
                 <Plus className="w-3.5 h-3.5" />
-                <span>{isAddingPastShoot ? 'Hủy Thêm' : '+ Thêm Gói Chụp / Giao Dịch'}</span>
+                <span>{isAddingPastShoot ? 'Hủy Thêm' : 'Thêm Gói Chụp / Giao Dịch'}</span>
               </button>
             </div>
 
@@ -817,19 +818,19 @@ export const ClientProfileModal: React.FC<Props> = ({
                   <div className="space-y-1">
                     <label className="text-[11px] font-bold text-zinc-700 dark:text-zinc-300">Giá gói chụp (đ):</label>
                     <input
-                      type="number"
-                      min="0"
+                      type="text"
+                      inputMode="numeric"
                       required
-                      value={newShootForm.packagePrice || ''}
+                      value={newShootForm.packagePrice ? formatCurrencyVND(newShootForm.packagePrice) : ''}
                       onChange={e => {
-                        const val = Number(e.target.value) || 0;
+                        const val = parseCurrencyVND(e.target.value);
                         setNewShootForm(prev => ({
                           ...prev,
                           packagePrice: val,
                           paidAmount: prev.paidAmount === 0 ? val : prev.paidAmount,
                         }));
                       }}
-                      placeholder="VD: 5000000"
+                      placeholder="VD: 5.000.000"
                       className="w-full px-3 py-1.5 rounded-xl bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-700 text-xs font-mono text-zinc-900 dark:text-zinc-100 font-bold outline-none focus:border-[#df8653]"
                     />
                   </div>
@@ -837,12 +838,12 @@ export const ClientProfileModal: React.FC<Props> = ({
                   <div className="space-y-1">
                     <label className="text-[11px] font-bold text-zinc-700 dark:text-zinc-300">Khách đã thực trả (đ):</label>
                     <input
-                      type="number"
-                      min="0"
+                      type="text"
+                      inputMode="numeric"
                       required
-                      value={newShootForm.paidAmount || ''}
-                      onChange={e => setNewShootForm(prev => ({ ...prev, paidAmount: Number(e.target.value) || 0 }))}
-                      placeholder="VD: 5000000"
+                      value={newShootForm.paidAmount ? formatCurrencyVND(newShootForm.paidAmount) : ''}
+                      onChange={e => setNewShootForm(prev => ({ ...prev, paidAmount: parseCurrencyVND(e.target.value) }))}
+                      placeholder="VD: 5.000.000"
                       className="w-full px-3 py-1.5 rounded-xl bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-700 text-xs font-mono text-emerald-600 dark:text-emerald-400 font-bold outline-none focus:border-emerald-500"
                     />
                   </div>
@@ -882,7 +883,7 @@ export const ClientProfileModal: React.FC<Props> = ({
             {currentClient.bookings.length === 0 ? (
               <div className="text-center py-8 rounded-2xl border border-dashed border-zinc-300 dark:border-zinc-800 text-zinc-500 text-xs space-y-1">
                 <p>Khách hàng hiện chưa có lịch chụp nào (hoặc đã xóa các lịch chưa chốt).</p>
-                <p className="text-[11px] text-zinc-400">Bạn có thể bấm "+ Thêm Gói Chụp / Giao Dịch" để bổ sung lịch sử cho khách.</p>
+                <p className="text-[11px] text-zinc-400">Bạn có thể bấm "Thêm Gói Chụp / Giao Dịch" để bổ sung lịch sử cho khách.</p>
               </div>
             ) : (
               <div className="space-y-3 max-h-[420px] overflow-y-auto pr-1">
@@ -955,10 +956,11 @@ export const ClientProfileModal: React.FC<Props> = ({
                             <div className="space-y-1">
                               <label className="text-[11px] font-bold text-zinc-700 dark:text-zinc-300">Giá chụp / Gói (đ):</label>
                               <input
-                                type="number"
-                                min="0"
-                                value={bookingForm.packagePrice || ''}
-                                onChange={e => setBookingForm(prev => ({ ...prev, packagePrice: Number(e.target.value) || 0 }))}
+                                type="text"
+                                inputMode="numeric"
+                                value={bookingForm.packagePrice ? formatCurrencyVND(bookingForm.packagePrice) : ''}
+                                onChange={e => setBookingForm(prev => ({ ...prev, packagePrice: parseCurrencyVND(e.target.value) }))}
+                                placeholder="VD: 5.000.000"
                                 className="w-full px-3 py-1.5 rounded-xl bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-700 text-xs font-mono text-zinc-900 dark:text-zinc-100 font-bold outline-none focus:border-[#df8653]"
                               />
                             </div>
@@ -968,10 +970,11 @@ export const ClientProfileModal: React.FC<Props> = ({
                                 Thực trả (Tính vào doanh thu) (đ):
                               </label>
                               <input
-                                type="number"
-                                min="0"
-                                value={bookingForm.paidAmount || ''}
-                                onChange={e => setBookingForm(prev => ({ ...prev, paidAmount: Number(e.target.value) || 0 }))}
+                                type="text"
+                                inputMode="numeric"
+                                value={bookingForm.paidAmount ? formatCurrencyVND(bookingForm.paidAmount) : ''}
+                                onChange={e => setBookingForm(prev => ({ ...prev, paidAmount: parseCurrencyVND(e.target.value) }))}
+                                placeholder="VD: 5.000.000"
                                 className="w-full px-3 py-1.5 rounded-xl bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-700 text-xs font-mono text-emerald-600 dark:text-emerald-400 font-bold outline-none focus:border-emerald-500"
                               />
                             </div>
@@ -979,10 +982,11 @@ export const ClientProfileModal: React.FC<Props> = ({
                             <div className="space-y-1">
                               <label className="text-[11px] font-bold text-zinc-700 dark:text-zinc-300">Tiền cọc (đ):</label>
                               <input
-                                type="number"
-                                min="0"
-                                value={bookingForm.depositAmount || ''}
-                                onChange={e => setBookingForm(prev => ({ ...prev, depositAmount: Number(e.target.value) || 0 }))}
+                                type="text"
+                                inputMode="numeric"
+                                value={bookingForm.depositAmount ? formatCurrencyVND(bookingForm.depositAmount) : ''}
+                                onChange={e => setBookingForm(prev => ({ ...prev, depositAmount: parseCurrencyVND(e.target.value) }))}
+                                placeholder="VD: 2.000.000"
                                 className="w-full px-3 py-1.5 rounded-xl bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-700 text-xs font-mono text-zinc-600 dark:text-zinc-300 outline-none focus:border-zinc-400"
                               />
                             </div>

@@ -70,7 +70,7 @@ const COLUMNS: ColumnDef[] = [
     stepNum: '2',
     title: 'Đã cọc',
     dotColor: 'bg-emerald-400',
-    matchStatuses: ['deposited', 'da_chot'],
+    matchStatuses: ['deposited', 'da_chot', 'confirmed'],
   },
   {
     status: 'shot',

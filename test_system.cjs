@@ -1762,6 +1762,23 @@ if (fs.existsSync(quoteViewTestFile38)) {
 }
 
 // --------------------------------------------------------------------
+// 39. KIỂM TRA CHUẨN HÓA TRẠNG THÁI KANBAN & DOANH THU (statusMapper)
+// --------------------------------------------------------------------
+console.log('\n▶ 39. Kiểm tra Chuẩn Hóa Trạng Thái Kanban & Doanh Thu...');
+const statusMapperFile = path.join(__dirname, 'frontend', 'src', 'utils', 'statusMapper.ts');
+assert(fs.existsSync(statusMapperFile), 'File frontend/src/utils/statusMapper.ts tồn tại');
+
+if (fs.existsSync(statusMapperFile)) {
+  const smContent = fs.readFileSync(statusMapperFile, 'utf8');
+  assert(smContent.includes('export type CanonicalKanbanStatus'), 'Định nghĩa kiểu CanonicalKanbanStatus');
+  assert(smContent.includes('normalizeToKanbanStatus'), 'Hàm normalizeToKanbanStatus được export');
+  assert(smContent.includes('isRevenueRecognizedStatus'), 'Hàm isRevenueRecognizedStatus được export');
+  assert(smContent.includes('da_chot') && smContent.includes('deposited'), 'Ánh xạ da_chot (SePAY) về deposited');
+  assert(smContent.includes('da_tra_file') && smContent.includes('done'), 'Ánh xạ da_tra_file và hoan_thanh về done');
+  assert(smContent.includes('da_huy') && smContent.includes('cancelled'), 'Ánh xạ da_huy về cancelled');
+}
+
+// --------------------------------------------------------------------
 // TỔNG KẾT
 // --------------------------------------------------------------------
 console.log('\n====================================================================');

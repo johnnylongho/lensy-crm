@@ -1,20 +1,33 @@
 import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
 import { useAuth, AccountType } from './AuthContext';
 import { supabase, isSupabaseConfigured } from '../lib/supabase';
-import { Studio, StudioRole } from '../types';
+import { Studio, StudioRole, UserRole } from '../types';
+
+// Hằng số UUID hợp lệ chuẩn RFC 4122 cho chế độ Fallback / Demo Role Switcher
+const FALLBACK_ADMIN_STUDIO_ID = 'a0000000-0000-0000-0000-000000000001';
+const FALLBACK_MEMBER_STUDIO_ID = 'a0000000-0000-0000-0000-000000000002';
+
+export const isValidUuid = (value?: string | null): boolean => {
+  if (!value) return false;
+  return /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(value);
+};
 
 interface WorkspaceContextType {
   currentStudio: Studio | null;
   studioRole: StudioRole | null;
   accountType: AccountType;
+  role: UserRole;
+  isManager: boolean;
   isStudioAdmin: boolean;
   isStudioOwner: boolean;
   isStudioMember: boolean;
+  isMember: boolean;
   isFreelancer: boolean;
   isLoading: boolean;
   userStudios: Studio[];
   refreshWorkspace: () => Promise<void>;
-  switchAccountType?: (newType: AccountType) => void;
+  switchAccountType?: (newType: AccountType | UserRole) => void;
+  switchRole?: (newRole: UserRole) => void;
 }
 
 const WorkspaceContext = createContext<WorkspaceContextType | undefined>(undefined);
@@ -28,8 +41,8 @@ export const WorkspaceProvider: React.FC<{ children: React.ReactNode }> = ({ chi
   const [userStudios, setUserStudios] = useState<Studio[]>([]);
   const [isLoading, setIsLoading] = useState(true);
 
-  // Local account type override (cho phép chuyển đổi demo hoặc nhận từ metadata)
   const [accountType, setAccountType] = useState<AccountType>('studio_admin');
+  const [userRole, setUserRole] = useState<UserRole>('manager');
 
   const refreshWorkspace = useCallback(async () => {
     if (!user) {
@@ -42,24 +55,54 @@ export const WorkspaceProvider: React.FC<{ children: React.ReactNode }> = ({ chi
       return;
     }
 
-    // Đọc loại tài khoản từ metadata
-    const userMetaType = user.user_metadata?.account_type as AccountType | 'studio' | undefined;
-    let initialType: AccountType = 'freelancer';
-    if (userMetaType === 'studio' || userMetaType === 'studio_admin') {
+    const userMetaRole = user.user_metadata?.role as UserRole | undefined;
+    const userMetaType = user.user_metadata?.account_type as any;
+    let initialType: AccountType = 'studio_admin';
+    let resolvedRole: UserRole = 'manager';
+
+    if (userMetaRole) {
+      resolvedRole = userMetaRole;
+      if (userMetaRole === 'manager') initialType = 'studio_admin';
+      else if (userMetaRole === 'member') initialType = 'studio_member';
+      else initialType = 'freelancer';
+    } else if (userMetaType === 'studio' || userMetaType === 'studio_admin' || userMetaType === 'manager') {
       initialType = 'studio_admin';
-    } else if (userMetaType === 'studio_member') {
+      resolvedRole = 'manager';
+    } else if (userMetaType === 'studio_member' || userMetaType === 'member') {
       initialType = 'studio_member';
+      resolvedRole = 'member';
     } else if (userMetaType === 'freelancer') {
       initialType = 'freelancer';
-    } else {
-      // Mặc định studio_admin để có trải nghiệm đầy đủ
-      initialType = 'studio_admin';
+      resolvedRole = 'freelancer';
     }
-    setAccountType(initialType);
 
+    setAccountType(initialType);
+    setUserRole(resolvedRole);
     setIsLoading(true);
+
     try {
-      if (isSupabaseConfigured) {
+      if (isSupabaseConfigured && isValidUuid(user.id)) {
+        const { data: dbUser } = await supabase
+          .from('users')
+          .select('role, studio_id')
+          .eq('id', user.id)
+          .maybeSingle();
+
+        if (dbUser?.role) {
+          if (dbUser.role === 'manager' || dbUser.role === 'admin') {
+            resolvedRole = 'manager';
+            initialType = 'studio_admin';
+          } else if (dbUser.role === 'member' || dbUser.role === 'photographer' || dbUser.role === 'assistant' || dbUser.role === 'retoucher') {
+            resolvedRole = 'member';
+            initialType = 'studio_member';
+          } else if (dbUser.role === 'freelancer') {
+            resolvedRole = 'freelancer';
+            initialType = 'freelancer';
+          }
+          setUserRole(resolvedRole);
+          setAccountType(initialType);
+        }
+
         // 1. Kiểm tra Studio do user sở hữu (Owner/Admin)
         const { data: ownedStudios } = await supabase
           .from('studios')
@@ -75,6 +118,7 @@ export const WorkspaceProvider: React.FC<{ children: React.ReactNode }> = ({ chi
           setIsStudioAdmin(true);
           setIsStudioOwner(true);
           setAccountType('studio_admin');
+          setUserRole('manager');
           return;
         }
 
@@ -97,25 +141,29 @@ export const WorkspaceProvider: React.FC<{ children: React.ReactNode }> = ({ chi
           setIsStudioAdmin(isAdmin);
           setIsStudioOwner(false);
           setAccountType(isAdmin ? 'studio_admin' : 'studio_member');
+          setUserRole(isAdmin ? 'manager' : 'member');
           return;
         }
 
-        // 3. User là Freelancer độc lập hoặc theo metadata
-        if (initialType === 'freelancer') {
+        // 3. Fallback an toàn với UUID chuẩn (Tránh lỗi invalid input syntax for type uuid)
+        const safeDbStudioId = isValidUuid(dbUser?.studio_id) ? dbUser!.studio_id : null;
+
+        if (resolvedRole === 'freelancer') {
           setCurrentStudio(null);
           setStudioRole(null);
           setIsStudioAdmin(false);
           setIsStudioOwner(false);
           setUserStudios([]);
           setAccountType('freelancer');
-        } else if (initialType === 'studio_member') {
-          // Tạo mock studio liên kết cho thành viên
+          setUserRole('freelancer');
+        } else if (resolvedRole === 'member') {
           const memberStudio: Studio = {
-            id: 'studio-collab-001',
+            id: safeDbStudioId || FALLBACK_MEMBER_STUDIO_ID,
             name: user.user_metadata?.studio_name || 'Mirmia Studio Partner',
             logo_url: '/mirmia-logo.png',
+            invite_code: 'MIRMIA-JOIN',
             verified_status: true,
-            owner_id: 'studio-lead-id',
+            owner_id: user.id,
           };
           setCurrentStudio(memberStudio);
           setUserStudios([memberStudio]);
@@ -123,12 +171,13 @@ export const WorkspaceProvider: React.FC<{ children: React.ReactNode }> = ({ chi
           setIsStudioAdmin(false);
           setIsStudioOwner(false);
           setAccountType('studio_member');
+          setUserRole('member');
         } else {
-          // Studio Admin
           const defaultStudio: Studio = {
-            id: 'studio-owner-001',
-            name: user.user_metadata?.studio_name || 'Studio Của Tôi',
+            id: safeDbStudioId || FALLBACK_ADMIN_STUDIO_ID,
+            name: user.user_metadata?.studio_name || 'MIRMIA STUDIO & ACADEMY WORKSPACE',
             logo_url: '/mirmia-logo.png',
+            invite_code: 'MIRMIA-VIP88',
             verified_status: true,
             owner_id: user.id,
           };
@@ -138,23 +187,26 @@ export const WorkspaceProvider: React.FC<{ children: React.ReactNode }> = ({ chi
           setIsStudioAdmin(true);
           setIsStudioOwner(true);
           setAccountType('studio_admin');
+          setUserRole('manager');
         }
       } else {
-        // Demo Mock Fallback dựa theo accountType
-        if (initialType === 'freelancer') {
+        // Demo Mock Fallback khi chưa kết nối Supabase
+        if (resolvedRole === 'freelancer') {
           setCurrentStudio(null);
           setStudioRole(null);
           setIsStudioAdmin(false);
           setIsStudioOwner(false);
           setUserStudios([]);
           setAccountType('freelancer');
-        } else if (initialType === 'studio_member') {
+          setUserRole('freelancer');
+        } else if (resolvedRole === 'member') {
           const memberStudio: Studio = {
-            id: 'mirmia-studio-collab',
+            id: FALLBACK_MEMBER_STUDIO_ID,
             name: 'MIRMIA STUDIO (Ekip Member)',
             logo_url: '/mirmia-logo.png',
+            invite_code: 'MIRMIA-MEM01',
             verified_status: true,
-            owner_id: 'other-owner-id',
+            owner_id: FALLBACK_ADMIN_STUDIO_ID,
           };
           setCurrentStudio(memberStudio);
           setUserStudios([memberStudio]);
@@ -162,11 +214,13 @@ export const WorkspaceProvider: React.FC<{ children: React.ReactNode }> = ({ chi
           setIsStudioAdmin(false);
           setIsStudioOwner(false);
           setAccountType('studio_member');
+          setUserRole('member');
         } else {
           const mockStudio: Studio = {
-            id: 'a0000000-0000-0000-0000-000000000001',
+            id: FALLBACK_ADMIN_STUDIO_ID,
             name: 'MIRMIA STUDIO & ACADEMY WORKSPACE',
             logo_url: '/mirmia-logo.png',
+            invite_code: 'MIRMIA-VIP88',
             verified_status: true,
             owner_id: user.id,
           };
@@ -176,6 +230,7 @@ export const WorkspaceProvider: React.FC<{ children: React.ReactNode }> = ({ chi
           setIsStudioAdmin(true);
           setIsStudioOwner(true);
           setAccountType('studio_admin');
+          setUserRole('manager');
         }
       }
     } catch (err) {
@@ -189,33 +244,42 @@ export const WorkspaceProvider: React.FC<{ children: React.ReactNode }> = ({ chi
     refreshWorkspace();
   }, [refreshWorkspace]);
 
-  // Cho phép chuyển đổi nhanh giữa 3 góc nhìn tài khoản để kiểm thử hoặc trải nghiệm
-  const switchAccountType = (newType: AccountType) => {
-    setAccountType(newType);
+  // Chuyển đổi nhanh giữa 3 góc nhìn vai trò (RBAC Switcher) dùng UUID chuẩn
+  const switchAccountType = (newType: AccountType | UserRole) => {
+    const existingValidId = isValidUuid(currentStudio?.id) ? currentStudio!.id : null;
+
     if (newType === 'freelancer') {
+      setAccountType('freelancer');
+      setUserRole('freelancer');
       setCurrentStudio(null);
       setStudioRole(null);
       setIsStudioAdmin(false);
       setIsStudioOwner(false);
-    } else if (newType === 'studio_member') {
+    } else if (newType === 'studio_member' || newType === 'member') {
+      setAccountType('studio_member');
+      setUserRole('member');
       const memberStudio: Studio = {
-        id: 'studio-collab-001',
+        id: existingValidId || FALLBACK_MEMBER_STUDIO_ID,
         name: user?.user_metadata?.studio_name || 'Mirmia Creative Team',
         logo_url: '/mirmia-logo.png',
+        invite_code: 'MIRMIA-CREW',
         verified_status: true,
-        owner_id: 'studio-lead-id',
+        owner_id: user?.id || FALLBACK_ADMIN_STUDIO_ID,
       };
       setCurrentStudio(memberStudio);
       setStudioRole('photographer');
       setIsStudioAdmin(false);
       setIsStudioOwner(false);
     } else {
+      setAccountType('studio_admin');
+      setUserRole('manager');
       const adminStudio: Studio = {
-        id: 'a0000000-0000-0000-0000-000000000001',
-        name: user?.user_metadata?.studio_name || 'MIRMIA STUDIO & ACADEMY',
+        id: existingValidId || FALLBACK_ADMIN_STUDIO_ID,
+        name: user?.user_metadata?.studio_name || 'MIRMIA STUDIO & ACADEMY WORKSPACE',
         logo_url: '/mirmia-logo.png',
+        invite_code: 'MIRMIA-VIP88',
         verified_status: true,
-        owner_id: user?.id || 'owner-id',
+        owner_id: user?.id || FALLBACK_ADMIN_STUDIO_ID,
       };
       setCurrentStudio(adminStudio);
       setStudioRole('admin');
@@ -224,9 +288,13 @@ export const WorkspaceProvider: React.FC<{ children: React.ReactNode }> = ({ chi
     }
   };
 
-  const isFreelancer = accountType === 'freelancer';
-  const isStudioMember = accountType === 'studio_member';
-  const isStudioAdminResolved = accountType === 'studio_admin';
+  const switchRole = (newRole: UserRole) => {
+    switchAccountType(newRole);
+  };
+
+  const isFreelancer = userRole === 'freelancer' || accountType === 'freelancer';
+  const isMember = userRole === 'member' || accountType === 'studio_member';
+  const isManager = userRole === 'manager' || accountType === 'studio_admin';
 
   return (
     <WorkspaceContext.Provider
@@ -234,14 +302,18 @@ export const WorkspaceProvider: React.FC<{ children: React.ReactNode }> = ({ chi
         currentStudio,
         studioRole,
         accountType,
-        isStudioAdmin: isStudioAdminResolved,
+        role: userRole,
+        isManager,
+        isStudioAdmin: isManager,
         isStudioOwner,
-        isStudioMember,
+        isStudioMember: isMember,
+        isMember,
         isFreelancer,
         isLoading,
         userStudios,
         refreshWorkspace,
         switchAccountType,
+        switchRole,
       }}
     >
       {children}

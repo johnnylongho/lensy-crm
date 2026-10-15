@@ -1,4 +1,5 @@
-import React, { useState, useMemo, useEffect } from 'react';
+import React, { useState, useMemo, useEffect, useRef } from 'react';
+import { useNavigate } from 'react-router-dom';
 import {
   CalendarEvent,
   BookingStatus,
@@ -31,6 +32,12 @@ import {
   BellRing,
   Radio,
   ChevronDown,
+  Copy,
+  KeyRound,
+  ShieldCheck,
+  Building2,
+  Crown,
+  Camera,
 } from 'lucide-react';
 import {
   ResponsiveContainer,
@@ -113,8 +120,22 @@ export const ClayStudioDashboard: React.FC<Props> = ({
   const [selectedCalendarDate, setSelectedCalendarDate] = useState<Date>(new Date());
   const [visibleCount, setVisibleCount] = useState<number>(10);
 
+  const navigate = useNavigate();
   const { user } = useAuth();
-  const { currentStudio, isStudioAdmin, isStudioMember, isFreelancer, accountType } = useWorkspace();
+  const { currentStudio, isStudioAdmin, isStudioMember, isFreelancer, accountType, switchAccountType, switchRole } = useWorkspace();
+  const [isWorkspaceDropdownOpen, setIsWorkspaceDropdownOpen] = useState(false);
+  const [isCopiedInviteCode, setIsCopiedInviteCode] = useState(false);
+  const workspaceDropdownRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const handleClickOutside = (e: MouseEvent) => {
+      if (workspaceDropdownRef.current && !workspaceDropdownRef.current.contains(e.target as Node)) {
+        setIsWorkspaceDropdownOpen(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
 
   // Helper format compact M (VD: 28.5M)
   const formatCompactM = (amount: number) => {
@@ -453,22 +474,153 @@ export const ClayStudioDashboard: React.FC<Props> = ({
       {/* ===================================================================== */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-1">
         <div className="space-y-1.5">
-          {/* Season / Workspace Pill */}
-          <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-xl bg-white/80 dark:bg-white/10 border border-slate-200/80 dark:border-white/15 shadow-2xs text-xs font-semibold text-slate-700 dark:text-zinc-200 cursor-pointer hover:bg-white transition-all">
-            {isStudioAdmin ? (
-              <span className="flex items-center gap-1 text-orange-600 dark:text-orange-400 font-bold">
-                👑 Quản Lý: {currentStudio?.name || 'Studio Workspace'}
-              </span>
-            ) : isStudioMember ? (
-              <span className="flex items-center gap-1 text-emerald-600 dark:text-emerald-400 font-bold">
-                📸 Ekip: {currentStudio?.name || 'Studio Member Team'}
-              </span>
-            ) : (
-              <span className="flex items-center gap-1 text-amber-600 dark:text-amber-400 font-bold">
-                🎯 Freelancer: Lịch Cá Nhân
-              </span>
+          {/* Season / Workspace Pill with Interactive Dropdown */}
+          <div className="relative inline-block" ref={workspaceDropdownRef}>
+            <button
+              type="button"
+              onClick={() => setIsWorkspaceDropdownOpen(!isWorkspaceDropdownOpen)}
+              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-white/80 dark:bg-white/10 hover:bg-white dark:hover:bg-white/15 border border-slate-200/80 dark:border-white/15 shadow-2xs text-xs font-semibold text-slate-700 dark:text-zinc-200 cursor-pointer transition-all"
+              title="Nhấn để xem thông tin Studio và đổi vai trò"
+            >
+              {isStudioAdmin ? (
+                <span className="flex items-center gap-1 text-orange-600 dark:text-orange-400 font-bold">
+                  👑 Quản Lý: {currentStudio?.name || 'Studio Workspace'}
+                </span>
+              ) : isStudioMember ? (
+                <span className="flex items-center gap-1 text-emerald-600 dark:text-emerald-400 font-bold">
+                  📸 Ekip: {currentStudio?.name || 'Studio Member Team'}
+                </span>
+              ) : (
+                <span className="flex items-center gap-1 text-amber-600 dark:text-amber-400 font-bold">
+                  🎯 Freelancer: Lịch Cá Nhân
+                </span>
+              )}
+              <ChevronDown className={`w-3.5 h-3.5 text-slate-400 transition-transform ${isWorkspaceDropdownOpen ? 'rotate-180' : ''}`} />
+            </button>
+
+            {/* Dropdown Popover */}
+            {isWorkspaceDropdownOpen && (
+              <div className="absolute left-0 top-full mt-2 w-80 rounded-2xl bg-white/95 dark:bg-[#121824]/95 backdrop-blur-xl border border-slate-200 dark:border-white/10 shadow-2xl p-4 z-50 text-xs space-y-3 animate-fadeIn text-left">
+                <div className="p-3 rounded-xl bg-slate-50 dark:bg-white/5 border border-slate-200/60 dark:border-white/10 space-y-2">
+                  <div className="flex items-center justify-between gap-2">
+                    <span className="font-extrabold text-sm text-slate-900 dark:text-white truncate">
+                      {currentStudio?.name || 'MIRMIA STUDIO'}
+                    </span>
+                    <span className={`px-2 py-0.5 rounded text-[10px] font-black uppercase ${
+                      isStudioAdmin
+                        ? 'bg-orange-500/20 text-[#df8653]'
+                        : isStudioMember
+                        ? 'bg-emerald-500/20 text-emerald-500'
+                        : 'bg-amber-500/20 text-amber-500'
+                    }`}>
+                      {isStudioAdmin ? 'Manager' : isStudioMember ? 'Member' : 'Freelancer'}
+                    </span>
+                  </div>
+
+                  {/* Mã mời Studio */}
+                  <div className="pt-2 border-t border-slate-200/60 dark:border-white/10 flex items-center justify-between">
+                    <div>
+                      <div className="text-[10px] text-slate-400 font-semibold">Mã mời tham gia Studio:</div>
+                      <div className="font-mono font-bold text-xs text-[#df8653] dark:text-orange-400">
+                        {currentStudio?.invite_code || 'MIRMIA-VIP88'}
+                      </div>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={async () => {
+                        const code = currentStudio?.invite_code || 'MIRMIA-VIP88';
+                        await navigator.clipboard.writeText(code);
+                        setIsCopiedInviteCode(true);
+                        setTimeout(() => setIsCopiedInviteCode(false), 2000);
+                      }}
+                      className="px-2.5 py-1 rounded-lg bg-orange-500/10 hover:bg-orange-500/20 text-[#df8653] font-bold text-[10px] flex items-center gap-1 transition-all cursor-pointer"
+                      title="Sao chép mã mời"
+                    >
+                      {isCopiedInviteCode ? <CheckCircle2 className="w-3 h-3 text-emerald-500" /> : <Copy className="w-3 h-3" />}
+                      <span>{isCopiedInviteCode ? 'Đã copy' : 'Copy'}</span>
+                    </button>
+                  </div>
+                </div>
+
+                {/* Phím tắt Điều Hướng */}
+                <div className="grid grid-cols-2 gap-2">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setIsWorkspaceDropdownOpen(false);
+                      navigate('/dashboard/studio-settings');
+                    }}
+                    className="p-2.5 rounded-xl bg-slate-100 hover:bg-slate-200 dark:bg-white/5 dark:hover:bg-white/10 text-slate-700 dark:text-slate-200 font-bold text-[11px] flex items-center justify-center gap-1.5 transition-colors cursor-pointer"
+                  >
+                    <Building2 className="w-3.5 h-3.5 text-orange-500" />
+                    <span>Quản Trị Studio</span>
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setIsWorkspaceDropdownOpen(false);
+                      navigate('/dashboard/settings');
+                    }}
+                    className="p-2.5 rounded-xl bg-slate-100 hover:bg-slate-200 dark:bg-white/5 dark:hover:bg-white/10 text-slate-700 dark:text-slate-200 font-bold text-[11px] flex items-center justify-center gap-1.5 transition-colors cursor-pointer"
+                  >
+                    <ShieldCheck className="w-3.5 h-3.5 text-blue-500" />
+                    <span>Hồ Sơ Cài Đặt</span>
+                  </button>
+                </div>
+
+                {/* Role Switcher Trực Tiếp */}
+                <div className="p-2.5 rounded-xl bg-orange-500/5 border border-orange-500/20 space-y-2">
+                  <span className="text-[10px] font-bold uppercase text-[#df8653] dark:text-orange-400 block tracking-wider">
+                    Chuyển Nhanh Góc Nhìn (RBAC):
+                  </span>
+                  <div className="grid grid-cols-3 gap-1">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        switchAccountType?.('freelancer');
+                        setIsWorkspaceDropdownOpen(false);
+                      }}
+                      className={`p-1.5 rounded-lg text-[10px] font-bold transition-all text-center cursor-pointer ${
+                        isFreelancer
+                          ? 'bg-amber-500 text-white shadow-xs'
+                          : 'bg-white/60 dark:bg-white/5 text-slate-600 dark:text-slate-400 hover:bg-white dark:hover:bg-white/10'
+                      }`}
+                    >
+                      🎯 Freelancer
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        switchAccountType?.('manager');
+                        setIsWorkspaceDropdownOpen(false);
+                      }}
+                      className={`p-1.5 rounded-lg text-[10px] font-bold transition-all text-center cursor-pointer ${
+                        isStudioAdmin
+                          ? 'bg-orange-500 text-white shadow-xs'
+                          : 'bg-white/60 dark:bg-white/5 text-slate-600 dark:text-slate-400 hover:bg-white dark:hover:bg-white/10'
+                      }`}
+                    >
+                      👑 Quản Lý
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        switchAccountType?.('member');
+                        setIsWorkspaceDropdownOpen(false);
+                      }}
+                      className={`p-1.5 rounded-lg text-[10px] font-bold transition-all text-center cursor-pointer ${
+                        isStudioMember
+                          ? 'bg-emerald-500 text-white shadow-xs'
+                          : 'bg-white/60 dark:bg-white/5 text-slate-600 dark:text-slate-400 hover:bg-white dark:hover:bg-white/10'
+                      }`}
+                    >
+                      📸 Ekip
+                    </button>
+                  </div>
+                </div>
+              </div>
             )}
-            <ChevronDown className="w-3.5 h-3.5 text-slate-400" />
           </div>
 
           {/* Big Greeting */}

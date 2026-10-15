@@ -4,6 +4,7 @@ import { useAuth } from '../../context/AuthContext';
 import { useWorkspace } from '../../context/WorkspaceContext';
 import { supabase, isSupabaseConfigured } from '../../lib/supabase';
 import { PackageItem } from '../../types';
+import { formatCurrencyVND, parseCurrencyVND } from '../../utils/currency';
 // Mock data removed
 import {
   Package,
@@ -1140,13 +1141,13 @@ export const PackagesManagementPage: React.FC = () => {
                   </label>
                   <div className="relative">
                     <input
-                      type="number"
+                      type="text"
+                      inputMode="numeric"
                       required
-                      min={0}
                       step="any"
-                      placeholder="VD: 18000000"
-                      value={packagePrice}
-                      onChange={e => setPackagePrice(e.target.value)}
+                      placeholder="VD: 18.000.000"
+                      value={packagePrice ? formatCurrencyVND(packagePrice) : ''}
+                      onChange={e => setPackagePrice(parseCurrencyVND(e.target.value).toString())}
                       className="w-full pl-3.5 pr-8 py-2.5 rounded-xl bg-slate-900 border border-white/10 text-white placeholder-slate-500 focus:outline-none focus:border-amber-500 text-xs sm:text-sm font-mono font-bold"
                     />
                     <span className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-500 font-bold">

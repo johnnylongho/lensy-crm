@@ -175,12 +175,24 @@ export const QuoteView: React.FC<Props> = ({
   onQuoteStatusChange,
   onBookingSubmit,
 }) => {
-  const { token, username, id } = useParams<{ token?: string; username?: string; id?: string }>();
+  const { token, username, slug, id } = useParams<{
+    token?: string;
+    username?: string;
+    slug?: string;
+    id?: string;
+  }>();
+
+  // Nhận diện thông minh giữa UUID và Slug Studio
+  const studioParam = slug || id;
+  const isStudioParamUuid = Boolean(
+    studioParam && /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(studioParam)
+  );
+
   const [quote, setQuote] = useState<QuoteData>(initialQuote);
   const [photographerId, setPhotographerId] = useState<string | null>(null);
   const [isPhotographerVerified, setIsPhotographerVerified] = useState<boolean>(true);
-  const isBookingPage = Boolean(username) || Boolean(id);
-  const [isLoading, setIsLoading] = useState(Boolean(token || username || id));
+  const isBookingPage = Boolean(username) || Boolean(studioParam);
+  const [isLoading, setIsLoading] = useState(Boolean(token || username || studioParam));
   const [isNotFound, setIsNotFound] = useState(false);
   const [isStudioNotFound, setIsStudioNotFound] = useState(false);
   const [isDepositModalOpen, setIsDepositModalOpen] = useState(false);
@@ -189,9 +201,9 @@ export const QuoteView: React.FC<Props> = ({
   const [selectedPackage, setSelectedPackage] = useState<PackageItem | null>(null);
   const [verifiedStudio, setVerifiedStudio] = useState<{ name: string; logoUrl?: string } | null>(null);
 
-  // Fetch dynamic studio profile by username (/book/:username) or studio id (/book/studio/:id)
+  // Fetch dynamic studio profile
   useEffect(() => {
-    if (!username && !id) return;
+    if (!username && !studioParam) return;
 
     const fetchStudioProfile = async () => {
       setIsLoading(true);
@@ -203,13 +215,11 @@ export const QuoteView: React.FC<Props> = ({
           let userData: any = null;
           let studioData: any = null;
 
-          if (id) {
-            // Check if id corresponds to a studio record in studios table
-            const { data: sData } = await supabase
-              .from('studios')
-              .select('*')
-              .eq('id', id)
-              .maybeSingle();
+          if (studioParam) {
+            const studioQuery = supabase.from('studios').select('*');
+            const { data: sData } = await (isStudioParamUuid
+              ? studioQuery.eq('id', studioParam).maybeSingle()
+              : studioQuery.eq('slug', studioParam).maybeSingle());
 
             if (sData) {
               studioData = sData;
@@ -219,12 +229,11 @@ export const QuoteView: React.FC<Props> = ({
                 .eq('id', sData.owner_id)
                 .maybeSingle();
               userData = uOwner;
-            } else {
-              // Maybe id is a user id directly
+            } else if (isStudioParamUuid) {
               const { data: uData } = await supabase
                 .from('users')
                 .select('*')
-                .eq('id', id)
+                .eq('id', studioParam)
                 .maybeSingle();
               userData = uData;
             }
@@ -236,7 +245,6 @@ export const QuoteView: React.FC<Props> = ({
               .maybeSingle();
 
             if (userError || !uData) {
-              console.warn('Không tìm thấy Studio với username:', username, userError);
               setIsStudioNotFound(true);
               setIsLoading(false);
               return;
@@ -245,7 +253,6 @@ export const QuoteView: React.FC<Props> = ({
           }
 
           if (!userData && !studioData) {
-            console.warn('Không tìm thấy Studio với mã định danh:', username || id);
             setIsStudioNotFound(true);
             setIsLoading(false);
             return;
@@ -265,44 +272,6 @@ export const QuoteView: React.FC<Props> = ({
             logoUrl: studioData.logo_url,
           } : null;
 
-          // Logic hiển thị Branding theo Multi-Tenants:
-          // Nếu user là Studio Member và có status 'approved' -> Lấy name & logo từ bảng studios
-          if (userData && userData.account_type === 'studio_member' && !studioData) {
-            try {
-              const { data: memberData } = await supabase
-                .from('studio_members')
-                .select(`
-                  status,
-                  role,
-                  studios:studio_id (
-                    id,
-                    name,
-                    logo_url,
-                    verified_status
-                  )
-                `)
-                .eq('user_id', userData.id)
-                .eq('status', 'approved')
-                .maybeSingle();
-
-              if (memberData && memberData.studios) {
-                const sObj = (memberData as any).studios;
-                if (sObj?.name) {
-                  displayStudioName = sObj.name;
-                  if (sObj.logo_url) {
-                    displayAvatarUrl = sObj.logo_url;
-                  }
-                  studioVerifiedInfo = {
-                    name: sObj.name,
-                    logoUrl: sObj.logo_url,
-                  };
-                }
-              }
-            } catch (mErr) {
-              console.warn('Lỗi kiểm tra studio membership:', mErr);
-            }
-          }
-
           setVerifiedStudio(studioVerifiedInfo);
 
           setQuote(prev => ({
@@ -321,7 +290,7 @@ export const QuoteView: React.FC<Props> = ({
             },
           }));
 
-          // Fetch dynamic packages for this photographer or studio
+          // Fetch packages cho studio/thợ ảnh này
           try {
             let pkgList: PackageItem[] = [];
             let pkgQuery = supabase
@@ -337,7 +306,6 @@ export const QuoteView: React.FC<Props> = ({
             }
 
             const { data: pkgData, error: pkgError } = await pkgQuery;
-
             if (!pkgError && pkgData && pkgData.length > 0) {
               pkgList = pkgData.map((p: any) => ({
                 ...p,
@@ -346,40 +314,12 @@ export const QuoteView: React.FC<Props> = ({
                 image_urls: Array.isArray(p.image_urls) ? p.image_urls : [],
                 is_active: p.is_active ?? true,
               }));
-            } else {
-              const localSaved = localStorage.getItem('lensy_packages_local');
-              if (localSaved) {
-                const parsed = JSON.parse(localSaved).filter((p: PackageItem) => p.is_active);
-                if (parsed.length > 0) pkgList = parsed;
-              }
-              if (pkgList.length === 0) {
-                pkgList = [];
-              }
             }
-
             setPackages(pkgList);
-            if (pkgList.length > 0) {
-              setSelectedPackage(pkgList[0]);
-            }
+            if (pkgList.length > 0) setSelectedPackage(pkgList[0]);
           } catch (pkgErr) {
             console.warn('Lỗi khi fetch gói dịch vụ:', pkgErr);
-            setPackages([]);
-            
           }
-        } else {
-          // Demo fallback
-          setPhotographerId('87239d64-5964-47b1-a146-f12f3d41de9e');
-          setQuote(prev => ({
-            ...prev,
-            studio_id: id || 'studio-demo-1',
-            studioName: 'MIRMIA STUDIO & ACADEMY',
-            studioAvatarUrl: '/mirmia-logo.png',
-            studioCoverUrl: 'https://images.unsplash.com/photo-1492691527719-9d1e07e534b4?auto=format&fit=crop&w=1200&q=80',
-            photographerName: 'Johnny Long Hồ',
-            photographerPhone: '0901234567',
-          }));
-          setPackages([]);
-          
         }
       } catch (err) {
         console.error('Lỗi truy vấn Studio:', err);
@@ -390,11 +330,11 @@ export const QuoteView: React.FC<Props> = ({
     };
 
     fetchStudioProfile();
-  }, [username, id]);
+  }, [username, studioParam, isStudioParamUuid]);
 
   // Fetch dynamic quote from Supabase by token
   useEffect(() => {
-    if (username || id) return; // Nếu đang ở link /book/:username hoặc /book/studio/:id thì không fetch theo token
+    if (username || studioParam) return; // Nếu đang ở link /book/:username hoặc /book/studio/:slug hoặc /book/studio/:id thì không fetch theo token
 
     if (!token) {
       setQuote(initialQuote);

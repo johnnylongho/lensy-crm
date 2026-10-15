@@ -1,5 +1,5 @@
-import React, { useState, useEffect, useRef } from 'react';
-import { Outlet, Link, useLocation } from 'react-router-dom';
+import React, { useState, useEffect, useRef, useMemo } from 'react';
+import { Outlet, Link, useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { useWorkspace } from '../context/WorkspaceContext';
 import { supabase } from '../lib/supabase';
@@ -22,6 +22,7 @@ import {
   PanelLeftOpen,
   ShieldCheck,
   Check,
+  DollarSign,
 } from 'lucide-react';
 import { ThemeToggle } from '../components/common/ThemeToggle';
 import { TierBadge } from '../components/dashboard/TierBadge';
@@ -82,8 +83,13 @@ export const DashboardLayout: React.FC = () => {
 
     // Tính toán cấp bậc studio
     const currentYear = new Date().getFullYear();
+    const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(currentStudio?.id || '');
+    const isUserUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(user.id || '');
+
+    if (!isUserUuid) return;
+
     let query = supabase.from('bookings').select('package_price, paid_amount, status, event_date');
-    if (currentStudio) {
+    if (currentStudio && isUuid) {
       query = query.or(`studio_id.eq.${currentStudio.id},photographer_id.eq.${user.id}`);
     } else {
       query = query.eq('photographer_id', user.id);
@@ -130,78 +136,118 @@ export const DashboardLayout: React.FC = () => {
     setIsUserMenuOpen(false);
   }, [location.pathname, location.search]);
 
-  // Cấu trúc danh mục Menu phân nhóm khoa học theo 3 nhóm vai trò:
-  // 1. Quản lý studio: Toàn quyền
-  // 2. Thành viên studio: Tập trung ca chụp phân công, CRM khách, kho thiết bị mượn máy
-  // 3. Freelancer: Cá nhân solo, CRM khách, bảng giá cá nhân
-  const menuGroups = [
-    {
-      title: 'Vận Hành',
-      items: [
+  // Cấu trúc danh mục Menu theo đúng 3 nhóm vai trò RBAC:
+  // - Role manager: Hiển thị Full Menu (Dashboard, Lịch chụp, Khách hàng, Thiết bị, Nhân sự, Cài đặt)
+  // - Role freelancer: Ẩn menu Nhân sự, Ẩn menu Studio Bays. Chỉ hiện: Lịch cá nhân, Khách hàng, Thiết bị (cá nhân), Cài đặt
+  // - Role member: Sidebar tối giản nhất. Chỉ hiện: "Lịch của tôi (My Schedule)", "Thu nhập (My Payroll)", "Hồ sơ cá nhân"
+  const menuGroups = useMemo(() => {
+    if (isStudioMember) {
+      return [
         {
-          to: '/dashboard',
-          label: isStudioMember ? 'Lịch Chụp Phân Công' : isFreelancer ? 'Lịch Chụp Cá Nhân' : 'Tổng Quan Lịch Chụp',
-          icon: Layers,
-          isActive: location.pathname === '/dashboard',
+          title: 'Công Việc & Thu Nhập',
+          items: [
+            {
+              to: '/dashboard',
+              label: 'Lịch Của Tôi (My Schedule)',
+              icon: Layers,
+              isActive: location.pathname === '/dashboard',
+            },
+            {
+              to: '/dashboard/settings',
+              label: 'Thu Nhập (My Payroll)',
+              icon: DollarSign,
+              isActive: false,
+            },
+            {
+              to: '/dashboard/settings',
+              label: 'Hồ Sơ Cá Nhân',
+              icon: Settings,
+              isActive: location.pathname.startsWith('/dashboard/settings'),
+            },
+          ],
         },
+      ];
+    }
+
+    if (isFreelancer) {
+      return [
         {
-          to: '/dashboard/clients',
-          label: 'Hồ Sơ Khách Hàng (CRM)',
-          icon: Users,
-          isActive: location.pathname.startsWith('/dashboard/clients'),
+          title: 'Vận Hành Solo',
+          items: [
+            {
+              to: '/dashboard',
+              label: 'Lịch Cá Nhân',
+              icon: Layers,
+              isActive: location.pathname === '/dashboard',
+            },
+            {
+              to: '/dashboard/clients',
+              label: 'Khách Hàng',
+              icon: Users,
+              isActive: location.pathname.startsWith('/dashboard/clients'),
+            },
+            {
+              to: '/dashboard/gears',
+              label: 'Thiết Bị (Cá Nhân)',
+              icon: SlidersHorizontal,
+              isActive: location.pathname.startsWith('/dashboard/gears'),
+            },
+            {
+              to: '/dashboard/settings',
+              label: 'Cài Đặt',
+              icon: Settings,
+              isActive: location.pathname.startsWith('/dashboard/settings'),
+            },
+          ],
         },
-      ],
-    },
-    {
-      title: 'Dịch Vụ & Thiết Bị',
-      items: [
-        // Quản lý studio hoặc Freelancer quản lý bảng giá của mình
-        ...(!isStudioMember
-          ? [
-              {
-                to: '/dashboard/packages',
-                label: isFreelancer ? 'Bảng Giá Cá Nhân' : 'Bảng Giá & Gói Dịch Vụ',
-                icon: Package,
-                isActive: location.pathname.startsWith('/dashboard/packages'),
-              },
-            ]
-          : []),
-        // Kho thiết bị studio: Hiển thị cho Quản lý studio và Thành viên studio (để mượn máy)
-        ...(!isFreelancer
-          ? [
-              {
-                to: '/dashboard/gears',
-                label: isStudioMember ? 'Kho Máy Studio (Mượn)' : 'Kho Thiết Bị Studio',
-                icon: SlidersHorizontal,
-                isActive: location.pathname.startsWith('/dashboard/gears'),
-              },
-            ]
-          : []),
-      ],
-    },
-    {
-      title: 'Hệ Thống',
-      items: [
-        // Quản trị studio: Chỉ Quản lý Studio (Chủ studio) mới có quyền truy cập
-        ...(isStudioAdmin
-          ? [
-              {
-                to: '/dashboard/studio-settings',
-                label: 'Quản Trị Studio',
-                icon: Building2,
-                isActive: location.pathname.startsWith('/dashboard/studio-settings'),
-              },
-            ]
-          : []),
-        {
-          to: '/dashboard/settings',
-          label: 'Cài Đặt Hồ Sơ',
-          icon: Settings,
-          isActive: location.pathname.startsWith('/dashboard/settings'),
-        },
-      ],
-    },
-  ];
+      ];
+    }
+
+    // Role manager (Mặc định quản trị Studio)
+    return [
+      {
+        title: 'Vận Hành Toàn Diện',
+        items: [
+          {
+            to: '/dashboard',
+            label: 'Dashboard & Lịch Chụp',
+            icon: Layers,
+            isActive: location.pathname === '/dashboard',
+          },
+          {
+            to: '/dashboard/clients',
+            label: 'Khách Hàng',
+            icon: Users,
+            isActive: location.pathname.startsWith('/dashboard/clients'),
+          },
+          {
+            to: '/dashboard/gears',
+            label: 'Thiết Bị',
+            icon: SlidersHorizontal,
+            isActive: location.pathname.startsWith('/dashboard/gears'),
+          },
+          {
+            to: '/dashboard/studio-settings',
+            label: 'Nhân Sự',
+            icon: Building2,
+            isActive: location.pathname.startsWith('/dashboard/studio-settings'),
+          },
+          {
+            to: '/dashboard/packages',
+            label: 'Gói Dịch Vụ',
+            icon: Package,
+            isActive: location.pathname.startsWith('/dashboard/packages'),
+          },
+          {
+            to: '/dashboard/settings',
+            label: 'Cài Đặt',
+            icon: Settings,
+            isActive: location.pathname.startsWith('/dashboard/settings'),
+          },
+        ],
+      },
+    ];
+  }, [isStudioMember, isFreelancer, location.pathname]);
 
   const userFullName = user?.user_metadata?.full_name || 'Thợ ảnh';
   const userInitials = userFullName
@@ -226,8 +272,14 @@ export const DashboardLayout: React.FC = () => {
     return 'Studio CRM';
   };
 
+  const navigate = useNavigate();
+
   const handleOpenNewBooking = () => {
-    window.dispatchEvent(new CustomEvent('lensy:create-booking'));
+    if (location.pathname !== '/dashboard') {
+      navigate('/dashboard?action=new-booking');
+    } else {
+      window.dispatchEvent(new CustomEvent('lensy:create-booking'));
+    }
   };
 
   return (
@@ -516,26 +568,29 @@ export const DashboardLayout: React.FC = () => {
 
           {/* Top Action Buttons & Profile Card Pill */}
           <div className="flex items-center gap-2.5 sm:gap-3 flex-wrap">
-            {/* Button: Pass Show (Tạo lịch thủ công nhanh) */}
-            <button
-              type="button"
-              onClick={() => setIsPassShowOpen(true)}
-              className="inline-flex items-center gap-1.5 rounded-xl bg-amber-500/15 hover:bg-amber-500/25 border border-amber-500/40 text-amber-700 dark:text-amber-300 px-3 py-2 text-xs font-bold shadow-xs active:scale-95 transition-all cursor-pointer"
-              title="Tạo lịch chụp thủ công / Nhận pass show"
-            >
-              <Zap className="h-4 w-4 stroke-[2.5] text-amber-500" />
-              <span>Pass Show</span>
-            </button>
+            {/* Chỉ hiển thị nút Pass Show & Tạo Lịch Mới cho Quản lý Studio hoặc Freelancer */}
+            {!isStudioMember && (
+              <>
+                <button
+                  type="button"
+                  onClick={() => setIsPassShowOpen(true)}
+                  className="inline-flex items-center gap-1.5 rounded-xl bg-amber-500/15 hover:bg-amber-500/25 border border-amber-500/40 text-amber-700 dark:text-amber-300 px-3 py-2 text-xs font-bold shadow-xs active:scale-95 transition-all cursor-pointer"
+                  title="Tạo lịch chụp thủ công / Nhận pass show"
+                >
+                  <Zap className="h-4 w-4 stroke-[2.5] text-amber-500" />
+                  <span>Pass Show</span>
+                </button>
 
-            {/* Button: Tạo Lịch Mới (Chỉ quản lý hoặc freelancer) */}
-            <button
-              type="button"
-              onClick={handleOpenNewBooking}
-              className="inline-flex items-center gap-1.5 rounded-xl bg-orange-600 hover:bg-orange-500 px-3.5 py-2 text-xs font-bold text-white shadow-xs hover:brightness-105 active:scale-95 transition-all cursor-pointer"
-            >
-              <Plus className="h-4 w-4 stroke-[2.5]" />
-              <span>Tạo Lịch Mới</span>
-            </button>
+                <button
+                  type="button"
+                  onClick={handleOpenNewBooking}
+                  className="inline-flex items-center gap-1.5 rounded-xl bg-orange-600 hover:bg-orange-500 px-3.5 py-2 text-xs font-bold text-white shadow-xs hover:brightness-105 active:scale-95 transition-all cursor-pointer"
+                >
+                  <Plus className="h-4 w-4 stroke-[2.5]" />
+                  <span>Tạo Lịch Mới</span>
+                </button>
+              </>
+            )}
 
             {/* Theme Mode Toggle (Dark/Light) */}
             <ThemeToggle size="sm" />

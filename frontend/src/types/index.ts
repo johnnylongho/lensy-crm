@@ -138,6 +138,7 @@ export interface CalendarEvent {
   client_id?: string; // UUID khách hàng trong bảng clients
   studio_id?: string | null; // UUID Studio Workspace
   photographer_id?: string;
+  staff_id?: string;
   makeup_artist_id?: string | null; // UUID Thợ Makeup (MUA)
   photographer?: StaffInfo | null; // Thông tin thợ chụp kèm tên, avatar
   makeup_artist?: StaffInfo | null; // Thông tin thợ makeup kèm tên, avatar
@@ -201,16 +202,19 @@ export interface PackageItem {
 }
 
 // ==========================================
-// MULTI-TENANT & WORKSPACE TYPES
+// MULTI-TENANT, RBAC & WORKSPACE TYPES
 // ==========================================
-export type AccountType = 'freelancer' | 'studio_member';
+export type UserRole = 'freelancer' | 'manager' | 'member';
+export type AccountType = 'freelancer' | 'studio_member' | 'manager' | 'member' | 'studio_admin';
 export type StudioRole = 'admin' | 'photographer' | 'makeup_artist';
 export type MemberStatus = 'pending' | 'approved' | 'rejected';
 
 export interface Studio {
   id: string;
   name: string;
+  slug?: string;
   logo_url?: string | null;
+  invite_code?: string;
   verified_status: boolean;
   owner_id: string;
   created_at?: string;

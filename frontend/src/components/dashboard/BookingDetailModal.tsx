@@ -15,6 +15,7 @@ import { useWorkspace } from '../../context/WorkspaceContext';
 import { supabase, isSupabaseConfigured } from '../../lib/supabase';
 import { checkAssignedGearConflicts, DynamicGearConflict } from '../../lib/conflictScanner';
 import { STANDARD_CATEGORIES, getCategoryConfig, normalizeCategory } from '../../utils/categoryConfig';
+import { formatCurrencyVND, parseCurrencyVND } from '../../utils/currency';
 import {
   X,
   Calendar,
@@ -1236,6 +1237,79 @@ export const BookingDetailModal: React.FC<Props> = ({
               </div>
             </div>
 
+            {/* Phân Công Nhân Sự Cho Show (Chính thức: Thợ Chụp & Thợ Makeup) */}
+            <div className="p-4 sm:p-5 rounded-2xl bg-slate-950/70 border border-slate-800 space-y-3.5">
+              <div className="flex items-center justify-between border-b border-slate-800 pb-2.5">
+                <div className="flex items-center gap-2">
+                  <UserCheck className="w-4 h-4 text-[#df8653]" />
+                  <h4 className="text-xs font-bold uppercase tracking-wider text-white">
+                    Phân Công Nhân Sự Cho Show
+                  </h4>
+                </div>
+                <span className="text-[10px] text-slate-400">Chỉ định Thợ Chụp chính và Thợ Makeup (MUA)</span>
+              </div>
+
+              {/* Banner thông tin Thợ Makeup nếu đã được phân công */}
+              {booking.makeup_artist && (
+                <div className="p-3 rounded-xl bg-pink-500/10 border border-pink-500/30 flex items-center justify-between text-xs text-pink-300">
+                  <div className="flex items-center gap-2">
+                    <Sparkles className="w-4 h-4 text-pink-400" />
+                    <span>
+                      <strong>Thợ Makeup (MUA):</strong> {booking.makeup_artist.full_name}
+                      {booking.makeup_artist.phone && ` • SĐT: ${booking.makeup_artist.phone}`}
+                    </span>
+                  </div>
+                  <span className="text-[10px] bg-pink-500/20 text-pink-200 px-2 py-0.5 rounded-full font-bold">
+                    Đã chỉ định
+                  </span>
+                </div>
+              )}
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
+                {/* Dropdown 1: Chọn Thợ Chụp */}
+                <div className="space-y-1.5">
+                  <label className="text-[11px] font-semibold text-slate-300 block">
+                    Chọn Thợ Chụp:
+                  </label>
+                  <select
+                    value={assignedPhotographerId}
+                    onChange={e => setAssignedPhotographerId(e.target.value)}
+                    className="w-full px-3 py-2 rounded-xl bg-slate-900 border border-slate-800 text-xs text-white focus:outline-none focus:border-amber-400 cursor-pointer font-medium"
+                  >
+                    <option value="">-- Chọn Thợ Chụp từ danh sách --</option>
+                    {studioMembers
+                      .filter(m => m.role === 'admin' || m.role === 'photographer')
+                      .map(m => (
+                        <option key={m.user_id || m.id} value={m.user_id || m.id}>
+                          📸 {m.user?.full_name || 'Thợ chụp'} ({m.role})
+                        </option>
+                      ))}
+                  </select>
+                </div>
+
+                {/* Dropdown 2: Chọn Thợ Makeup */}
+                <div className="space-y-1.5">
+                  <label className="text-[11px] font-semibold text-slate-300 block">
+                    Chọn Thợ Makeup:
+                  </label>
+                  <select
+                    value={assignedMakeupId}
+                    onChange={e => setAssignedMakeupId(e.target.value)}
+                    className="w-full px-3 py-2 rounded-xl bg-slate-900 border border-slate-800 text-xs text-white focus:outline-none focus:border-amber-400 cursor-pointer font-medium"
+                  >
+                    <option value="">-- Chọn Thợ Makeup từ danh sách --</option>
+                    {studioMembers
+                      .filter(m => m.role === 'makeup_artist')
+                      .map(m => (
+                        <option key={m.user_id || m.id} value={m.user_id || m.id}>
+                          💄 {m.user?.full_name || 'Thợ Makeup'}
+                        </option>
+                      ))}
+                  </select>
+                </div>
+              </div>
+            </div>
+
             {/* Form Thêm Nhân Sự Vào Ê-Kíp */}
             <div className="p-4 sm:p-5 rounded-2xl bg-slate-950/70 border border-slate-800 space-y-3.5">
               <div className="flex flex-wrap items-center justify-between gap-2 border-b border-slate-800 pb-2.5">
@@ -1316,11 +1390,12 @@ export const BookingDetailModal: React.FC<Props> = ({
                       <option value="percent">% Gói</option>
                     </select>
                     <input
-                      type="number"
+                      type={newCrewFeeType === 'percent' ? 'number' : 'text'}
+                      inputMode="numeric"
                       min="0"
-                      value={newCrewFee}
-                      onChange={e => setNewCrewFee(e.target.value)}
-                      placeholder={newCrewFeeType === 'percent' ? 'VD: 30' : 'VD: 500000'}
+                      value={newCrewFeeType === 'percent' ? newCrewFee : (newCrewFee ? formatCurrencyVND(newCrewFee) : '')}
+                      onChange={e => setNewCrewFee(newCrewFeeType === 'percent' ? e.target.value : parseCurrencyVND(e.target.value).toString())}
+                      placeholder={newCrewFeeType === 'percent' ? 'VD: 30' : 'VD: 500.000'}
                       className="flex-1 px-3 py-2 rounded-xl bg-slate-900 border border-slate-800 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-amber-400 font-mono"
                     />
                   </div>
@@ -1791,11 +1866,11 @@ export const BookingDetailModal: React.FC<Props> = ({
             />
             <div className="relative sm:w-44">
               <input
-                type="number"
-                min="0"
+                type="text"
+                inputMode="numeric"
                 step="any"
-                value={newExpenseAmount}
-                onChange={(e) => setNewExpenseAmount(e.target.value)}
+                value={newExpenseAmount ? formatCurrencyVND(newExpenseAmount) : ''}
+                onChange={(e) => setNewExpenseAmount(parseCurrencyVND(e.target.value).toString())}
                 placeholder="Số tiền (VNĐ)"
                 className="w-full px-3 py-2 pr-9 rounded-xl bg-slate-900 border border-slate-800 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-emerald-500 font-mono"
                 onKeyDown={(e) => {

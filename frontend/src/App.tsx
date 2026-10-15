@@ -20,6 +20,7 @@ const GearsManagementPage = lazy(() => import('./components/dashboard/GearsManag
 const PackagesManagementPage = lazy(() => import('./components/dashboard/PackagesManagementPage').then(m => ({ default: m.PackagesManagementPage })));
 const StudioSettingsPage = lazy(() => import('./components/dashboard/StudioSettingsPage').then(m => ({ default: m.StudioSettingsPage })));
 const ClientsManagementPage = lazy(() => import('./components/clients/ClientsManagementPage').then(m => ({ default: m.ClientsManagementPage })));
+const OnboardingPage = lazy(() => import('./components/auth/OnboardingPage').then(m => ({ default: m.OnboardingPage })));
 
 export function App() {
   const [quote, setQuote] = useState<QuoteData | null>(null);
@@ -66,6 +67,16 @@ export function App() {
 
             {/* Trang đăng nhập / đăng ký */}
             <Route path="/login" element={<LoginPage />} />
+
+            {/* Luồng Onboarding Khởi tạo vai trò (RBAC) */}
+            <Route
+              path="/onboarding"
+              element={
+                <PrivateRoute>
+                  <OnboardingPage />
+                </PrivateRoute>
+              }
+            />
 
             {/* Trang đặt lịch công khai cá nhân hóa của Thợ ảnh (Public Client Booking Link) */}
             <Route

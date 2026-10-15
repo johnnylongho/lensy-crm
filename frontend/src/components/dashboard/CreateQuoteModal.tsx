@@ -23,6 +23,7 @@ import {
   Loader2,
   ShieldAlert,
 } from 'lucide-react';
+import { formatCurrencyVND, parseCurrencyVND } from '../../utils/currency';
 
 interface Props {
   isOpen: boolean;
@@ -772,11 +773,12 @@ export const CreateQuoteModal: React.FC<Props> = ({
                     Giá Trọn Gói (VNĐ)
                   </label>
                   <input
-                    type="number"
-                    min={0}
+                    type="text"
+                    inputMode="numeric"
                     step="any"
-                    value={packagePrice}
-                    onChange={e => setPackagePrice(Number(e.target.value))}
+                    value={packagePrice ? formatCurrencyVND(packagePrice) : ''}
+                    onChange={e => setPackagePrice(parseCurrencyVND(e.target.value))}
+                    placeholder="VD: 15.000.000"
                     className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-amber-400 font-mono font-bold focus:outline-none focus:border-amber-500"
                   />
                 </div>

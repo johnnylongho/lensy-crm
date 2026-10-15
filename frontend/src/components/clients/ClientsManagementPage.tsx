@@ -27,6 +27,7 @@ import {
   Trash2,
   AlertCircle,
   Loader2,
+  X,
 } from 'lucide-react';
 
 const MOCK_CLIENTS_DATA: ClientProfileData[] = [];
@@ -251,9 +252,11 @@ export const ClientsManagementPage: React.FC = () => {
   const kpiStats = useMemo(() => {
     const totalClients = clients.length;
     const vipCount = clients.filter(c => c.isVip).length;
+    const regularCount = clients.filter(c => c.tier === 'regular').length;
+    const debtCount = clients.filter(c => c.totalRemainingDebt > 0).length;
     const totalLtvRevenue = clients.reduce((sum, c) => sum + c.totalSpent, 0);
     const avgOrderValue = totalClients > 0 ? Math.round(totalLtvRevenue / totalClients) : 0;
-    return { totalClients, vipCount, totalLtvRevenue, avgOrderValue };
+    return { totalClients, vipCount, regularCount, debtCount, totalLtvRevenue, avgOrderValue };
   }, [clients]);
 
   // Bộ lọc tìm kiếm & Tab phân loại
@@ -426,68 +429,90 @@ export const ClientsManagementPage: React.FC = () => {
         </div>
       </div>
 
-      {/* Toolbar: Tìm kiếm & Bộ lọc Tab */}
-      <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3.5 p-3.5 rounded-3xl bg-white/60 dark:bg-white/5 backdrop-blur-xl border border-white/60 dark:border-white/10 shadow-[0_8px_32px_0_rgba(0,0,0,0.06)] dark:shadow-[0_8px_32px_0_rgba(0,0,0,0.3)]">
-        {/* Search Input */}
-        <div className="relative flex-1 max-w-md">
+      {/* Toolbar: Tìm kiếm & Bộ lọc Tab Phân Loại Khách Hàng (Mobile App First) */}
+      <div className="flex flex-col lg:flex-row items-stretch lg:items-center justify-between gap-3 p-3 sm:p-4 rounded-3xl bg-white/70 dark:bg-white/5 backdrop-blur-xl border border-white/80 dark:border-white/10 shadow-[0_8px_32px_0_rgba(0,0,0,0.06)] dark:shadow-[0_8px_32px_0_rgba(0,0,0,0.3)]">
+        {/* Khung Tìm Kiếm Linh Hoạt */}
+        <div className="relative flex-1">
           <Search className="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
           <input
             type="text"
             value={searchQuery}
             onChange={e => setSearchQuery(e.target.value)}
             placeholder="Tìm theo tên, SĐT, email khách hàng..."
-            className="w-full bg-slate-950 border border-slate-800 focus:border-amber-500 rounded-xl pl-10 pr-3.5 py-2 text-xs text-white placeholder-slate-500 focus:outline-none transition-colors"
+            className="w-full bg-slate-100/90 dark:bg-black/30 border border-slate-200/90 dark:border-white/10 focus:border-[#df8653] focus:ring-2 focus:ring-[#df8653]/20 rounded-2xl pl-10 pr-9 py-2.5 min-h-[44px] text-xs sm:text-sm text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-slate-500 focus:outline-none transition-all shadow-inner"
           />
+          {searchQuery && (
+            <button
+              type="button"
+              onClick={() => setSearchQuery('')}
+              className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 dark:hover:text-white p-1 rounded-full hover:bg-slate-200 dark:hover:bg-white/10 transition-colors"
+              title="Xóa ô tìm kiếm"
+            >
+              <X className="w-3.5 h-3.5" />
+            </button>
+          )}
         </div>
 
-        {/* Tabs Filter */}
-        <div className="flex items-center gap-1 bg-slate-950 p-1 rounded-xl border border-slate-800 text-xs overflow-x-auto">
+        {/* Khung Phân Loại Khách Hàng Dạng Pills Cuộn Ngang Mượt Mà */}
+        <div className="flex items-center gap-1.5 bg-slate-100/90 dark:bg-black/30 p-1.5 rounded-2xl border border-slate-200/90 dark:border-white/10 text-xs overflow-x-auto scrollbar-none touch-pan-x">
           <button
             type="button"
             onClick={() => setFilterTier('all')}
-            className={`px-3 py-1.5 rounded-lg font-bold transition-colors flex-shrink-0 ${
+            className={`px-3.5 py-2 min-h-[40px] rounded-xl font-bold transition-all flex items-center gap-1.5 flex-shrink-0 cursor-pointer ${
               filterTier === 'all'
-                ? 'bg-amber-500 text-slate-950 shadow-sm'
-                : 'text-slate-400 hover:text-white'
+                ? 'bg-gradient-to-r from-orange-500 via-[#df8653] to-amber-500 text-white shadow-md shadow-orange-500/25'
+                : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-white/70 dark:hover:bg-white/5'
             }`}
           >
-            Tất Cả ({clients.length})
+            <span>Tất Cả</span>
+            <span className={`text-[10px] px-1.5 py-0.5 rounded-full font-mono ${filterTier === 'all' ? 'bg-black/20 text-white' : 'bg-slate-200 dark:bg-white/10 text-slate-600 dark:text-slate-300'}`}>
+              {clients.length}
+            </span>
           </button>
 
           <button
             type="button"
             onClick={() => setFilterTier('vip')}
-            className={`px-3 py-1.5 rounded-lg font-bold transition-colors flex items-center gap-1 flex-shrink-0 ${
+            className={`px-3.5 py-2 min-h-[40px] rounded-xl font-bold transition-all flex items-center gap-1.5 flex-shrink-0 cursor-pointer ${
               filterTier === 'vip'
-                ? 'bg-amber-500 text-slate-950 shadow-sm'
-                : 'text-amber-400 hover:text-amber-300'
+                ? 'bg-gradient-to-r from-amber-400 via-amber-500 to-yellow-600 text-slate-950 shadow-md shadow-amber-500/25'
+                : 'text-amber-600 dark:text-amber-400 hover:text-amber-700 dark:hover:text-amber-300 hover:bg-white/70 dark:hover:bg-white/5'
             }`}
           >
-            <span>👑 VIP ({kpiStats.vipCount})</span>
+            <span>👑 VIP</span>
+            <span className={`text-[10px] px-1.5 py-0.5 rounded-full font-mono ${filterTier === 'vip' ? 'bg-black/20 text-slate-950' : 'bg-amber-500/15 text-amber-600 dark:text-amber-400'}`}>
+              {kpiStats.vipCount}
+            </span>
           </button>
 
           <button
             type="button"
             onClick={() => setFilterTier('regular')}
-            className={`px-3 py-1.5 rounded-lg font-bold transition-colors flex-shrink-0 ${
+            className={`px-3.5 py-2 min-h-[40px] rounded-xl font-bold transition-all flex items-center gap-1.5 flex-shrink-0 cursor-pointer ${
               filterTier === 'regular'
-                ? 'bg-amber-500 text-slate-950 shadow-sm'
-                : 'text-slate-400 hover:text-white'
+                ? 'bg-gradient-to-r from-orange-500 via-[#df8653] to-amber-500 text-white shadow-md shadow-orange-500/25'
+                : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-white/70 dark:hover:bg-white/5'
             }`}
           >
-            🥈 Thân Thiết
+            <span>🥈 Thân Thiết</span>
+            <span className={`text-[10px] px-1.5 py-0.5 rounded-full font-mono ${filterTier === 'regular' ? 'bg-black/20 text-white' : 'bg-slate-200 dark:bg-white/10 text-slate-600 dark:text-slate-300'}`}>
+              {kpiStats.regularCount}
+            </span>
           </button>
 
           <button
             type="button"
             onClick={() => setFilterTier('debt')}
-            className={`px-3 py-1.5 rounded-lg font-bold transition-colors flex-shrink-0 ${
+            className={`px-3.5 py-2 min-h-[40px] rounded-xl font-bold transition-all flex items-center gap-1.5 flex-shrink-0 cursor-pointer ${
               filterTier === 'debt'
-                ? 'bg-rose-500 text-slate-950 shadow-sm'
-                : 'text-rose-400 hover:text-rose-300'
+                ? 'bg-gradient-to-r from-rose-500 to-red-600 text-white shadow-md shadow-rose-500/25'
+                : 'text-rose-500 dark:text-rose-400 hover:text-rose-600 dark:hover:text-rose-300 hover:bg-white/70 dark:hover:bg-white/5'
             }`}
           >
-            ⏳ Còn Nợ
+            <span>⏳ Còn Nợ</span>
+            <span className={`text-[10px] px-1.5 py-0.5 rounded-full font-mono ${filterTier === 'debt' ? 'bg-black/20 text-white' : 'bg-rose-500/15 text-rose-500 dark:text-rose-400'}`}>
+              {kpiStats.debtCount}
+            </span>
           </button>
         </div>
       </div>
@@ -805,10 +830,19 @@ export const ClientsManagementPage: React.FC = () => {
 
                   <div className="flex items-center gap-1.5" onClick={e => e.stopPropagation()}>
                     <a
+                      href={`tel:${cleanPhone}`}
+                      className="p-1.5 rounded-lg bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-600 dark:text-emerald-400 border border-emerald-500/30 flex items-center gap-1 text-[11px] font-bold"
+                      title="Gọi điện trực tiếp"
+                    >
+                      <Phone className="w-3.5 h-3.5" />
+                      <span>Gọi</span>
+                    </a>
+                    <a
                       href={`https://zalo.me/${cleanPhone}`}
                       target="_blank"
                       rel="noopener noreferrer"
                       className="p-1.5 rounded-lg bg-blue-600/10 hover:bg-blue-600/20 text-blue-500 border border-blue-500/30 flex items-center gap-1 text-[11px] font-bold"
+                      title="Chat Zalo"
                     >
                       <MessageCircle className="w-3.5 h-3.5" />
                       <span>Zalo</span>
@@ -816,7 +850,7 @@ export const ClientsManagementPage: React.FC = () => {
                     <button
                       type="button"
                       onClick={() => handleOpenClientProfile(client)}
-                      className="px-2.5 py-1.5 rounded-lg bg-amber-500 text-slate-950 font-bold text-[11px] flex items-center gap-1 shadow-sm"
+                      className="px-2.5 py-1.5 rounded-lg bg-gradient-to-r from-orange-500 via-[#df8653] to-amber-500 text-white font-bold text-[11px] flex items-center gap-1 shadow-sm"
                     >
                       <span>Chi tiết</span>
                       <ChevronRight className="w-3 h-3" />

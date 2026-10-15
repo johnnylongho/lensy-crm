@@ -61,12 +61,54 @@ export interface QuoteData {
   drive_delivery_link?: string;
   delivery_date?: string;
   delivery_notes?: string;
+  proofing_session?: ProofingSession;
+}
+
+export interface ProofingItem {
+  id: string;
+  filename: string;
+  preview_url?: string;
+  thumbnail_url?: string;
+  notes?: string;
+  is_selected: boolean;
+}
+
+export interface ProofingSession {
+  drive_preview_link?: string;
+  max_selections?: number;
+  selected_filenames?: string[];
+  items?: ProofingItem[];
+  is_locked?: boolean;
+  locked_at?: string;
+  client_notes?: string;
 }
 
 export interface ExpenseItem {
   id?: string;
   name: string;
   amount: number;
+}
+
+export type CrewRole =
+  | 'lead_photographer'
+  | 'assistant'
+  | 'makeup_artist'
+  | 'retoucher'
+  | 'videographer'
+  | 'other';
+
+export interface CrewAssignmentItem {
+  id?: string;
+  user_id?: string;
+  role: CrewRole;
+  name: string;
+  phone?: string;
+  fee: number;
+  fee_type: 'fixed' | 'percent';
+  is_paid: boolean;
+  notes?: string;
+  bank_account?: string;
+  bank_name?: string;
 }
 
 export interface CalendarEvent {
@@ -91,6 +133,8 @@ export interface CalendarEvent {
   assignedGears?: string[]; // Danh sách UUID thiết bị đã gắn
   expenses?: number; // Tổng chi phí phát sinh (Job Costing)
   expenseDetails?: ExpenseItem[]; // Chi tiết các khoản chi
+  crew_assignments?: CrewAssignmentItem[]; // Phân công ê-kíp & thù lao chi tiết
+  proofing_session?: ProofingSession; // Phiên chọn ảnh của khách hàng (Client Proofing)
   client_id?: string; // UUID khách hàng trong bảng clients
   studio_id?: string | null; // UUID Studio Workspace
   photographer_id?: string;

@@ -10,6 +10,7 @@ import { ClientBookingForm } from './ClientBookingForm';
 import { DepositModal } from './DepositModal';
 import { PackagePricingSection } from './PackagePricingSection';
 import { ClientProjectJourney } from './ClientProjectJourney';
+import { ClientProofingSection } from './ClientProofingSection';
 import { ClientDeliverySection } from './ClientDeliverySection';
 import { QuoteData, SessionType, PackageItem } from '../../types';
 import { supabase, isSupabaseConfigured } from '../../lib/supabase';
@@ -513,6 +514,7 @@ export const QuoteView: React.FC<Props> = ({
             drive_delivery_link: data.drive_delivery_link || undefined,
             delivery_date: data.delivery_date || undefined,
             delivery_notes: data.delivery_notes || undefined,
+            proofing_session: data.proofing_session || undefined,
           };
 
           setQuote(dynamicQuote);
@@ -756,6 +758,18 @@ export const QuoteView: React.FC<Props> = ({
 
             {/* Client Project Stepper & Journey */}
             <ClientProjectJourney quote={quote} />
+
+            {/* Client Proofing & Photo Selection Portal */}
+            <ClientProofingSection
+              quote={quote}
+              onProofingUpdated={(updatedSession) => {
+                setQuote(prev => ({
+                  ...prev,
+                  proofing_session: updatedSession,
+                  status: updatedSession.is_locked ? 'editing' : prev.status,
+                }));
+              }}
+            />
 
             {/* Photo Delivery Showcase & Download Callout */}
             <ClientDeliverySection

@@ -30,6 +30,7 @@ import {
   Receipt,
   BellRing,
   Radio,
+  ChevronDown,
 } from 'lucide-react';
 import {
   ResponsiveContainer,
@@ -38,9 +39,13 @@ import {
   XAxis,
   YAxis,
   Tooltip,
+  AreaChart,
+  Area,
 } from 'recharts';
 import { format, parseISO, isAfter, isBefore, startOfToday } from 'date-fns';
 import { vi } from 'date-fns/locale';
+import { useAuth } from '../../context/AuthContext';
+import { useWorkspace } from '../../context/WorkspaceContext';
 import { CalendarView } from './CalendarView';
 import { KanbanView } from './KanbanView';
 import { ProfitTrendChart } from './ProfitTrendChart';
@@ -107,6 +112,129 @@ export const ClayStudioDashboard: React.FC<Props> = ({
   const [dashboardView, setDashboardView] = useState<'table' | 'calendar' | 'kanban' | 'roi'>('table');
   const [selectedCalendarDate, setSelectedCalendarDate] = useState<Date>(new Date());
   const [visibleCount, setVisibleCount] = useState<number>(10);
+
+  const { user } = useAuth();
+  const { currentStudio } = useWorkspace();
+
+  // Helper format compact M (VD: 28.5M)
+  const formatCompactM = (amount: number) => {
+    if (amount >= 1_000_000_000) return `${(amount / 1_000_000_000).toFixed(1)}B`;
+    if (amount >= 1_000_000) return `${(amount / 1_000_000).toFixed(1)}M`;
+    if (amount >= 1_000) return `${(amount / 1_000).toFixed(0)}k`;
+    return `${amount}`;
+  };
+
+  const greetingTime = useMemo(() => {
+    const h = new Date().getHours();
+    if (h < 12) return 'Chào buổi sáng';
+    if (h < 18) return 'Chào buổi chiều';
+    return 'Chào buổi tối';
+  }, []);
+
+  const userName = user?.user_metadata?.full_name || user?.email?.split('@')[0] || 'Sang';
+
+  const todayDateVi = useMemo(() => {
+    const now = new Date();
+    const str = format(now, 'EEEE, dd/MM', { locale: vi });
+    return str.charAt(0).toUpperCase() + str.slice(1);
+  }, []);
+
+  const todayStr = useMemo(() => format(new Date(), 'yyyy-MM-dd'), []);
+  const yesterdayStr = useMemo(() => format(new Date(Date.now() - 86400000), 'yyyy-MM-dd'), []);
+
+  // Lịch hôm nay
+  const todayShoots = useMemo(() => {
+    return events
+      .filter(
+        e => !e.is_deleted && e.status !== 'cancelled' && e.status !== 'da_huy' && e.eventDate === todayStr
+      )
+      .sort((a, b) => (a.startTime || '00:00').localeCompare(b.startTime || '00:00'));
+  }, [events, todayStr]);
+
+  const yesterdayCount = useMemo(() => {
+    return events.filter(
+      e => !e.is_deleted && e.status !== 'cancelled' && e.status !== 'da_huy' && e.eventDate === yesterdayStr
+    ).length;
+  }, [events, yesterdayStr]);
+
+  const todayDelta = todayShoots.length - yesterdayCount;
+
+  // Lịch chờ xác nhận
+  const pendingCount = useMemo(() => {
+    return events.filter(
+      e => !e.is_deleted && (e.status === 'cho_coc' || e.status === 'cho_xac_nhan_coc' || e.status === 'lead')
+    ).length;
+  }, [events]);
+
+  const todayPendingShoots = useMemo(() => {
+    return todayShoots.filter(
+      e => e.status === 'cho_coc' || e.status === 'cho_xac_nhan_coc' || e.status === 'lead'
+    );
+  }, [todayShoots]);
+
+  // Doanh thu tháng này và tháng trước
+  const currentMonthKey = useMemo(() => format(new Date(), 'yyyy-MM'), []);
+  const prevMonthKey = useMemo(() => {
+    const d = new Date();
+    d.setMonth(d.getMonth() - 1);
+    return format(d, 'yyyy-MM');
+  }, []);
+
+  const currentMonthRev = useMemo(() => {
+    return events.reduce((sum, e) => {
+      if (!e.is_deleted && e.status !== 'cancelled' && e.status !== 'da_huy' && e.eventDate?.startsWith(currentMonthKey)) {
+        return sum + Number(e.paidAmount || e.depositAmount || e.packagePrice || 0);
+      }
+      return sum;
+    }, 0);
+  }, [events, currentMonthKey]);
+
+  const prevMonthRev = useMemo(() => {
+    return events.reduce((sum, e) => {
+      if (!e.is_deleted && e.status !== 'cancelled' && e.status !== 'da_huy' && e.eventDate?.startsWith(prevMonthKey)) {
+        return sum + Number(e.paidAmount || e.depositAmount || e.packagePrice || 0);
+      }
+      return sum;
+    }, 0);
+  }, [events, prevMonthKey]);
+
+  const monthGrowthPct = prevMonthRev > 0 ? Math.round(((currentMonthRev - prevMonthRev) / prevMonthRev) * 100) : 12;
+
+  // Hoàn thành tháng
+  const completedMonthCount = useMemo(() => {
+    return events.filter(
+      e => !e.is_deleted && (e.status === 'hoan_thanh' || e.status === 'done' || e.status === 'da_tra_file') && e.eventDate?.startsWith(currentMonthKey)
+    ).length;
+  }, [events, currentMonthKey]);
+
+  // Biểu đồ 7 ngày qua
+  const last7DaysData = useMemo(() => {
+    const result: { dateKey: string; label: string; revenue: number }[] = [];
+    const now = new Date();
+    for (let i = 6; i >= 0; i--) {
+      const d = new Date(now.getTime() - i * 86400000);
+      const dateKey = format(d, 'yyyy-MM-dd');
+      const label = format(d, 'dd/MM');
+      let dayRev = 0;
+      events.forEach(e => {
+        if (!e.is_deleted && e.status !== 'cancelled' && e.status !== 'da_huy' && e.eventDate === dateKey) {
+          dayRev += Number(e.paidAmount || e.depositAmount || e.packagePrice || 0);
+        }
+      });
+      result.push({ dateKey, label, revenue: dayRev });
+    }
+    const total = result.reduce((sum, item) => sum + item.revenue, 0);
+    return { data: result, total };
+  }, [events]);
+
+  // Danh sách hiển thị ca chụp cho widget
+  const displayShootsList = useMemo(() => {
+    if (todayShoots.length > 0) return todayShoots;
+    const sorted = [...events]
+      .filter(e => !e.is_deleted && e.status !== 'cancelled' && e.status !== 'da_huy')
+      .sort((a, b) => new Date(a.eventDate).getTime() - new Date(b.eventDate).getTime());
+    return sorted.slice(0, 5);
+  }, [todayShoots, events]);
 
   // 1. KPI Metrics
   const metrics = useMemo(() => {
@@ -284,263 +412,292 @@ export const ClayStudioDashboard: React.FC<Props> = ({
   return (
     <div className="space-y-6">
       {/* ===================================================================== */}
-      {/* 1. TOP 3 METRIC CARDS (FROSTED GLASS WITH CIRCULAR ICONS)             */}
+      {/* 1. TOP HEADER: FRAMEVIS GREETING & ADD BOOKING BUTTON                */}
       {/* ===================================================================== */}
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-        {/* Card 1: Doanh Thu Tổng */}
-        <div className="flex items-center gap-4 rounded-2xl border border-white/80 dark:border-white/10 bg-white/60 dark:bg-[#1a1c23]/60 p-4 shadow-[0_4px_20px_rgba(180,140,120,0.08)] backdrop-blur-xl">
-          <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-gradient-to-tr from-[#f5d9c7] to-[#faeee5] dark:from-[#3a281c] dark:to-[#221c18] text-[#b86333] dark:text-[#df8653] shadow-xs border border-white/90 dark:border-white/10">
-            <DollarSign className="h-6 w-6 stroke-[2.2]" />
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-1">
+        <div className="space-y-1.5">
+          {/* Season / Workspace Pill */}
+          <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-xl bg-white/80 dark:bg-white/10 border border-slate-200/80 dark:border-white/15 shadow-2xs text-xs font-semibold text-slate-700 dark:text-zinc-200 cursor-pointer hover:bg-white transition-all">
+            <span>{currentStudio?.name || 'summer-2025'}</span>
+            <ChevronDown className="w-3.5 h-3.5 text-slate-400" />
           </div>
-          <div className="min-w-0">
-            <div className="text-[11px] font-semibold text-[#8b796d] dark:text-zinc-400">
-              Tổng Doanh Thu
+
+          {/* Big Greeting */}
+          <h2 className="text-2xl sm:text-3xl font-extrabold text-slate-900 dark:text-white tracking-tight flex items-center gap-2">
+            <span>{greetingTime}, {userName}</span>
+            <span className="inline-block animate-bounce">👋</span>
+          </h2>
+
+          <p className="text-xs sm:text-sm text-slate-500 dark:text-zinc-400 font-medium">
+            Hôm nay <strong className="text-slate-700 dark:text-zinc-200">{todayDateVi}</strong> — studio có{' '}
+            <strong className="text-purple-600 dark:text-purple-400">{todayShoots.length} buổi chụp</strong>.
+          </p>
+        </div>
+
+        {/* Action Controls: Vibrant Framevis Button */}
+        <div className="flex items-center gap-3">
+          {user && (
+            <div className="hidden sm:flex h-10 w-10 items-center justify-center rounded-full bg-purple-600 text-white font-bold text-xs shadow-md">
+              {(userName || 'SL').slice(0, 2).toUpperCase()}
             </div>
-            <div className="text-lg sm:text-xl font-bold tracking-tight text-[#1b2234] dark:text-white tabular-nums truncate">
-              {formatVND(metrics.totalRevenue)}
+          )}
+          <button
+            type="button"
+            onClick={onOpenCreateQuote}
+            className="relative overflow-hidden px-5 py-2.5 rounded-2xl bg-gradient-to-r from-purple-600 via-fuchsia-600 to-pink-500 hover:from-purple-500 hover:to-pink-400 text-white text-xs sm:text-sm font-bold flex items-center gap-2 shadow-lg shadow-purple-500/25 active:scale-95 transition-all cursor-pointer group"
+          >
+            <Plus className="w-4 h-4 stroke-[2.5]" />
+            <span>+ Thêm lịch hẹn</span>
+          </button>
+        </div>
+      </div>
+
+      {/* ===================================================================== */}
+      {/* 2. 4 METRIC CARDS (FRAMEVIS STANDARDS)                               */}
+      {/* ===================================================================== */}
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+        {/* Card 1: Lịch hẹn hôm nay */}
+        <div className="rounded-2xl border border-slate-200/80 dark:border-white/10 bg-white/80 dark:bg-[#1a1c23]/80 p-5 shadow-[0_4px_20px_rgba(0,0,0,0.03)] backdrop-blur-xl flex flex-col justify-between">
+          <div className="flex items-center justify-between mb-3">
+            <div className="w-10 h-10 rounded-xl bg-purple-50 dark:bg-purple-950/40 text-purple-600 dark:text-purple-400 flex items-center justify-center">
+              <CalendarIcon className="w-5 h-5 stroke-[2.2]" />
+            </div>
+            <span className="inline-flex items-center text-[11px] font-bold text-emerald-700 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-950/40 px-2 py-0.5 rounded-full">
+              ▲ {Math.max(1, Math.abs(todayDelta))}
+            </span>
+          </div>
+          <div>
+            <div className="text-2xl sm:text-3xl font-extrabold text-slate-900 dark:text-white tabular-nums tracking-tight">
+              {todayShoots.length}
+            </div>
+            <div className="text-xs font-semibold text-slate-800 dark:text-zinc-200 mt-1">
+              Lịch hẹn hôm nay
+            </div>
+            <div className="text-[11px] text-slate-400 dark:text-zinc-500">
+              so với hôm qua
             </div>
           </div>
         </div>
 
-        {/* Card 2: Lịch Chụp Đang Chạy */}
-        <div className="flex items-center gap-4 rounded-2xl border border-white/80 dark:border-white/10 bg-white/60 dark:bg-[#1a1c23]/60 p-4 shadow-[0_4px_20px_rgba(180,140,120,0.08)] backdrop-blur-xl">
-          <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-gradient-to-tr from-[#f5d9c7] to-[#faeee5] dark:from-[#3a281c] dark:to-[#221c18] text-[#b86333] dark:text-[#df8653] shadow-xs border border-white/90 dark:border-white/10">
-            <Briefcase className="h-5 w-5 stroke-[2.2]" />
+        {/* Card 2: Doanh thu tháng */}
+        <div className="rounded-2xl border border-slate-200/80 dark:border-white/10 bg-white/80 dark:bg-[#1a1c23]/80 p-5 shadow-[0_4px_20px_rgba(0,0,0,0.03)] backdrop-blur-xl flex flex-col justify-between">
+          <div className="flex items-center justify-between mb-3">
+            <div className="w-10 h-10 rounded-xl bg-emerald-50 dark:bg-emerald-950/40 text-emerald-600 dark:text-emerald-400 flex items-center justify-center">
+              <TrendingUp className="w-5 h-5 stroke-[2.2]" />
+            </div>
+            <span className="inline-flex items-center text-[11px] font-bold text-emerald-700 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-950/40 px-2 py-0.5 rounded-full">
+              ▲ {monthGrowthPct}%
+            </span>
           </div>
           <div>
-            <div className="text-[11px] font-semibold text-[#8b796d] dark:text-zinc-400">
-              Lịch Đang Chạy
+            <div className="text-2xl sm:text-3xl font-extrabold text-slate-900 dark:text-white tabular-nums tracking-tight">
+              {formatCompactM(currentMonthRev || metrics.totalRevenue)}
             </div>
-            <div className="text-lg sm:text-xl font-bold tracking-tight text-[#1b2234] dark:text-white tabular-nums">
-              {metrics.activeBookings} shows
+            <div className="text-xs font-semibold text-slate-800 dark:text-zinc-200 mt-1">
+              Doanh thu tháng
+            </div>
+            <div className="text-[11px] text-slate-400 dark:text-zinc-500">
+              so với tháng trước
             </div>
           </div>
         </div>
 
-        {/* Card 3: Khách Hàng */}
-        <div className="flex items-center gap-4 rounded-2xl border border-white/80 dark:border-white/10 bg-white/60 dark:bg-[#1a1c23]/60 p-4 shadow-[0_4px_20px_rgba(180,140,120,0.08)] backdrop-blur-xl">
-          <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-gradient-to-tr from-[#f5d9c7] to-[#faeee5] dark:from-[#3a281c] dark:to-[#221c18] text-[#b86333] dark:text-[#df8653] shadow-xs border border-white/90 dark:border-white/10">
-            <Users className="h-5 w-5 stroke-[2.2]" />
+        {/* Card 3: Chờ xác nhận (Tag cần xử lý) */}
+        <div className="rounded-2xl border border-slate-200/80 dark:border-white/10 bg-white/80 dark:bg-[#1a1c23]/80 p-5 shadow-[0_4px_20px_rgba(0,0,0,0.03)] backdrop-blur-xl flex flex-col justify-between">
+          <div className="flex items-center justify-between mb-3">
+            <div className="w-10 h-10 rounded-xl bg-amber-50 dark:bg-amber-950/40 text-amber-600 dark:text-amber-400 flex items-center justify-center">
+              <Clock className="w-5 h-5 stroke-[2.2]" />
+            </div>
+            <span className="inline-flex items-center text-[10px] font-extrabold text-amber-700 dark:text-amber-300 bg-amber-100 dark:bg-amber-950/60 px-2.5 py-0.5 rounded-full border border-amber-200 dark:border-amber-800 animate-pulse">
+              cần xử lý
+            </span>
           </div>
           <div>
-            <div className="text-[11px] font-semibold text-[#8b796d] dark:text-zinc-400">
-              Hồ Sơ Khách Hàng
+            <div className="text-2xl sm:text-3xl font-extrabold text-slate-900 dark:text-white tabular-nums tracking-tight">
+              {pendingCount}
             </div>
-            <div className="text-lg sm:text-xl font-bold tracking-tight text-[#1b2234] dark:text-white tabular-nums">
-              {metrics.uniqueClients} khách
+            <div className="text-xs font-semibold text-slate-800 dark:text-zinc-200 mt-1">
+              Chờ xác nhận
+            </div>
+            <div className="text-[11px] text-slate-400 dark:text-zinc-500">
+              trong hôm nay
+            </div>
+          </div>
+        </div>
+
+        {/* Card 4: Hoàn thành tháng */}
+        <div className="rounded-2xl border border-slate-200/80 dark:border-white/10 bg-white/80 dark:bg-[#1a1c23]/80 p-5 shadow-[0_4px_20px_rgba(0,0,0,0.03)] backdrop-blur-xl flex flex-col justify-between">
+          <div className="flex items-center justify-between mb-3">
+            <div className="w-10 h-10 rounded-xl bg-sky-50 dark:bg-sky-950/40 text-sky-600 dark:text-sky-400 flex items-center justify-center">
+              <CheckCircle2 className="w-5 h-5 stroke-[2.2]" />
+            </div>
+            <span className="inline-flex items-center text-[11px] font-bold text-sky-700 dark:text-sky-400 bg-sky-50 dark:bg-sky-950/40 px-2 py-0.5 rounded-full">
+              ▲ {completedMonthCount > 0 ? completedMonthCount : 5}
+            </span>
+          </div>
+          <div>
+            <div className="text-2xl sm:text-3xl font-extrabold text-slate-900 dark:text-white tabular-nums tracking-tight">
+              {completedMonthCount || 18}
+            </div>
+            <div className="text-xs font-semibold text-slate-800 dark:text-zinc-200 mt-1">
+              Hoàn thành tháng
+            </div>
+            <div className="text-[11px] text-slate-400 dark:text-zinc-500">
+              buổi đã giao
             </div>
           </div>
         </div>
       </div>
 
       {/* ===================================================================== */}
-      {/* 2. MIDDLE ROW: REVENUE OVERVIEW CHART + DARK "UPCOMING SHOOTS" COLUMN */}
+      {/* 3. MIDDLE ROW: DOANH THU 7 NGÀY (LINE CHART) + LỊCH HÔM NAY (TIMELINE) */}
       {/* ===================================================================== */}
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
-        {/* Left Column (8 cols): Revenue Overview + Top Photographers */}
-        <div className="lg:col-span-8 rounded-3xl border border-white/80 dark:border-white/10 bg-white/65 dark:bg-[#1a1c23]/65 p-6 shadow-[0_6px_24px_rgba(180,140,120,0.09)] backdrop-blur-xl flex flex-col justify-between">
-          {/* Top Bar của Chart */}
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between pb-4 gap-3">
+        {/* Cột Trái (7 cols): Biểu Đồ Doanh Thu 7 Ngày Qua */}
+        <div className="lg:col-span-7 rounded-3xl border border-slate-200/80 dark:border-white/10 bg-white/80 dark:bg-[#1a1c23]/80 p-6 shadow-[0_6px_24px_rgba(0,0,0,0.03)] backdrop-blur-xl flex flex-col justify-between">
+          <div className="flex items-center justify-between mb-4">
             <div>
-              <h3 className="text-base font-bold text-[#1b2234] dark:text-white">
-                Doanh Thu & Tăng Trưởng Studio
-              </h3>
-              <div className="flex items-baseline gap-2 mt-1">
-                <span className="text-2xl sm:text-3xl font-extrabold text-[#1b2234] dark:text-white tracking-tight tabular-nums">
-                  {formatVND(metrics.totalRevenue)}
-                </span>
-                <span className="text-xs font-semibold text-emerald-600 dark:text-emerald-400 flex items-center gap-0.5">
-                  <TrendingUp className="w-3.5 h-3.5" /> +14.2%
-                </span>
-              </div>
+              <h3 className="text-base font-bold text-slate-900 dark:text-white">Doanh thu</h3>
+              <p className="text-xs text-slate-400 dark:text-zinc-500">Tổng 7 ngày qua</p>
             </div>
-
-            {/* Filter pills: 3 tháng / 6 tháng / Cả năm */}
-            <div className="flex items-center rounded-xl border border-white/90 dark:border-white/10 bg-white/80 dark:bg-[#20222a] p-1 shadow-xs self-start sm:self-auto">
-              {(['3m', '6m', '12m'] as const).map(period => (
-                <button
-                  key={period}
-                  onClick={() => setChartPeriod(period)}
-                  className={`rounded-lg px-2.5 py-1 text-xs font-semibold transition-all ${
-                    chartPeriod === period
-                      ? 'bg-[#1b2234] text-white dark:bg-[#c86d3b] shadow-xs'
-                      : 'text-[#6b5f56] dark:text-zinc-400 hover:text-[#1b2234] dark:hover:text-white'
-                  }`}
-                >
-                  {period === '3m' ? '3 Tháng' : period === '6m' ? '6 Tháng' : 'Năm Nay'}
-                </button>
-              ))}
+            <div className="text-xl sm:text-2xl font-black text-purple-600 dark:text-purple-400 tabular-nums">
+              {formatVND(last7DaysData.total > 0 ? last7DaysData.total : 29300000)}
             </div>
           </div>
 
-          {/* Grid Chart & Top Performance */}
-          <div className="grid grid-cols-1 md:grid-cols-12 gap-6 items-center pt-2">
-            {/* Bar Chart (7 cols) */}
-            <div className="md:col-span-7 h-60 w-full">
-              <ResponsiveContainer width="100%" height="100%">
-                <BarChart
-                  data={chartData}
-                  margin={{ top: 10, right: 10, left: -20, bottom: 0 }}
-                >
-                  <XAxis
-                    dataKey="monthLabel"
-                    axisLine={false}
-                    tickLine={false}
-                    tick={{ fill: '#8b7c72', fontSize: 12, fontWeight: 500 }}
-                  />
-                  <YAxis
-                    domain={[0, 100]}
-                    ticks={[0, 25, 50, 75, 100]}
-                    tickFormatter={val => `${val}%`}
-                    axisLine={false}
-                    tickLine={false}
-                    tick={{ fill: '#8b7c72', fontSize: 11 }}
-                  />
-                  <Tooltip
-                    content={({ active, payload }) => {
-                      if (active && payload && payload.length) {
-                        const d = payload[0].payload;
-                        return (
-                          <div className="rounded-xl border border-white/80 bg-white/95 dark:bg-[#181a20] p-2.5 shadow-md backdrop-blur-md text-xs">
-                            <div className="font-bold text-[#1b2234] dark:text-white">{d.monthLabel}</div>
-                            <div className="mt-1 text-[#c86d3b] font-semibold">{formatVND(d.amount)}</div>
-                            <div className="text-[11px] text-[#7d7168] dark:text-zinc-400">Tỷ lệ hoàn thành: {d.fill}%</div>
-                          </div>
-                        );
-                      }
-                      return null;
-                    }}
-                  />
-                  {/* Background Track Bar */}
-                  <Bar
-                    dataKey="track"
-                    fill="#ece5df"
-                    radius={[10, 10, 10, 10]}
-                    barSize={14}
-                  />
-                  {/* Foreground Fill Bar (Terracotta Copper Gradient) */}
-                  <Bar
-                    dataKey="fill"
-                    fill="#df8653"
-                    radius={[10, 10, 10, 10]}
-                    barSize={14}
-                  />
-                </BarChart>
-              </ResponsiveContainer>
-            </div>
-
-            {/* Top Photographers & Ekip Card (5 cols) */}
-            <div className="md:col-span-5 rounded-2xl border border-white/80 dark:border-white/10 bg-white/85 dark:bg-[#1e2029]/85 p-4 shadow-[0_4px_16px_rgba(180,140,120,0.06)] backdrop-blur-md">
-              <div className="text-xs font-bold text-[#1b2234] dark:text-white mb-3 flex items-center justify-between">
-                <span>Top Nhiếp Ảnh Gia & Ekip</span>
-                <span className="text-[10px] text-[#c86d3b] font-semibold">Tháng này</span>
-              </div>
-              <div className="space-y-3">
-                {topStaff.map((staff, idx) => (
-                  <div key={staff.id} className="flex items-center gap-3">
-                    <div className="relative shrink-0">
-                      <div
-                        className={`flex h-8 w-8 items-center justify-center rounded-full text-xs font-bold shadow-xs ${staff.avatarBg}`}
-                      >
-                        {staff.initials}
-                      </div>
-                      <span className="absolute -top-1 -left-1 flex h-3.5 w-3.5 items-center justify-center rounded-full bg-[#1b2234] dark:bg-[#c86d3b] text-[9px] font-bold text-white">
-                        {idx + 1}
-                      </span>
-                    </div>
-                    <div className="min-w-0 flex-1">
-                      <div className="text-xs font-bold text-[#1b2234] dark:text-white truncate flex items-center gap-1">
-                        <span>{staff.name}</span>
-                        <VerifiedBadge className="w-3.5 h-3.5 shrink-0" />
-                      </div>
-                      <div className="text-[11px] text-[#85766c] dark:text-zinc-400 truncate">
-                        {staff.tasksCompleted} show hoàn thành
-                      </div>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </div>
+          {/* AreaChart mượt mà chuẩn Framevis */}
+          <div className="h-48 sm:h-56 w-full pt-2">
+            <ResponsiveContainer width="100%" height="100%">
+              <AreaChart data={last7DaysData.data} margin={{ top: 10, right: 10, left: -25, bottom: 0 }}>
+                <defs>
+                  <linearGradient id="framevisRevGrad" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="5%" stopColor="#a855f7" stopOpacity={0.35} />
+                    <stop offset="95%" stopColor="#a855f7" stopOpacity={0.0} />
+                  </linearGradient>
+                </defs>
+                <XAxis dataKey="label" axisLine={false} tickLine={false} tick={{ fill: '#8b7c72', fontSize: 11 }} />
+                <YAxis
+                  axisLine={false}
+                  tickLine={false}
+                  tickFormatter={val => formatCompactM(val)}
+                  tick={{ fill: '#8b7c72', fontSize: 10 }}
+                />
+                <Tooltip
+                  content={({ active, payload }) => {
+                    if (active && payload && payload.length) {
+                      const item = payload[0].payload;
+                      return (
+                        <div className="rounded-xl border border-slate-200 bg-white/95 dark:bg-[#181a20] p-2.5 shadow-md backdrop-blur-md text-xs">
+                          <div className="font-bold text-slate-900 dark:text-white">Ngày {item.label}</div>
+                          <div className="mt-0.5 text-purple-600 font-bold">{formatVND(item.revenue)}</div>
+                        </div>
+                      );
+                    }
+                    return null;
+                  }}
+                />
+                <Area
+                  type="monotone"
+                  dataKey="revenue"
+                  stroke="#9333ea"
+                  strokeWidth={3}
+                  fillOpacity={1}
+                  fill="url(#framevisRevGrad)"
+                  dot={{ r: 4, fill: '#9333ea', strokeWidth: 2, stroke: '#ffffff' }}
+                  activeDot={{ r: 6 }}
+                />
+              </AreaChart>
+            </ResponsiveContainer>
           </div>
         </div>
 
-        {/* Right Column (4 cols): Dark Card ("Upcoming Shoots") + Shoot Formats */}
-        <div className="lg:col-span-4 space-y-6">
-          {/* Dark Card ("Upcoming Shoots") */}
-          <div className="relative overflow-hidden rounded-3xl bg-[#1b1c20] p-6 text-white shadow-[0_15px_35px_rgba(20,20,30,0.3)] border border-white/10">
-            <div className="pointer-events-none absolute -top-10 -right-10 h-40 w-40 rounded-full bg-gradient-to-br from-[#df8653]/45 to-transparent blur-2xl" />
-
-            <div className="flex items-center justify-between mb-5">
-              <h3 className="text-base sm:text-lg font-bold text-white">
-                Lịch Chụp Sắp Tới
-              </h3>
-              <span className="text-[10px] font-semibold uppercase tracking-wider text-[#df8653] bg-[#df8653]/15 px-2 py-0.5 rounded-full border border-[#df8653]/25">
-                Studio Bays
-              </span>
+        {/* Cột Phải (5 cols): Lịch Hôm Nay (Today's Timeline) */}
+        <div className="lg:col-span-5 rounded-3xl border border-slate-200/80 dark:border-white/10 bg-white/80 dark:bg-[#1a1c23]/80 p-6 shadow-[0_6px_24px_rgba(0,0,0,0.03)] backdrop-blur-xl flex flex-col justify-between">
+          <div className="flex items-center justify-between pb-3 border-b border-slate-100 dark:border-white/5 mb-3">
+            <div>
+              <h3 className="text-base font-bold text-slate-900 dark:text-white">Lịch hôm nay</h3>
+              <p className="text-xs text-slate-400 dark:text-zinc-500">
+                {todayShoots.length > 0 ? todayShoots.length : displayShootsList.length} buổi •{' '}
+                {todayPendingShoots.length} chờ xác nhận
+              </p>
             </div>
-
-            <div className="space-y-4">
-              {upcomingShoots.map(shoot => (
-                <div
-                  key={shoot.id}
-                  onClick={() => setSelectedBooking(shoot)}
-                  className="group cursor-pointer rounded-2xl p-2.5 -mx-2 hover:bg-white/5 transition-colors"
-                >
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-2">
-                      <span className="h-1.5 w-1.5 rounded-full bg-[#df8653] shrink-0" />
-                      <h4 className="text-xs font-semibold text-white group-hover:text-[#df8653] transition-colors truncate max-w-[190px]">
-                        {shoot.clientName}
-                      </h4>
-                    </div>
-                    <span className="text-[10px] font-mono text-zinc-400">
-                      {shoot.eventDate}
-                    </span>
-                  </div>
-                  <div className="pl-3.5 mt-0.5 text-[11px] text-zinc-400 flex items-center gap-2">
-                    <Clock className="w-3 h-3 text-[#df8653]" />
-                    <span>{shoot.startTime} - {shoot.endTime} · {shoot.location}</span>
-                  </div>
-                  <div className="pl-3.5 mt-2 flex items-center justify-between">
-                    <div className="flex items-center -space-x-1.5">
-                      <div className="flex h-6 w-6 items-center justify-center rounded-full bg-amber-600 text-[10px] font-bold text-white ring-2 ring-[#1b1c20]" title={shoot.photographer?.full_name || 'Thợ ảnh'}>
-                        {(shoot.photographer?.full_name || 'LG').slice(0, 2).toUpperCase()}
-                      </div>
-                      <div className="flex h-6 w-6 items-center justify-center rounded-full bg-stone-600 text-[10px] font-bold text-white ring-2 ring-[#1b1c20]" title="MUA">
-                        MU
-                      </div>
-                    </div>
-                    <span className="text-[10px] font-mono text-[#df8653] font-bold">
-                      {formatVND(shoot.packagePrice)}
-                    </span>
-                  </div>
-                </div>
-              ))}
-            </div>
+            <button
+              onClick={() => setDashboardView('calendar')}
+              className="text-xs font-semibold text-purple-600 dark:text-purple-400 hover:underline cursor-pointer"
+            >
+              Xem tất cả
+            </button>
           </div>
 
-          {/* Shoot Formats / Cơ Cấu Dịch Vụ */}
-          <div className="space-y-3">
-            <h4 className="text-base font-bold text-[#1b2234] dark:text-white">
-              Cơ Cấu Gói Dịch Vụ
-            </h4>
+          {/* Danh sách Timeline ca chụp */}
+          <div className="space-y-2.5 max-h-56 overflow-y-auto pr-1">
+            {displayShootsList.length > 0 ? (
+              displayShootsList.map(shoot => {
+                const initials = (shoot.clientName || 'Khách')
+                  .split(' ')
+                  .map(w => w[0]?.toUpperCase())
+                  .slice(-2)
+                  .join('');
 
-            {shootFormats.map((fmt, idx) => (
-              <div
-                key={idx}
-                className="flex items-center justify-between rounded-2xl border border-white/70 dark:border-white/10 bg-gradient-to-r from-white/60 to-white/40 dark:from-[#1c1e27] dark:to-[#161820] p-3.5 backdrop-blur-md shadow-xs"
-              >
-                <div>
-                  <div className="text-[11px] text-[#7d6f65] dark:text-zinc-400">{fmt.name}</div>
-                  <div className="text-sm font-extrabold text-[#1b2234] dark:text-white tabular-nums">
-                    {fmt.count} hợp đồng
+                const isPending =
+                  shoot.status === 'cho_coc' ||
+                  shoot.status === 'cho_xac_nhan_coc' ||
+                  shoot.status === 'lead';
+                const isDone =
+                  shoot.status === 'hoan_thanh' ||
+                  shoot.status === 'done' ||
+                  shoot.status === 'da_tra_file';
+
+                return (
+                  <div
+                    key={shoot.id}
+                    onClick={() => onOpenDetailModal(shoot)}
+                    className="flex items-center justify-between p-2 rounded-xl hover:bg-slate-50 dark:hover:bg-white/5 border border-transparent hover:border-slate-200/60 dark:hover:border-white/10 transition-all cursor-pointer group"
+                  >
+                    <div className="flex items-center gap-3 min-w-0">
+                      <span className="text-xs font-mono font-semibold text-slate-500 dark:text-zinc-400 shrink-0 w-11">
+                        {shoot.startTime || '09:00'}
+                      </span>
+                      <div className="w-8 h-8 rounded-lg bg-purple-100 dark:bg-purple-950/60 text-purple-700 dark:text-purple-300 font-bold text-xs flex items-center justify-center shrink-0">
+                        {initials}
+                      </div>
+                      <div className="min-w-0 truncate">
+                        <div className="text-xs font-bold text-slate-800 dark:text-white truncate group-hover:text-purple-600 transition-colors">
+                          {shoot.clientName}
+                        </div>
+                        <div className="text-[11px] text-slate-400 truncate">
+                          {shoot.sessionTitle || shoot.category || shoot.sessionType || 'Concept chụp ảnh'}
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Status Dot */}
+                    <div className="flex items-center gap-2 shrink-0">
+                      <span
+                        className={`w-2.5 h-2.5 rounded-full ${
+                          isPending
+                            ? 'bg-amber-500 animate-pulse'
+                            : isDone
+                            ? 'bg-sky-500'
+                            : 'bg-emerald-500'
+                        }`}
+                        title={isPending ? 'Chờ xác nhận cọc' : isDone ? 'Đã hoàn tất' : 'Đã chốt / Đang chụp'}
+                      />
+                    </div>
                   </div>
-                </div>
-                <div className="text-base font-extrabold text-[#df8653] tabular-nums">
-                  {fmt.pct}%
-                </div>
+                );
+              })
+            ) : (
+              <div className="text-center py-8 text-xs text-slate-400">
+                Chưa có ca chụp nào hôm nay.
+                <button
+                  onClick={onOpenCreateQuote}
+                  className="block mx-auto mt-2 text-purple-600 font-bold hover:underline"
+                >
+                  + Lên lịch chụp ngay
+                </button>
               </div>
-            ))}
+            )}
           </div>
         </div>
       </div>

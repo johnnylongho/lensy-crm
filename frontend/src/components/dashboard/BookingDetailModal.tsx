@@ -1,5 +1,15 @@
 import React, { useState, useEffect } from 'react';
-import { CalendarEvent, GearItem, ExpenseItem, StudioMember, StaffInfo } from '../../types';
+import {
+  CalendarEvent,
+  GearItem,
+  ExpenseItem,
+  StudioMember,
+  StaffInfo,
+  CrewAssignmentItem,
+  CrewRole,
+  ProofingSession,
+  ProofingItem,
+} from '../../types';
 import { useAuth } from '../../context/AuthContext';
 import { useWorkspace } from '../../context/WorkspaceContext';
 import { supabase, isSupabaseConfigured } from '../../lib/supabase';
@@ -44,10 +54,75 @@ import {
   Share2,
   Gift,
   Send,
+  QrCode,
+  Users,
+  FolderOpen,
+  FileCheck2,
+  Lock,
+  Unlock,
+  MessageSquare,
+  Image as ImageIcon,
+  Upload,
+  Heart,
 } from 'lucide-react';
+import { batchCompressImages } from '../../utils/imageCompressor';
 import { openZaloChat, generatePhotoDeliveryMessage } from '../../lib/zaloMessenger';
 import { VerifiedBadge } from '../common/VerifiedBadge';
 import { generateGoogleCalendarUrl, downloadIcsFile } from '../../utils/googleCalendarSync';
+
+const CREW_ROLE_CONFIG: Record<CrewRole, { label: string; icon: string; badgeClass: string; dotColor: string }> = {
+  lead_photographer: {
+    label: 'Thợ chụp chính',
+    icon: '📷',
+    badgeClass: 'bg-amber-500/10 text-amber-300 border-amber-500/30',
+    dotColor: 'bg-amber-400',
+  },
+  videographer: {
+    label: 'Quay phim / Video',
+    icon: '🎬',
+    badgeClass: 'bg-indigo-500/10 text-indigo-300 border-indigo-500/30',
+    dotColor: 'bg-indigo-400',
+  },
+  makeup_artist: {
+    label: 'Makeup & Hair',
+    icon: '💄',
+    badgeClass: 'bg-fuchsia-500/10 text-fuchsia-300 border-fuchsia-500/30',
+    dotColor: 'bg-fuchsia-400',
+  },
+  assistant: {
+    label: 'Trợ lý / Ánh sáng',
+    icon: '💡',
+    badgeClass: 'bg-sky-500/10 text-sky-300 border-sky-500/30',
+    dotColor: 'bg-sky-400',
+  },
+  retoucher: {
+    label: 'Retoucher / Hậu kỳ',
+    icon: '🎨',
+    badgeClass: 'bg-emerald-500/10 text-emerald-300 border-emerald-500/30',
+    dotColor: 'bg-emerald-400',
+  },
+  other: {
+    label: 'Khác / Hỗ trợ',
+    icon: '👤',
+    badgeClass: 'bg-slate-500/10 text-slate-300 border-slate-500/30',
+    dotColor: 'bg-slate-400',
+  },
+};
+
+const DEMO_GALLERY_PHOTOS = [
+  { filename: 'IMG_2041.JPG', url: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=800&q=80' },
+  { filename: 'IMG_2042.JPG', url: 'https://images.unsplash.com/photo-1517841905240-472988babdf9?auto=format&fit=crop&w=800&q=80' },
+  { filename: 'IMG_2043.JPG', url: 'https://images.unsplash.com/photo-1524504388940-b1c1722653e1?auto=format&fit=crop&w=800&q=80' },
+  { filename: 'IMG_2044.JPG', url: 'https://images.unsplash.com/photo-1506794778202-cad84cf45f1d?auto=format&fit=crop&w=800&q=80' },
+  { filename: 'IMG_2045.JPG', url: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&w=800&q=80' },
+  { filename: 'IMG_2046.JPG', url: 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?auto=format&fit=crop&w=800&q=80' },
+  { filename: 'IMG_2047.JPG', url: 'https://images.unsplash.com/photo-1519741497674-611481863552?auto=format&fit=crop&w=800&q=80' },
+  { filename: 'IMG_2048.JPG', url: 'https://images.unsplash.com/photo-1511285560929-80b456fea0bc?auto=format&fit=crop&w=800&q=80' },
+  { filename: 'IMG_2049.JPG', url: 'https://images.unsplash.com/photo-1469334031218-e382a71b716b?auto=format&fit=crop&w=800&q=80' },
+  { filename: 'IMG_2050.JPG', url: 'https://images.unsplash.com/photo-1500917293891-ef795e70e1f6?auto=format&fit=crop&w=800&q=80' },
+  { filename: 'IMG_2051.JPG', url: 'https://images.unsplash.com/photo-1529139574466-a303027c1d8b?auto=format&fit=crop&w=800&q=80' },
+  { filename: 'IMG_2052.JPG', url: 'https://images.unsplash.com/photo-1492562080023-ab3db95bfbce?auto=format&fit=crop&w=800&q=80' },
+];
 
 interface Props {
   isOpen: boolean;
@@ -70,7 +145,7 @@ export const BookingDetailModal: React.FC<Props> = ({
 }) => {
   const { user } = useAuth();
   const { currentStudio } = useWorkspace();
-  const [activeTab, setActiveTab] = useState<'gears' | 'expenses' | 'delivery'>('gears');
+  const [activeTab, setActiveTab] = useState<'crew' | 'gears' | 'expenses' | 'delivery'>('crew');
   const [gears, setGears] = useState<GearItem[]>([]);
   const [isLoadingGears, setIsLoadingGears] = useState(false);
   const [selectedGearIds, setSelectedGearIds] = useState<string[]>([]);
@@ -78,18 +153,37 @@ export const BookingDetailModal: React.FC<Props> = ({
   const [gearSearch, setGearSearch] = useState('');
   const [gearCategory, setGearCategory] = useState<string>('all');
 
-  // Photo Delivery (Bàn giao file ảnh & Client Portal) States
+  // Photo Delivery & Client Proofing States
   const [deliveryLink, setDeliveryLink] = useState('');
   const [deliveryNotes, setDeliveryNotes] = useState('');
   const [deliveryDate, setDeliveryDate] = useState('');
   const [markAsDelivered, setMarkAsDelivered] = useState(false);
   const [copiedPortalLink, setCopiedPortalLink] = useState(false);
+  const [proofingSession, setProofingSession] = useState<ProofingSession>({
+    drive_preview_link: '',
+    max_selections: 20,
+    selected_filenames: [],
+    items: [],
+    is_locked: false,
+  });
+  const [copiedLightroomQuery, setCopiedLightroomQuery] = useState(false);
+  const [isUploadingPreviews, setIsUploadingPreviews] = useState(false);
+  const [uploadProgress, setUploadProgress] = useState<{ current: number; total: number } | null>(null);
 
   // Staff Assignment (Phân công nhân sự) States
   const [assignedPhotographerId, setAssignedPhotographerId] = useState<string>('');
   const [assignedMakeupId, setAssignedMakeupId] = useState<string>('');
   const [studioMembers, setStudioMembers] = useState<StudioMember[]>([]);
   const [staffSearchQuery, setStaffSearchQuery] = useState('');
+
+  // Phân công Ê-Kíp & Thù Lao (Crew & Payroll) States
+  const [crewMembers, setCrewMembers] = useState<CrewAssignmentItem[]>([]);
+  const [newCrewRole, setNewCrewRole] = useState<CrewRole>('assistant');
+  const [newCrewName, setNewCrewName] = useState<string>('');
+  const [newCrewFee, setNewCrewFee] = useState<number | string>('');
+  const [newCrewFeeType, setNewCrewFeeType] = useState<'fixed' | 'percent'>('fixed');
+  const [newCrewPhone, setNewCrewPhone] = useState<string>('');
+  const [newCrewMemberUserId, setNewCrewMemberUserId] = useState<string>('');
   
   // Category & Package Type (Loại hình & Gói chụp) States
   const [selectedCategory, setSelectedCategory] = useState<string>('portrait');
@@ -127,6 +221,49 @@ export const BookingDetailModal: React.FC<Props> = ({
       setDeliveryNotes(booking.delivery_notes || '');
       setDeliveryDate(booking.delivery_date ? booking.delivery_date.substring(0, 10) : new Date().toISOString().substring(0, 10));
       setMarkAsDelivered(booking.status === 'da_tra_file' || booking.status === 'done' || booking.status === 'hoan_thanh');
+
+      // Sync Proofing Session
+      setProofingSession(
+        booking.proofing_session || {
+          drive_preview_link: booking.drive_delivery_link || '',
+          max_selections: 20,
+          selected_filenames: [],
+          items: [],
+          is_locked: false,
+        }
+      );
+
+      // Sync Crew Assignments
+      if (booking.crew_assignments && booking.crew_assignments.length > 0) {
+        setCrewMembers(booking.crew_assignments);
+      } else {
+        const initialCrew: CrewAssignmentItem[] = [];
+        if (booking.photographer?.full_name || booking.photographer_id) {
+          initialCrew.push({
+            id: 'crew-photo-' + Date.now(),
+            user_id: booking.photographer_id || booking.photographer?.id,
+            role: 'lead_photographer',
+            name: booking.photographer?.full_name || 'Thợ chụp chính',
+            phone: booking.photographer?.phone || '',
+            fee: 30, // 30% mặc định
+            fee_type: 'percent',
+            is_paid: false,
+          });
+        }
+        if (booking.makeup_artist?.full_name || booking.makeup_artist_id) {
+          initialCrew.push({
+            id: 'crew-mua-' + Date.now(),
+            user_id: booking.makeup_artist_id || booking.makeup_artist?.id,
+            role: 'makeup_artist',
+            name: booking.makeup_artist?.full_name || 'Thợ Makeup',
+            phone: booking.makeup_artist?.phone || '',
+            fee: 500000,
+            fee_type: 'fixed',
+            is_paid: false,
+          });
+        }
+        setCrewMembers(initialCrew);
+      }
     }
   }, [booking]);
 
@@ -357,12 +494,251 @@ export const BookingDetailModal: React.FC<Props> = ({
     }
   };
 
+  // ====================================================================
+  // LOGIC PHÂN CÔNG Ê-KÍP & HẠCH TOÁN THÙ LAO (CREW & PAYROLL)
+  // ====================================================================
+  const handleAddCrewMember = () => {
+    let name = newCrewName.trim();
+    let phone = newCrewPhone.trim();
+    let userId = newCrewMemberUserId || undefined;
+
+    if (newCrewMemberUserId) {
+      const found = studioMembers.find(m => (m.user_id === newCrewMemberUserId || m.id === newCrewMemberUserId));
+      if (found) {
+        name = found.user?.full_name || name || 'Thành viên Studio';
+        phone = found.user?.phone || phone;
+      }
+    }
+
+    if (!name) {
+      setToastMessage({ type: 'error', text: 'Vui lòng nhập tên nhân sự hoặc chọn từ danh sách Studio.' });
+      return;
+    }
+
+    const feeNum = Number(newCrewFee) || 0;
+
+    const newMember: CrewAssignmentItem = {
+      id: 'crew-' + Date.now() + '-' + Math.random().toString(36).substring(2, 6),
+      user_id: userId,
+      role: newCrewRole,
+      name,
+      phone,
+      fee: feeNum,
+      fee_type: newCrewFeeType,
+      is_paid: false,
+    };
+
+    setCrewMembers(prev => [...prev, newMember]);
+    setNewCrewName('');
+    setNewCrewPhone('');
+    setNewCrewFee('');
+    setNewCrewMemberUserId('');
+    setToastMessage({ type: 'success', text: `Đã thêm ${name} vào ê-kíp show!` });
+  };
+
+  const handleRemoveCrewMember = (id?: string) => {
+    setCrewMembers(prev => prev.filter(m => m.id !== id));
+    setToastMessage({ type: 'success', text: 'Đã gỡ nhân sự khỏi ê-kíp.' });
+  };
+
+  const handleToggleCrewPaid = (id?: string) => {
+    setCrewMembers(prev =>
+      prev.map(m => (m.id === id ? { ...m, is_paid: !m.is_paid } : m))
+    );
+  };
+
+  const handleCopyVietQrTransfer = (member: CrewAssignmentItem) => {
+    const calculatedFee =
+      member.fee_type === 'percent'
+        ? Math.round((booking.packagePrice * Number(member.fee || 0)) / 100)
+        : Number(member.fee || 0);
+
+    const transferContent = `Thu lao show ${booking.clientName} ngay ${booking.eventDate}`;
+    const textToCopy = `Thù lao: ${calculatedFee.toLocaleString('vi-VN')} đ | Nội dung CK: ${transferContent}`;
+    navigator.clipboard.writeText(textToCopy);
+    setToastMessage({ type: 'success', text: `Đã sao chép cú pháp chuyển khoản thù lao cho ${member.name}!` });
+  };
+
+  // ====================================================================
+  // LOGIC CỔNG CHỌN ẢNH & VISUAL GALLERY (CLIENT PROOFING)
+  // ====================================================================
+  // Danh sách ảnh khách đã chọn (có is_selected = true hoặc ảnh thêm từ Quick-Pad không có preview_url)
+  const clientSelectedItems = (proofingSession.items || []).filter(
+    i => i.is_selected === true || (!i.preview_url && i.is_selected !== false)
+  );
+  // Danh sách tất cả ảnh preview trong gallery
+  const galleryPreviewItems = (proofingSession.items || []).filter(
+    i => Boolean(i.preview_url || i.thumbnail_url)
+  );
+
+  const handleCopyLightroomQuery = () => {
+    const listToCopy = clientSelectedItems.length > 0 ? clientSelectedItems : (proofingSession.items || []);
+    const filenames = listToCopy.map(i => i.filename).join(', ');
+    if (!filenames) {
+      setToastMessage({ type: 'error', text: 'Chưa có ảnh nào trong danh sách chọn!' });
+      return;
+    }
+    navigator.clipboard.writeText(filenames);
+    setCopiedLightroomQuery(true);
+    setTimeout(() => setCopiedLightroomQuery(false), 2500);
+    setToastMessage({ type: 'success', text: `Đã copy ${listToCopy.length} mã file cho Lightroom Library!` });
+  };
+
+  const handleUnlockProofing = () => {
+    setProofingSession(prev => ({
+      ...prev,
+      is_locked: false,
+    }));
+    setToastMessage({ type: 'success', text: 'Đã mở khóa chọn ảnh cho khách hàng.' });
+  };
+
+  const handleSendRetoucherZalo = () => {
+    const listToSend = clientSelectedItems.length > 0 ? clientSelectedItems : (proofingSession.items || []);
+    const filenames = listToSend.map(i => i.filename).join(', ');
+    const retoucherMsg = `Chào bạn, Studio gửi danh sách ${listToSend.length} ảnh cần retouch cho show ${booking.clientName} (ngày ${booking.eventDate}):\n${filenames}\n\nLink drive gốc: ${proofingSession.drive_preview_link || deliveryLink || 'Xem trên hệ thống'}`;
+    navigator.clipboard.writeText(retoucherMsg);
+    setToastMessage({ type: 'success', text: 'Đã copy thông điệp gửi Retoucher qua Zalo!' });
+  };
+
+  // 1. Tải ảnh preview từ máy tính (nén canvas client-side ~120KB)
+  const handleUploadPreviewFiles = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = e.target.files;
+    if (!files || files.length === 0) return;
+
+    const fileList = Array.from(files);
+    setIsUploadingPreviews(true);
+    setUploadProgress({ current: 0, total: fileList.length });
+
+    try {
+      const compressed = await batchCompressImages(fileList, (current, total) => {
+        setUploadProgress({ current, total });
+      });
+
+      const existingItems = proofingSession.items || [];
+      const newItems: ProofingItem[] = compressed.map(res => {
+        const oldMatch = existingItems.find(ex => ex.filename.toUpperCase() === res.filename.toUpperCase());
+        return {
+          id: oldMatch?.id || 'proof-' + Date.now() + '-' + Math.random().toString(36).substring(2, 7),
+          filename: res.filename,
+          preview_url: res.dataUrl,
+          thumbnail_url: res.dataUrl,
+          is_selected: oldMatch?.is_selected || false,
+          notes: oldMatch?.notes,
+        };
+      });
+
+      const mergedMap = new Map<string, ProofingItem>();
+      existingItems.forEach(item => mergedMap.set(item.filename.toUpperCase(), item));
+      newItems.forEach(item => mergedMap.set(item.filename.toUpperCase(), item));
+      const finalItems = Array.from(mergedMap.values());
+
+      const nextSession: ProofingSession = {
+        ...proofingSession,
+        items: finalItems,
+      };
+
+      setProofingSession(nextSession);
+      setToastMessage({
+        type: 'success',
+        text: `🎉 Đã tải lên và nén siêu tốc ${compressed.length} ảnh preview vào Gallery!`,
+      });
+    } catch (err: any) {
+      console.error('Lỗi nén ảnh preview:', err);
+      setToastMessage({ type: 'error', text: `Lỗi xử lý ảnh: ${err.message || 'Không thể nén ảnh'}` });
+    } finally {
+      setIsUploadingPreviews(false);
+      setUploadProgress(null);
+      e.target.value = '';
+    }
+  };
+
+  // 2. Nạp 12 ảnh mẫu Demo Unsplash
+  const handleLoadDemoGallery = () => {
+    const existingItems = proofingSession.items || [];
+    const demoItems: ProofingItem[] = DEMO_GALLERY_PHOTOS.map((demo, idx) => {
+      const oldMatch = existingItems.find(ex => ex.filename.toUpperCase() === demo.filename.toUpperCase());
+      return {
+        id: oldMatch?.id || `demo-${idx + 1}`,
+        filename: demo.filename,
+        preview_url: demo.url,
+        thumbnail_url: demo.url,
+        is_selected: oldMatch?.is_selected !== undefined ? oldMatch.is_selected : (idx < 3),
+        notes: oldMatch?.notes || (idx === 0 ? 'Bóp eo nhẹ, làm sáng da' : undefined),
+      };
+    });
+
+    const mergedMap = new Map<string, ProofingItem>();
+    existingItems.forEach(item => mergedMap.set(item.filename.toUpperCase(), item));
+    demoItems.forEach(item => mergedMap.set(item.filename.toUpperCase(), item));
+    const finalItems = Array.from(mergedMap.values());
+
+    const nextSession: ProofingSession = {
+      ...proofingSession,
+      items: finalItems,
+      selected_filenames: finalItems.filter(i => i.is_selected).map(i => i.filename),
+    };
+
+    setProofingSession(nextSession);
+    setToastMessage({
+      type: 'success',
+      text: '✨ Đã nạp 12 ảnh mẫu Demo độ nét cao vào Visual Gallery!',
+    });
+  };
+
+  // 3. Xóa 1 ảnh khỏi gallery preview
+  const handleRemoveGalleryItem = (filename: string) => {
+    const remaining = (proofingSession.items || []).filter(
+      i => i.filename.toUpperCase() !== filename.toUpperCase()
+    );
+    setProofingSession(prev => ({
+      ...prev,
+      items: remaining,
+      selected_filenames: (prev.selected_filenames || []).filter(f => f.toUpperCase() !== filename.toUpperCase()),
+    }));
+    setToastMessage({ type: 'success', text: `Đã xóa ảnh ${filename} khỏi kho preview.` });
+  };
+
+  // 4. Xóa toàn bộ ảnh preview trong gallery
+  const handleClearAllGallery = () => {
+    if (!window.confirm('Bạn có chắc muốn xóa toàn bộ ảnh preview trong Gallery này?')) return;
+    setProofingSession(prev => ({
+      ...prev,
+      items: [],
+      selected_filenames: [],
+    }));
+    setToastMessage({ type: 'success', text: 'Đã làm trống Visual Gallery.' });
+  };
+
   // Tính toán tài chính
   const totalExpenses = expenseItems.reduce((sum, item) => sum + (Number(item.amount) || 0), 0);
+
+  // Tính tổng thù lao ê-kíp
+  const totalCrewCost = crewMembers.reduce((sum, member) => {
+    if (member.fee_type === 'percent') {
+      return sum + Math.round((booking.packagePrice * Number(member.fee || 0)) / 100);
+    }
+    return sum + Number(member.fee || 0);
+  }, 0);
+
+  const paidCrewCost = crewMembers
+    .filter(m => m.is_paid)
+    .reduce((sum, member) => {
+      if (member.fee_type === 'percent') {
+        return sum + Math.round((booking.packagePrice * Number(member.fee || 0)) / 100);
+      }
+      return sum + Number(member.fee || 0);
+    }, 0);
+
+  const unpaidCrewCost = Math.max(0, totalCrewCost - paidCrewCost);
+
+  // Tổng chi phí Show = Chi phí sự kiện + Thù lao ê-kíp
+  const combinedTotalCost = totalExpenses + totalCrewCost;
+
   const effectivePaid = Number(booking.paidAmount || booking.depositAmount || 0);
-  // Lợi nhuận ròng = Số tiền khách trả - Tổng chi phí
-  const netProfit = effectivePaid - totalExpenses;
-  const projectedNetProfit = booking.packagePrice - totalExpenses;
+  // Lợi nhuận ròng = Tiền khách trả - Tổng chi phí & thù lao
+  const netProfit = effectivePaid - combinedTotalCost;
+  const projectedNetProfit = booking.packagePrice - combinedTotalCost;
+  const profitMargin = booking.packagePrice > 0 ? Math.round((projectedNetProfit / booking.packagePrice) * 100) : 0;
 
   // Lưu phân bổ thiết bị, hạch toán chi phí VÀ phân công nhân sự vào Supabase
   const handleSaveAssignedGears = async () => {
@@ -381,12 +757,20 @@ export const BookingDetailModal: React.FC<Props> = ({
         const canonicalCategory = normalizeCategory(selectedCategory);
         const nextStatus = markAsDelivered && booking.status !== 'done' && booking.status !== 'hoan_thanh' ? 'da_tra_file' : booking.status;
         
+        // Đồng bộ thợ chính và makeup artist từ crewMembers nếu có
+        const leadPhoto = crewMembers.find(m => m.role === 'lead_photographer');
+        const makeupArtist = crewMembers.find(m => m.role === 'makeup_artist');
+        const finalPhotoId = leadPhoto?.user_id || assignedPhotographerId || null;
+        const finalMakeupId = makeupArtist?.user_id || assignedMakeupId || null;
+
         const updatePayload: any = {
           assigned_gears: selectedGearIds,
           expenses: totalExpenses,
           expense_details: expenseItems,
-          photographer_id: assignedPhotographerId || null,
-          makeup_artist_id: assignedMakeupId || null,
+          crew_assignments: crewMembers,
+          proofing_session: proofingSession,
+          photographer_id: finalPhotoId,
+          makeup_artist_id: finalMakeupId,
           category: canonicalCategory,
           session_type: canonicalCategory,
           package_type: packageType.trim() || null,
@@ -397,21 +781,29 @@ export const BookingDetailModal: React.FC<Props> = ({
           updated_at: new Date().toISOString(),
         };
 
-        const { error } = await supabase
+        let { error } = await supabase
           .from('bookings')
           .update(updatePayload)
           .eq('id', booking.id);
 
+        if (error && (error.message.includes('crew_assignments') || error.message.includes('proofing_session'))) {
+          console.warn('Cột mới chưa có trên DB, cập nhật bỏ qua cột này:', error.message);
+          delete updatePayload.crew_assignments;
+          delete updatePayload.proofing_session;
+          const retry = await supabase.from('bookings').update(updatePayload).eq('id', booking.id);
+          error = retry.error;
+        }
+
         if (error) {
-          console.warn('Lỗi lưu category, fallback qua session_type:', error);
+          console.warn('Lỗi lưu chi tiết booking, thử lại phương án dự phòng:', error);
           const { error: fallbackErr } = await supabase
             .from('bookings')
             .update({
               assigned_gears: selectedGearIds,
               expenses: totalExpenses,
               expense_details: expenseItems,
-              photographer_id: assignedPhotographerId || null,
-              makeup_artist_id: assignedMakeupId || null,
+              photographer_id: finalPhotoId,
+              makeup_artist_id: finalMakeupId,
               session_type: canonicalCategory,
               drive_delivery_link: deliveryLink.trim() || null,
               delivery_notes: deliveryNotes.trim() || null,
@@ -460,6 +852,8 @@ export const BookingDetailModal: React.FC<Props> = ({
         assignedGears: selectedGearIds,
         expenses: totalExpenses,
         expenseDetails: expenseItems,
+        crew_assignments: crewMembers,
+        proofing_session: proofingSession,
         photographer_id: assignedPhotographerId || undefined,
         makeup_artist_id: assignedMakeupId || undefined,
         photographer: updatedPhotoInfo,
@@ -602,7 +996,7 @@ export const BookingDetailModal: React.FC<Props> = ({
             </div>
           )}
 
-        {/* Financial Metrics Summary - 4 Cột Rõ Ràng: Tổng Gói, Khách Trả, Chi Phí, Lợi Nhuận Ròng */}
+        {/* Financial Metrics Summary - 4 Cột Rõ Ràng: Tổng Gói, Khách Trả, Chi Phí & Thù Lao, Lợi Nhuận Ròng */}
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5 p-3.5 rounded-2xl bg-slate-950/70 border border-slate-800 text-xs">
           <div>
             <div className="flex items-center gap-1.5">
@@ -629,146 +1023,58 @@ export const BookingDetailModal: React.FC<Props> = ({
             </span>
           </div>
           <div>
-            <span className="text-slate-400 block text-[10px]">Tổng Chi Phí (Job Cost)</span>
+            <span className="text-slate-400 block text-[10px]">Tổng Chi Phí & Thù Lao</span>
             <span className="font-mono font-bold text-amber-400 text-xs sm:text-sm">
-              {totalExpenses.toLocaleString('vi-VN')} đ
+              {combinedTotalCost.toLocaleString('vi-VN')} đ
+            </span>
+            <span className="text-[9px] text-slate-500 block">
+              Thù lao: {totalCrewCost.toLocaleString('vi-VN')} đ
             </span>
           </div>
           <div>
-            <span className="text-slate-400 block text-[10px]">Lợi Nhuận Ròng (Net Profit)</span>
-            <span className={`font-mono font-black text-xs sm:text-sm ${netProfit >= 0 ? 'text-emerald-400' : 'text-rose-400'}`}>
-              {netProfit.toLocaleString('vi-VN')} đ
+            <span className="text-slate-400 block text-[10px]">Lợi Nhuận Ròng Dự Kiến</span>
+            <span className={`font-mono font-black text-xs sm:text-sm ${projectedNetProfit >= 0 ? 'text-emerald-400' : 'text-rose-400'}`}>
+              {projectedNetProfit.toLocaleString('vi-VN')} đ
+            </span>
+            <span className="text-[9px] text-emerald-400/80 block">
+              Biên LN: {profitMargin}%
             </span>
           </div>
         </div>
 
-        {/* ==================================================================== */}
-        {/* KHU VỰC PHÂN CÔNG NHÂN SỰ (STAFF ASSIGNMENT: PHOTOGRAPHER & MAKEUP) */}
-        {/* ==================================================================== */}
-        <div className="p-4 sm:p-5 rounded-2xl bg-slate-950/70 border border-slate-800 space-y-3.5">
-          <div className="flex flex-wrap items-center justify-between gap-2 border-b border-slate-800 pb-2.5">
+        {/* Quick Crew Status Preview Banner */}
+        {crewMembers.length > 0 && (
+          <div className="flex flex-wrap items-center justify-between gap-2 p-2.5 px-3.5 rounded-xl bg-slate-900/60 border border-slate-800 text-xs">
             <div className="flex items-center gap-2">
-              <UserCheck className="w-4 h-4 text-emerald-400" />
-              <h4 className="text-xs font-bold uppercase tracking-wider text-white">
-                Phân Công Nhân Sự Cho Show (Staff Assignment)
-              </h4>
-            </div>
-            <span className="text-[10px] text-slate-400">Chọn nhân sự phụ trách từ đội ngũ Studio</span>
-          </div>
-
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            {/* 1. Chọn Thợ Chụp */}
-            <div className="space-y-1.5">
-              <label className="text-[11px] font-bold text-amber-400 flex items-center gap-1.5">
-                <Camera className="w-3.5 h-3.5" />
-                <span>Chọn Thợ Chụp (Photographer)</span>
-              </label>
-              <select
-                value={assignedPhotographerId}
-                onChange={e => setAssignedPhotographerId(e.target.value)}
-                className="w-full px-3 py-2 rounded-xl bg-slate-900 border border-slate-800 text-xs font-semibold text-slate-200 outline-none focus:border-amber-400 cursor-pointer"
-              >
-                <option value="">-- Chưa chỉ định thợ chụp --</option>
-                {studioMembers
-                  .filter(m => m.role === 'photographer' || m.role === 'admin')
-                  .map(m => (
-                    <option key={m.user_id || m.id} value={m.user_id || m.id}>
-                      📷 {m.user?.full_name || 'Thợ ảnh'} {m.role === 'admin' ? '(Quản lý)' : ''}
-                    </option>
-                  ))}
-              </select>
-            </div>
-
-            {/* 2. Chọn Thợ Makeup */}
-            <div className="space-y-1.5">
-              <label className="text-[11px] font-bold text-fuchsia-400 flex items-center gap-1.5">
-                <Sparkles className="w-3.5 h-3.5" />
-                <span>Chọn Thợ Makeup (MUA)</span>
-              </label>
-              <select
-                value={assignedMakeupId}
-                onChange={e => setAssignedMakeupId(e.target.value)}
-                className="w-full px-3 py-2 rounded-xl bg-slate-900 border border-slate-800 text-xs font-semibold text-slate-200 outline-none focus:border-fuchsia-400 cursor-pointer"
-              >
-                <option value="">-- Chưa chỉ định thợ makeup --</option>
-                {studioMembers
-                  .filter(m => m.role === 'makeup_artist')
-                  .map(m => (
-                    <option key={m.user_id || m.id} value={m.user_id || m.id}>
-                      💄 {m.user?.full_name || 'Thợ Makeup'}
-                    </option>
-                  ))}
-              </select>
-            </div>
-          </div>
-
-          {/* Quick Staff Preview Banner */}
-          {(assignedPhotographerId || assignedMakeupId) && (
-            <div className="flex flex-wrap items-center gap-4 pt-2 border-t border-slate-800/80 text-xs">
-              {assignedPhotographerId && (() => {
-                const photoMember = studioMembers.find(m => (m.user_id === assignedPhotographerId || m.id === assignedPhotographerId));
-                const isPhotoVerified = photoMember?.is_verified || photoMember?.user?.is_verified || booking.photographer?.is_verified;
-                return (
-                  <div className="flex items-center gap-2">
-                    <div className="w-6 h-6 rounded-full overflow-hidden bg-amber-500/20 border border-amber-500/30 flex-shrink-0">
-                      <img
-                        src={
-                          photoMember?.user?.avatar_url ||
-                          booking.photographer?.avatar_url ||
-                          '/mirmia-logo.png'
-                        }
-                        alt="Photographer"
-                        className="w-full h-full object-cover"
-                        onError={e => {
-                          (e.target as HTMLImageElement).src = '/mirmia-logo.png';
-                        }}
-                      />
-                    </div>
-                    <span className="text-[11px] text-slate-300 flex items-center gap-1">
-                      Thợ chụp: <strong className="text-amber-400">{
-                        photoMember?.user?.full_name ||
-                        booking.photographer?.full_name ||
-                        'Đã phân công'
-                      }</strong>
-                      {isPhotoVerified && <VerifiedBadge className="w-3.5 h-3.5" />}
+              <Users className="w-3.5 h-3.5 text-amber-400" />
+              <span className="text-[11px] font-semibold text-slate-300">
+                Ê-kíp show ({crewMembers.length} người):
+              </span>
+              <div className="flex flex-wrap items-center gap-1.5">
+                {crewMembers.map((m, i) => {
+                  const conf = CREW_ROLE_CONFIG[m.role] || CREW_ROLE_CONFIG.other;
+                  return (
+                    <span
+                      key={m.id || i}
+                      className={`text-[10px] font-semibold px-2 py-0.5 rounded-md border flex items-center gap-1 ${conf.badgeClass}`}
+                    >
+                      <span>{conf.icon}</span>
+                      <span>{m.name}</span>
+                      {m.is_paid && <span className="text-[9px] text-emerald-400">✓</span>}
                     </span>
-                  </div>
-                );
-              })()}
-
-              {assignedMakeupId && (() => {
-                const muaMember = studioMembers.find(m => (m.user_id === assignedMakeupId || m.id === assignedMakeupId));
-                const isMuaVerified = muaMember?.is_verified || muaMember?.user?.is_verified || booking.makeup_artist?.is_verified;
-                return (
-                  <div className="flex items-center gap-2">
-                    <div className="w-6 h-6 rounded-full overflow-hidden bg-fuchsia-500/20 border border-fuchsia-500/30 flex-shrink-0">
-                      <img
-                        src={
-                          muaMember?.user?.avatar_url ||
-                          booking.makeup_artist?.avatar_url ||
-                          'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150'
-                        }
-                        alt="MUA"
-                        className="w-full h-full object-cover"
-                        onError={e => {
-                          (e.target as HTMLImageElement).src = '/mirmia-logo.png';
-                        }}
-                      />
-                    </div>
-                    <span className="text-[11px] text-slate-300 flex items-center gap-1">
-                      MUA: <strong className="text-fuchsia-400">{
-                        muaMember?.user?.full_name ||
-                        booking.makeup_artist?.full_name ||
-                        'Đã phân công'
-                      }</strong>
-                      {isMuaVerified && <VerifiedBadge className="w-3.5 h-3.5" />}
-                    </span>
-                  </div>
-                );
-              })()}
+                  );
+                })}
+              </div>
             </div>
-          )}
-        </div>
+            <button
+              type="button"
+              onClick={() => setActiveTab('crew')}
+              className="text-[10px] text-amber-400 hover:text-amber-300 font-bold transition-colors cursor-pointer"
+            >
+              Quản lý thù lao →
+            </button>
+          </div>
+        )}
 
         {/* ==================================================================== */}
         {/* KHU VỰC LOẠI HÌNH CHỤP & GÓI DỊCH VỤ (CATEGORY & PACKAGE SELECTION)   */}
@@ -829,28 +1135,28 @@ export const BookingDetailModal: React.FC<Props> = ({
           </div>
         </div>
 
-        {/* Tab Switcher: Phân Bổ Thiết Bị vs Hạch Toán Chi Phí */}
-        <div className="flex items-center gap-2 border-b border-slate-800 pb-2">
+        {/* Tab Switcher: Phân Công Ê-Kíp & Thù Lao vs Hạch Toán Chi Phí vs Phân Bổ Thiết Bị vs Bàn Giao File */}
+        <div className="flex items-center gap-2 border-b border-slate-800 pb-2 overflow-x-auto">
           <button
             type="button"
-            onClick={() => setActiveTab('gears')}
-            className={`flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-xs font-bold transition-all ${
-              activeTab === 'gears'
+            onClick={() => setActiveTab('crew')}
+            className={`flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-xs font-bold transition-all whitespace-nowrap cursor-pointer ${
+              activeTab === 'crew'
                 ? 'bg-amber-500 text-slate-950 shadow-md shadow-amber-500/20'
                 : 'text-slate-400 hover:text-white bg-slate-950/60 border border-slate-800'
             }`}
           >
-            <Camera className="w-3.5 h-3.5" />
-            <span>Phân Bổ Thiết Bị</span>
-            <span className={`px-1.5 py-0.2 rounded-full text-[10px] font-mono ${activeTab === 'gears' ? 'bg-slate-950 text-amber-400' : 'bg-slate-900 text-slate-400'}`}>
-              {selectedGearIds.length}
+            <Users className="w-3.5 h-3.5" />
+            <span>Phân Công Ê-Kíp & Thù Lao</span>
+            <span className={`px-1.5 py-0.2 rounded-full text-[10px] font-mono ${activeTab === 'crew' ? 'bg-slate-950 text-amber-400' : 'bg-slate-900 text-slate-400'}`}>
+              {crewMembers.length}
             </span>
           </button>
 
           <button
             type="button"
             onClick={() => setActiveTab('expenses')}
-            className={`flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-xs font-bold transition-all ${
+            className={`flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-xs font-bold transition-all whitespace-nowrap cursor-pointer ${
               activeTab === 'expenses'
                 ? 'bg-emerald-500 text-slate-950 shadow-md shadow-emerald-500/20'
                 : 'text-slate-400 hover:text-white bg-slate-950/60 border border-slate-800'
@@ -865,23 +1171,278 @@ export const BookingDetailModal: React.FC<Props> = ({
 
           <button
             type="button"
+            onClick={() => setActiveTab('gears')}
+            className={`flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-xs font-bold transition-all whitespace-nowrap cursor-pointer ${
+              activeTab === 'gears'
+                ? 'bg-sky-500 text-slate-950 shadow-md shadow-sky-500/20'
+                : 'text-slate-400 hover:text-white bg-slate-950/60 border border-slate-800'
+            }`}
+          >
+            <Camera className="w-3.5 h-3.5" />
+            <span>Phân Bổ Thiết Bị</span>
+            <span className={`px-1.5 py-0.2 rounded-full text-[10px] font-mono ${activeTab === 'gears' ? 'bg-slate-950 text-sky-400' : 'bg-slate-900 text-slate-400'}`}>
+              {selectedGearIds.length}
+            </span>
+          </button>
+
+          <button
+            type="button"
             onClick={() => setActiveTab('delivery')}
-            className={`flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-xs font-bold transition-all ${
+            className={`flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-xs font-bold transition-all whitespace-nowrap cursor-pointer ${
               activeTab === 'delivery'
                 ? 'bg-rose-500 text-slate-950 shadow-md shadow-rose-500/20'
                 : 'text-slate-400 hover:text-white bg-slate-950/60 border border-slate-800'
             }`}
           >
-            <Gift className="w-3.5 h-3.5" />
-            <span>Bàn Giao Ảnh (Delivery)</span>
-            {deliveryLink && (
+            <Sparkles className="w-3.5 h-3.5" />
+            <span>Chọn Ảnh & Bàn Giao</span>
+            {proofingSession.is_locked ? (
+              <span className="px-1.5 py-0.2 rounded-full text-[10px] font-mono bg-emerald-400 text-slate-950 font-bold" title="Khách đã chốt chọn ảnh">
+                ✓ {proofingSession.items?.length || 0}
+              </span>
+            ) : deliveryLink ? (
               <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" title="Đã có link bàn giao" />
-            )}
+            ) : null}
           </button>
         </div>
 
         {/* ==================================================================== */}
-        {/* TAB 1: PHÂN BỔ THIẾT BỊ (USP 2) */}
+        {/* TAB 1: PHÂN CÔNG Ê-KÍP & THÙ LAO (CREW ASSIGNMENT & JOB PAYROLL)      */}
+        {/* ==================================================================== */}
+        {activeTab === 'crew' && (
+          <div className="space-y-4 animate-fadeIn">
+            {/* Quick Metrics Bar: Tổng Thù Lao, Đã Thanh Toán, Cần Chi */}
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 p-4 rounded-2xl bg-gradient-to-r from-slate-950 via-slate-900 to-slate-950 border border-slate-800 shadow-xl">
+              <div className="p-3 rounded-xl bg-slate-950/80 border border-amber-500/20 text-center">
+                <span className="text-[10px] text-slate-400 font-medium block uppercase tracking-wider">Tổng Thù Lao Ê-Kíp</span>
+                <strong className="text-sm sm:text-base font-extrabold text-amber-400 font-mono">
+                  {totalCrewCost.toLocaleString('vi-VN')} đ
+                </strong>
+                <span className="text-[9px] text-slate-500 block">({crewMembers.length} nhân sự)</span>
+              </div>
+              <div className="p-3 rounded-xl bg-slate-950/80 border border-emerald-500/20 text-center">
+                <span className="text-[10px] text-slate-400 font-medium block uppercase tracking-wider">Đã Thanh Toán</span>
+                <strong className="text-sm sm:text-base font-extrabold text-emerald-400 font-mono">
+                  {paidCrewCost.toLocaleString('vi-VN')} đ
+                </strong>
+                <span className="text-[9px] text-emerald-500/70 block">({crewMembers.filter(m => m.is_paid).length} đã chi)</span>
+              </div>
+              <div className="p-3 rounded-xl bg-slate-950/80 border border-rose-500/20 text-center">
+                <span className="text-[10px] text-slate-400 font-medium block uppercase tracking-wider">Cần Chi / Còn Nợ</span>
+                <strong className="text-sm sm:text-base font-extrabold text-rose-400 font-mono">
+                  {unpaidCrewCost.toLocaleString('vi-VN')} đ
+                </strong>
+                <span className="text-[9px] text-rose-500/70 block">({crewMembers.filter(m => !m.is_paid).length} cần chuyển khoản)</span>
+              </div>
+            </div>
+
+            {/* Form Thêm Nhân Sự Vào Ê-Kíp */}
+            <div className="p-4 sm:p-5 rounded-2xl bg-slate-950/70 border border-slate-800 space-y-3.5">
+              <div className="flex flex-wrap items-center justify-between gap-2 border-b border-slate-800 pb-2.5">
+                <div className="flex items-center gap-2">
+                  <Plus className="w-4 h-4 text-amber-400" />
+                  <h4 className="text-xs font-bold uppercase tracking-wider text-white">
+                    Thêm Nhân Sự Vào Ê-Kíp Show
+                  </h4>
+                </div>
+                <span className="text-[10px] text-slate-400">Chọn thành viên Studio hoặc nhập CTV tự do</span>
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-12 gap-3">
+                {/* 1. Chọn Vai trò (Col 3) */}
+                <div className="sm:col-span-3 space-y-1">
+                  <label className="text-[11px] font-semibold text-slate-300">Vai trò / Nhiệm vụ *</label>
+                  <select
+                    value={newCrewRole}
+                    onChange={e => setNewCrewRole(e.target.value as CrewRole)}
+                    className="w-full px-3 py-2 rounded-xl bg-slate-900 border border-slate-800 text-xs text-white focus:outline-none focus:border-amber-400 cursor-pointer font-medium"
+                  >
+                    {Object.entries(CREW_ROLE_CONFIG).map(([roleKey, conf]) => (
+                      <option key={roleKey} value={roleKey}>
+                        {conf.icon} {conf.label}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
+                {/* 2. Chọn Nhân sự Studio hoặc Nhập tên (Col 4) */}
+                <div className="sm:col-span-4 space-y-1">
+                  <label className="text-[11px] font-semibold text-slate-300">Nhân sự (Studio hoặc CTV) *</label>
+                  <div className="space-y-1.5">
+                    {studioMembers.length > 0 && (
+                      <select
+                        value={newCrewMemberUserId}
+                        onChange={e => {
+                          const val = e.target.value;
+                          setNewCrewMemberUserId(val);
+                          if (val) {
+                            const found = studioMembers.find(m => (m.user_id === val || m.id === val));
+                            if (found) {
+                              setNewCrewName(found.user?.full_name || '');
+                              setNewCrewPhone(found.user?.phone || '');
+                            }
+                          }
+                        }}
+                        className="w-full px-3 py-2 rounded-xl bg-slate-900 border border-slate-800 text-xs text-amber-300 focus:outline-none focus:border-amber-400 cursor-pointer font-medium"
+                      >
+                        <option value="">-- Chọn thành viên Studio --</option>
+                        {studioMembers.map(m => (
+                          <option key={m.user_id || m.id} value={m.user_id || m.id}>
+                            👤 {m.user?.full_name || 'Thành viên'} ({m.role})
+                          </option>
+                        ))}
+                      </select>
+                    )}
+                    <input
+                      type="text"
+                      value={newCrewName}
+                      onChange={e => setNewCrewName(e.target.value)}
+                      placeholder="Hoặc nhập tên Freelancer / CTV..."
+                      className="w-full px-3 py-1.5 rounded-xl bg-slate-900 border border-slate-800 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-amber-400"
+                    />
+                  </div>
+                </div>
+
+                {/* 3. Hình thức Thù lao & Số tiền (Col 3) */}
+                <div className="sm:col-span-3 space-y-1">
+                  <label className="text-[11px] font-semibold text-slate-300">Thù lao / Chi phí</label>
+                  <div className="flex gap-1.5">
+                    <select
+                      value={newCrewFeeType}
+                      onChange={e => setNewCrewFeeType(e.target.value as 'fixed' | 'percent')}
+                      className="w-20 px-2 py-2 rounded-xl bg-slate-900 border border-slate-800 text-xs text-slate-300 focus:outline-none focus:border-amber-400 cursor-pointer font-medium"
+                    >
+                      <option value="fixed">VNĐ</option>
+                      <option value="percent">% Gói</option>
+                    </select>
+                    <input
+                      type="number"
+                      min="0"
+                      value={newCrewFee}
+                      onChange={e => setNewCrewFee(e.target.value)}
+                      placeholder={newCrewFeeType === 'percent' ? 'VD: 30' : 'VD: 500000'}
+                      className="flex-1 px-3 py-2 rounded-xl bg-slate-900 border border-slate-800 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-amber-400 font-mono"
+                    />
+                  </div>
+                </div>
+
+                {/* 4. Nút Thêm (Col 2) */}
+                <div className="sm:col-span-2 flex items-end">
+                  <button
+                    type="button"
+                    onClick={handleAddCrewMember}
+                    disabled={!newCrewName.trim()}
+                    className="w-full py-2.5 px-3 rounded-xl bg-amber-500 hover:bg-amber-400 disabled:opacity-40 disabled:hover:bg-amber-500 text-slate-950 font-bold text-xs flex items-center justify-center gap-1.5 shadow-md shadow-amber-500/20 transition-all cursor-pointer"
+                  >
+                    <Plus className="w-3.5 h-3.5" />
+                    <span>Thêm</span>
+                  </button>
+                </div>
+              </div>
+            </div>
+
+            {/* Danh Sách Nhân Sự Đã Phân Công */}
+            <div className="space-y-2">
+              <div className="flex items-center justify-between text-xs text-slate-400 px-1">
+                <span className="font-semibold text-slate-300">
+                  Danh sách nhân sự show ({crewMembers.length})
+                </span>
+                <span className="font-mono text-amber-400">
+                  Tổng thù lao: <strong>{totalCrewCost.toLocaleString('vi-VN')} đ</strong>
+                </span>
+              </div>
+
+              {crewMembers.length === 0 ? (
+                <div className="text-center py-8 rounded-2xl bg-slate-950/40 border border-slate-800 border-dashed space-y-2">
+                  <Users className="w-8 h-8 text-slate-600 mx-auto" />
+                  <p className="text-xs text-slate-400 font-medium">Chưa có nhân sự nào được phân công cho show này</p>
+                  <p className="text-[11px] text-slate-500">Phân công thợ chụp, makeup, trợ lý để tự động tính thù lao & kiểm soát lợi nhuận</p>
+                </div>
+              ) : (
+                <div className="space-y-2">
+                  {crewMembers.map((member, idx) => {
+                    const roleConfig = CREW_ROLE_CONFIG[member.role] || CREW_ROLE_CONFIG.other;
+                    const calculatedFee =
+                      member.fee_type === 'percent'
+                        ? Math.round((booking.packagePrice * Number(member.fee || 0)) / 100)
+                        : Number(member.fee || 0);
+
+                    return (
+                      <div
+                        key={member.id || idx}
+                        className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-3.5 rounded-2xl bg-slate-950/70 border border-slate-800 hover:border-slate-700 transition-all"
+                      >
+                        <div className="flex items-center gap-3">
+                          <span className={`px-2.5 py-1 rounded-xl text-[11px] font-bold border flex items-center gap-1.5 ${roleConfig.badgeClass}`}>
+                            <span>{roleConfig.icon}</span>
+                            <span>{roleConfig.label}</span>
+                          </span>
+
+                          <div>
+                            <div className="flex items-center gap-2">
+                              <span className="text-xs font-bold text-white">{member.name}</span>
+                              {member.phone && (
+                                <span className="text-[11px] text-slate-400 font-mono flex items-center gap-1">
+                                  <Phone className="w-2.5 h-2.5 text-slate-500" />
+                                  {member.phone}
+                                </span>
+                              )}
+                            </div>
+                            <div className="text-[10px] text-slate-400 flex items-center gap-2 mt-0.5">
+                              <span>Mức thù lao:</span>
+                              <span className="font-mono font-semibold text-amber-300">
+                                {member.fee_type === 'percent'
+                                  ? `${member.fee}% gói chụp (= ${calculatedFee.toLocaleString('vi-VN')} đ)`
+                                  : `${Number(member.fee || 0).toLocaleString('vi-VN')} đ`}
+                              </span>
+                            </div>
+                          </div>
+                        </div>
+
+                        {/* Actions: Toggle Paid status, VietQR copy, Delete */}
+                        <div className="flex items-center gap-2 self-end sm:self-auto">
+                          <button
+                            type="button"
+                            onClick={() => handleToggleCrewPaid(member.id)}
+                            className={`px-2.5 py-1 rounded-xl text-[10px] font-bold border transition-all cursor-pointer flex items-center gap-1 ${
+                              member.is_paid
+                                ? 'bg-emerald-500/20 text-emerald-300 border-emerald-500/40 shadow-sm shadow-emerald-500/10'
+                                : 'bg-slate-900 text-slate-400 border-slate-800 hover:text-white hover:border-slate-700'
+                            }`}
+                          >
+                            <CheckCircle2 className={`w-3 h-3 ${member.is_paid ? 'text-emerald-400' : 'text-slate-500'}`} />
+                            <span>{member.is_paid ? 'Đã thanh toán' : 'Chưa trả'}</span>
+                          </button>
+
+                          <button
+                            type="button"
+                            onClick={() => handleCopyVietQrTransfer(member)}
+                            className="p-1.5 rounded-xl bg-slate-900 hover:bg-slate-800 text-slate-300 hover:text-white border border-slate-800 transition-colors cursor-pointer"
+                            title="Sao chép cú pháp chuyển khoản nhanh"
+                          >
+                            <QrCode className="w-3.5 h-3.5 text-sky-400" />
+                          </button>
+
+                          <button
+                            type="button"
+                            onClick={() => handleRemoveCrewMember(member.id)}
+                            className="p-1.5 rounded-xl bg-slate-900 hover:bg-rose-500/20 text-slate-500 hover:text-rose-400 border border-slate-800 transition-colors cursor-pointer"
+                            title="Gỡ nhân sự"
+                          >
+                            <Trash2 className="w-3.5 h-3.5" />
+                          </button>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+            </div>
+          </div>
+        )}
+
+        {/* ==================================================================== */}
+        {/* TAB 2: PHÂN BỔ THIẾT BỊ (USP 2) */}
         {/* ==================================================================== */}
         {activeTab === 'gears' && (
           <div className="space-y-4 animate-fadeIn">
@@ -1319,16 +1880,357 @@ export const BookingDetailModal: React.FC<Props> = ({
     )}
 
     {/* ==================================================================== */}
-    {/* TAB 3: BÀN GIAO FILE ẢNH & CLIENT PORTAL (PHOTO DELIVERY)           */}
+    {/* TAB 4: CHỌN ẢNH RETOUCH & BÀN GIAO FILE (PROOFING & DELIVERY)        */}
     {/* ==================================================================== */}
     {activeTab === 'delivery' && (
       <div className="space-y-4 animate-fadeIn">
+        {/* ==================================================================== */}
+        {/* 1. KHỐI CỔNG CHỌN ẢNH RETOUCH (CLIENT PROOFING & SELECTION)         */}
+        {/* ==================================================================== */}
+        <div className="p-4 sm:p-5 rounded-2xl bg-gradient-to-br from-slate-950 via-purple-950/20 to-slate-950 border border-purple-500/30 space-y-4">
+          <div className="flex flex-wrap items-center justify-between gap-2 border-b border-purple-900/40 pb-3">
+            <div className="flex items-center gap-2">
+              <Sparkles className="w-4 h-4 text-purple-400" />
+              <h4 className="text-xs font-bold uppercase tracking-wider text-white">
+                Cổng Chọn Ảnh Retouch (Client Proofing Portal)
+              </h4>
+            </div>
+            {proofingSession.is_locked ? (
+              <span className="text-[10px] font-bold px-2.5 py-1 rounded-full bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 flex items-center gap-1.5 shadow-sm">
+                <Lock className="w-3 h-3 text-emerald-400" />
+                <span>Khách đã khóa chốt ({proofingSession.items?.length || 0} ảnh)</span>
+              </span>
+            ) : (
+              <span className="text-[10px] font-bold px-2.5 py-1 rounded-full bg-amber-500/20 text-amber-300 border border-amber-500/40 flex items-center gap-1.5">
+                <Unlock className="w-3 h-3 text-amber-400" />
+                <span>Đang mở chọn ảnh</span>
+              </span>
+            )}
+          </div>
+
+          {/* Cấu hình link ảnh gốc xem trước & Số lượng ảnh gói */}
+          <div className="grid grid-cols-1 sm:grid-cols-12 gap-3">
+            <div className="sm:col-span-8 space-y-1.5">
+              <label className="text-[11px] font-bold text-slate-300 flex items-center justify-between">
+                <span className="flex items-center gap-1.5">
+                  <FolderOpen className="w-3.5 h-3.5 text-purple-400" />
+                  <span>Link Kho Ảnh Gốc Cho Khách Xem Trước (Drive Preview Link):</span>
+                </span>
+                {proofingSession.drive_preview_link && (
+                  <a
+                    href={proofingSession.drive_preview_link}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-purple-400 hover:text-purple-300 font-bold inline-flex items-center gap-1 text-[10px] transition-colors"
+                  >
+                    <ExternalLink className="w-3 h-3" />
+                    <span>Mở thử link</span>
+                  </a>
+                )}
+              </label>
+              <input
+                type="url"
+                value={proofingSession.drive_preview_link || ''}
+                onChange={e => {
+                  const val = e.target.value;
+                  setProofingSession(prev => ({
+                    ...prev,
+                    drive_preview_link: val,
+                  }));
+                }}
+                placeholder="https://drive.google.com/drive/folders/... (Folder ảnh gốc để khách xem & chọn)"
+                className="w-full px-3.5 py-2.5 rounded-xl bg-slate-900 border border-slate-800 text-xs font-mono text-purple-300 placeholder-slate-600 outline-none focus:border-purple-400"
+              />
+            </div>
+
+            <div className="sm:col-span-4 space-y-1.5">
+              <label className="text-[11px] font-bold text-slate-300 flex items-center gap-1.5">
+                <ImageIcon className="w-3.5 h-3.5 text-amber-400" />
+                <span>Số ảnh retouch của gói:</span>
+              </label>
+              <input
+                type="number"
+                min="1"
+                value={proofingSession.max_selections || 20}
+                onChange={e => {
+                  const val = Number(e.target.value) || 20;
+                  setProofingSession(prev => ({
+                    ...prev,
+                    max_selections: val,
+                  }));
+                }}
+                className="w-full px-3.5 py-2.5 rounded-xl bg-slate-900 border border-slate-800 text-xs font-mono text-amber-400 outline-none focus:border-amber-400 font-bold"
+              />
+            </div>
+          </div>
+
+          {/* ==================================================================== */}
+          {/* 1.1 KHO ẢNH PREVIEW CHO KHÁCH CHỌN (VISUAL PROOFING GALLERY MANAGER)*/}
+          {/* ==================================================================== */}
+          <div className="p-4 rounded-xl bg-slate-900/80 border border-purple-500/20 space-y-3">
+            <div className="flex flex-wrap items-center justify-between gap-2">
+              <div className="flex items-center gap-2">
+                <ImageIcon className="w-4 h-4 text-purple-400" />
+                <span className="text-xs font-bold text-white">
+                  Kho Ảnh Preview Cho Khách Thả Tim ❤️
+                </span>
+                {galleryPreviewItems.length > 0 ? (
+                  <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-purple-500/20 text-purple-300 border border-purple-500/40">
+                    {galleryPreviewItems.length} ảnh trong Gallery
+                  </span>
+                ) : (
+                  <span className="text-[10px] text-slate-400 font-normal">
+                    (Chưa có ảnh preview)
+                  </span>
+                )}
+              </div>
+
+              <div className="flex flex-wrap items-center gap-2">
+                {/* Nút 1: Input file ẩn + Nút Tải ảnh */}
+                <label className={`px-3 py-1.5 rounded-xl text-xs font-bold flex items-center gap-1.5 transition-all cursor-pointer shadow-sm ${
+                  isUploadingPreviews
+                    ? 'bg-purple-950/50 text-purple-400 border border-purple-500/30 opacity-70 cursor-not-allowed'
+                    : 'bg-purple-600 hover:bg-purple-500 text-white shadow-purple-600/30 hover:scale-[1.02]'
+                }`}>
+                  <Upload className="w-3.5 h-3.5" />
+                  <span>{isUploadingPreviews ? 'Đang nén ảnh...' : '+ Tải Ảnh Preview Lên Gallery'}</span>
+                  <input
+                    type="file"
+                    multiple
+                    accept="image/*"
+                    disabled={isUploadingPreviews}
+                    onChange={handleUploadPreviewFiles}
+                    className="hidden"
+                  />
+                </label>
+
+                {/* Nút 2: Nạp 12 ảnh demo Unsplash */}
+                <button
+                  type="button"
+                  onClick={handleLoadDemoGallery}
+                  className="px-3 py-1.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-amber-300 hover:text-amber-200 border border-slate-700 text-xs font-bold flex items-center gap-1.5 transition-all cursor-pointer"
+                  title="Nạp ngay 12 ảnh chân dung mẫu đẹp để khách trải nghiệm thử tính năng thả tim"
+                >
+                  <Sparkles className="w-3.5 h-3.5 text-amber-400" />
+                  <span>✨ Nạp 12 Ảnh Mẫu Demo</span>
+                </button>
+
+                {/* Nút 3: Xóa toàn bộ gallery */}
+                {galleryPreviewItems.length > 0 && (
+                  <button
+                    type="button"
+                    onClick={handleClearAllGallery}
+                    className="p-1.5 rounded-xl bg-slate-800/80 hover:bg-rose-950 text-slate-400 hover:text-rose-400 border border-slate-700/80 text-xs transition-colors cursor-pointer"
+                    title="Xóa toàn bộ ảnh preview trong Gallery"
+                  >
+                    <Trash2 className="w-3.5 h-3.5" />
+                  </button>
+                )}
+              </div>
+            </div>
+
+            {/* Thanh tiến trình nén ảnh client-side */}
+            {isUploadingPreviews && uploadProgress && (
+              <div className="p-3 rounded-xl bg-purple-950/40 border border-purple-500/30 space-y-2 animate-fadeIn">
+                <div className="flex items-center justify-between text-xs">
+                  <span className="font-semibold text-purple-300 flex items-center gap-1.5">
+                    <Loader2 className="w-3.5 h-3.5 animate-spin text-purple-400" />
+                    <span>Đang tự động nén tối ưu hiển thị cho web di động...</span>
+                  </span>
+                  <span className="font-mono text-purple-200 font-bold">
+                    {uploadProgress.current} / {uploadProgress.total} ảnh ({Math.round((uploadProgress.current / uploadProgress.total) * 100)}%)
+                  </span>
+                </div>
+                <div className="w-full h-1.5 rounded-full bg-slate-800 overflow-hidden">
+                  <div
+                    className="h-full bg-gradient-to-r from-purple-500 to-amber-400 transition-all duration-200 rounded-full"
+                    style={{ width: `${Math.round((uploadProgress.current / uploadProgress.total) * 100)}%` }}
+                  />
+                </div>
+                <p className="text-[10px] text-slate-400">
+                  ⚡ Thuật toán nén canvas tại trình duyệt giúp giảm ảnh từ 20-40MB gốc xuống ~120KB trong tích tắc mà vẫn sắc nét!
+                </p>
+              </div>
+            )}
+
+            {/* Dải thumbnail xem nhanh các ảnh preview đã tải lên */}
+            {galleryPreviewItems.length > 0 && (
+              <div className="space-y-2 pt-1">
+                <div className="flex items-center justify-between text-[11px] text-slate-400">
+                  <span>Ảnh xem trước trong kho ({galleryPreviewItems.length} tấm):</span>
+                  <span className="text-[10px] text-purple-300">
+                    Khách mở link Quote/Portal sẽ thấy lưới ảnh này để lướt và bấm ❤️
+                  </span>
+                </div>
+
+                <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-6 gap-2 max-h-48 overflow-y-auto pr-1">
+                  {galleryPreviewItems.map(item => {
+                    const isSelectedByClient = item.is_selected === true;
+                    return (
+                      <div
+                        key={item.id}
+                        className={`group relative rounded-xl overflow-hidden border transition-all ${
+                          isSelectedByClient
+                            ? 'border-rose-500 shadow-md shadow-rose-500/20 ring-1 ring-rose-500'
+                            : 'border-slate-800 hover:border-slate-700 bg-slate-900'
+                        }`}
+                      >
+                        <div className="aspect-square bg-slate-950 overflow-hidden relative">
+                          <img
+                            src={item.preview_url || item.thumbnail_url}
+                            alt={item.filename}
+                            className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                            loading="lazy"
+                          />
+
+                          {/* Heart Badge nếu khách đã chọn */}
+                          {isSelectedByClient && (
+                            <div className="absolute top-1 left-1 px-1.5 py-0.5 rounded-full bg-rose-600/90 backdrop-blur-xs text-white text-[9px] font-bold flex items-center gap-1 shadow-sm">
+                              <Heart className="w-2.5 h-2.5 fill-current" />
+                              <span>Đã chọn</span>
+                            </div>
+                          )}
+
+                          {/* Nút xóa 1 ảnh */}
+                          <button
+                            type="button"
+                            onClick={() => handleRemoveGalleryItem(item.filename)}
+                            className="absolute top-1 right-1 p-1 rounded-full bg-black/60 hover:bg-rose-600 text-white opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer"
+                            title={`Xóa ảnh ${item.filename}`}
+                          >
+                            <Trash2 className="w-2.5 h-2.5" />
+                          </button>
+                        </div>
+
+                        <div className="p-1.5 bg-slate-900/95 truncate">
+                          <p className="text-[10px] font-mono text-slate-300 truncate" title={item.filename}>
+                            {item.filename}
+                          </p>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
+          </div>
+
+          {/* Quick Actions & Danh sách ảnh khách đã chọn */}
+          {clientSelectedItems.length > 0 ? (
+            <div className="space-y-3 pt-2 border-t border-slate-800/80">
+              <div className="flex flex-wrap items-center justify-between gap-2">
+                <span className="text-xs font-bold text-white flex items-center gap-1.5">
+                  <FileCheck2 className="w-4 h-4 text-emerald-400" />
+                  <span>
+                    Danh sách ảnh khách đã chọn ({clientSelectedItems.length} / {proofingSession.max_selections || 20} ảnh):
+                  </span>
+                </span>
+
+                <div className="flex flex-wrap items-center gap-2">
+                  {/* Nút 1: Copy Lightroom Query */}
+                  <button
+                    type="button"
+                    onClick={handleCopyLightroomQuery}
+                    className="px-3 py-1.5 rounded-xl bg-purple-500/20 hover:bg-purple-500/30 text-purple-300 border border-purple-500/40 text-xs font-bold flex items-center gap-1.5 transition-all cursor-pointer shadow-sm"
+                    title="Sao chép danh sách file để dán vào Lightroom Library Text Search"
+                  >
+                    {copiedLightroomQuery ? (
+                      <>
+                        <Check className="w-3.5 h-3.5 text-emerald-400" />
+                        <span className="text-emerald-400">Đã chép mã file!</span>
+                      </>
+                    ) : (
+                      <>
+                        <Copy className="w-3.5 h-3.5 text-purple-400" />
+                        <span>Copy mã file cho Lightroom</span>
+                      </>
+                    )}
+                  </button>
+
+                  {/* Nút 2: Gửi Zalo cho Retoucher */}
+                  <button
+                    type="button"
+                    onClick={handleSendRetoucherZalo}
+                    className="px-3 py-1.5 rounded-xl bg-sky-500/20 hover:bg-sky-500/30 text-sky-300 border border-sky-500/40 text-xs font-bold flex items-center gap-1.5 transition-all cursor-pointer shadow-sm"
+                    title="Copy cú pháp thông báo để gửi Retoucher"
+                  >
+                    <Send className="w-3.5 h-3.5 text-sky-400" />
+                    <span>Gửi Zalo Retoucher</span>
+                  </button>
+
+                  {/* Nút 3: Mở khóa chọn lại */}
+                  {proofingSession.is_locked && (
+                    <button
+                      type="button"
+                      onClick={handleUnlockProofing}
+                      className="px-3 py-1.5 rounded-xl bg-amber-500/20 hover:bg-amber-500/30 text-amber-300 border border-amber-500/40 text-xs font-bold flex items-center gap-1.5 transition-all cursor-pointer"
+                      title="Mở khóa để khách có thể chọn lại"
+                    >
+                      <Unlock className="w-3.5 h-3.5" />
+                      <span>Mở khóa chọn lại</span>
+                    </button>
+                  )}
+                </div>
+              </div>
+
+              {/* Grid các ảnh khách chọn */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-2 max-h-48 overflow-y-auto pr-1">
+                {clientSelectedItems.map((item, idx) => (
+                  <div
+                    key={item.id || idx}
+                    className="p-2.5 rounded-xl bg-slate-900/90 border border-slate-800 text-xs flex items-start gap-2.5"
+                  >
+                    {item.preview_url ? (
+                      <img
+                        src={item.preview_url}
+                        alt={item.filename}
+                        className="w-10 h-10 rounded-lg object-cover bg-slate-950 flex-shrink-0 border border-slate-700"
+                      />
+                    ) : (
+                      <span className="w-6 h-6 rounded-full bg-purple-500/20 text-purple-300 text-[10px] font-bold flex items-center justify-center font-mono flex-shrink-0">
+                        {idx + 1}
+                      </span>
+                    )}
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center justify-between gap-1">
+                        <strong className="font-mono text-white text-xs truncate">{item.filename}</strong>
+                        <Heart className="w-3 h-3 text-rose-500 fill-rose-500 flex-shrink-0" />
+                      </div>
+                      {item.notes ? (
+                        <p className="text-[11px] text-amber-300/90 mt-0.5 line-clamp-2 italic">
+                          "{item.notes}"
+                        </p>
+                      ) : (
+                        <p className="text-[10px] text-slate-500 mt-0.5">Retouch chuẩn gói</p>
+                      )}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          ) : (
+            <div className="p-4 rounded-xl bg-slate-900/50 border border-dashed border-slate-800 text-center space-y-1">
+              <p className="text-xs text-slate-400">
+                {galleryPreviewItems.length > 0
+                  ? `Đã nạp ${galleryPreviewItems.length} ảnh preview lên Gallery. Khách đang xem và thả tim chọn ảnh.`
+                  : 'Khách hàng chưa chọn mã ảnh nào.'}
+              </p>
+              <p className="text-[11px] text-slate-500">
+                Khách có thể xem link Drive hoặc lướt Visual Gallery trực tiếp trên Cổng Khách Hàng (Client Portal).
+              </p>
+            </div>
+          )}
+        </div>
+
+        {/* ==================================================================== */}
+        {/* 2. KHỐI BÀN GIAO FILE HOÀN TẤT & TẢI TRỰC TUYẾN                     */}
+        {/* ==================================================================== */}
         <div className="p-4 sm:p-5 rounded-2xl bg-slate-950/70 border border-slate-800 space-y-4">
           <div className="flex flex-wrap items-center justify-between gap-2 border-b border-slate-800 pb-3">
             <div className="flex items-center gap-2">
               <Gift className="w-4 h-4 text-rose-400" />
               <h4 className="text-xs font-bold uppercase tracking-wider text-white">
-                Bàn Giao File Ảnh & Link Tải Trực Tuyến
+                Bàn Giao File Ảnh Hoàn Tất & Link Tải Trực Tuyến
               </h4>
             </div>
             {deliveryLink ? (

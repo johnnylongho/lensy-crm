@@ -10,17 +10,42 @@
     --card-border: rgba(255, 255, 255, 0.6);
   }
   .dark {
-    --bg-main: #050505;
+    --bg-main: #090a0f;
     --text-main: #f8fafc;
-    --card-bg: rgba(255, 255, 255, 0.05);
+    --card-bg: rgba(24, 24, 27, 0.5);
     --card-border: rgba(255, 255, 255, 0.1);
+    color-scheme: dark;
   }
   html {
     color-scheme: light dark;
   }
+  html.dark {
+    color-scheme: dark;
+  }
   body {
-    @apply bg-slate-50 text-slate-800 dark:bg-[#050505] dark:text-slate-100 transition-colors duration-200;
+    @apply bg-slate-50 text-slate-800 dark:bg-[#090a0f] dark:text-slate-100 transition-colors duration-200;
     font-family: 'Plus Jakarta Sans', 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  }
+
+  /* Universal Dark Mode styling for native select & option elements */
+  .dark select {
+    color-scheme: dark;
+    background-color: #18181b;
+    color: #f4f4f5;
+    border-color: #27272a;
+  }
+
+  .dark option,
+  .dark select option {
+    background-color: #18181b !important;
+    color: #f4f4f5 !important;
+  }
+
+  .dark select option:hover,
+  .dark select option:focus,
+  .dark select option:checked {
+    background-color: #27272a !important;
+    color: #fb923c !important;
   }
 
   .font-mono {
@@ -76,11 +101,11 @@
 
 /* Liquid Glassmorphism Core Classes */
 .glass-panel {
-  @apply bg-white/70 dark:bg-white/5 backdrop-blur-2xl border border-white/60 dark:border-white/10 shadow-[0_8px_32px_0_rgba(0,0,0,0.06)] dark:shadow-[0_8px_32px_0_rgba(0,0,0,0.37)] rounded-3xl;
+  @apply bg-white/70 dark:bg-zinc-900/50 backdrop-blur-2xl border border-white/60 dark:border-white/10 shadow-[0_8px_32px_0_rgba(0,0,0,0.06)] dark:shadow-[0_8px_32px_0_rgba(0,0,0,0.4)] rounded-3xl;
 }
 
 .glass-card {
-  @apply bg-white/60 dark:bg-white/5 backdrop-blur-2xl border border-white/60 dark:border-white/10 shadow-[0_8px_32px_0_rgba(0,0,0,0.06)] dark:shadow-[0_8px_32px_0_rgba(0,0,0,0.3)] hover:shadow-md hover:-translate-y-0.5 transition-all duration-300 rounded-3xl;
+  @apply bg-white/60 dark:bg-zinc-900/50 backdrop-blur-2xl border border-white/60 dark:border-white/10 shadow-[0_8px_32px_0_rgba(0,0,0,0.06)] dark:shadow-[0_8px_32px_0_rgba(0,0,0,0.4)] hover:shadow-md hover:-translate-y-0.5 transition-all duration-300 rounded-3xl;
 }
 
 .ghost-btn {
@@ -89,7 +114,7 @@
 
 /* Modern SaaS Card & Interaction Utilities */
 .saas-card {
-  @apply bg-white/70 dark:bg-white/5 backdrop-blur-2xl border border-white/60 dark:border-white/10 shadow-sm hover:shadow-md hover:-translate-y-0.5 transition-all duration-200 rounded-3xl;
+  @apply bg-white/70 dark:bg-zinc-900/50 backdrop-blur-2xl border border-white/60 dark:border-white/10 shadow-[0_8px_32px_0_rgba(0,0,0,0.06)] dark:shadow-[0_8px_32px_0_rgba(0,0,0,0.4)] hover:shadow-md hover:-translate-y-0.5 transition-all duration-200 rounded-3xl;
 }
 
 .saas-button {

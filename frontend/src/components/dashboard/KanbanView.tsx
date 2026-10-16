@@ -86,7 +86,7 @@ const COLUMNS: ColumnDef[] = [
     status: 'done',
     stepNum: '5',
     title: 'Hoàn tất',
-    dotColor: 'bg-purple-400',
+    dotColor: 'bg-emerald-400',
     matchStatuses: ['done', 'hoan_thanh'],
   },
 ];
@@ -168,7 +168,7 @@ const CompactKanbanCardContent: React.FC<{
   return (
     <div
       onClick={() => onSelectBooking && onSelectBooking(item)}
-      className={`w-full p-3 rounded-xl border border-gray-200 dark:border-zinc-800 ${statusTheme.accentBorder || 'border-l-4 border-l-blue-500'} bg-white dark:bg-zinc-900 select-none transition-all duration-200 shadow-sm hover:shadow-md flex flex-col gap-2 text-xs ${
+      className={`w-full p-3.5 rounded-2xl border border-gray-200/80 dark:border-white/10 ${statusTheme.accentBorder || 'border-l-4 border-l-blue-500'} bg-white dark:bg-zinc-900/70 backdrop-blur-md select-none transition-all duration-200 shadow-sm hover:shadow-md flex flex-col gap-2.5 text-xs ${
         isOverlay
           ? 'rotate-2 scale-105 shadow-2xl ring-2 ring-amber-400 cursor-grabbing'
           : 'hover:scale-[1.02] cursor-grab active:cursor-grabbing'
@@ -435,10 +435,10 @@ const KanbanColumn: React.FC<{
   return (
     <div
       ref={setNodeRef}
-      className={`min-w-[320px] w-[320px] flex-shrink-0 flex flex-col rounded-xl p-4 transition-all duration-150 ${
+      className={`min-w-[320px] w-[320px] flex-shrink-0 flex flex-col rounded-2xl p-4 transition-all duration-150 ${
         activeHover
-          ? 'border border-amber-400 bg-amber-500/10 dark:bg-amber-500/10 shadow-lg shadow-amber-500/10 ring-2 ring-amber-400/40 backdrop-blur-md'
-          : 'bg-white/60 dark:bg-white/5 border border-gray-200 dark:border-white/10 backdrop-blur-md shadow-sm'
+          ? 'border border-amber-400 bg-amber-500/10 dark:bg-amber-500/10 shadow-lg shadow-amber-500/10 ring-2 ring-amber-400/40 backdrop-blur-2xl'
+          : 'bg-white/80 dark:bg-zinc-900/50 border border-gray-200/80 dark:border-white/10 backdrop-blur-2xl shadow-[0_8px_32px_0_rgba(0,0,0,0.4)]'
       }`}
     >
       {/* Column Header */}
@@ -508,9 +508,9 @@ const KanbanColumn: React.FC<{
           <button
             type="button"
             onClick={onOpenDoneHistory}
-            className="w-full py-2 px-2.5 rounded-xl bg-purple-50 hover:bg-purple-100 dark:bg-white/5 dark:hover:bg-white/10 border border-purple-200 dark:border-white/10 text-purple-700 dark:text-purple-300 text-[11px] font-bold flex items-center justify-center gap-1.5 transition-all shadow-sm hover:scale-[1.01] active:scale-[0.99] cursor-pointer"
+            className="w-full py-2 px-2.5 rounded-xl bg-emerald-50 hover:bg-emerald-100 dark:bg-emerald-950/20 dark:hover:bg-emerald-900/30 border border-emerald-200 dark:border-emerald-500/20 text-emerald-700 dark:text-emerald-300 text-[11px] font-bold flex items-center justify-center gap-1.5 transition-all shadow-sm hover:scale-[1.01] active:scale-[0.99] cursor-pointer"
           >
-            <History className="w-3.5 h-3.5 text-purple-600 dark:text-purple-400" />
+            <History className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />
             <span>Xem lịch sử hoàn tất ({totalColEventsCount})</span>
           </button>
         </div>

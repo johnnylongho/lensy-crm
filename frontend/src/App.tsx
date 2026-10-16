@@ -22,6 +22,7 @@ const StudioSettingsPage = lazy(() => import('./components/dashboard/StudioSetti
 const ClientsManagementPage = lazy(() => import('./components/clients/ClientsManagementPage').then(m => ({ default: m.ClientsManagementPage })));
 const OnboardingPage = lazy(() => import('./components/auth/OnboardingPage').then(m => ({ default: m.OnboardingPage })));
 const PayrollManagementPage = lazy(() => import('./components/dashboard/PayrollManagementPage').then(m => ({ default: m.PayrollManagementPage })));
+const SuperAdminConsolePage = lazy(() => import('./components/dashboard/SuperAdminConsolePage').then(m => ({ default: m.SuperAdminConsolePage })));
 
 export function App() {
   const [quote, setQuote] = useState<QuoteData | null>(null);
@@ -191,6 +192,9 @@ export function App() {
 
             {/* Trang Quản Lý Bảng Lương & Thù Lao Ê-kíp */}
             <Route path="/dashboard/payroll" element={<PayrollManagementPage />} />
+
+            {/* Trung Tâm Quản Trị Hệ Thống Dành Cho Super Admin */}
+            <Route path="/dashboard/super-admin" element={<SuperAdminConsolePage />} />
           </Route>
 
           {/* ==================================================================== */}
@@ -202,6 +206,7 @@ export function App() {
           <Route path="/gears" element={<Navigate to="/dashboard/gears" replace />} />
           <Route path="/studio-settings" element={<Navigate to="/dashboard/studio-settings" replace />} />
           <Route path="/payroll" element={<Navigate to="/dashboard/payroll" replace />} />
+          <Route path="/super-admin" element={<Navigate to="/dashboard/super-admin" replace />} />
           <Route path="*" element={<Navigate to="/" replace />} />
               </Routes>
             </Suspense>

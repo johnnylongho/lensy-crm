@@ -173,7 +173,7 @@ export const UpcomingShootsList: React.FC<Props> = ({
         </div>
 
         {/* 2. Dropdown Sắp xếp */}
-        <div className="sm:col-span-4 flex items-center gap-2 px-3 py-2 rounded-xl bg-white/80 dark:bg-slate-900/80 border border-slate-200 dark:border-slate-700/80 focus-within:ring-2 focus-within:ring-amber-500/40 focus-within:border-amber-500 transition-all shadow-inner">
+        <div className="sm:col-span-4 flex items-center gap-2 px-3 py-2 rounded-xl bg-white/80 dark:bg-zinc-900/80 border border-slate-200 dark:border-zinc-800 focus-within:ring-2 focus-within:ring-amber-500/40 focus-within:border-amber-500 transition-all shadow-inner">
           <ArrowUpDown className="w-3.5 h-3.5 text-amber-500 flex-shrink-0" />
           <select
             value={sortOption}
@@ -181,18 +181,18 @@ export const UpcomingShootsList: React.FC<Props> = ({
               setSortOption(e.target.value as BookingSortOption);
               setVisibleCount(DEFAULT_PAGE_SIZE);
             }}
-            className="w-full bg-transparent border-0 outline-none text-xs font-medium text-slate-800 dark:text-slate-200 cursor-pointer p-0"
+            className="w-full bg-transparent border-0 outline-none text-xs font-medium text-slate-800 dark:text-zinc-200 cursor-pointer p-0"
           >
-            <option value="smart" className="dark:bg-slate-900">Sắp tới gần nhất</option>
-            <option value="furthest" className="dark:bg-slate-900">Ngày xa nhất</option>
-            <option value="newest" className="dark:bg-slate-900">Mới tạo gần đây</option>
-            <option value="price_desc" className="dark:bg-slate-900">Giá trị hợp đồng cao nhất</option>
+            <option value="smart" className="bg-white dark:bg-zinc-900 text-slate-800 dark:text-zinc-100">Sắp tới gần nhất</option>
+            <option value="furthest" className="bg-white dark:bg-zinc-900 text-slate-800 dark:text-zinc-100">Ngày xa nhất</option>
+            <option value="newest" className="bg-white dark:bg-zinc-900 text-slate-800 dark:text-zinc-100">Mới tạo gần đây</option>
+            <option value="price_desc" className="bg-white dark:bg-zinc-900 text-slate-800 dark:text-zinc-100">Giá trị hợp đồng cao nhất</option>
           </select>
           <ChevronDown className="w-3.5 h-3.5 text-slate-400 flex-shrink-0 pointer-events-none" />
         </div>
 
         {/* 3. Dropdown Lọc trạng thái */}
-        <div className="sm:col-span-3 flex items-center gap-2 px-3 py-2 rounded-xl bg-white/80 dark:bg-slate-900/80 border border-slate-200 dark:border-slate-700/80 focus-within:ring-2 focus-within:ring-amber-500/40 focus-within:border-amber-500 transition-all shadow-inner">
+        <div className="sm:col-span-3 flex items-center gap-2 px-3 py-2 rounded-xl bg-white/80 dark:bg-zinc-900/80 border border-slate-200 dark:border-zinc-800 focus-within:ring-2 focus-within:ring-amber-500/40 focus-within:border-amber-500 transition-all shadow-inner">
           <Filter className="w-3.5 h-3.5 text-slate-400 flex-shrink-0" />
           <select
             value={statusFilter}
@@ -200,13 +200,13 @@ export const UpcomingShootsList: React.FC<Props> = ({
               setStatusFilter(e.target.value);
               setVisibleCount(DEFAULT_PAGE_SIZE);
             }}
-            className="w-full bg-transparent border-0 outline-none text-xs font-medium text-slate-800 dark:text-slate-200 cursor-pointer p-0"
+            className="w-full bg-transparent border-0 outline-none text-xs font-medium text-slate-800 dark:text-zinc-200 cursor-pointer p-0"
           >
-            <option value="all" className="dark:bg-slate-900">Tất cả trạng thái</option>
-            <option value="cho_coc" className="dark:bg-slate-900">Chờ cọc / Lead</option>
-            <option value="da_chot" className="dark:bg-slate-900">Đã chốt cọc</option>
-            <option value="da_chup" className="dark:bg-slate-900">Đã chụp / Đang sửa</option>
-            <option value="hoan_thanh" className="dark:bg-slate-900">Đã hoàn thành</option>
+            <option value="all" className="bg-white dark:bg-zinc-900 text-slate-800 dark:text-zinc-100">Tất cả trạng thái</option>
+            <option value="cho_coc" className="bg-white dark:bg-zinc-900 text-slate-800 dark:text-zinc-100">Chờ cọc / Lead</option>
+            <option value="da_chot" className="bg-white dark:bg-zinc-900 text-slate-800 dark:text-zinc-100">Đã chốt cọc</option>
+            <option value="da_chup" className="bg-white dark:bg-zinc-900 text-slate-800 dark:text-zinc-100">Đã chụp / Đang sửa</option>
+            <option value="hoan_thanh" className="bg-white dark:bg-zinc-900 text-slate-800 dark:text-zinc-100">Đã hoàn thành</option>
           </select>
           <ChevronDown className="w-3.5 h-3.5 text-slate-400 flex-shrink-0 pointer-events-none" />
         </div>

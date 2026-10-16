@@ -45,7 +45,99 @@ export const StudioSettingsPage: React.FC = () => {
   // Form Data
   const [studioName, setStudioName] = useState('');
   const [logoUrl, setLogoUrl] = useState('');
+  const [studioAddress, setStudioAddress] = useState('');
+  const [studioFanpage, setStudioFanpage] = useState('');
   const [verifiedStatus, setVerifiedStatus] = useState(false);
+  const [isUploadingLogo, setIsUploadingLogo] = useState(false);
+  const logoFileInputRef = React.useRef<HTMLInputElement | null>(null);
+
+  const handleLogoFileSelected = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    if (!file.type.startsWith('image/')) {
+      setToast({
+        type: 'error',
+        message: 'Vui lòng chọn file hình ảnh hợp lệ (PNG, JPG, WEBP, SVG).',
+      });
+      if (e.target) e.target.value = '';
+      return;
+    }
+
+    if (file.size > 5 * 1024 * 1024) {
+      setToast({
+        type: 'error',
+        message: 'Dung lượng ảnh không được vượt quá 5MB.',
+      });
+      if (e.target) e.target.value = '';
+      return;
+    }
+
+    setIsUploadingLogo(true);
+    try {
+      if (isSupabaseConfigured && user) {
+        const fileExt = file.name.split('.').pop() || 'png';
+        const fileName = `studio_logo_${studio?.id || user.id}_${Date.now()}.${fileExt}`;
+        const filePath = `studios/${fileName}`;
+
+        // 1. Thử upload vào Supabase Storage bucket 'avatars'
+        let uploadRes = await supabase.storage
+          .from('avatars')
+          .upload(filePath, file, { cacheControl: '3600', upsert: true });
+
+        let bucketName = 'avatars';
+        if (uploadRes.error) {
+          // Fallback sang bucket 'public' nếu avatars chưa tạo
+          const publicRes = await supabase.storage
+            .from('public')
+            .upload(filePath, file, { cacheControl: '3600', upsert: true });
+          if (!publicRes.error) {
+            uploadRes = publicRes;
+            bucketName = 'public';
+          }
+        }
+
+        if (uploadRes.error) {
+          throw uploadRes.error;
+        }
+
+        const { data: publicUrlData } = supabase.storage
+          .from(bucketName)
+          .getPublicUrl(filePath);
+
+        const newUrl = publicUrlData?.publicUrl;
+        if (newUrl) {
+          setLogoUrl(newUrl);
+          setToast({
+            type: 'success',
+            message: '🎉 Upload logo Studio thành công! Đừng quên bấm "Lưu Thông Tin Studio".',
+          });
+        }
+      } else {
+        const reader = new FileReader();
+        reader.onload = (event) => {
+          const result = event.target?.result as string;
+          if (result) {
+            setLogoUrl(result);
+            setToast({
+              type: 'success',
+              message: '🎉 Đã tải ảnh Logo lên thành công!',
+            });
+          }
+        };
+        reader.readAsDataURL(file);
+      }
+    } catch (err: any) {
+      console.error('Lỗi upload logo Studio:', err);
+      setToast({
+        type: 'error',
+        message: 'Không thể upload logo: ' + (err.message || 'Lỗi lưu trữ'),
+      });
+    } finally {
+      setIsUploadingLogo(false);
+      if (e.target) e.target.value = '';
+    }
+  };
 
   // Create Studio Modal state (nếu chưa có studio)
   const [isCreatingStudio, setIsCreatingStudio] = useState(false);
@@ -125,6 +217,8 @@ export const StudioSettingsPage: React.FC = () => {
           setIsStudioAdmin(isAdmin);
           setStudioName(currentStudio.name);
           setLogoUrl(currentStudio.logo_url || '');
+          setStudioAddress((currentStudio as any).address || (currentStudio as any).location || '');
+          setStudioFanpage((currentStudio as any).fanpage_url || (currentStudio as any).facebook_url || '');
           setVerifiedStatus(currentStudio.verified_status || false);
 
           // Fetch members
@@ -149,6 +243,8 @@ export const StudioSettingsPage: React.FC = () => {
         setIsStudioOwner(true);
         setStudioName(mockStudio.name);
         setLogoUrl(mockStudio.logo_url || '');
+        setStudioAddress('124 Pasteur, Phường Bến Nghé, Quận 1, TP. Hồ Chí Minh');
+        setStudioFanpage('https://facebook.com/mirmia.studio');
         setVerifiedStatus(mockStudio.verified_status);
 
         setPendingMembers([]);
@@ -245,6 +341,37 @@ export const StudioSettingsPage: React.FC = () => {
         }
       });
 
+      // Đảm bảo Chủ Studio (Owner) / Admin hiện tại luôn được liệt kê ở đầu danh sách Đội ngũ nhân sự
+      if (user) {
+        const adminIndex = approved.findIndex(m => m.user_id === user.id);
+        if (adminIndex > 0) {
+          const [adminMember] = approved.splice(adminIndex, 1);
+          approved.unshift(adminMember);
+        } else if (adminIndex === -1) {
+          // Tự động gộp Admin/Owner vào đầu danh sách nếu chưa có bản ghi trong studio_members
+          approved.unshift({
+            id: `admin-${user.id}`,
+            studio_id: studioId,
+            user_id: user.id,
+            role: 'admin',
+            status: 'approved',
+            facebook_url: (user as any).user_metadata?.facebook_url || null,
+            is_verified: true,
+            created_at: new Date().toISOString(),
+            updated_at: new Date().toISOString(),
+            user: {
+              id: user.id,
+              full_name: (user as any).user_metadata?.full_name || (user as any).user_metadata?.name || user.email?.split('@')[0] || 'Chủ Studio (Admin)',
+              email: user.email || '',
+              phone: (user as any).user_metadata?.phone || '',
+              avatar_url: (user as any).user_metadata?.avatar_url || '',
+              facebook_url: (user as any).user_metadata?.facebook_url || null,
+              is_verified: true,
+            },
+          });
+        }
+      }
+
       setPendingMembers(pending);
       setApprovedMembers(approved);
     } catch (err) {
@@ -265,25 +392,54 @@ export const StudioSettingsPage: React.FC = () => {
     setIsSaving(true);
     try {
       if (isSupabaseConfigured) {
-        const { error } = await supabase
+        let updatePayload: any = {
+          name: studioName.trim(),
+          logo_url: logoUrl.trim() || null,
+          address: studioAddress.trim() || null,
+          fanpage_url: studioFanpage.trim() || null,
+          updated_at: new Date().toISOString(),
+        };
+
+        let { error } = await supabase
           .from('studios')
-          .update({
-            name: studioName.trim(),
-            logo_url: logoUrl.trim() || null,
-            updated_at: new Date().toISOString(),
-          })
+          .update(updatePayload)
           .eq('id', studio.id);
+
+        if (error && (error.message?.includes('fanpage_url') || error.message?.includes('address'))) {
+          console.warn('[Supabase Schema Cache] Cột address/fanpage_url chưa có trong schema cache studios, tự động fallback.');
+          delete updatePayload.fanpage_url;
+          delete updatePayload.address;
+          const retryRes = await supabase
+            .from('studios')
+            .update(updatePayload)
+            .eq('id', studio.id);
+          error = retryRes.error;
+          localStorage.setItem(`lensy_studio_meta_${studio.id}`, JSON.stringify({
+            address: studioAddress.trim(),
+            fanpage: studioFanpage.trim(),
+          }));
+        }
 
         if (error) throw error;
 
-        setStudio(prev => prev ? { ...prev, name: studioName.trim(), logo_url: logoUrl.trim() || null } : null);
+        setStudio(prev => prev ? {
+          ...prev,
+          name: studioName.trim(),
+          logo_url: logoUrl.trim() || null,
+          address: studioAddress.trim() || undefined,
+        } : null);
         setToast({
           type: 'success',
           message: '🎉 Đã cập nhật thông tin Studio thành công!',
         });
       } else {
         await new Promise(r => setTimeout(r, 500));
-        setStudio(prev => prev ? { ...prev, name: studioName.trim(), logo_url: logoUrl.trim() || null } : null);
+        setStudio(prev => prev ? {
+          ...prev,
+          name: studioName.trim(),
+          logo_url: logoUrl.trim() || null,
+          address: studioAddress.trim() || undefined,
+        } : null);
         setToast({
           type: 'success',
           message: '🎉 [Demo] Đã lưu thông tin Studio thành công!',
@@ -795,12 +951,12 @@ export const StudioSettingsPage: React.FC = () => {
       {/* Header & Back Link */}
       <div className="flex flex-wrap items-center justify-between gap-4">
         <div>
-          <div className="flex items-center gap-2 mb-1">
+          <div className="flex items-center gap-2 mb-2">
             <Link
               to="/dashboard"
-              className="text-xs font-bold text-slate-500 dark:text-white/60 hover:text-amber-500 dark:hover:text-amber-400 flex items-center gap-1 transition-colors"
+              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl border border-slate-200/80 dark:border-white/10 bg-white/80 dark:bg-zinc-900/50 backdrop-blur-xl text-xs font-bold text-slate-600 dark:text-zinc-300 hover:text-orange-600 dark:hover:text-orange-400 hover:border-orange-500/30 transition-all shadow-2xs group"
             >
-              <ArrowLeft className="w-3.5 h-3.5" />
+              <ArrowLeft className="w-3.5 h-3.5 transition-transform group-hover:-translate-x-0.5" />
               <span>Quay lại Dashboard</span>
             </Link>
           </div>
@@ -930,10 +1086,37 @@ export const StudioSettingsPage: React.FC = () => {
                 </div>
 
                 <div className="space-y-1.5">
-                  <label className="text-xs font-bold text-slate-700 dark:text-slate-300 flex items-center gap-1.5">
-                    <Upload className="w-3.5 h-3.5 text-amber-500 dark:text-amber-400" />
-                    <span>URL Logo Studio</span>
-                  </label>
+                  <div className="flex items-center justify-between">
+                    <label className="text-xs font-bold text-slate-700 dark:text-slate-300 flex items-center gap-1.5">
+                      <Upload className="w-3.5 h-3.5 text-amber-500 dark:text-amber-400" />
+                      <span>URL Logo Studio</span>
+                    </label>
+                    <input
+                      ref={logoFileInputRef}
+                      type="file"
+                      accept="image/*"
+                      onChange={handleLogoFileSelected}
+                      className="hidden"
+                    />
+                    <button
+                      type="button"
+                      disabled={isUploadingLogo}
+                      onClick={() => logoFileInputRef.current?.click()}
+                      className="px-2.5 py-1 rounded-lg bg-amber-500/10 hover:bg-amber-500/20 text-amber-500 dark:text-amber-400 text-[11px] font-bold border border-amber-500/30 flex items-center gap-1.5 transition-all cursor-pointer disabled:opacity-50"
+                    >
+                      {isUploadingLogo ? (
+                        <>
+                          <Loader2 className="w-3 h-3 animate-spin" />
+                          <span>Đang tải lên...</span>
+                        </>
+                      ) : (
+                        <>
+                          <Upload className="w-3 h-3" />
+                          <span>Tải Ảnh Từ Máy</span>
+                        </>
+                      )}
+                    </button>
+                  </div>
                   <input
                     type="url"
                     value={logoUrl}
@@ -942,7 +1125,41 @@ export const StudioSettingsPage: React.FC = () => {
                     className="w-full px-3.5 py-2.5 rounded-xl bg-slate-100/90 dark:bg-black/40 border border-slate-200 dark:border-white/10 text-xs text-slate-900 dark:text-white outline-none focus:border-amber-400 font-mono"
                   />
                   <p className="text-[10px] text-slate-400">
-                    Khuyến nghị sử dụng định dạng ảnh PNG nền trong suốt để hiển thị đẹp nhất trên giao diện tối.
+                    Khuyến nghị file ảnh PNG trong suốt. Bạn có thể dán URL hoặc nhấn "Tải Ảnh Từ Máy" để upload tự động.
+                  </p>
+                </div>
+
+                {/* Trường Địa chỉ Studio */}
+                <div className="space-y-1.5">
+                  <label className="text-xs font-bold text-slate-700 dark:text-slate-300 flex items-center gap-1.5">
+                    <span>📍</span>
+                    <span>Địa Chỉ Studio *</span>
+                  </label>
+                  <input
+                    type="text"
+                    required
+                    value={studioAddress}
+                    onChange={e => setStudioAddress(e.target.value)}
+                    placeholder="VD: 124 Pasteur, Phường Bến Nghé, Quận 1, TP. Hồ Chí Minh"
+                    className="w-full px-3.5 py-2.5 rounded-xl bg-slate-100/90 dark:bg-black/40 border border-slate-200 dark:border-white/10 text-xs text-slate-900 dark:text-white outline-none focus:border-amber-400"
+                  />
+                </div>
+
+                {/* Trường Fanpage / Link Mạng Xã Hội */}
+                <div className="space-y-1.5">
+                  <label className="text-xs font-bold text-slate-700 dark:text-slate-300 flex items-center gap-1.5">
+                    <span>🌐</span>
+                    <span>Fanpage / Link Mạng Xã Hội</span>
+                  </label>
+                  <input
+                    type="url"
+                    value={studioFanpage}
+                    onChange={e => setStudioFanpage(e.target.value)}
+                    placeholder="https://facebook.com/mirmia.studio"
+                    className="w-full px-3.5 py-2.5 rounded-xl bg-slate-100/90 dark:bg-black/40 border border-slate-200 dark:border-white/10 text-xs text-slate-900 dark:text-white outline-none focus:border-amber-400 font-mono"
+                  />
+                  <p className="text-[10px] text-slate-400">
+                    Đường dẫn Facebook Fanpage, Instagram hoặc TikTok chính thức của Studio.
                   </p>
                 </div>
               </div>

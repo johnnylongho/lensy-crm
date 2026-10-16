@@ -169,6 +169,13 @@ export const DashboardLayout: React.FC = () => {
       ];
     }
 
+    const isSuperAdmin =
+      isStudioAdmin ||
+      accountType === 'studio_admin' ||
+      user?.user_metadata?.account_type === 'studio_admin' ||
+      user?.email === 'johnnylongho@gmail.com' ||
+      Boolean(user?.email?.includes('admin'));
+
     if (isFreelancer) {
       return [
         {
@@ -198,6 +205,16 @@ export const DashboardLayout: React.FC = () => {
               icon: DollarSign,
               isActive: location.pathname === '/dashboard/payroll',
             },
+            ...(isSuperAdmin
+              ? [
+                  {
+                    to: '/dashboard/super-admin',
+                    label: 'Quản Trị Hệ Thống (Super Admin)',
+                    icon: ShieldCheck,
+                    isActive: location.pathname.startsWith('/dashboard/super-admin'),
+                  },
+                ]
+              : []),
             {
               to: '/dashboard/settings',
               label: 'Cài Đặt',
@@ -250,6 +267,16 @@ export const DashboardLayout: React.FC = () => {
             icon: Package,
             isActive: location.pathname.startsWith('/dashboard/packages'),
           },
+          ...(isSuperAdmin
+            ? [
+                {
+                  to: '/dashboard/super-admin',
+                  label: 'Quản Trị Hệ Thống (Super Admin)',
+                  icon: ShieldCheck,
+                  isActive: location.pathname.startsWith('/dashboard/super-admin'),
+                },
+              ]
+            : []),
           {
             to: '/dashboard/settings',
             label: 'Cài Đặt',
@@ -259,7 +286,7 @@ export const DashboardLayout: React.FC = () => {
         ],
       },
     ];
-  }, [isStudioMember, isFreelancer, location.pathname]);
+  }, [isStudioMember, isFreelancer, isStudioAdmin, accountType, user, location.pathname]);
 
   const userFullName = user?.user_metadata?.full_name || 'Thợ ảnh';
   const userInitials = userFullName
@@ -271,6 +298,9 @@ export const DashboardLayout: React.FC = () => {
 
   // Lấy tiêu đề trang
   const getPageTitle = () => {
+    if (location.pathname.startsWith('/dashboard/super-admin')) {
+      return 'Trung Tâm Quản Trị Hệ Thống (Super Admin)';
+    }
     if (location.pathname === '/dashboard') {
       if (isStudioMember) return 'Bàn Làm Việc Ekip Studio';
       if (isFreelancer) return 'Không Gian Freelancer Solo';
@@ -298,11 +328,11 @@ export const DashboardLayout: React.FC = () => {
   };
 
   return (
-    <div className="flex h-screen w-full overflow-hidden bg-gray-50 dark:bg-zinc-950 font-sans selection:bg-[#df8653] selection:text-white transition-colors duration-200">
+    <div className="flex h-screen w-full overflow-hidden bg-slate-50 dark:bg-[#090a0f] font-sans selection:bg-orange-500 selection:text-white transition-colors duration-200">
       {/* Mobile Backdrop */}
       {isMobileMenuOpen && (
         <div
-          className="fixed inset-0 z-40 bg-black/50 lg:hidden backdrop-blur-xs transition-opacity"
+          className="fixed inset-0 z-40 bg-black/60 lg:hidden backdrop-blur-xs transition-opacity"
           onClick={() => setIsMobileMenuOpen(false)}
         />
       )}
@@ -312,7 +342,7 @@ export const DashboardLayout: React.FC = () => {
       {/* ===================================================================== */}
       <aside
         ref={mobileMenuRef}
-        className={`fixed inset-y-0 left-0 z-50 lg:static flex-shrink-0 shrink-0 h-full overflow-y-auto border-r border-gray-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 flex flex-col justify-between transition-all duration-300 ease-in-out ${
+        className={`fixed inset-y-0 left-0 z-50 lg:static flex-shrink-0 shrink-0 h-full overflow-y-auto border-r border-gray-200 dark:border-white/10 bg-white/80 dark:bg-zinc-900/50 backdrop-blur-2xl shadow-[0_8px_32px_0_rgba(0,0,0,0.3)] flex flex-col justify-between transition-all duration-300 ease-in-out ${
           isSidebarCollapsed
             ? 'w-64 lg:w-20 p-4 lg:px-3 lg:py-5'
             : 'w-64 lg:w-64 p-4 sm:p-5 lg:px-3 lg:py-5'
@@ -322,7 +352,7 @@ export const DashboardLayout: React.FC = () => {
       >
         <div className="space-y-6">
           {/* Logo & Brand Header */}
-          <div className="flex items-center justify-between pb-4 border-b border-gray-100 dark:border-zinc-800/80">
+          <div className="flex items-center justify-between pb-4 border-b border-gray-100 dark:border-white/10">
             <Link
               to="/dashboard"
               className={`flex items-center gap-3 group ${isSidebarCollapsed ? 'lg:justify-center lg:w-full' : ''}`}
@@ -445,7 +475,7 @@ export const DashboardLayout: React.FC = () => {
         {/* Bottom widgets of Sidebar */}
         <div className="pt-4 space-y-2">
           {/* Public Booking Link Banner */}
-          <div className={`rounded-xl border border-orange-200/60 dark:border-orange-950/40 bg-orange-50/50 dark:bg-orange-950/20 ${
+          <div className={`rounded-xl border border-orange-200/60 dark:border-white/10 bg-orange-50/50 dark:bg-zinc-900/60 ${
             isSidebarCollapsed ? 'p-2 flex justify-center' : 'p-2.5'
           }`}>
             {!isSidebarCollapsed ? (
@@ -457,7 +487,7 @@ export const DashboardLayout: React.FC = () => {
                   href={`/book/${currentUsername}`}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="flex items-center justify-between px-2.5 py-1.5 rounded-lg bg-white dark:bg-zinc-900 border border-gray-200 dark:border-zinc-700 text-xs font-semibold text-gray-900 dark:text-white shadow-2xs hover:border-orange-500 transition-all"
+                  className="flex items-center justify-between px-2.5 py-1.5 rounded-lg bg-white dark:bg-zinc-900/90 border border-gray-200 dark:border-white/10 text-xs font-semibold text-gray-900 dark:text-white shadow-2xs hover:border-orange-500 transition-all"
                 >
                   <span className="truncate max-w-[130px] font-mono text-[11px]">@{currentUsername}</span>
                   <ExternalLink className="w-3.5 h-3.5 text-orange-600 dark:text-orange-400 shrink-0" />
@@ -468,7 +498,7 @@ export const DashboardLayout: React.FC = () => {
                 href={`/book/${currentUsername}`}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="p-2 rounded-lg bg-white dark:bg-zinc-900 border border-gray-200 dark:border-zinc-700 text-orange-600 dark:text-orange-400 hover:scale-105 transition-transform"
+                className="p-2 rounded-lg bg-white dark:bg-zinc-900/90 border border-gray-200 dark:border-white/10 text-orange-600 dark:text-orange-400 hover:scale-105 transition-transform"
                 title={`Mở link đặt lịch online: @${currentUsername}`}
               >
                 <ExternalLink className="w-4 h-4" />
@@ -477,7 +507,7 @@ export const DashboardLayout: React.FC = () => {
           </div>
 
           {/* Desktop Toggle Sidebar Button DUY NHẤT */}
-          <div className="pt-2 border-t border-gray-100 dark:border-zinc-800 hidden lg:block">
+          <div className="pt-2 border-t border-gray-100 dark:border-white/10 hidden lg:block">
             <button
               type="button"
               onClick={toggleSidebar}
@@ -507,7 +537,7 @@ export const DashboardLayout: React.FC = () => {
       {/* ===================================================================== */}
       {/* 2. MAIN CONTENT AREA                                                  */}
       {/* ===================================================================== */}
-      <main className="flex-1 h-full overflow-y-auto p-6 md:p-8">
+      <main className="flex-1 h-full overflow-y-auto p-4 sm:p-6 md:p-8 bg-slate-50/50 dark:bg-[#090a0f]">
         {/* Header: Page Title + Actions + Profile Pill */}
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
           <div className="flex items-center gap-3">
@@ -515,7 +545,7 @@ export const DashboardLayout: React.FC = () => {
             <button
               type="button"
               onClick={() => setIsMobileMenuOpen(true)}
-              className="lg:hidden p-2 rounded-xl border border-gray-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 text-gray-700 dark:text-zinc-200 hover:bg-gray-100 dark:hover:bg-zinc-800 transition-colors cursor-pointer"
+              className="lg:hidden p-2 rounded-xl border border-gray-200 dark:border-white/10 bg-white dark:bg-zinc-900/60 backdrop-blur-xl text-gray-700 dark:text-zinc-200 hover:bg-gray-100 dark:hover:bg-zinc-800 transition-colors cursor-pointer"
               aria-label="Mở menu"
             >
               <Menu className="h-5 w-5" />
@@ -580,7 +610,7 @@ export const DashboardLayout: React.FC = () => {
               <button
                 type="button"
                 onClick={() => setIsUserMenuOpen(!isUserMenuOpen)}
-                className="flex items-center gap-2.5 rounded-full border border-gray-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 px-3 py-1.5 shadow-2xs hover:bg-gray-50 dark:hover:bg-zinc-800 transition-all cursor-pointer"
+                className="flex items-center gap-2.5 rounded-full border border-gray-200 dark:border-white/10 bg-white/90 dark:bg-zinc-900/60 backdrop-blur-xl px-3 py-1.5 shadow-2xs hover:bg-gray-50 dark:hover:bg-zinc-800 transition-all cursor-pointer"
               >
                 <div className="flex h-8 w-8 items-center justify-center rounded-full bg-orange-500 text-xs font-bold text-white shadow-xs">
                   {userInitials}
@@ -602,7 +632,7 @@ export const DashboardLayout: React.FC = () => {
 
               {/* Dropdown Menu */}
               {isUserMenuOpen && (
-                <div className="absolute right-0 top-full mt-2 w-72 rounded-2xl bg-white dark:bg-zinc-900 border border-gray-200 dark:border-zinc-800 shadow-xl p-2.5 z-50 text-xs space-y-2">
+                <div className="absolute right-0 top-full mt-2 w-72 rounded-2xl bg-white dark:bg-zinc-900/95 backdrop-blur-2xl border border-gray-200 dark:border-white/10 shadow-[0_8px_32px_0_rgba(0,0,0,0.4)] p-2.5 z-50 text-xs space-y-2">
                   <div className="p-3 rounded-xl bg-gray-50 dark:bg-zinc-800/60 space-y-1">
                     <div className="flex items-center justify-between gap-2">
                       <p className="font-bold text-gray-900 dark:text-white truncate">{userFullName}</p>

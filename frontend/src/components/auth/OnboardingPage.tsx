@@ -7,17 +7,20 @@ import { supabase, isSupabaseConfigured } from '../../lib/supabase';
 import { ThemeToggle } from '../common/ThemeToggle';
 import {
   Camera,
-  Building2,
-  Users,
   Crown,
-  Sparkles,
-  ArrowRight,
+  Users,
   CheckCircle2,
   AlertCircle,
   Loader2,
+  Building2,
+  MapPin,
+  Globe,
   KeyRound,
   ShieldCheck,
-  ChevronLeft,
+  ArrowRight,
+  Sparkles,
+  Check,
+  Info,
 } from 'lucide-react';
 
 export const OnboardingPage: React.FC = () => {
@@ -25,20 +28,24 @@ export const OnboardingPage: React.FC = () => {
   const { refreshWorkspace, switchAccountType } = useWorkspace();
   const navigate = useNavigate();
 
-  // Selected Option: null | 'freelancer' | 'manager' | 'member'
-  const [selectedRole, setSelectedRole] = useState<'freelancer' | 'manager' | 'member' | null>(null);
+  // 1 trong 3 mô hình hoạt động loại trừ lẫn nhau (Mutually Exclusive)
+  const [selectedRole, setSelectedRole] = useState<'freelancer' | 'manager' | 'member' | null>('freelancer');
 
-  // Form inputs
+  // Dynamic Form inputs cho Chủ Studio / Quản lý
   const [studioName, setStudioName] = useState('');
-  const [studioPhone, setStudioPhone] = useState('');
+  const [studioAddress, setStudioAddress] = useState('');
+  const [studioSocialLink, setStudioSocialLink] = useState('');
+
+  // Dynamic Form inputs cho Thành viên Studio (Ekip)
   const [inviteCode, setInviteCode] = useState('');
 
   const [isLoading, setIsLoading] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
 
-  // 1. Xử lý Thẻ 1: Freelancer
-  const handleSelectFreelancer = async () => {
+  // 1. Xử lý Hạng mục 1: Freelancer (Thợ ảnh tự do)
+  const handleSelectFreelancer = async (e?: React.FormEvent) => {
+    if (e) e.preventDefault();
     setIsLoading(true);
     setErrorMessage(null);
     try {
@@ -62,11 +69,14 @@ export const OnboardingPage: React.FC = () => {
         });
       }
 
+      setSuccessMessage('Đã thiết lập tài khoản Freelancer thành công! Đang chuyển hướng...');
       if (switchAccountType) {
         switchAccountType('freelancer');
       }
       await refreshWorkspace();
-      navigate('/dashboard', { replace: true });
+      setTimeout(() => {
+        navigate('/dashboard', { replace: true });
+      }, 500);
     } catch (err: any) {
       console.error('Lỗi khi thiết lập Freelancer:', err);
       setErrorMessage(err.message || 'Có lỗi xảy ra, vui lòng thử lại.');
@@ -75,11 +85,19 @@ export const OnboardingPage: React.FC = () => {
     }
   };
 
-  // 2. Xử lý Thẻ 2: Chủ Studio / Quản lý
+  // 2. Xử lý Hạng mục 2: Chủ Studio / Quản lý
   const handleCreateStudio = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!studioName.trim()) {
       setErrorMessage('Vui lòng nhập Tên Studio của bạn.');
+      return;
+    }
+    if (!studioAddress.trim()) {
+      setErrorMessage('Vui lòng nhập Địa chỉ Studio.');
+      return;
+    }
+    if (!studioSocialLink.trim()) {
+      setErrorMessage('Vui lòng nhập Fanpage / Link Website / Instagram của Studio.');
       return;
     }
 
@@ -111,7 +129,6 @@ export const OnboardingPage: React.FC = () => {
             role: 'manager',
             studio_id: newStudio.id,
             studio_name: studioName.trim(),
-            phone: studioPhone.trim() || undefined,
             updated_at: new Date().toISOString(),
           })
           .eq('id', user.id);
@@ -122,12 +139,14 @@ export const OnboardingPage: React.FC = () => {
             role: 'manager',
             account_type: 'studio_admin',
             studio_name: studioName.trim(),
+            studio_address: studioAddress.trim(),
+            studio_social_link: studioSocialLink.trim(),
             studio_id: newStudio.id,
           },
         });
       }
 
-      setSuccessMessage(`Đã tạo Studio "${studioName.trim()}" thành công!`);
+      setSuccessMessage(`Đã khởi tạo Studio "${studioName.trim()}" thành công! Đang chuyển hướng...`);
       if (switchAccountType) {
         switchAccountType('manager');
       }
@@ -143,12 +162,12 @@ export const OnboardingPage: React.FC = () => {
     }
   };
 
-  // 3. Xử lý Thẻ 3: Thành viên Studio (Nhập mã mời)
+  // 3. Xử lý Hạng mục 3: Thành viên Studio (Ekip)
   const handleJoinStudio = async (e: React.FormEvent) => {
     e.preventDefault();
     const cleanCode = inviteCode.trim().toUpperCase();
     if (!cleanCode) {
-      setErrorMessage('Vui lòng nhập Mã tham gia Studio do Quản lý cung cấp.');
+      setErrorMessage('Vui lòng nhập Mã mời Ekip (Invite Code) do Chủ Studio cung cấp.');
       return;
     }
 
@@ -185,14 +204,14 @@ export const OnboardingPage: React.FC = () => {
           })
           .eq('id', user.id);
 
-        // Bổ sung vào bảng studio_members
+        // Bổ sung vào bảng studio_members với trạng thái pending chờ phê duyệt
         await supabase
           .from('studio_members')
           .upsert({
             studio_id: targetStudioId,
             user_id: user.id,
             role: 'photographer',
-            status: 'approved',
+            status: 'pending',
           });
 
         // Cập nhật metadata
@@ -206,7 +225,7 @@ export const OnboardingPage: React.FC = () => {
         });
       }
 
-      setSuccessMessage(`Đã gia nhập thành công Studio "${targetStudioName}"!`);
+      setSuccessMessage(`Đã gửi yêu cầu gia nhập Studio "${targetStudioName}"! Đang chuyển hướng...`);
       if (switchAccountType) {
         switchAccountType('member');
       }
@@ -223,15 +242,15 @@ export const OnboardingPage: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen bg-[#faf7f5] dark:bg-[#080c14] text-slate-900 dark:text-slate-100 flex flex-col justify-between selection:bg-[#df8653] selection:text-white transition-colors duration-300 relative overflow-hidden">
-      {/* Background Glows */}
-      <div className="absolute top-[-15%] left-[20%] w-[500px] h-[500px] bg-gradient-to-br from-[#df8653]/15 to-transparent rounded-full blur-[140px] pointer-events-none" />
-      <div className="absolute bottom-[-10%] right-[10%] w-[450px] h-[450px] bg-gradient-to-tl from-amber-500/10 to-transparent rounded-full blur-[140px] pointer-events-none" />
+    <div className="min-h-screen bg-[#faf7f5] dark:bg-[#090d16] text-slate-900 dark:text-slate-100 flex flex-col justify-between selection:bg-amber-500 selection:text-white transition-colors duration-300 relative overflow-hidden">
+      {/* Background Decorative Glows */}
+      <div className="absolute top-[-15%] left-[20%] w-[500px] h-[500px] bg-gradient-to-br from-amber-500/15 to-transparent rounded-full blur-[140px] pointer-events-none" />
+      <div className="absolute bottom-[-10%] right-[10%] w-[450px] h-[450px] bg-gradient-to-tl from-orange-500/10 to-transparent rounded-full blur-[140px] pointer-events-none" />
 
       {/* Top Header */}
-      <header className="w-full max-w-6xl mx-auto px-6 py-6 flex items-center justify-between z-10">
+      <header className="w-full max-w-6xl mx-auto px-4 sm:px-6 py-6 flex items-center justify-between z-10">
         <div className="flex items-center gap-3">
-          <div className="w-10 h-10 rounded-2xl bg-gradient-to-tr from-[#df8653] to-amber-500 flex items-center justify-center text-white font-black text-xl shadow-lg shadow-orange-500/20">
+          <div className="w-10 h-10 rounded-2xl bg-gradient-to-tr from-amber-500 via-orange-500 to-amber-600 flex items-center justify-center text-white font-black text-xl shadow-lg shadow-amber-500/20">
             L
           </div>
           <div>
@@ -248,17 +267,17 @@ export const OnboardingPage: React.FC = () => {
       </header>
 
       {/* Main Content Area */}
-      <main className="w-full max-w-5xl mx-auto px-4 sm:px-6 py-8 z-10 flex-1 flex flex-col justify-center">
+      <main className="w-full max-w-5xl mx-auto px-4 sm:px-6 py-4 sm:py-8 z-10 flex-1 flex flex-col justify-center">
         {/* Title & Introduction */}
-        <div className="text-center max-w-2xl mx-auto mb-10 space-y-2.5">
-          <span className="px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wider bg-orange-500/10 text-[#df8653] dark:text-orange-400 border border-orange-500/20 inline-block">
+        <div className="text-center max-w-2xl mx-auto mb-8 sm:mb-10 space-y-2.5">
+          <span className="px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wider bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/20 inline-block">
             Bước khởi tạo vai trò
           </span>
-          <h1 className="text-3xl sm:text-4xl font-black text-slate-900 dark:text-white tracking-tight">
+          <h1 className="text-2xl sm:text-4xl font-black text-slate-900 dark:text-white tracking-tight">
             Bạn sử dụng Lensy với vai trò nào?
           </h1>
           <p className="text-xs sm:text-sm text-slate-600 dark:text-slate-400 leading-relaxed">
-            Chọn mô hình hoạt động để giao diện và tính năng được cá nhân hóa tối ưu nhất cho bạn.
+            Chọn 1 trong 3 mô hình hoạt động để giao diện và tính năng được cá nhân hóa tối ưu nhất cho bạn.
           </p>
         </div>
 
@@ -277,263 +296,393 @@ export const OnboardingPage: React.FC = () => {
           </div>
         )}
 
-        {/* GIAO DIỆN CHÍNH: 3 THẺ LỰA CHỌN HOẶC FORM TƯƠNG ỨNG */}
-        <AnimatePresence mode="wait">
-          {!selectedRole ? (
-            /* =============================================================== */
-            /* 3 THẺ (CARDS) LỚN THEO YÊU CẦU                                   */
-            /* =============================================================== */
-            <motion.div
-              key="cards-view"
-              initial={{ opacity: 0, y: 15 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -15 }}
-              className="grid grid-cols-1 md:grid-cols-3 gap-6"
-            >
-              {/* THẺ 1: Thợ ảnh Tự do (Freelancer) */}
+        {/* =================================================================== */}
+        {/* 1. QUY TẮC CHỌN 1 TRONG 3 HẠNG MỤC (MUTUALLY EXCLUSIVE CARDS)        */}
+        {/* =================================================================== */}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 sm:gap-6">
+          {/* HẠNG MỤC 1: Freelancer (Thợ ảnh tự do) */}
+          <div
+            onClick={() => {
+              setSelectedRole('freelancer');
+              setErrorMessage(null);
+            }}
+            className={`group relative p-6 rounded-3xl backdrop-blur-xl border transition-all duration-300 flex flex-col justify-between cursor-pointer active:scale-[0.99] ${
+              selectedRole === 'freelancer'
+                ? 'bg-amber-500/10 dark:bg-amber-500/15 border-amber-500 shadow-xl shadow-amber-500/10 ring-2 ring-amber-500/30'
+                : 'bg-white/70 dark:bg-zinc-900/60 hover:bg-white dark:hover:bg-zinc-900/90 border-slate-200/80 dark:border-white/10 hover:border-amber-500/40 shadow-sm'
+            }`}
+          >
+            {/* Selection Radio / Check Indicator */}
+            <div className="flex items-center justify-between mb-4">
+              <div className="w-12 h-12 rounded-2xl bg-gradient-to-tr from-amber-500 to-yellow-500 flex items-center justify-center text-slate-950 shadow-md shadow-amber-500/20">
+                <Camera className="w-6 h-6 text-slate-950" />
+              </div>
               <div
-                onClick={handleSelectFreelancer}
-                className="group relative p-7 rounded-3xl bg-white/70 dark:bg-white/5 hover:bg-white dark:hover:bg-white/10 backdrop-blur-xl border border-slate-200/80 dark:border-white/10 hover:border-amber-500/50 dark:hover:border-amber-500/50 shadow-lg shadow-black/5 hover:shadow-2xl hover:shadow-amber-500/10 transition-all duration-300 flex flex-col justify-between cursor-pointer active:scale-[0.98]"
+                className={`w-6 h-6 rounded-full flex items-center justify-center border transition-all ${
+                  selectedRole === 'freelancer'
+                    ? 'bg-amber-500 border-amber-500 text-slate-950'
+                    : 'border-slate-300 dark:border-zinc-700 bg-transparent'
+                }`}
               >
-                <div className="space-y-4">
-                  <div className="w-14 h-14 rounded-2xl bg-gradient-to-tr from-amber-500 to-yellow-500 flex items-center justify-center text-white shadow-md shadow-amber-500/30 group-hover:scale-110 transition-transform">
-                    <Camera className="w-7 h-7" />
+                {selectedRole === 'freelancer' && <Check className="w-3.5 h-3.5 stroke-[3]" />}
+              </div>
+            </div>
+
+            <div className="space-y-2">
+              <span className="text-[10px] font-bold uppercase tracking-wider text-amber-600 dark:text-amber-400">
+                Hạng mục 1
+              </span>
+              <h3 className="text-base sm:text-lg font-black text-slate-900 dark:text-white">
+                Freelancer (Thợ ảnh tự do)
+              </h3>
+              <p className="text-xs text-slate-600 dark:text-slate-400 leading-relaxed">
+                Nhiếp ảnh gia hoạt động solo. Toàn quyền quản lý lịch chụp, danh bạ khách hàng và dòng tiền cá nhân.
+              </p>
+            </div>
+
+            <div className="pt-4 mt-4 border-t border-slate-200/60 dark:border-white/10 flex items-center justify-between text-[11px] font-bold text-amber-600 dark:text-amber-400">
+              <span>Độc lập • Tự do</span>
+              <span className="text-[10px] font-mono text-slate-400">Không cần Studio</span>
+            </div>
+          </div>
+
+          {/* HẠNG MỤC 2: Chủ Studio / Quản lý */}
+          <div
+            onClick={() => {
+              setSelectedRole('manager');
+              setErrorMessage(null);
+            }}
+            className={`group relative p-6 rounded-3xl backdrop-blur-xl border transition-all duration-300 flex flex-col justify-between cursor-pointer active:scale-[0.99] ${
+              selectedRole === 'manager'
+                ? 'bg-orange-500/10 dark:bg-orange-500/15 border-orange-500 shadow-xl shadow-orange-500/10 ring-2 ring-orange-500/30'
+                : 'bg-white/70 dark:bg-zinc-900/60 hover:bg-white dark:hover:bg-zinc-900/90 border-slate-200/80 dark:border-white/10 hover:border-orange-500/40 shadow-sm'
+            }`}
+          >
+            {/* Tag Phổ biến */}
+            <div className="absolute -top-3 right-5 px-2.5 py-0.5 rounded-full bg-gradient-to-r from-orange-500 to-amber-500 text-white text-[9px] font-black uppercase tracking-wider shadow-sm">
+              Doanh Nghiệp
+            </div>
+
+            <div className="flex items-center justify-between mb-4">
+              <div className="w-12 h-12 rounded-2xl bg-gradient-to-tr from-orange-500 to-amber-500 flex items-center justify-center text-white shadow-md shadow-orange-500/20">
+                <Crown className="w-6 h-6" />
+              </div>
+              <div
+                className={`w-6 h-6 rounded-full flex items-center justify-center border transition-all ${
+                  selectedRole === 'manager'
+                    ? 'bg-orange-500 border-orange-500 text-white'
+                    : 'border-slate-300 dark:border-zinc-700 bg-transparent'
+                }`}
+              >
+                {selectedRole === 'manager' && <Check className="w-3.5 h-3.5 stroke-[3]" />}
+              </div>
+            </div>
+
+            <div className="space-y-2">
+              <span className="text-[10px] font-bold uppercase tracking-wider text-orange-600 dark:text-orange-400">
+                Hạng mục 2
+              </span>
+              <h3 className="text-base sm:text-lg font-black text-slate-900 dark:text-white">
+                Chủ Studio / Quản lý
+              </h3>
+              <p className="text-xs text-slate-600 dark:text-slate-400 leading-relaxed">
+                Xây dựng thương hiệu Studio, phân công ekip, cấp mã mời và theo dõi toàn diện doanh thu tài chính.
+              </p>
+            </div>
+
+            <div className="pt-4 mt-4 border-t border-slate-200/60 dark:border-white/10 flex items-center justify-between text-[11px] font-bold text-orange-600 dark:text-orange-400">
+              <span>Quản trị toàn diện</span>
+              <span className="text-[10px] font-mono text-slate-400">Xác thực Studio</span>
+            </div>
+          </div>
+
+          {/* HẠNG MỤC 3: Thành viên Studio (Ekip) */}
+          <div
+            onClick={() => {
+              setSelectedRole('member');
+              setErrorMessage(null);
+            }}
+            className={`group relative p-6 rounded-3xl backdrop-blur-xl border transition-all duration-300 flex flex-col justify-between cursor-pointer active:scale-[0.99] ${
+              selectedRole === 'member'
+                ? 'bg-emerald-500/10 dark:bg-emerald-500/15 border-emerald-500 shadow-xl shadow-emerald-500/10 ring-2 ring-emerald-500/30'
+                : 'bg-white/70 dark:bg-zinc-900/60 hover:bg-white dark:hover:bg-zinc-900/90 border-slate-200/80 dark:border-white/10 hover:border-emerald-500/40 shadow-sm'
+            }`}
+          >
+            <div className="flex items-center justify-between mb-4">
+              <div className="w-12 h-12 rounded-2xl bg-gradient-to-tr from-emerald-500 to-teal-500 flex items-center justify-center text-white shadow-md shadow-emerald-500/20">
+                <Users className="w-6 h-6" />
+              </div>
+              <div
+                className={`w-6 h-6 rounded-full flex items-center justify-center border transition-all ${
+                  selectedRole === 'member'
+                    ? 'bg-emerald-500 border-emerald-500 text-white'
+                    : 'border-slate-300 dark:border-zinc-700 bg-transparent'
+                }`}
+              >
+                {selectedRole === 'member' && <Check className="w-3.5 h-3.5 stroke-[3]" />}
+              </div>
+            </div>
+
+            <div className="space-y-2">
+              <span className="text-[10px] font-bold uppercase tracking-wider text-emerald-600 dark:text-emerald-400">
+                Hạng mục 3
+              </span>
+              <h3 className="text-base sm:text-lg font-black text-slate-900 dark:text-white">
+                Thành viên Studio (Ekip)
+              </h3>
+              <p className="text-xs text-slate-600 dark:text-slate-400 leading-relaxed">
+                Thợ ảnh, makeup, trợ lý hoặc retoucher thuộc một studio. Nhập mã mời để nhận ca chụp và thù lao.
+              </p>
+            </div>
+
+            <div className="pt-4 mt-4 border-t border-slate-200/60 dark:border-white/10 flex items-center justify-between text-[11px] font-bold text-emerald-600 dark:text-emerald-400">
+              <span>Gia nhập Ekip</span>
+              <span className="text-[10px] font-mono text-slate-400">Có mã mời</span>
+            </div>
+          </div>
+        </div>
+
+        {/* =================================================================== */}
+        {/* 2. LUỒNG FORM ĐỘNG DƯỚI LỰA CHỌN (DYNAMIC SUB-FORMS)                */}
+        {/* =================================================================== */}
+        <div className="mt-8">
+          <AnimatePresence mode="wait">
+            {/* SUB-FORM 1: FREELANCER */}
+            {selectedRole === 'freelancer' && (
+              <motion.div
+                key="subform-freelancer"
+                initial={{ opacity: 0, y: 12 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -12 }}
+                transition={{ duration: 0.25 }}
+                className="max-w-2xl mx-auto w-full p-6 sm:p-8 rounded-3xl bg-white/90 dark:bg-zinc-900/90 backdrop-blur-2xl border border-amber-500/30 shadow-xl space-y-5"
+              >
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-2xl bg-amber-500/10 border border-amber-500/20 text-amber-500 flex items-center justify-center">
+                    <Camera className="w-5 h-5" />
                   </div>
                   <div>
-                    <span className="text-[11px] font-bold uppercase tracking-wider text-amber-600 dark:text-amber-400">
-                      Cá nhân độc lập
-                    </span>
-                    <h3 className="text-lg font-black text-slate-900 dark:text-white mt-0.5">
-                      Thợ ảnh Tự do (Freelancer)
+                    <h3 className="text-base sm:text-lg font-black text-slate-900 dark:text-white">
+                      Xác Nhận Vai Trò: Freelancer (Thợ ảnh tự do)
                     </h3>
+                    <p className="text-xs text-slate-500 dark:text-slate-400">
+                      Khởi tạo ngay mà không cần cấu hình phức tạp
+                    </p>
                   </div>
-                  <p className="text-xs text-slate-600 dark:text-slate-400 leading-relaxed">
-                    Dành cho nhiếp ảnh gia hoạt động solo. Quản lý lịch chụp cá nhân, danh bạ khách hàng, thiết bị và doanh thu riêng mà không cần kết nối studio.
+                </div>
+
+                {/* Thông tin tóm tắt theo quy tắc nghiệp vụ */}
+                <div className="p-4 rounded-2xl bg-amber-500/10 dark:bg-amber-500/10 border border-amber-500/20 text-slate-800 dark:text-zinc-200 space-y-2">
+                  <div className="flex items-start gap-2.5">
+                    <CheckCircle2 className="w-4 h-4 text-amber-600 dark:text-amber-400 shrink-0 mt-0.5" />
+                    <p className="text-xs sm:text-sm font-bold text-amber-900 dark:text-amber-300 leading-relaxed">
+                      Bạn hoạt động độc lập, toàn quyền quản lý lịch chụp và dòng tiền cá nhân.
+                    </p>
+                  </div>
+                  <p className="text-xs text-slate-600 dark:text-zinc-400 pl-6 leading-relaxed">
+                    Hệ thống sẽ tự động cấu hình giao diện Lensy Command Center theo chế độ Solo. Bạn không cần nhập mã mời hay thông tin Studio, và có thể kết nối với Studio bất kỳ lúc nào trong phần Cài đặt.
                   </p>
-                </div>
-
-                <div className="pt-6 mt-6 border-t border-slate-200/60 dark:border-white/10 flex items-center justify-between">
-                  <span className="text-xs font-bold text-amber-600 dark:text-amber-400 flex items-center gap-1">
-                    Bắt đầu ngay <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
-                  </span>
-                  <span className="text-[10px] text-slate-400 font-mono">1-Click</span>
-                </div>
-              </div>
-
-              {/* THẺ 2: Chủ Studio / Quản lý (Manager) */}
-              <div
-                onClick={() => setSelectedRole('manager')}
-                className="group relative p-7 rounded-3xl bg-white/70 dark:bg-white/5 hover:bg-white dark:hover:bg-white/10 backdrop-blur-xl border border-slate-200/80 dark:border-white/10 hover:border-orange-500/50 dark:hover:border-orange-500/50 shadow-lg shadow-black/5 hover:shadow-2xl hover:shadow-orange-500/10 transition-all duration-300 flex flex-col justify-between cursor-pointer active:scale-[0.98]"
-              >
-                <div className="absolute -top-3 right-6 px-3 py-1 rounded-full bg-gradient-to-r from-orange-500 to-amber-500 text-white text-[10px] font-black uppercase tracking-wider shadow-sm">
-                  Phổ Biến Nhất
-                </div>
-                <div className="space-y-4">
-                  <div className="w-14 h-14 rounded-2xl bg-gradient-to-tr from-orange-500 to-[#df8653] flex items-center justify-center text-white shadow-md shadow-orange-500/30 group-hover:scale-110 transition-transform">
-                    <Crown className="w-7 h-7" />
-                  </div>
-                  <div>
-                    <span className="text-[11px] font-bold uppercase tracking-wider text-[#df8653] dark:text-orange-400">
-                      Doanh nghiệp & Ekip
-                    </span>
-                    <h3 className="text-lg font-black text-slate-900 dark:text-white mt-0.5">
-                      Chủ Studio / Quản lý
-                    </h3>
-                  </div>
-                  <p className="text-xs text-slate-600 dark:text-slate-400 leading-relaxed">
-                    Xây dựng thương hiệu Studio, toàn quyền quản trị (CRUD), quản lý phân công ekip thợ, theo dõi toàn diện doanh thu tài chính và bảng giá.
-                  </p>
-                </div>
-
-                <div className="pt-6 mt-6 border-t border-slate-200/60 dark:border-white/10 flex items-center justify-between">
-                  <span className="text-xs font-bold text-[#df8653] dark:text-orange-400 flex items-center gap-1">
-                    Nhập tên Studio <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
-                  </span>
-                  <span className="text-[10px] text-slate-400 font-mono">Quản trị toàn diện</span>
-                </div>
-              </div>
-
-              {/* THẺ 3: Thành viên Studio (Member) */}
-              <div
-                onClick={() => setSelectedRole('member')}
-                className="group relative p-7 rounded-3xl bg-white/70 dark:bg-white/5 hover:bg-white dark:hover:bg-white/10 backdrop-blur-xl border border-slate-200/80 dark:border-white/10 hover:border-emerald-500/50 dark:hover:border-emerald-500/50 shadow-lg shadow-black/5 hover:shadow-2xl hover:shadow-emerald-500/10 transition-all duration-300 flex flex-col justify-between cursor-pointer active:scale-[0.98]"
-              >
-                <div className="space-y-4">
-                  <div className="w-14 h-14 rounded-2xl bg-gradient-to-tr from-emerald-500 to-teal-500 flex items-center justify-center text-white shadow-md shadow-emerald-500/30 group-hover:scale-110 transition-transform">
-                    <Users className="w-7 h-7" />
-                  </div>
-                  <div>
-                    <span className="text-[11px] font-bold uppercase tracking-wider text-emerald-600 dark:text-emerald-400">
-                      Thành viên Ekip
-                    </span>
-                    <h3 className="text-lg font-black text-slate-900 dark:text-white mt-0.5">
-                      Thành viên Studio
-                    </h3>
-                  </div>
-                  <p className="text-xs text-slate-600 dark:text-slate-400 leading-relaxed">
-                    Dành cho thợ ảnh, thợ makeup, trợ lý hoặc retoucher thuộc một studio. Nhập mã tham gia để xem ca chụp phân công và thu nhập cá nhân.
-                  </p>
-                </div>
-
-                <div className="pt-6 mt-6 border-t border-slate-200/60 dark:border-white/10 flex items-center justify-between">
-                  <span className="text-xs font-bold text-emerald-600 dark:text-emerald-400 flex items-center gap-1">
-                    Nhập mã tham gia <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
-                  </span>
-                  <span className="text-[10px] text-slate-400 font-mono">Gia nhập Studio</span>
-                </div>
-              </div>
-            </motion.div>
-          ) : selectedRole === 'manager' ? (
-            /* =============================================================== */
-            /* FORM NHẬP TÊN STUDIO (CHO ROLE MANAGER)                         */
-            /* =============================================================== */
-            <motion.div
-              key="form-manager"
-              initial={{ opacity: 0, scale: 0.95 }}
-              animate={{ opacity: 1, scale: 1 }}
-              exit={{ opacity: 0, scale: 0.95 }}
-              className="max-w-md mx-auto w-full p-8 rounded-3xl bg-white/80 dark:bg-[#121824]/90 backdrop-blur-2xl border border-slate-200/80 dark:border-white/10 shadow-2xl space-y-6"
-            >
-              <button
-                type="button"
-                onClick={() => setSelectedRole(null)}
-                className="text-xs font-bold text-slate-500 hover:text-slate-900 dark:hover:text-white flex items-center gap-1 transition-colors cursor-pointer"
-              >
-                <ChevronLeft className="w-4 h-4" /> Chọn vai trò khác
-              </button>
-
-              <div className="space-y-1">
-                <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-xl bg-orange-500/10 text-orange-600 dark:text-orange-400 text-xs font-bold mb-2">
-                  <Crown className="w-4 h-4" /> Chủ Studio / Quản Lý
-                </div>
-                <h2 className="text-xl font-black text-slate-900 dark:text-white">
-                  Thiết Lập Studio Của Bạn
-                </h2>
-                <p className="text-xs text-slate-500 dark:text-slate-400">
-                  Nhập thông tin cơ bản để tạo workspace và mã mời cho đội ngũ của bạn.
-                </p>
-              </div>
-
-              <form onSubmit={handleCreateStudio} className="space-y-4">
-                <div className="space-y-1.5">
-                  <label className="text-xs font-bold text-slate-700 dark:text-slate-300">
-                    Tên Studio / Thương Hiệu *
-                  </label>
-                  <input
-                    type="text"
-                    required
-                    value={studioName}
-                    onChange={e => setStudioName(e.target.value)}
-                    placeholder="VD: Mirmia Studio & Academy"
-                    className="w-full px-4 py-3 min-h-[44px] rounded-2xl bg-slate-100/90 dark:bg-black/40 border border-slate-200 dark:border-white/10 text-xs sm:text-sm text-slate-900 dark:text-white outline-none focus:border-[#df8653] focus:ring-2 focus:ring-[#df8653]/20 transition-all"
-                  />
-                </div>
-
-                <div className="space-y-1.5">
-                  <label className="text-xs font-bold text-slate-700 dark:text-slate-300">
-                    Số Điện Thoại / Hotline Studio
-                  </label>
-                  <input
-                    type="tel"
-                    value={studioPhone}
-                    onChange={e => setStudioPhone(e.target.value)}
-                    placeholder="VD: 0901234567"
-                    className="w-full px-4 py-3 min-h-[44px] rounded-2xl bg-slate-100/90 dark:bg-black/40 border border-slate-200 dark:border-white/10 text-xs sm:text-sm text-slate-900 dark:text-white outline-none focus:border-[#df8653] focus:ring-2 focus:ring-[#df8653]/20 transition-all"
-                  />
                 </div>
 
                 <button
-                  type="submit"
+                  type="button"
+                  onClick={handleSelectFreelancer}
                   disabled={isLoading}
-                  className="w-full py-3.5 min-h-[44px] rounded-2xl bg-gradient-to-r from-orange-500 via-[#df8653] to-amber-500 hover:from-orange-600 hover:to-amber-600 text-white font-bold text-xs sm:text-sm shadow-lg shadow-orange-500/25 active:scale-95 transition-all flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50"
+                  className="w-full py-3.5 min-h-[44px] rounded-2xl bg-gradient-to-r from-amber-500 via-orange-500 to-amber-600 hover:from-amber-400 hover:to-orange-500 text-slate-950 font-black text-xs sm:text-sm shadow-lg shadow-amber-500/20 active:scale-95 transition-all flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50"
                 >
                   {isLoading ? (
                     <>
                       <Loader2 className="w-4 h-4 animate-spin" />
-                      <span>Đang khởi tạo Studio...</span>
+                      <span>Đang thiết lập...</span>
                     </>
                   ) : (
                     <>
-                      <span>Khởi Tạo Studio & Bắt Đầu</span>
+                      <span>Bắt Đầu Với Vai Trò Freelancer</span>
                       <ArrowRight className="w-4 h-4" />
                     </>
                   )}
                 </button>
-              </form>
-            </motion.div>
-          ) : (
-            /* =============================================================== */
-            /* FORM NHẬP MÃ THAM GIA STUDIO (CHO ROLE MEMBER)                  */
-            /* =============================================================== */
-            <motion.div
-              key="form-member"
-              initial={{ opacity: 0, scale: 0.95 }}
-              animate={{ opacity: 1, scale: 1 }}
-              exit={{ opacity: 0, scale: 0.95 }}
-              className="max-w-md mx-auto w-full p-8 rounded-3xl bg-white/80 dark:bg-[#121824]/90 backdrop-blur-2xl border border-slate-200/80 dark:border-white/10 shadow-2xl space-y-6"
-            >
-              <button
-                type="button"
-                onClick={() => setSelectedRole(null)}
-                className="text-xs font-bold text-slate-500 hover:text-slate-900 dark:hover:text-white flex items-center gap-1 transition-colors cursor-pointer"
+              </motion.div>
+            )}
+
+            {/* SUB-FORM 2: CHỦ STUDIO / QUẢN LÝ */}
+            {selectedRole === 'manager' && (
+              <motion.div
+                key="subform-manager"
+                initial={{ opacity: 0, y: 12 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -12 }}
+                transition={{ duration: 0.25 }}
+                className="max-w-2xl mx-auto w-full p-6 sm:p-8 rounded-3xl bg-white/90 dark:bg-zinc-900/90 backdrop-blur-2xl border border-orange-500/30 shadow-xl space-y-6"
               >
-                <ChevronLeft className="w-4 h-4" /> Chọn vai trò khác
-              </button>
-
-              <div className="space-y-1">
-                <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-xl bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 text-xs font-bold mb-2">
-                  <Users className="w-4 h-4" /> Thành Viên Studio
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-2xl bg-orange-500/10 border border-orange-500/20 text-orange-500 flex items-center justify-center">
+                    <Crown className="w-5 h-5" />
+                  </div>
+                  <div>
+                    <h3 className="text-base sm:text-lg font-black text-slate-900 dark:text-white">
+                      Thông Tin Xác Thực Studio
+                    </h3>
+                    <p className="text-xs text-slate-500 dark:text-slate-400">
+                      Thiết lập hồ sơ thương hiệu và tạo workspace cho đội ngũ
+                    </p>
+                  </div>
                 </div>
-                <h2 className="text-xl font-black text-slate-900 dark:text-white">
-                  Gia Nhập Studio Của Bạn
-                </h2>
-                <p className="text-xs text-slate-500 dark:text-slate-400">
-                  Nhập Mã mời (Invite Code) do Chủ Studio hoặc Quản lý cấp để đồng bộ lịch chụp và nhận phân công.
-                </p>
-              </div>
 
-              <form onSubmit={handleJoinStudio} className="space-y-4">
-                <div className="space-y-1.5">
-                  <label className="text-xs font-bold text-slate-700 dark:text-slate-300">
-                    Mã Tham Gia Studio (Invite Code) *
-                  </label>
-                  <div className="relative">
-                    <KeyRound className="w-4 h-4 text-slate-400 absolute left-4 top-1/2 -translate-y-1/2" />
+                <form onSubmit={handleCreateStudio} className="space-y-4">
+                  {/* Ô 1: Tên Studio * */}
+                  <div className="space-y-1.5">
+                    <label className="text-xs font-bold text-slate-700 dark:text-slate-300 flex items-center gap-1.5">
+                      <Building2 className="w-3.5 h-3.5 text-orange-500" />
+                      <span>Tên Studio *</span>
+                    </label>
                     <input
                       type="text"
                       required
-                      value={inviteCode}
-                      onChange={e => setInviteCode(e.target.value.toUpperCase())}
-                      placeholder="VD: MIRMIA-VIP88"
-                      className="w-full pl-11 pr-4 py-3 min-h-[44px] rounded-2xl bg-slate-100/90 dark:bg-black/40 border border-slate-200 dark:border-white/10 font-mono text-xs sm:text-sm text-slate-900 dark:text-white uppercase outline-none focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20 transition-all tracking-wider"
+                      value={studioName}
+                      onChange={e => setStudioName(e.target.value)}
+                      placeholder="VD: MIRMIA STUDIO & ACADEMY"
+                      className="w-full px-4 py-3 min-h-[44px] rounded-2xl bg-slate-100/90 dark:bg-black/40 border border-slate-200 dark:border-zinc-800 text-xs sm:text-sm text-slate-900 dark:text-white outline-none focus:border-orange-500 focus:ring-2 focus:ring-orange-500/20 transition-all placeholder-slate-400"
                     />
                   </div>
-                  <p className="text-[11px] text-slate-400 leading-relaxed">
-                    Mẹo demo: Bạn có thể nhập mã <code>MIRMIA-VIP88</code> hoặc mã mời studio của bạn.
-                  </p>
+
+                  {/* Ô 2: Địa chỉ Studio * */}
+                  <div className="space-y-1.5">
+                    <label className="text-xs font-bold text-slate-700 dark:text-slate-300 flex items-center gap-1.5">
+                      <MapPin className="w-3.5 h-3.5 text-orange-500" />
+                      <span>Địa chỉ Studio *</span>
+                    </label>
+                    <input
+                      type="text"
+                      required
+                      value={studioAddress}
+                      onChange={e => setStudioAddress(e.target.value)}
+                      placeholder="VD: 123 Nguyễn Huệ, Phường Bến Nghé, Quận 1, TP. Hồ Chí Minh"
+                      className="w-full px-4 py-3 min-h-[44px] rounded-2xl bg-slate-100/90 dark:bg-black/40 border border-slate-200 dark:border-zinc-800 text-xs sm:text-sm text-slate-900 dark:text-white outline-none focus:border-orange-500 focus:ring-2 focus:ring-orange-500/20 transition-all placeholder-slate-400"
+                    />
+                  </div>
+
+                  {/* Ô 3: Fanpage / Link Website / Instagram * */}
+                  <div className="space-y-1.5">
+                    <label className="text-xs font-bold text-slate-700 dark:text-slate-300 flex items-center gap-1.5">
+                      <Globe className="w-3.5 h-3.5 text-orange-500" />
+                      <span>Fanpage / Link Website / Instagram *</span>
+                    </label>
+                    <input
+                      type="text"
+                      required
+                      value={studioSocialLink}
+                      onChange={e => setStudioSocialLink(e.target.value)}
+                      placeholder="VD: https://facebook.com/mirmiastudio hoặc https://mirmia.vn"
+                      className="w-full px-4 py-3 min-h-[44px] rounded-2xl bg-slate-100/90 dark:bg-black/40 border border-slate-200 dark:border-zinc-800 text-xs sm:text-sm text-slate-900 dark:text-white outline-none focus:border-orange-500 focus:ring-2 focus:ring-orange-500/20 transition-all placeholder-slate-400"
+                    />
+                  </div>
+
+                  {/* Thông báo nhỏ theo yêu cầu nghiệp vụ */}
+                  <div className="p-3.5 rounded-2xl bg-orange-500/10 border border-orange-500/20 text-orange-700 dark:text-orange-300 text-xs flex items-start gap-2.5">
+                    <Sparkles className="w-4 h-4 shrink-0 mt-0.5 text-orange-500" />
+                    <span className="leading-relaxed">
+                      Thông tin này dùng để xác thực doanh nghiệp, giúp hệ thống cấp mã mời ekip và hiển thị chuẩn nhận diện thương hiệu.
+                    </span>
+                  </div>
+
+                  <button
+                    type="submit"
+                    disabled={isLoading}
+                    className="w-full py-3.5 min-h-[44px] rounded-2xl bg-gradient-to-r from-orange-500 via-amber-500 to-yellow-500 hover:from-orange-600 hover:to-amber-600 text-slate-950 font-black text-xs sm:text-sm shadow-lg shadow-orange-500/25 active:scale-95 transition-all flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50"
+                  >
+                    {isLoading ? (
+                      <>
+                        <Loader2 className="w-4 h-4 animate-spin" />
+                        <span>Đang khởi tạo Studio...</span>
+                      </>
+                    ) : (
+                      <>
+                        <span>Khởi Tạo Studio & Bắt Đầu</span>
+                        <ArrowRight className="w-4 h-4" />
+                      </>
+                    )}
+                  </button>
+                </form>
+              </motion.div>
+            )}
+
+            {/* SUB-FORM 3: THÀNH VIÊN STUDIO (EKIP) */}
+            {selectedRole === 'member' && (
+              <motion.div
+                key="subform-member"
+                initial={{ opacity: 0, y: 12 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -12 }}
+                transition={{ duration: 0.25 }}
+                className="max-w-2xl mx-auto w-full p-6 sm:p-8 rounded-3xl bg-white/90 dark:bg-zinc-900/90 backdrop-blur-2xl border border-emerald-500/30 shadow-xl space-y-6"
+              >
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-2xl bg-emerald-500/10 border border-emerald-500/20 text-emerald-500 flex items-center justify-center">
+                    <Users className="w-5 h-5" />
+                  </div>
+                  <div>
+                    <h3 className="text-base sm:text-lg font-black text-slate-900 dark:text-white">
+                      Gia Nhập Studio Đã Có Sẵn
+                    </h3>
+                    <p className="text-xs text-slate-500 dark:text-slate-400">
+                      Kết nối vào Studio để nhận lịch chụp và quyết toán thù lao
+                    </p>
+                  </div>
                 </div>
 
-                <button
-                  type="submit"
-                  disabled={isLoading}
-                  className="w-full py-3.5 min-h-[44px] rounded-2xl bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white font-bold text-xs sm:text-sm shadow-lg shadow-emerald-600/25 active:scale-95 transition-all flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50"
-                >
-                  {isLoading ? (
-                    <>
-                      <Loader2 className="w-4 h-4 animate-spin" />
-                      <span>Đang kiểm tra mã mời...</span>
-                    </>
-                  ) : (
-                    <>
-                      <span>Xác Nhận Tham Gia</span>
-                      <ArrowRight className="w-4 h-4" />
-                    </>
-                  )}
-                </button>
-              </form>
-            </motion.div>
-          )}
-        </AnimatePresence>
+                <form onSubmit={handleJoinStudio} className="space-y-4">
+                  {/* Ô nhập Mã mời Ekip (Invite Code) */}
+                  <div className="space-y-1.5">
+                    <label className="text-xs font-bold text-slate-700 dark:text-slate-300 flex items-center gap-1.5">
+                      <KeyRound className="w-3.5 h-3.5 text-emerald-500" />
+                      <span>Mã mời Ekip (Invite Code) *</span>
+                    </label>
+                    <div className="relative">
+                      <input
+                        type="text"
+                        required
+                        value={inviteCode}
+                        onChange={e => setInviteCode(e.target.value.toUpperCase())}
+                        placeholder="VD: MIRMIA-VIP88"
+                        className="w-full px-4 py-3 min-h-[44px] rounded-2xl bg-slate-100/90 dark:bg-black/40 border border-slate-200 dark:border-zinc-800 font-mono text-xs sm:text-sm text-slate-900 dark:text-white uppercase outline-none focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20 transition-all tracking-wider placeholder-slate-400"
+                      />
+                    </div>
+                    <p className="text-[11px] text-slate-400 leading-relaxed">
+                      Mẹo: Nhập mã mời do Chủ Studio cung cấp (hoặc thử mã demo: <code className="text-emerald-500 font-bold">MIRMIA-VIP88</code>).
+                    </p>
+                  </div>
+
+                  {/* Thông báo nhỏ theo yêu cầu nghiệp vụ */}
+                  <div className="p-3.5 rounded-2xl bg-emerald-500/10 border border-emerald-500/20 text-emerald-700 dark:text-emerald-300 text-xs flex items-start gap-2.5">
+                    <Info className="w-4 h-4 shrink-0 mt-0.5 text-emerald-500" />
+                    <span className="leading-relaxed">
+                      Tài khoản của bạn sẽ cần được Chủ Studio phê duyệt (Xác thực) trước khi có thể nhận lịch phân công.
+                    </span>
+                  </div>
+
+                  <button
+                    type="submit"
+                    disabled={isLoading}
+                    className="w-full py-3.5 min-h-[44px] rounded-2xl bg-gradient-to-r from-emerald-600 via-teal-600 to-emerald-500 hover:from-emerald-500 hover:to-teal-500 text-white font-bold text-xs sm:text-sm shadow-lg shadow-emerald-600/25 active:scale-95 transition-all flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50"
+                  >
+                    {isLoading ? (
+                      <>
+                        <Loader2 className="w-4 h-4 animate-spin" />
+                        <span>Đang kiểm tra mã mời...</span>
+                      </>
+                    ) : (
+                      <>
+                        <span>Gia Nhập Studio & Tiếp Tục</span>
+                        <ArrowRight className="w-4 h-4" />
+                      </>
+                    )}
+                  </button>
+                </form>
+              </motion.div>
+            )}
+          </AnimatePresence>
+        </div>
       </main>
 
       {/* Footer */}
@@ -543,3 +692,5 @@ export const OnboardingPage: React.FC = () => {
     </div>
   );
 };
+
+export default OnboardingPage;

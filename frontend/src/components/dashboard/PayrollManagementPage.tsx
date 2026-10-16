@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useMemo } from 'react';
+import { Link } from 'react-router-dom';
 import {
   CalendarEvent,
   CrewAssignmentItem,
@@ -25,6 +26,8 @@ import {
   Phone,
   X,
   ArrowUpRight,
+  ArrowLeft,
+  ShieldCheck,
 } from 'lucide-react';
 
 const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
@@ -80,6 +83,7 @@ interface FlattenedPayrollRow {
   isPaid: boolean;
   bankName?: string;
   bankAccount?: string;
+  isOwner?: boolean;
 }
 
 interface StaffSummaryGroup {
@@ -97,9 +101,31 @@ interface StaffSummaryGroup {
   rows: FlattenedPayrollRow[];
 }
 
+const normalizeBankId = (bank?: string): string => {
+  if (!bank) return 'MB';
+  const clean = bank.trim().toUpperCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+  if (clean.includes('VIETCOMBANK') || clean === 'VCB') return 'VCB';
+  if (clean.includes('TECHCOMBANK') || clean === 'TCB') return 'TCB';
+  if (clean.includes('MBBANK') || clean.includes('MB BANK') || clean === 'MB') return 'MB';
+  if (clean.includes('VIETINBANK') || clean === 'CTG' || clean === 'ICB') return 'ICB';
+  if (clean.includes('BIDV')) return 'BIDV';
+  if (clean.includes('VPBANK') || clean === 'VPB') return 'VPB';
+  if (clean.includes('ACB')) return 'ACB';
+  if (clean.includes('TPBANK') || clean === 'TPB') return 'TPB';
+  if (clean.includes('SACOMBANK') || clean === 'STB') return 'STB';
+  if (clean.includes('HDBANK') || clean === 'HDB') return 'HDB';
+  if (clean.includes('VIB')) return 'VIB';
+  if (clean.includes('SHB')) return 'SHB';
+  if (clean.includes('MSB')) return 'MSB';
+  if (clean.includes('OCB')) return 'OCB';
+  if (clean.includes('SEABANK') || clean === 'SSB') return 'SSB';
+  if (clean.includes('AGRIBANK') || clean === 'VBA') return 'VBA';
+  return clean.replace(/[^A-Z0-9]/g, '') || 'MB';
+};
+
 export const PayrollManagementPage: React.FC = () => {
   const { user } = useAuth();
-  const { currentStudio, isStudioMember } = useWorkspace();
+  const { currentStudio, isStudioMember, isStudioAdmin } = useWorkspace();
 
   const [bookings, setBookings] = useState<CalendarEvent[]>([]);
   const [staffBankMap, setStaffBankMap] = useState<
@@ -115,6 +141,23 @@ export const PayrollManagementPage: React.FC = () => {
   const [roleFilter, setRoleFilter] = useState<string>('all');
   const [paymentFilter, setPaymentFilter] = useState<'all' | 'unpaid' | 'paid'>('all');
   const [searchQuery, setSearchQuery] = useState<string>('');
+  const [excludeOwnerPayroll, setExcludeOwnerPayroll] = useState<boolean>(true);
+
+  const currentYear = new Date().getFullYear();
+  const currentMonthStr = `${currentYear}-${String(new Date().getMonth() + 1).padStart(2, '0')}`;
+
+  const monthOptions = useMemo(() => {
+    const list: { value: string; label: string }[] = [{ value: 'all', label: 'Tất cả các tháng' }];
+    for (let m = 1; m <= 12; m++) {
+      const val = `${currentYear}-${String(m).padStart(2, '0')}`;
+      list.push({ value: val, label: `Tháng ${m}/${currentYear}` });
+    }
+    for (let m = 12; m >= 1; m--) {
+      const val = `${currentYear - 1}-${String(m).padStart(2, '0')}`;
+      list.push({ value: val, label: `Tháng ${m}/${currentYear - 1}` });
+    }
+    return list;
+  }, [currentYear]);
 
   // Modal VietQR chuyển khoản lương
   const [qrPayoutModal, setQrPayoutModal] = useState<{
@@ -322,6 +365,18 @@ export const PayrollManagementPage: React.FC = () => {
           if (!isCurrentUser) return;
         }
 
+        // Nhận diện tài khoản Chủ Studio / Quản lý
+        const isSelf = Boolean(
+          user &&
+          (c.user_id === user.id ||
+            c.user_id === currentStudio?.owner_id ||
+            (user.email && c.name?.toLowerCase() === user.email.split('@')[0].toLowerCase()) ||
+            (user.user_metadata?.full_name &&
+              c.name?.toLowerCase().trim() === user.user_metadata.full_name.toLowerCase().trim()))
+        );
+        const isFreelanceSupport = c.role === 'assistant' || c.role === 'retoucher';
+        const isOwnerRole = isSelf && !isFreelanceSupport;
+
         const calcAmt =
           c.fee_type === 'percent'
             ? Math.round((b.packagePrice * Number(c.fee || 0)) / 100)
@@ -347,16 +402,21 @@ export const PayrollManagementPage: React.FC = () => {
           isPaid: Boolean(c.is_paid),
           bankName: c.bank_name || bankInfo?.bankName,
           bankAccount: c.bank_account || bankInfo?.bankAccount,
+          isOwner: isOwnerRole,
         });
       });
     });
 
     return rows;
-  }, [bookings, isStudioMember, user, staffBankMap]);
+  }, [bookings, isStudioMember, user, currentStudio, staffBankMap]);
 
-  // Áp dụng bộ lọc Tháng, Vai trò, Trạng thái thanh toán & Từ khóa
+  // Áp dụng bộ lọc Tháng, Vai trò, Trạng thái thanh toán, Lọc Chủ Studio & Từ khóa
   const filteredRows = useMemo(() => {
     return allPayrollRows.filter(row => {
+      // Khi là Studio Admin và bật tùy chọn loại bỏ thù lao của chủ studio
+      if (!isStudioMember && excludeOwnerPayroll && row.isOwner) {
+        return false;
+      }
       if (selectedMonth && selectedMonth !== 'all') {
         if (!row.eventDate.startsWith(selectedMonth)) return false;
       }
@@ -371,7 +431,7 @@ export const PayrollManagementPage: React.FC = () => {
       }
       return true;
     });
-  }, [allPayrollRows, selectedMonth, roleFilter, paymentFilter, searchQuery]);
+  }, [allPayrollRows, selectedMonth, roleFilter, paymentFilter, searchQuery, isStudioMember, excludeOwnerPayroll]);
 
   // Tổng hợp theo từng Nhân sự
   const staffSummaries: StaffSummaryGroup[] = useMemo(() => {
@@ -540,12 +600,35 @@ export const PayrollManagementPage: React.FC = () => {
         </div>
       )}
 
+      {/* 0. HEADER & BACK LINK */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-2 border-b border-slate-200/80 dark:border-white/10">
+        <div>
+          <div className="flex items-center gap-2 mb-2">
+            <Link
+              to="/dashboard"
+              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl border border-slate-200/80 dark:border-white/10 bg-white/80 dark:bg-zinc-900/50 backdrop-blur-xl text-xs font-bold text-slate-600 dark:text-zinc-300 hover:text-orange-600 dark:hover:text-orange-400 hover:border-orange-500/30 transition-all shadow-2xs group"
+            >
+              <ArrowLeft className="w-3.5 h-3.5 transition-transform group-hover:-translate-x-0.5" />
+              <span>Quay lại Dashboard</span>
+            </Link>
+          </div>
+          <h1 className="text-xl sm:text-2xl font-black text-slate-900 dark:text-white tracking-tight">
+            {isStudioMember ? 'Bảng Thù Lao & Thu Nhập Của Tôi' : 'Bảng Lương & Đối Soát Thù Lao Ekip'}
+          </h1>
+          <p className="mt-1 text-xs sm:text-sm text-slate-500 dark:text-zinc-400">
+            {isStudioMember
+              ? 'Theo dõi thù lao chụp, makeup và tiến độ thanh toán từ Studio.'
+              : 'Quyết toán phân bổ thù lao, quét nợ nhân sự và tạo mã VietQR chuyển khoản 1 chạm.'}
+          </p>
+        </div>
+      </div>
+
       {/* 1. KPI SUMMARY CARDS */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        <div className="p-5 rounded-3xl bg-white dark:bg-zinc-900 border border-gray-200 dark:border-zinc-800 shadow-xs space-y-1.5">
+        <div className="p-5 rounded-3xl bg-white/80 dark:bg-zinc-900/50 backdrop-blur-2xl border border-slate-200/80 dark:border-white/10 shadow-[0_8px_32px_0_rgba(0,0,0,0.4)] space-y-1.5">
           <div className="flex items-center justify-between text-xs text-gray-500 dark:text-zinc-400 font-semibold">
             <span>{isStudioMember ? 'Tổng Thù Lao Của Tôi' : 'Tổng Quỹ Lương & Thù Lao Ekip'}</span>
-            <div className="p-2 rounded-xl bg-amber-500/10 text-amber-500">
+            <div className="p-2 rounded-xl bg-amber-500/10 text-amber-500 border border-amber-500/20">
               <Wallet className="w-4 h-4" />
             </div>
           </div>
@@ -553,14 +636,14 @@ export const PayrollManagementPage: React.FC = () => {
             {totalPayrollAmount.toLocaleString('vi-VN')} đ
           </div>
           <p className="text-[11px] text-gray-400 dark:text-zinc-500">
-            {filteredRows.length} lượt phân công
+            {filteredRows.length} lượt phân công {!isStudioMember && excludeOwnerPayroll && '(Đã tách chủ studio)'}
           </p>
         </div>
 
-        <div className="p-5 rounded-3xl bg-white dark:bg-zinc-900 border border-gray-200 dark:border-zinc-800 shadow-xs space-y-1.5">
+        <div className="p-5 rounded-3xl bg-white/80 dark:bg-zinc-900/50 backdrop-blur-2xl border border-slate-200/80 dark:border-white/10 shadow-[0_8px_32px_0_rgba(0,0,0,0.4)] space-y-1.5">
           <div className="flex items-center justify-between text-xs text-gray-500 dark:text-zinc-400 font-semibold">
             <span>{isStudioMember ? 'Đã Nhận Thanh Toán' : 'Đã Chi Trả Cho Ekip'}</span>
-            <div className="p-2 rounded-xl bg-emerald-500/10 text-emerald-500">
+            <div className="p-2 rounded-xl bg-emerald-500/10 text-emerald-500 border border-emerald-500/20">
               <CheckCircle2 className="w-4 h-4" />
             </div>
           </div>
@@ -572,10 +655,10 @@ export const PayrollManagementPage: React.FC = () => {
           </p>
         </div>
 
-        <div className="p-5 rounded-3xl bg-white dark:bg-zinc-900 border border-rose-200/70 dark:border-rose-900/40 shadow-xs space-y-1.5">
+        <div className="p-5 rounded-3xl bg-white/80 dark:bg-zinc-900/50 backdrop-blur-2xl border border-rose-200/70 dark:border-rose-900/40 shadow-[0_8px_32px_0_rgba(0,0,0,0.4)] space-y-1.5 border-l-4 border-l-rose-500">
           <div className="flex items-center justify-between text-xs text-gray-500 dark:text-zinc-400 font-semibold">
             <span>{isStudioMember ? 'Chờ Studio Thanh Toán' : 'Công Nợ Lương Cần Chi'}</span>
-            <div className="p-2 rounded-xl bg-rose-500/10 text-rose-500">
+            <div className="p-2 rounded-xl bg-rose-500/10 text-rose-500 border border-rose-500/20">
               <Clock className="w-4 h-4" />
             </div>
           </div>
@@ -589,46 +672,79 @@ export const PayrollManagementPage: React.FC = () => {
       </div>
 
       {/* 2. FILTER BAR */}
-      <div className="p-4 rounded-2xl bg-white dark:bg-zinc-900 border border-gray-200 dark:border-zinc-800 flex flex-col md:flex-row items-stretch md:items-center justify-between gap-3">
+      <div className="p-4 rounded-3xl bg-white/80 dark:bg-zinc-900/50 backdrop-blur-2xl border border-slate-200/80 dark:border-white/10 shadow-[0_8px_32px_0_rgba(0,0,0,0.4)] flex flex-col md:flex-row items-stretch md:items-center justify-between gap-3">
         <div className="flex flex-wrap items-center gap-2.5">
-          {/* Chọn Tháng */}
-          <div className="flex items-center gap-1.5 bg-gray-50 dark:bg-zinc-800/80 border border-gray-200 dark:border-zinc-700 rounded-xl px-3 py-1.5 text-xs">
-            <Calendar className="w-3.5 h-3.5 text-orange-500" />
-            <input
-              type="month"
-              value={selectedMonth === 'all' ? '' : selectedMonth}
-              onChange={e => setSelectedMonth(e.target.value || 'all')}
-              className="bg-transparent font-semibold text-gray-900 dark:text-white outline-none cursor-pointer"
-            />
-            {selectedMonth !== 'all' && (
+          {/* Thanh Chọn Tháng Trực Quan Dạng Dropdown + Nút Nhanh */}
+          <div className="flex items-center gap-1.5 bg-slate-50 dark:bg-white/5 border border-slate-200/80 dark:border-white/10 rounded-2xl px-3 py-1.5 text-xs">
+            <Calendar className="w-3.5 h-3.5 text-amber-500" />
+            <select
+              value={selectedMonth}
+              onChange={e => setSelectedMonth(e.target.value)}
+              className="bg-transparent font-bold text-gray-900 dark:text-white outline-none cursor-pointer py-0.5 text-xs"
+            >
+              {monthOptions.map(opt => (
+                <option key={opt.value} value={opt.value} className="bg-white dark:bg-zinc-900 text-gray-900 dark:text-white">
+                  {opt.label}
+                </option>
+              ))}
+            </select>
+            <div className="flex items-center gap-1 ml-1 border-l border-slate-200 dark:border-white/10 pl-2">
+              <button
+                type="button"
+                onClick={() => setSelectedMonth(currentMonthStr)}
+                className={`px-2 py-0.5 rounded-lg text-[10px] font-bold transition-all cursor-pointer ${
+                  selectedMonth === currentMonthStr
+                    ? 'bg-amber-500 text-slate-950 shadow-2xs'
+                    : 'bg-slate-200 dark:bg-white/10 text-slate-700 dark:text-zinc-300 hover:bg-slate-300 dark:hover:bg-white/15'
+                }`}
+              >
+                Tháng Này
+              </button>
               <button
                 type="button"
                 onClick={() => setSelectedMonth('all')}
-                className="text-[10px] text-orange-500 hover:underline ml-1 font-bold"
+                className={`px-2 py-0.5 rounded-lg text-[10px] font-bold transition-all cursor-pointer ${
+                  selectedMonth === 'all'
+                    ? 'bg-amber-500 text-slate-950 shadow-2xs'
+                    : 'bg-slate-200 dark:bg-white/10 text-slate-700 dark:text-zinc-300 hover:bg-slate-300 dark:hover:bg-white/15'
+                }`}
               >
-                Tất cả tháng
+                Tất Cả
               </button>
-            )}
+            </div>
           </div>
+
+          {/* Tùy chọn Tách thù lao của Chủ Studio khỏi công nợ */}
+          {!isStudioMember && (
+            <label className="flex items-center gap-2 px-3 py-2 rounded-2xl bg-slate-50 dark:bg-white/5 border border-slate-200/80 dark:border-white/10 text-xs font-semibold text-slate-700 dark:text-zinc-300 cursor-pointer select-none hover:border-amber-500/30 transition-colors">
+              <input
+                type="checkbox"
+                checked={excludeOwnerPayroll}
+                onChange={e => setExcludeOwnerPayroll(e.target.checked)}
+                className="w-3.5 h-3.5 rounded text-amber-500 focus:ring-amber-400 cursor-pointer"
+              />
+              <span>Tách thù lao Chủ Studio khỏi công nợ</span>
+            </label>
+          )}
 
           {/* Lọc Vai Trò */}
           {!isStudioMember && (
             <select
               value={roleFilter}
               onChange={e => setRoleFilter(e.target.value)}
-              className="px-3 py-2 rounded-xl bg-gray-50 dark:bg-zinc-800/80 border border-gray-200 dark:border-zinc-700 text-xs font-semibold text-gray-800 dark:text-zinc-200 outline-none cursor-pointer"
+              className="px-3 py-2 rounded-xl bg-white dark:bg-zinc-900 border border-gray-200 dark:border-zinc-800 text-xs font-semibold text-gray-800 dark:text-zinc-200 outline-none focus:ring-1 focus:ring-orange-500 cursor-pointer"
             >
-              <option value="all">Tất cả vai trò</option>
+              <option value="all" className="bg-white dark:bg-zinc-900 text-gray-800 dark:text-zinc-100">Tất cả vai trò</option>
               {Object.entries(CREW_ROLE_LABELS).map(([k, v]) => (
-                <option key={k} value={k}>
+                <option key={k} value={k} className="bg-white dark:bg-zinc-900 text-gray-800 dark:text-zinc-100">
                   {v.label}
                 </option>
               ))}
             </select>
           )}
 
-          {/* Lọc Trạng thái thanh toán */}
-          <div className="flex items-center rounded-xl bg-gray-100 dark:bg-zinc-800 p-1 text-xs font-bold">
+          {/* Lọc Trạng thái thanh toán (Pill Buttons) */}
+          <div className="flex items-center gap-1.5">
             {[
               { id: 'all', label: 'Tất cả' },
               { id: 'unpaid', label: 'Chưa trả' },
@@ -638,10 +754,14 @@ export const PayrollManagementPage: React.FC = () => {
                 key={tab.id}
                 type="button"
                 onClick={() => setPaymentFilter(tab.id as any)}
-                className={`px-3 py-1 rounded-lg transition-all cursor-pointer ${
+                className={`px-3.5 py-1.5 rounded-full text-xs font-bold transition-all cursor-pointer ${
                   paymentFilter === tab.id
-                    ? 'bg-white dark:bg-zinc-900 text-orange-600 dark:text-orange-400 shadow-2xs'
-                    : 'text-gray-500 dark:text-zinc-400 hover:text-gray-900 dark:hover:text-white'
+                    ? tab.id === 'unpaid'
+                      ? 'bg-rose-500 text-white shadow-sm shadow-rose-500/30'
+                      : tab.id === 'paid'
+                      ? 'bg-emerald-500 text-white shadow-sm shadow-emerald-500/30'
+                      : 'bg-zinc-900 text-white dark:bg-zinc-100 dark:text-zinc-900 shadow-sm'
+                    : 'bg-zinc-100 dark:bg-zinc-800 text-zinc-600 dark:text-zinc-400 hover:bg-zinc-200 dark:hover:bg-zinc-700'
                 }`}
               >
                 {tab.label}
@@ -652,13 +772,13 @@ export const PayrollManagementPage: React.FC = () => {
 
         {/* Ô Tìm Kiếm */}
         <div className="relative md:w-64">
-          <Search className="w-3.5 h-3.5 text-gray-400 absolute left-3 top-1/2 -translate-y-1/2" />
+          <Search className="w-3.5 h-3.5 text-gray-400 dark:text-zinc-500 absolute left-3 top-1/2 -translate-y-1/2" />
           <input
             type="text"
             value={searchQuery}
             onChange={e => setSearchQuery(e.target.value)}
             placeholder={isStudioMember ? 'Tìm theo tên khách...' : 'Tìm tên thợ, makeup, khách...'}
-            className="w-full pl-8 pr-3 py-2 rounded-xl bg-gray-50 dark:bg-zinc-800/80 border border-gray-200 dark:border-zinc-700 text-xs text-gray-900 dark:text-white placeholder-gray-400 outline-none focus:border-orange-500"
+            className="w-full pl-8 pr-3 py-2 rounded-xl bg-white dark:bg-zinc-900 border border-gray-200 dark:border-zinc-800 text-xs text-gray-900 dark:text-zinc-100 placeholder-gray-400 dark:placeholder-zinc-500 outline-none focus:ring-1 focus:ring-orange-500"
           />
         </div>
       </div>
@@ -822,7 +942,15 @@ export const PayrollManagementPage: React.FC = () => {
                         </td>
                         {!isStudioMember && (
                           <td className="py-3 px-4 font-semibold text-gray-900 dark:text-white">
-                            {row.staffName}
+                            <div className="flex items-center gap-1.5 flex-wrap">
+                              <span>{row.staffName}</span>
+                              {row.isOwner && (
+                                <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-bold bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/20">
+                                  <ShieldCheck className="w-3 h-3" />
+                                  Chủ Studio (Quản lý)
+                                </span>
+                              )}
+                            </div>
                           </td>
                         )}
                         <td className="py-3 px-4">
@@ -912,22 +1040,25 @@ export const PayrollManagementPage: React.FC = () => {
             </div>
 
             {qrPayoutModal.bankName && qrPayoutModal.bankAccount ? (
-              <div className="text-center space-y-2">
-                <img
-                  src={`https://img.vietqr.io/image/${encodeURIComponent(
-                    qrPayoutModal.bankName.replace(/\s+/g, '')
-                  )}-${encodeURIComponent(
-                    qrPayoutModal.bankAccount
-                  )}-compact2.png?amount=${qrPayoutModal.amount}&addInfo=${encodeURIComponent(
-                    qrPayoutModal.transferNote
-                  )}&accountName=${encodeURIComponent(qrPayoutModal.staffName)}`}
-                  alt="VietQR Payout"
-                  className="mx-auto max-w-[240px] rounded-2xl border border-gray-200 dark:border-zinc-700 shadow-md bg-white p-2"
-                />
-                <p className="text-xs font-mono text-gray-600 dark:text-zinc-300">
-                  {qrPayoutModal.bankName} • <strong>{qrPayoutModal.bankAccount}</strong>
-                </p>
-              </div>
+              (() => {
+                const cleanBank = normalizeBankId(qrPayoutModal.bankName);
+                const cleanAcc = (qrPayoutModal.bankAccount || '').replace(/\s+/g, '');
+                const note = encodeURIComponent((qrPayoutModal.transferNote || 'Thanh toan thu lao').trim());
+                const name = encodeURIComponent((qrPayoutModal.staffName || '').trim());
+                const vietQrUrl = `https://img.vietqr.io/image/${cleanBank}-${cleanAcc}-compact2.png?amount=${qrPayoutModal.amount}&addInfo=${note}&accountName=${name}`;
+                return (
+                  <div className="text-center space-y-2">
+                    <img
+                      src={vietQrUrl}
+                      alt="VietQR Payout"
+                      className="mx-auto max-w-[240px] rounded-2xl border border-gray-200 dark:border-zinc-700 shadow-md bg-white p-2"
+                    />
+                    <p className="text-xs font-mono text-gray-600 dark:text-zinc-300">
+                      Ngân hàng: <strong className="text-amber-500">{cleanBank}</strong> • STK: <strong>{cleanAcc}</strong>
+                    </p>
+                  </div>
+                );
+              })()
             ) : (
               <div className="p-3.5 rounded-2xl bg-gray-50 dark:bg-zinc-800/60 border border-gray-200 dark:border-zinc-700 text-xs text-gray-600 dark:text-zinc-300 space-y-2">
                 <p>

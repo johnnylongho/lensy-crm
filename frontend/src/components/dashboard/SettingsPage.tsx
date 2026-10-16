@@ -538,36 +538,55 @@ export const SettingsPage: React.FC = () => {
 
         const mappedAccountType = userRole === 'manager' ? 'studio_admin' : userRole === 'member' ? 'studio_member' : 'freelancer';
         // Thực hiện cập nhật bảng users
-        const { error: updateError } = await supabase
+        let updatePayload: any = {
+          role: userRole,
+          account_type: mappedAccountType,
+          studio_name: studioName.trim() || 'MIRMIA STUDIO',
+          avatar_url: avatarUrl.trim() || null,
+          facebook_url: facebookUrl.trim() || null,
+          username: cleanUsername,
+          full_name: fullName.trim(),
+          phone: phone.trim(),
+          bank_name: bankName.trim(),
+          bank_account_number: bankAccountNumber.trim(),
+          bank_account_name: bankAccountName.trim().toUpperCase(),
+          updated_at: new Date().toISOString(),
+        };
+
+        let { error: updateError } = await supabase
           .from('users')
-          .update({
-            role: userRole,
-            account_type: mappedAccountType,
-            studio_name: studioName.trim() || 'MIRMIA STUDIO',
-            avatar_url: avatarUrl.trim() || null,
-            facebook_url: facebookUrl.trim() || null,
-            username: cleanUsername,
-            full_name: fullName.trim(),
-            phone: phone.trim(),
-            bank_name: bankName.trim(),
-            bank_account_number: bankAccountNumber.trim(),
-            bank_account_name: bankAccountName.trim().toUpperCase(),
-            updated_at: new Date().toISOString(),
-          })
+          .update(updatePayload)
           .eq('id', user.id);
+
+        // Fallback tự động nếu Supabase bị Schema Cache thiếu cột facebook_url
+        if (updateError && (updateError.message?.toLowerCase().includes('facebook_url') || updateError.details?.toLowerCase().includes('facebook_url'))) {
+          console.warn('[Supabase Schema Cache] Cột facebook_url chưa nhận diện trong cache, tự động fallback lưu không có facebook_url.');
+          delete updatePayload.facebook_url;
+          const retryRes = await supabase
+            .from('users')
+            .update(updatePayload)
+            .eq('id', user.id);
+          updateError = retryRes.error;
+          // Lưu dự phòng vào local state/storage
+          localStorage.setItem(`lensy_fb_${user.id}`, facebookUrl.trim());
+        }
 
         if (updateError) {
           throw updateError;
         }
 
         // Cập nhật bổ sung vào studio_members nếu đã gia nhập studio
-        await supabase
-          .from('studio_members')
-          .update({
-            facebook_url: facebookUrl.trim() || null,
-            updated_at: new Date().toISOString(),
-          })
-          .eq('user_id', user.id);
+        try {
+          await supabase
+            .from('studio_members')
+            .update({
+              facebook_url: facebookUrl.trim() || null,
+              updated_at: new Date().toISOString(),
+            })
+            .eq('user_id', user.id);
+        } catch (memberErr) {
+          console.warn('Bỏ qua lỗi cập nhật facebook_url trên studio_members:', memberErr);
+        }
 
         if (switchAccountType) switchAccountType(userRole);
         if (refreshGlobalWorkspace) refreshGlobalWorkspace();

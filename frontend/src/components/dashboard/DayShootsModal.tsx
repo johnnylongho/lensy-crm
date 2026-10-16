@@ -36,9 +36,6 @@ export const DayShootsModal: React.FC<Props> = ({
     <div className="rounded-3xl bg-white/70 dark:bg-white/5 backdrop-blur-2xl border border-white/60 dark:border-white/10 shadow-[0_8px_32px_0_rgba(0,0,0,0.04)] dark:shadow-[0_8px_32px_0_rgba(0,0,0,0.4)] p-6 sm:p-7 space-y-5 transition-all duration-300">
       <div className="flex items-center justify-between pb-3 border-b border-white/40 dark:border-white/10">
         <div>
-          <span className="text-[10px] font-bold uppercase tracking-wider text-amber-500 dark:text-amber-400 block mb-0.5">
-            Lịch Chi Tiết Theo Ngày
-          </span>
           <h3 className="text-sm sm:text-base font-bold text-slate-900 dark:text-white capitalize">
             {formattedDate}
           </h3>
@@ -50,9 +47,8 @@ export const DayShootsModal: React.FC<Props> = ({
 
       {dayEvents.length === 0 ? (
         <div className="py-8 text-center text-slate-500 text-xs space-y-1">
-          <Calendar className="w-8 h-8 mx-auto text-slate-600 mb-2 opacity-50" />
-          <p className="font-semibold text-slate-400">Trống lịch cho ngày này.</p>
-          <p className="text-[11px]">Bạn có thể nhận thêm lịch chụp mới hoặc sắp xếp nghỉ ngơi.</p>
+          <Calendar className="w-8 h-8 mx-auto text-slate-400 dark:text-zinc-500 mb-2 opacity-50" />
+          <p className="font-semibold text-slate-500 dark:text-zinc-400">Trống lịch cho ngày này.</p>
         </div>
       ) : (
         <div className="space-y-3">

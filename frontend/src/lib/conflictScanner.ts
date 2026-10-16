@@ -1,6 +1,6 @@
 // ====================================================================
-// LENSY CRM - GEAR & RESOURCE CONFLICT SCANNER (USP 1)
-// BỘ QUÉT XUNG ĐỘT THIẾT BỊ & NHÂN SỰ CHUYÊN DỤNG CHO STUDIO & THỢ ẢNH
+// LENSY CRM - GEAR & RESOURCE CONFLICT SCANNER 2.0 (USP 1 & USP 2)
+// BỘ QUÉT XUNG ĐỘT THIẾT BỊ & NHÂN SỰ THEO NGÀY + KHUNG GIỜ (CÓ BUFFER)
 // ====================================================================
 
 export interface GearItem {
@@ -87,16 +87,68 @@ export interface ConflictScanResult {
   conflicts: ConflictDetail[];
 }
 
+// Chuyển đổi chuỗi giờ "HH:mm" sang tổng số phút trong ngày (0 -> 1440)
+export function parseTimeToMinutes(timeStr?: string | null, fallbackMinutes: number = 480): number {
+  if (!timeStr || typeof timeStr !== 'string') return fallbackMinutes;
+  const clean = timeStr.trim().substring(0, 5);
+  const parts = clean.split(':');
+  if (parts.length < 2) return fallbackMinutes;
+  const hours = parseInt(parts[0], 10);
+  const mins = parseInt(parts[1], 10);
+  if (isNaN(hours) || isNaN(mins)) return fallbackMinutes;
+  return hours * 60 + mins;
+}
+
+/**
+ * Kiểm tra giao thoa giữa 2 khung giờ trong cùng 1 ngày (có tính thời gian đệm di chuyển/sạc pin)
+ * - Trả về 'hard' nếu trùng giờ trực tiếp hoặc khoảng nghỉ giữa 2 show < bufferMinutes (mặc định 60p)
+ * - Trả về 'soft' nếu cùng ngày nhưng cách nhau >= bufferMinutes
+ */
+export function evaluateTimeOverlapSeverity(
+  startA?: string | null,
+  endA?: string | null,
+  startB?: string | null,
+  endB?: string | null,
+  bufferMinutes: number = 60
+): { isOverlapping: boolean; severity: 'hard' | 'soft'; gapMinutes: number } {
+  // Nếu không truyền giờ của show đang kiểm tra -> mặc định coi là 'hard' để bảo toàn tính tương thích
+  if (!startA || !endA) {
+    return { isOverlapping: true, severity: 'hard', gapMinutes: 0 };
+  }
+
+  const sA = parseTimeToMinutes(startA, 8 * 60);
+  const eA = Math.max(sA + 30, parseTimeToMinutes(endA, 12 * 60));
+  const sB = parseTimeToMinutes(startB, 8 * 60);
+  const eB = Math.max(sB + 30, parseTimeToMinutes(endB, 12 * 60));
+
+  // Trùng khung giờ trực tiếp
+  if (sA < eB && sB < eA) {
+    return { isOverlapping: true, severity: 'hard', gapMinutes: 0 };
+  }
+
+  // Khoảng cách giữa 2 ca chụp trong cùng ngày
+  const gap = sA >= eB ? sA - eB : sB - eA;
+  if (gap < bufferMinutes) {
+    return { isOverlapping: true, severity: 'hard', gapMinutes: gap };
+  }
+
+  return { isOverlapping: false, severity: 'soft', gapMinutes: gap };
+}
+
+function isCancelledStatus(status?: string | null): boolean {
+  if (!status) return false;
+  const s = status.toLowerCase().trim();
+  return s === 'da_huy' || s === 'cancelled';
+}
+
 /**
  * Trích xuất danh sách ID thiết bị gắn với một booking
- * (Kiểm tra qua ghi chú 'notes' hoặc danh sách thiết bị mặc định theo loại gói)
  */
 export function extractGearsFromBooking(booking: any): string[] {
   const gears: string[] = [];
   const notes = (booking.notes || '').toLowerCase();
   const sessionType = (booking.session_type || booking.sessionType || '').toLowerCase();
 
-  // 1. Phân tích qua từ khóa trong ghi chú
   if (notes.includes('canon-r') || notes.includes('eos r') || notes.includes('canon r')) {
     gears.push('body-canon-r');
   }
@@ -125,7 +177,6 @@ export function extractGearsFromBooking(booking: any): string[] {
     gears.push('crew-makeup');
   }
 
-  // 2. Mặc định phân bổ thiết bị cốt lõi theo loại buổi chụp nếu chưa ghi rõ
   if (gears.length === 0) {
     if (sessionType === 'wedding' || sessionType === 'prewedding') {
       gears.push('body-canon-r', 'lens-2470', 'flash-godox');
@@ -140,14 +191,16 @@ export function extractGearsFromBooking(booking: any): string[] {
 }
 
 /**
- * Quét xung đột thiết bị & nhân sự giữa lịch mới và các booking đã có
+ * Quét xung đột thiết bị & nhân sự khi lập Báo giá mới (Quote Generator)
  */
 export function scanGearConflicts(
   targetDate: string,
   selectedGearIds: string[],
   existingBookings: any[],
   currentBookingId?: string,
-  customGearsList?: GearItem[]
+  customGearsList?: GearItem[],
+  targetStartTime?: string,
+  targetEndTime?: string
 ): ConflictScanResult {
   if (!targetDate || selectedGearIds.length === 0 || !existingBookings) {
     return { hasConflict: false, totalAdditionalRentalCost: 0, conflicts: [] };
@@ -156,24 +209,36 @@ export function scanGearConflicts(
   const conflicts: ConflictDetail[] = [];
   let totalCost = 0;
 
-  // Lọc các booking diễn ra cùng ngày và không ở trạng thái hủy
   const sameDayBookings = existingBookings.filter(b => {
     const bDate = b.event_date || b.eventDate;
     const bId = b.id;
     const bStatus = b.status;
-    return bDate === targetDate && bId !== currentBookingId && bStatus !== 'da_huy';
+    return bDate === targetDate && bId !== currentBookingId && !isCancelledStatus(bStatus);
   });
 
-  const availableGears = (customGearsList && customGearsList.length > 0) ? customGearsList : STUDIO_GEARS;
+  const availableGears =
+    customGearsList && customGearsList.length > 0 ? customGearsList : STUDIO_GEARS;
 
   for (const gearId of selectedGearIds) {
-    const gearDef = availableGears.find(g => g.id === gearId) || STUDIO_GEARS.find(g => g.id === gearId);
+    const gearDef =
+      availableGears.find(g => g.id === gearId) || STUDIO_GEARS.find(g => g.id === gearId);
     if (!gearDef) continue;
 
     for (const booking of sameDayBookings) {
-      const assignedGears = (booking.assignedGears || booking.assigned_gears || []).length > 0
-        ? (booking.assignedGears || booking.assigned_gears)
-        : extractGearsFromBooking(booking);
+      const bStart = (booking.start_time || booking.startTime || '08:00').substring(0, 5);
+      const bEnd = (booking.end_time || booking.endTime || '12:00').substring(0, 5);
+
+      // Nếu có truyền khung giờ cụ thể khi tạo báo giá, chỉ tính phí thuê ngoài khi thực sự giao thoa giờ (< 60p buffer)
+      if (targetStartTime && targetEndTime) {
+        const overlap = evaluateTimeOverlapSeverity(targetStartTime, targetEndTime, bStart, bEnd, 60);
+        if (overlap.severity === 'soft') continue;
+      }
+
+      const assignedGears =
+        (booking.assignedGears || booking.assigned_gears || []).length > 0
+          ? booking.assignedGears || booking.assigned_gears
+          : extractGearsFromBooking(booking);
+
       if (assignedGears.includes(gearId)) {
         conflicts.push({
           gear: gearDef,
@@ -182,13 +247,13 @@ export function scanGearConflicts(
             clientName: booking.client_name || booking.clientName || 'Khách hàng',
             sessionTitle: booking.session_title || booking.sessionTitle,
             eventDate: targetDate,
-            startTime: (booking.start_time || booking.startTime || '08:00').substring(0, 5),
-            endTime: (booking.end_time || booking.endTime || '12:00').substring(0, 5),
+            startTime: bStart,
+            endTime: bEnd,
             status: booking.status,
           },
         });
         totalCost += gearDef.rentalCost;
-        break; // Mỗi thiết bị chỉ cộng phí 1 lần cho cùng ngày
+        break;
       }
     }
   }
@@ -208,14 +273,14 @@ export interface DynamicGearConflict {
   conflictingSessionType: string;
   eventDate: string;
   timeRange: string;
+  severity?: 'hard' | 'soft';
+  gapMinutes?: number;
 }
 
 /**
  * Thuật toán Cảnh báo trùng lặp thiết bị (USP 2):
- * Khi thợ ảnh đang chọn thiết bị cho Booking A (vào ngày X),
- * kiểm tra toàn bộ các Booking khác cũng diễn ra trong ngày X.
- * Nếu thiết bị vừa chọn đã được gán cho một Booking khác trong cùng ngày,
- * lập tức trả về danh sách chi tiết các cảnh báo xung đột (báo đỏ và chặn lưu/yêu cầu xác nhận ghi đè).
+ * Hỗ trợ phân tích độ nghiêm trọng ('hard' khi trùng khung giờ / cách nhau < 60 phút,
+ * 'soft' khi khác ca chụp trong cùng ngày nhưng vẫn cảnh báo rõ ràng cho thợ ảnh).
  */
 export function checkAssignedGearConflicts(
   targetDate: string,
@@ -240,18 +305,20 @@ export function checkAssignedGearConflicts(
   allGears: Array<{
     id: string;
     name: string;
-  }>
+  }>,
+  targetStartTime?: string,
+  targetEndTime?: string
 ): DynamicGearConflict[] {
   if (!targetDate || !selectedGearIds || selectedGearIds.length === 0 || !allBookings) {
     return [];
   }
 
-  // Lọc các booking khác diễn ra CÙNG NGÀY targetDate và không ở trạng thái hủy ('da_huy')
+  // Lọc các booking khác diễn ra CÙNG NGÀY targetDate và không ở trạng thái hủy ('da_huy' / 'cancelled')
   const sameDayBookings = allBookings.filter(b => {
     const bDate = b.eventDate || b.event_date;
     const bId = b.id;
     const bStatus = b.status;
-    return bDate === targetDate && bId !== currentBookingId && bStatus !== 'da_huy';
+    return bDate === targetDate && bId !== currentBookingId && !isCancelledStatus(bStatus);
   });
 
   const conflicts: DynamicGearConflict[] = [];
@@ -263,6 +330,16 @@ export function checkAssignedGearConflicts(
     for (const b of sameDayBookings) {
       const assigned = b.assignedGears || b.assigned_gears || [];
       if (assigned.includes(gearId)) {
+        const bStart = (b.startTime || b.start_time || '08:00').substring(0, 5);
+        const bEnd = (b.endTime || b.end_time || '12:00').substring(0, 5);
+        const overlap = evaluateTimeOverlapSeverity(
+          targetStartTime,
+          targetEndTime,
+          bStart,
+          bEnd,
+          60
+        );
+
         conflicts.push({
           gearId,
           gearName,
@@ -270,7 +347,9 @@ export function checkAssignedGearConflicts(
           conflictingClientName: b.clientName || b.client_name || 'Khách hàng khác',
           conflictingSessionType: (b.sessionType || b.session_type || 'Chụp ảnh').toUpperCase(),
           eventDate: targetDate,
-          timeRange: `${(b.startTime || b.start_time || '08:00').substring(0, 5)} - ${(b.endTime || b.end_time || '12:00').substring(0, 5)}`,
+          timeRange: `${bStart} - ${bEnd}`,
+          severity: overlap.severity,
+          gapMinutes: overlap.gapMinutes,
         });
       }
     }
@@ -279,3 +358,84 @@ export function checkAssignedGearConflicts(
   return conflicts;
 }
 
+// ====================================================================
+// BỘ QUÉT XUNG ĐỘT LỊCH NHÂN SỰ (PHOTOGRAPHER, MAKEUP ARTIST & EKIP)
+// ====================================================================
+export interface StaffConflictDetail {
+  staffId: string;
+  staffName: string;
+  roleLabel: string;
+  conflictingBookingId: string;
+  conflictingClientName: string;
+  conflictingSessionType: string;
+  eventDate: string;
+  timeRange: string;
+  severity: 'hard' | 'soft';
+  gapMinutes: number;
+}
+
+export function checkAssignedStaffConflicts(
+  targetDate: string,
+  currentBookingId: string | undefined,
+  staffAssignments: Array<{ userId?: string | null; name: string; roleLabel: string }>,
+  allBookings: Array<any>,
+  targetStartTime?: string,
+  targetEndTime?: string
+): StaffConflictDetail[] {
+  if (!targetDate || !staffAssignments || staffAssignments.length === 0 || !allBookings) {
+    return [];
+  }
+
+  const sameDayBookings = allBookings.filter(b => {
+    const bDate = b.eventDate || b.event_date;
+    const bId = b.id;
+    const bStatus = b.status;
+    return bDate === targetDate && bId !== currentBookingId && !isCancelledStatus(bStatus);
+  });
+
+  const conflicts: StaffConflictDetail[] = [];
+
+  for (const staff of staffAssignments) {
+    if (!staff.userId) continue;
+
+    for (const b of sameDayBookings) {
+      const bPhotoId = b.photographer_id || b.photographer?.id;
+      const bMakeupId = b.makeup_artist_id || b.makeup_artist?.id;
+      const bCrewIds: string[] = Array.isArray(b.crew_assignments)
+        ? b.crew_assignments.map((c: any) => c.user_id).filter(Boolean)
+        : [];
+
+      const isAssignedInOtherBooking =
+        bPhotoId === staff.userId ||
+        bMakeupId === staff.userId ||
+        bCrewIds.includes(staff.userId);
+
+      if (isAssignedInOtherBooking) {
+        const bStart = (b.startTime || b.start_time || '08:00').substring(0, 5);
+        const bEnd = (b.endTime || b.end_time || '12:00').substring(0, 5);
+        const overlap = evaluateTimeOverlapSeverity(
+          targetStartTime,
+          targetEndTime,
+          bStart,
+          bEnd,
+          60
+        );
+
+        conflicts.push({
+          staffId: staff.userId,
+          staffName: staff.name,
+          roleLabel: staff.roleLabel,
+          conflictingBookingId: b.id,
+          conflictingClientName: b.clientName || b.client_name || 'Khách hàng khác',
+          conflictingSessionType: (b.sessionType || b.session_type || 'Chụp ảnh').toUpperCase(),
+          eventDate: targetDate,
+          timeRange: `${bStart} - ${bEnd}`,
+          severity: overlap.severity,
+          gapMinutes: overlap.gapMinutes,
+        });
+      }
+    }
+  }
+
+  return conflicts;
+}

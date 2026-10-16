@@ -64,26 +64,48 @@ export const ClientProofingSection: React.FC<Props> = ({ quote, onProofingUpdate
     setTimeout(() => setIsSuccessToast(null), 3500);
   };
 
-  // Đồng bộ lưu Supabase
+  // Đồng bộ lưu Supabase (Ưu tiên gọi RPC submit_client_proofing_selection, fallback về Direct Update)
   const saveSessionToDb = async (newSession: ProofingSession, markEditing = false) => {
     setIsSubmitting(true);
     try {
-      if (isSupabaseConfigured && quote.id) {
-        const updatePayload: any = {
-          proofing_session: newSession,
-          updated_at: new Date().toISOString(),
-        };
-        if (markEditing && quote.status === 'shot') {
-          updatePayload.status = 'editing';
+      if (isSupabaseConfigured && (quote.quoteToken || quote.id)) {
+        let rpcSuccess = false;
+
+        // 1. Ưu tiên gọi hàm RPC bảo mật submit_client_proofing_selection
+        if (quote.quoteToken) {
+          try {
+            const { error: rpcError } = await supabase.rpc('submit_client_proofing_selection', {
+              p_quote_token: quote.quoteToken,
+              p_proofing_session: newSession,
+            });
+            if (!rpcError) {
+              rpcSuccess = true;
+            } else {
+              console.warn('RPC submit_client_proofing_selection failed, falling back:', rpcError.message);
+            }
+          } catch (rpcErr) {
+            console.warn('Lỗi khi gọi RPC submit_client_proofing_selection:', rpcErr);
+          }
         }
 
-        const { error } = await supabase
-          .from('bookings')
-          .update(updatePayload)
-          .eq('id', quote.id);
+        // 2. Fallback về direct update nếu RPC chưa được tạo hoặc gọi thất bại
+        if (!rpcSuccess && quote.id) {
+          const updatePayload: any = {
+            proofing_session: newSession,
+            updated_at: new Date().toISOString(),
+          };
+          if (markEditing && (quote.status === 'shot' || quote.status === 'deposited' || quote.status === 'da_chot')) {
+            updatePayload.status = 'editing';
+          }
 
-        if (error) {
-          console.warn('Lỗi lưu proofing_session:', error);
+          const { error } = await supabase
+            .from('bookings')
+            .update(updatePayload)
+            .eq('id', quote.id);
+
+          if (error) {
+            console.warn('Lỗi lưu proofing_session fallback:', error);
+          }
         }
       }
       setSession(newSession);

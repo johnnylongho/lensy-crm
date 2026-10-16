@@ -21,6 +21,7 @@ const PackagesManagementPage = lazy(() => import('./components/dashboard/Package
 const StudioSettingsPage = lazy(() => import('./components/dashboard/StudioSettingsPage').then(m => ({ default: m.StudioSettingsPage })));
 const ClientsManagementPage = lazy(() => import('./components/clients/ClientsManagementPage').then(m => ({ default: m.ClientsManagementPage })));
 const OnboardingPage = lazy(() => import('./components/auth/OnboardingPage').then(m => ({ default: m.OnboardingPage })));
+const PayrollManagementPage = lazy(() => import('./components/dashboard/PayrollManagementPage').then(m => ({ default: m.PayrollManagementPage })));
 
 export function App() {
   const [quote, setQuote] = useState<QuoteData | null>(null);
@@ -187,6 +188,9 @@ export function App() {
 
             {/* Trang Quản Trị Dành Riêng Cho Studio Admin */}
             <Route path="/dashboard/studio-settings" element={<StudioSettingsPage />} />
+
+            {/* Trang Quản Lý Bảng Lương & Thù Lao Ê-kíp */}
+            <Route path="/dashboard/payroll" element={<PayrollManagementPage />} />
           </Route>
 
           {/* ==================================================================== */}
@@ -197,6 +201,7 @@ export function App() {
           <Route path="/settings" element={<Navigate to="/dashboard/settings" replace />} />
           <Route path="/gears" element={<Navigate to="/dashboard/gears" replace />} />
           <Route path="/studio-settings" element={<Navigate to="/dashboard/studio-settings" replace />} />
+          <Route path="/payroll" element={<Navigate to="/dashboard/payroll" replace />} />
           <Route path="*" element={<Navigate to="/" replace />} />
               </Routes>
             </Suspense>

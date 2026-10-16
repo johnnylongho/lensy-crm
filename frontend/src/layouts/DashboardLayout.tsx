@@ -153,10 +153,10 @@ export const DashboardLayout: React.FC = () => {
               isActive: location.pathname === '/dashboard',
             },
             {
-              to: '/dashboard/settings',
+              to: '/dashboard/payroll',
               label: 'Thu Nhập (My Payroll)',
               icon: DollarSign,
-              isActive: false,
+              isActive: location.pathname.startsWith('/dashboard/payroll'),
             },
             {
               to: '/dashboard/settings',
@@ -191,6 +191,12 @@ export const DashboardLayout: React.FC = () => {
               label: 'Thiết Bị (Cá Nhân)',
               icon: SlidersHorizontal,
               isActive: location.pathname.startsWith('/dashboard/gears'),
+            },
+            {
+              to: '/dashboard/payroll',
+              label: 'Thù Lao & Chi Phí',
+              icon: DollarSign,
+              isActive: location.pathname === '/dashboard/payroll',
             },
             {
               to: '/dashboard/settings',
@@ -233,6 +239,12 @@ export const DashboardLayout: React.FC = () => {
             isActive: location.pathname.startsWith('/dashboard/studio-settings'),
           },
           {
+            to: '/dashboard/payroll',
+            label: 'Bảng Lương Ekip',
+            icon: DollarSign,
+            isActive: location.pathname.startsWith('/dashboard/payroll'),
+          },
+          {
             to: '/dashboard/packages',
             label: 'Gói Dịch Vụ',
             icon: Package,
@@ -263,6 +275,9 @@ export const DashboardLayout: React.FC = () => {
       if (isStudioMember) return 'Bàn Làm Việc Ekip Studio';
       if (isFreelancer) return 'Không Gian Freelancer Solo';
       return 'Tổng Quan Quản Lý Studio';
+    }
+    if (location.pathname.startsWith('/dashboard/payroll')) {
+      return isStudioMember ? 'Thu Nhập & Thù Lao Của Tôi' : 'Bảng Lương & Đối Soát Thù Lao Ekip';
     }
     if (location.pathname.startsWith('/dashboard/clients')) return 'Hồ Sơ Khách Hàng (CRM)';
     if (location.pathname.startsWith('/dashboard/gears')) return 'Quản Lý Thiết Bị Studio';
@@ -425,50 +440,19 @@ export const DashboardLayout: React.FC = () => {
               </div>
             ))}
           </div>
-
-          {/* Banners phân vai trò */}
-          {!isSidebarCollapsed && (
-            <>
-              {isFreelancer && (
-                <div className="rounded-xl border border-amber-500/25 bg-amber-500/10 p-3 space-y-1 text-xs">
-                  <div className="font-bold text-amber-500 flex items-center gap-1.5">
-                    <Camera className="w-3.5 h-3.5" />
-                    <span>Chế Độ Freelancer Tự Do</span>
-                  </div>
-                  <p className="text-[11px] text-gray-600 dark:text-zinc-400 leading-tight">
-                    Tập trung quản lý lịch cá nhân, danh bạ khách CRM & dòng tiền thực thu solo.
-                  </p>
-                </div>
-              )}
-              {isStudioMember && (
-                <div className="rounded-xl border border-emerald-500/25 bg-emerald-500/10 p-3 space-y-1 text-xs">
-                  <div className="font-bold text-emerald-600 dark:text-emerald-400 flex items-center gap-1.5">
-                    <Users className="w-3.5 h-3.5" />
-                    <span>Chế Độ Ekip Studio</span>
-                  </div>
-                  <p className="text-[11px] text-gray-600 dark:text-zinc-400 leading-tight">
-                    Theo dõi lịch chụp được phân công, kho thiết bị mượn và cập nhật tiến độ ca chụp.
-                  </p>
-                </div>
-              )}
-            </>
-          )}
         </div>
 
         {/* Bottom widgets of Sidebar */}
-        <div className="pt-6 space-y-3">
+        <div className="pt-4 space-y-2">
           {/* Public Booking Link Banner */}
           <div className={`rounded-xl border border-orange-200/60 dark:border-orange-950/40 bg-orange-50/50 dark:bg-orange-950/20 ${
-            isSidebarCollapsed ? 'p-2 flex justify-center' : 'p-3'
+            isSidebarCollapsed ? 'p-2 flex justify-center' : 'p-2.5'
           }`}>
             {!isSidebarCollapsed ? (
               <>
-                <div className="text-[10px] font-bold uppercase tracking-wider text-orange-600 dark:text-orange-400 mb-1">
+                <div className="text-[10px] font-bold uppercase tracking-wider text-orange-600 dark:text-orange-400 mb-1.5">
                   Link Đặt Lịch Online
                 </div>
-                <p className="text-[11px] text-gray-500 dark:text-zinc-400 mb-2">
-                  Gửi link này cho khách xem báo giá và chốt cọc tự động.
-                </p>
                 <a
                   href={`/book/${currentUsername}`}
                   target="_blank"
@@ -543,26 +527,22 @@ export const DashboardLayout: React.FC = () => {
                   {getPageTitle()}
                 </h2>
                 {isStudioAdmin ? (
-                  <span className="hidden sm:inline-flex items-center gap-1 text-[11px] font-bold px-2 py-0.5 rounded-full bg-orange-500/15 border border-orange-500/30 text-orange-600 dark:text-orange-400">
-                    👑 Quản Lý Studio
+                  <span className="hidden sm:inline-flex items-center gap-1.5 text-[11px] font-semibold px-2.5 py-0.5 rounded-full bg-orange-500/10 border border-orange-500/25 text-orange-600 dark:text-orange-400">
+                    <ShieldCheck className="w-3.5 h-3.5 text-orange-500" />
+                    <span>Quản Lý Studio</span>
                   </span>
                 ) : isStudioMember ? (
-                  <span className="hidden sm:inline-flex items-center gap-1 text-[11px] font-bold px-2 py-0.5 rounded-full bg-emerald-500/15 border border-emerald-500/30 text-emerald-600 dark:text-emerald-400">
-                    📸 Thành Viên Ekip
+                  <span className="hidden sm:inline-flex items-center gap-1.5 text-[11px] font-semibold px-2.5 py-0.5 rounded-full bg-emerald-500/10 border border-emerald-500/25 text-emerald-600 dark:text-emerald-400">
+                    <Users className="w-3.5 h-3.5 text-emerald-500" />
+                    <span>Thành Viên Ekip</span>
                   </span>
                 ) : (
-                  <span className="hidden sm:inline-flex items-center gap-1 text-[11px] font-bold px-2 py-0.5 rounded-full bg-amber-500/15 border border-amber-500/30 text-amber-600 dark:text-amber-400">
-                    🎯 Freelancer Solo
+                  <span className="hidden sm:inline-flex items-center gap-1.5 text-[11px] font-semibold px-2.5 py-0.5 rounded-full bg-amber-500/10 border border-amber-500/25 text-amber-600 dark:text-amber-400">
+                    <Camera className="w-3.5 h-3.5 text-amber-500" />
+                    <span>Freelancer Solo</span>
                   </span>
                 )}
               </div>
-              <p className="text-xs text-gray-500 dark:text-zinc-400 mt-0.5">
-                {isStudioMember
-                  ? 'Theo dõi ca chụp nhận bàn giao, kiểm soát thiết bị mượn và tiến độ buổi chụp'
-                  : isFreelancer
-                  ? 'Không gian làm việc tinh gọn: lịch chụp cá nhân, CRM khách hàng và doanh thu thực thu'
-                  : 'Hệ thống quản lý lịch chụp, dòng tiền thực thu và vận hành Studio chuyên nghiệp'}
-              </p>
             </div>
           </div>
 
@@ -611,10 +591,10 @@ export const DashboardLayout: React.FC = () => {
                   </div>
                   <div className="text-[10px] text-gray-500 dark:text-zinc-400 leading-tight">
                     {isStudioAdmin
-                      ? `👑 Quản Lý: ${currentStudio?.name || 'Studio'}`
+                      ? `Quản lý: ${currentStudio?.name || 'Studio'}`
                       : isStudioMember
-                      ? `📸 Ekip: ${currentStudio?.name || 'Studio Member'}`
-                      : '🎯 Freelancer Solo'}
+                      ? `Ekip: ${currentStudio?.name || 'Studio Member'}`
+                      : 'Freelancer Solo'}
                   </div>
                 </div>
                 <ChevronDown className={`h-3.5 w-3.5 text-gray-400 dark:text-zinc-400 transition-transform ${isUserMenuOpen ? 'rotate-180' : ''}`} />

@@ -161,4 +161,61 @@ ALTER TABLE public.bookings ADD CONSTRAINT bookings_status_check
     'cho_coc', 'cho_xac_nhan_coc', 'confirmed', 'da_chot', 'da_tra_file', 'hoan_thanh', 'da_huy'
   ));
 
+-- 7. BỔ SUNG CỘT VÀ RPC BẢO MẬT CLIENT PROOFING + CHỐNG TRÙNG LẶP WEBHOOK
+ALTER TABLE public.bookings ADD COLUMN IF NOT EXISTS paid_amount NUMERIC(12,2) DEFAULT 0;
+ALTER TABLE public.bookings ADD COLUMN IF NOT EXISTS remaining_amount NUMERIC(12,2);
+
+ALTER TABLE public.transactions ADD COLUMN IF NOT EXISTS reference_code VARCHAR(100);
+CREATE UNIQUE INDEX IF NOT EXISTS idx_transactions_reference_code 
+  ON public.transactions(reference_code) 
+  WHERE reference_code IS NOT NULL;
+
+CREATE OR REPLACE FUNCTION public.submit_client_proofing_selection(
+  p_quote_token TEXT,
+  p_proofing_session JSONB
+)
+RETURNS JSONB
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = public
+AS $$
+DECLARE
+  v_booking RECORD;
+  v_new_status VARCHAR(50);
+  v_is_locked BOOLEAN;
+BEGIN
+  SELECT id, status INTO v_booking
+  FROM public.bookings
+  WHERE quote_token = p_quote_token
+  LIMIT 1;
+
+  IF NOT FOUND THEN
+    RAISE EXCEPTION 'Booking not found with token: %', p_quote_token;
+  END IF;
+
+  v_new_status := v_booking.status;
+  v_is_locked := COALESCE((p_proofing_session->>'is_locked')::boolean, false);
+
+  IF v_is_locked AND v_booking.status IN ('deposited', 'da_chot', 'shot') THEN
+    v_new_status := 'editing';
+  END IF;
+
+  UPDATE public.bookings
+  SET 
+    proofing_session = p_proofing_session,
+    status = v_new_status,
+    updated_at = NOW()
+  WHERE id = v_booking.id;
+
+  RETURN jsonb_build_object(
+    'success', true,
+    'booking_id', v_booking.id,
+    'status', v_new_status,
+    'is_locked', v_is_locked
+  );
+END;
+$$;
+
+GRANT EXECUTE ON FUNCTION public.submit_client_proofing_selection(TEXT, JSONB) TO anon, authenticated;
+
 COMMIT;

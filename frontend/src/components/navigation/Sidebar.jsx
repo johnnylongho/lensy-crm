@@ -76,6 +76,12 @@ export const Sidebar = ({
             isActive: location.pathname.startsWith('/dashboard/studio-settings'),
           },
           {
+            to: '/dashboard/payroll',
+            label: 'Bảng Lương Ekip',
+            icon: DollarSign,
+            isActive: location.pathname.startsWith('/dashboard/payroll'),
+          },
+          {
             to: '/dashboard/settings',
             label: 'Cài Đặt',
             icon: Settings,
@@ -106,6 +112,12 @@ export const Sidebar = ({
             isActive: location.pathname.startsWith('/dashboard/gears'),
           },
           {
+            to: '/dashboard/payroll',
+            label: 'Thù Lao & Chi Phí',
+            icon: DollarSign,
+            isActive: location.pathname.startsWith('/dashboard/payroll'),
+          },
+          {
             to: '/dashboard/settings',
             label: 'Cài Đặt',
             icon: Settings,
@@ -125,10 +137,10 @@ export const Sidebar = ({
             isActive: location.pathname === '/dashboard',
           },
           {
-            to: '/dashboard/settings',
+            to: '/dashboard/payroll',
             label: 'Thu Nhập (My Payroll)',
             icon: DollarSign,
-            isActive: false,
+            isActive: location.pathname.startsWith('/dashboard/payroll'),
           },
           {
             to: '/dashboard/settings',

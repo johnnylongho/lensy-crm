@@ -1,12 +1,8 @@
 import React, { useState } from 'react';
 import { CalendarEvent, BookingStatus } from '../../types';
 import {
-  Calendar,
-  Sparkles,
-  GripVertical,
   Trash2,
   History,
-  Archive,
   Pencil,
 } from 'lucide-react';
 import { BookingStatusSelect, STATUS_CONFIG } from './BookingStatusSelect';
@@ -183,7 +179,6 @@ const CompactKanbanCardContent: React.FC<{
         <div className="min-w-0 flex-1 flex items-center gap-1.5 flex-wrap">
           <span
             className="font-semibold text-gray-900 dark:text-gray-50 text-xs sm:text-[13px] leading-tight hover:text-amber-600 dark:hover:text-amber-400 transition-colors truncate"
-            title={`${item.clientName} - Nhấn để mở Drawer chi tiết`}
           >
             {item.clientName}
           </span>
@@ -195,7 +190,6 @@ const CompactKanbanCardContent: React.FC<{
               if (onEditCategory) onEditCategory(item);
             }}
             className={`text-[9px] px-1.5 py-0.5 rounded font-bold border flex items-center gap-1 transition-all hover:scale-105 cursor-pointer flex-shrink-0 shadow-xs ${catCfg.color}`}
-            title={`Loại hình: ${catCfg.label}${item.package_type ? ` - Gói: ${item.package_type}` : ''} (Nhấn để tùy chỉnh)`}
           >
             <span className={`w-1.5 h-1.5 rounded-full ${catCfg.dotColor}`} />
             <span>{catCfg.label}</span>
@@ -205,27 +199,11 @@ const CompactKanbanCardContent: React.FC<{
           </button>
         </div>
 
-        {/* Cụm thao tác nhanh: Icon Thùng rác (hover đỏ nhạt) + Đổi status + Grip kéo thả */}
+        {/* Cụm thao tác nhanh: Đổi status + Xóa */}
         <div
           className="flex items-center gap-1 flex-shrink-0"
           onPointerDown={(e) => e.stopPropagation()}
         >
-          {/* Nút Thùng rác (Trash Icon, màu đỏ nhạt khi hover) */}
-          {onDeleteBooking && (
-            <button
-              type="button"
-              onClick={(e) => {
-                e.stopPropagation();
-                onDeleteBooking(item);
-              }}
-              className="p-1 rounded-lg text-gray-400 dark:text-gray-500 hover:text-rose-600 dark:hover:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-950/40 transition-colors cursor-pointer"
-              title="Hủy / Xóa lịch chụp này"
-            >
-              <Trash2 className="w-3.5 h-3.5" />
-            </button>
-          )}
-
-          {/* Quick Status Select */}
           {onStatusChange && (
             <BookingStatusSelect
               status={item.status}
@@ -236,28 +214,33 @@ const CompactKanbanCardContent: React.FC<{
             />
           )}
 
-          {/* Grip Icon */}
-          <div
-            className="p-0.5 text-gray-400 dark:text-gray-500 hover:text-amber-500 transition-colors pointer-events-none"
-            title="Kéo thả thẻ để chuyển cột"
-          >
-            <GripVertical className="w-3.5 h-3.5" />
-          </div>
+          {onDeleteBooking && (
+            <button
+              type="button"
+              onClick={(e) => {
+                e.stopPropagation();
+                onDeleteBooking(item);
+              }}
+              className="p-1 rounded-lg text-gray-400 dark:text-gray-500 hover:text-rose-600 dark:hover:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-950/40 transition-colors cursor-pointer"
+              title="Xóa lịch chụp"
+            >
+              <Trash2 className="w-3.5 h-3.5" />
+            </button>
+          )}
         </div>
       </div>
 
-      {/* Hàng 2: Ngày chụp + Staff Avatars (Trái) & Trạng thái thanh toán ngắn gọn (Phải) */}
+      {/* Hàng 2: Ngày chụp + Staff Avatars (Trái) & Trạng thái thanh toán (Phải) */}
       <div className="flex items-center justify-between gap-2 pt-0.5 w-full">
         {/* Ngày chụp + Staff Avatars */}
         <div className="flex items-center gap-2 min-w-0">
-          <div className="flex items-center gap-1 text-[11px] font-medium text-gray-500 dark:text-gray-400">
-            <Calendar className="w-3 h-3 text-amber-500 flex-shrink-0" />
-            <span className="font-mono truncate">{item.eventDate}</span>
-          </div>
+          <span className="font-mono text-[11px] font-medium text-gray-500 dark:text-gray-400 truncate">
+            {item.eventDate}
+          </span>
 
-          {/* 2 icon avatar nhỏ (kèm tooltip tên) của Thợ chụp và MUA nếu đã được phân công */}
+          {/* Avatar nhỏ của Thợ chụp và MUA */}
           {(item.photographer || item.makeup_artist) && (
-            <div className="flex items-center -space-x-1.5 flex-shrink-0" title="Nhân sự phụ trách">
+            <div className="flex items-center -space-x-1.5 flex-shrink-0">
               {item.photographer && (
                 <div className="relative">
                   <div
@@ -458,37 +441,32 @@ const KanbanColumn: React.FC<{
           : 'bg-white/60 dark:bg-white/5 border border-gray-200 dark:border-white/10 backdrop-blur-md shadow-sm'
       }`}
     >
-      {/* Column Header: Tách biệt nhẹ nhàng bằng đường viền mỏng ở dưới */}
-      <div className="pb-3 mb-3 border-b border-gray-200 dark:border-white/10 flex items-center justify-between">
+      {/* Column Header */}
+      <div className="pb-3 mb-3 border-b border-gray-100 dark:border-white/10 flex items-center justify-between">
         <div className="flex items-center gap-2">
-          {/* Chấm tròn nhỏ (dot) màu cạnh tiêu đề cột, tuyệt đối KHÔNG tô màu cả khối nền */}
-          <span className={`w-2.5 h-2.5 rounded-full ${column.dotColor} flex-shrink-0 shadow-sm`} />
-          <span className="w-5 h-5 rounded-full bg-gray-100 dark:bg-white/10 text-gray-700 dark:text-gray-300 text-[10px] font-bold flex items-center justify-center font-mono">
-            {column.stepNum}
-          </span>
-          <span className="text-xs font-bold uppercase tracking-wider text-gray-900 dark:text-white">
+          <span className={`w-2 h-2 rounded-full ${column.dotColor} flex-shrink-0`} />
+          <span className="text-xs font-semibold text-gray-800 dark:text-gray-100">
             {column.title}
           </span>
         </div>
         <div className="flex items-center gap-1.5">
           {isDoneColumn && archivedCount > 0 && (
             <span
-              className="text-[10px] px-1.5 py-0.5 rounded font-mono font-medium bg-gray-100 dark:bg-white/10 text-gray-600 dark:text-gray-300"
-              title={`${archivedCount} show cũ hơn 7 ngày đã tự động lưu trữ`}
+              className="text-[10px] px-1.5 py-0.5 rounded font-mono font-medium bg-gray-100 dark:bg-white/10 text-gray-500 dark:text-gray-400"
             >
-              + {archivedCount} cũ
+              +{archivedCount}
             </span>
           )}
-          <span className="px-2 py-0.5 text-xs font-mono font-bold rounded-full bg-gray-100 dark:bg-white/10 border border-gray-200 dark:border-white/10 text-gray-700 dark:text-gray-200 shadow-sm">
+          <span className="px-2 py-0.5 text-xs font-mono font-medium rounded-full bg-gray-100 dark:bg-white/10 text-gray-600 dark:text-gray-300">
             {events.length}
           </span>
         </div>
       </div>
 
-      {/* Subtotal of column: Không nền màu chói lóa, màu chuẩn text-gray-600 dark:text-gray-300 và text-sm font-medium text-gray-900 dark:text-white */}
-      <div className="mb-3 px-1 text-xs text-gray-600 dark:text-gray-300 font-mono flex items-center justify-between">
-        <span>{isDoneColumn ? 'Doanh thu 7 ngày:' : 'Tổng giá trị cột:'}</span>
-        <span className="text-sm font-medium text-gray-900 dark:text-white">
+      {/* Subtotal of column */}
+      <div className="mb-3 px-1 text-xs text-gray-500 dark:text-gray-400 font-mono flex items-center justify-between">
+        <span>Tổng giá trị:</span>
+        <span className="text-xs font-semibold text-gray-900 dark:text-white">
           {totalRevenue.toLocaleString('vi-VN')} đ
         </span>
       </div>
@@ -652,25 +630,10 @@ export const KanbanView: React.FC<Props> = ({
   return (
     <div className="space-y-4">
       {/* Title & Pipeline View Header */}
-      <div className="flex flex-wrap items-center justify-between gap-3">
-        <div>
-          <span className="text-[10px] font-bold uppercase tracking-wider text-amber-600 dark:text-amber-400 block mb-0.5">
-            Quy Trình 5 Bước Chuẩn Nhiếp Ảnh (Photography Kanban Pipeline)
-          </span>
-          <h3 className="text-base sm:text-lg font-bold text-gray-900 dark:text-white flex items-center gap-2">
-            Bảng Kanban Tiến Độ Show
-          </h3>
-        </div>
-        <div className="flex items-center gap-3 text-xs text-gray-500 dark:text-gray-400">
-          <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-white dark:bg-white/5 border border-gray-200 dark:border-white/10 text-[11px] shadow-sm">
-            <GripVertical className="w-3.5 h-3.5 text-amber-500" />
-            <span>Kéo bất kỳ thẻ nào để đổi cột</span>
-          </div>
-          <div className="flex items-center gap-1 text-[11px] text-emerald-600 dark:text-emerald-400 font-medium">
-            <Sparkles className="w-3.5 h-3.5" />
-            <span>Realtime Supabase Sync</span>
-          </div>
-        </div>
+      <div className="flex items-center justify-between gap-3">
+        <h3 className="text-base sm:text-lg font-bold text-gray-900 dark:text-white">
+          Tiến Độ Lịch Chụp
+        </h3>
       </div>
 
       {/* 5 Kanban Columns: Container flex flex-nowrap overflow-x-auto gap-4 p-4 */}

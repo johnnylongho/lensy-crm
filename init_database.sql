@@ -180,19 +180,25 @@ CREATE POLICY "Photographers can manage their bookings"
     WITH CHECK (true);
 
 -- 4. POLICIES CHO BẢNG TRANSACTIONS:
--- Cho phép ghi nhận giao dịch cọc khi khách thanh toán thành công
 DROP POLICY IF EXISTS "Public can record deposit transaction" ON transactions;
-CREATE POLICY "Public can record deposit transaction"
+DROP POLICY IF EXISTS "Authenticated users can record transactions" ON transactions;
+CREATE POLICY "Authenticated users can record transactions"
     ON transactions FOR INSERT
-    TO anon, authenticated
-    WITH CHECK (true);
+    TO authenticated
+    WITH CHECK (
+        photographer_id = auth.uid()
+        OR (studio_id IS NOT NULL AND is_studio_member(studio_id, auth.uid()))
+    );
 
 -- Chỉ thợ ảnh/admin đăng nhập mới được xem dòng tiền chi tiết
 DROP POLICY IF EXISTS "Authenticated photographers can view transactions" ON transactions;
 CREATE POLICY "Authenticated photographers can view transactions"
     ON transactions FOR SELECT
     TO authenticated
-    USING (true);
+    USING (
+        photographer_id = auth.uid()
+        OR (studio_id IS NOT NULL AND is_studio_member(studio_id, auth.uid()))
+    );
 
 -- ====================================================================
 -- DỮ LIỆU KHỞI TẠO MẪU (SEED DATA: MIRMIA STUDIO & ACADEMY)

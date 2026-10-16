@@ -976,9 +976,6 @@ export const ClayStudioDashboard: React.FC<Props> = ({
                 <p className="text-xs font-bold text-slate-800 dark:text-zinc-200">
                   Hôm nay chưa có ca chụp nào
                 </p>
-                <p className="text-[11px] text-slate-400 dark:text-zinc-500 mt-0.5">
-                  Mọi lịch chụp mới phát sinh hôm nay sẽ hiển thị tại đây theo thời gian thực.
-                </p>
                 <button
                   type="button"
                   onClick={onOpenCreateQuote}
@@ -1001,7 +998,7 @@ export const ClayStudioDashboard: React.FC<Props> = ({
           <div className="flex items-center gap-2 overflow-x-auto pb-1 md:pb-0">
             {[
               { id: 'table', label: isStudioMember ? 'Ca Chụp Phân Công' : isFreelancer ? 'Lịch Chụp Cá Nhân' : 'Danh Sách Lịch Chụp', icon: Briefcase },
-              { id: 'calendar', label: 'Lịch Tháng (Calendar)', icon: CalendarIcon },
+              { id: 'calendar', label: 'Thời Khóa Biểu Tuần', icon: CalendarIcon },
               { id: 'kanban', label: 'Quy Trình (Kanban)', icon: Kanban },
               ...(!isStudioMember ? [{ id: 'roi', label: isFreelancer ? 'Dòng Tiền Cá Nhân' : 'Tài Chính & ROI', icon: TrendingUp }] : []),
             ].map(tab => {
@@ -1282,29 +1279,17 @@ export const ClayStudioDashboard: React.FC<Props> = ({
         )}
 
         {/* ------------------------------------------------------------------- */}
-        {/* VIEW 2: CALENDAR VIEW                                               */}
+        {/* VIEW 2: CALENDAR VIEW (WEEKLY TIMETABLE)                            */}
         {/* ------------------------------------------------------------------- */}
         {dashboardView === 'calendar' && (
-          <div className="pt-4 grid grid-cols-1 lg:grid-cols-3 gap-6">
-            <div className="lg:col-span-2">
-              <CalendarView
-                events={events}
-                selectedDate={selectedCalendarDate}
-                onSelectDate={setSelectedCalendarDate}
-              />
-            </div>
-            <div className="lg:col-span-1">
-              <DayShootsModal
-                selectedDate={selectedCalendarDate}
-                events={events}
-                onViewQuote={onOpenQuote}
-                onStatusChange={onStatusChange}
-                onSelectBooking={onOpenDetailModal}
-                onOpenDebtReminder={onOpenDebtReminder}
-                onEditFinancials={onQuickEditFinancials}
-                onEditCategory={onEditCategory}
-              />
-            </div>
+          <div className="pt-4 space-y-6">
+            <CalendarView
+              events={events}
+              selectedDate={selectedCalendarDate}
+              onSelectDate={setSelectedCalendarDate}
+              onSelectBooking={onOpenDetailModal}
+              onOpenCreateQuote={onOpenCreateQuote}
+            />
           </div>
         )}
 

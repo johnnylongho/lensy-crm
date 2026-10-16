@@ -1779,6 +1779,66 @@ if (fs.existsSync(statusMapperFile)) {
 }
 
 // --------------------------------------------------------------------
+// 40. KIỂM TRA PHÂN HỆ BẢNG LƯƠNG, QUÉT XUNG ĐỘT NHÂN SỰ & RPC PROOFING (MODULE 3 & 4)
+// --------------------------------------------------------------------
+console.log('\n▶ 40. Kiểm tra Phân Hệ Bảng Lương, Quét Xung Đột Nhân Sự & RPC Proofing...');
+{
+  // 40.1 PayrollManagementPage.tsx
+  const payrollPageFile = path.join(__dirname, 'frontend', 'src', 'components', 'dashboard', 'PayrollManagementPage.tsx');
+  assert(fs.existsSync(payrollPageFile), 'Component PayrollManagementPage (PayrollManagementPage.tsx) tồn tại');
+
+  if (fs.existsSync(payrollPageFile)) {
+    const ppContent = fs.readFileSync(payrollPageFile, 'utf8');
+    assert(ppContent.includes('totalPayrollAmount') && ppContent.includes('totalPaidAmount'), 'PayrollManagementPage tính toán tổng thù lao và công nợ');
+    assert(ppContent.includes('qrPayoutModal') && ppContent.includes('img.vietqr.io'), 'PayrollManagementPage tích hợp modal VietQR chuyển khoản');
+    assert(ppContent.includes('Xác Nhận Đã Chuyển Khoản'), 'PayrollManagementPage có nút xác nhận chuyển khoản thù lao');
+  }
+
+  // 40.2 App.tsx và DashboardLayout.tsx có route /dashboard/payroll
+  const appTsxFile = path.join(__dirname, 'frontend', 'src', 'App.tsx');
+  if (fs.existsSync(appTsxFile)) {
+    const appContent = fs.readFileSync(appTsxFile, 'utf8');
+    assert(appContent.includes('/dashboard/payroll') && appContent.includes('PayrollManagementPage'), 'App.tsx đã khai báo route /dashboard/payroll');
+    assert(appContent.includes('/payroll'), 'App.tsx có alias route /payroll');
+  }
+
+  const dashLayoutFile = path.join(__dirname, 'frontend', 'src', 'layouts', 'DashboardLayout.tsx');
+  if (fs.existsSync(dashLayoutFile)) {
+    const dlContent = fs.readFileSync(dashLayoutFile, 'utf8');
+    assert(dlContent.includes('/dashboard/payroll') && dlContent.includes('Bảng Lương Ekip'), 'DashboardLayout.tsx tích hợp menu Bảng Lương Ekip');
+    assert(dlContent.includes('Thu Nhập (My Payroll)'), 'DashboardLayout.tsx tích hợp menu Thu Nhập (My Payroll) cho thành viên');
+  }
+
+  // 40.3 Conflict Scanner 2.0 trong conflictScanner.ts
+  const conflictScannerFile = path.join(__dirname, 'frontend', 'src', 'lib', 'conflictScanner.ts');
+  if (fs.existsSync(conflictScannerFile)) {
+    const csContent = fs.readFileSync(conflictScannerFile, 'utf8');
+    assert(csContent.includes('checkAssignedStaffConflicts'), 'Hàm checkAssignedStaffConflicts được định nghĩa trong conflictScanner.ts');
+    assert(csContent.includes('evaluateTimeOverlapSeverity'), 'Hàm evaluateTimeOverlapSeverity được định nghĩa trong conflictScanner.ts');
+  }
+
+  // 40.4 Migration files unify_rbac_and_status_fix.sql & update_proofing_and_webhook_rpc.sql
+  const rbacFixFile = path.join(__dirname, 'unify_rbac_and_status_fix.sql');
+  assert(fs.existsSync(rbacFixFile), 'File unify_rbac_and_status_fix.sql tồn tại');
+
+  const proofingRpcFile = path.join(__dirname, 'update_proofing_and_webhook_rpc.sql');
+  assert(fs.existsSync(proofingRpcFile), 'File update_proofing_and_webhook_rpc.sql tồn tại');
+
+  if (fs.existsSync(proofingRpcFile)) {
+    const prContent = fs.readFileSync(proofingRpcFile, 'utf8');
+    assert(prContent.includes('submit_client_proofing_selection'), 'update_proofing_and_webhook_rpc.sql chứa hàm submit_client_proofing_selection');
+    assert(prContent.includes('reference_code'), 'update_proofing_and_webhook_rpc.sql bổ sung reference_code cho bảng transactions');
+  }
+
+  // 40.5 ClientProofingSection gọi RPC submit_client_proofing_selection
+  const clientProofingFile = path.join(__dirname, 'frontend', 'src', 'components', 'quote', 'ClientProofingSection.tsx');
+  if (fs.existsSync(clientProofingFile)) {
+    const cpContent = fs.readFileSync(clientProofingFile, 'utf8');
+    assert(cpContent.includes('submit_client_proofing_selection'), 'ClientProofingSection ưu tiên gọi RPC submit_client_proofing_selection');
+  }
+}
+
+// --------------------------------------------------------------------
 // TỔNG KẾT
 // --------------------------------------------------------------------
 console.log('\n====================================================================');

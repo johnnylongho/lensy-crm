@@ -117,10 +117,6 @@ export const UpcomingShootsList: React.FC<Props> = ({
       {/* HEADER KHU VỰC */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-4 border-b border-white/40 dark:border-white/10">
         <div>
-          <span className="text-[10px] font-bold uppercase tracking-wider text-amber-500 dark:text-amber-400 block mb-0.5 flex items-center gap-1.5">
-            <Sparkles className="w-3 h-3 text-amber-500" />
-            Dòng Chảy Lịch Trình & Quản Lý Trạng Thái
-          </span>
           <h3 className="text-base sm:text-lg font-bold text-slate-900 dark:text-white">
             Toàn Bộ Lịch Chụp Sắp Tới
           </h3>
@@ -131,10 +127,8 @@ export const UpcomingShootsList: React.FC<Props> = ({
             <button
               type="button"
               onClick={handleResetFilters}
-              className="text-xs text-amber-600 dark:text-amber-400 hover:underline flex items-center gap-1 px-2 py-1 rounded-lg bg-amber-500/10 border border-amber-500/20 transition-colors"
-              title="Đặt lại các bộ lọc"
+              className="text-xs text-amber-600 dark:text-amber-400 hover:underline flex items-center gap-1 px-2.5 py-1 rounded-lg bg-amber-500/10 border border-amber-500/20 transition-colors"
             >
-              <RotateCcw className="w-3 h-3" />
               <span>Đặt lại</span>
             </button>
           )}
@@ -170,7 +164,7 @@ export const UpcomingShootsList: React.FC<Props> = ({
             <button
               type="button"
               onClick={() => setSearchQuery('')}
-              className="text-slate-400 hover:text-slate-600 dark:hover:text-white transition-colors flex-shrink-0"
+              className="text-slate-400 hover:text-slate-600 dark:hover:text-white transition-colors flex-shrink-0 cursor-pointer"
               title="Xóa tìm kiếm"
             >
               <X className="w-3.5 h-3.5" />
@@ -188,12 +182,11 @@ export const UpcomingShootsList: React.FC<Props> = ({
               setVisibleCount(DEFAULT_PAGE_SIZE);
             }}
             className="w-full bg-transparent border-0 outline-none text-xs font-medium text-slate-800 dark:text-slate-200 cursor-pointer p-0"
-            title="Chọn tiêu chí sắp xếp lịch chụp"
           >
-            <option value="smart" className="dark:bg-slate-900">📅 Sắp tới gần nhất (Ưu tiên hôm nay)</option>
-            <option value="furthest" className="dark:bg-slate-900">🗓️ Ngày xa nhất (Tương lai xa)</option>
-            <option value="newest" className="dark:bg-slate-900">✨ Mới được tạo (Gần đây nhất)</option>
-            <option value="price_desc" className="dark:bg-slate-900">💎 Giá trị hợp đồng cao nhất</option>
+            <option value="smart" className="dark:bg-slate-900">Sắp tới gần nhất</option>
+            <option value="furthest" className="dark:bg-slate-900">Ngày xa nhất</option>
+            <option value="newest" className="dark:bg-slate-900">Mới tạo gần đây</option>
+            <option value="price_desc" className="dark:bg-slate-900">Giá trị hợp đồng cao nhất</option>
           </select>
           <ChevronDown className="w-3.5 h-3.5 text-slate-400 flex-shrink-0 pointer-events-none" />
         </div>
@@ -208,13 +201,12 @@ export const UpcomingShootsList: React.FC<Props> = ({
               setVisibleCount(DEFAULT_PAGE_SIZE);
             }}
             className="w-full bg-transparent border-0 outline-none text-xs font-medium text-slate-800 dark:text-slate-200 cursor-pointer p-0"
-            title="Lọc lịch chụp theo trạng thái"
           >
             <option value="all" className="dark:bg-slate-900">Tất cả trạng thái</option>
-            <option value="cho_coc" className="dark:bg-slate-900">🟡 Mới hỏi (Lead / Chờ cọc)</option>
-            <option value="da_chot" className="dark:bg-slate-900">🔵 Đã cọc (Đã chốt lịch)</option>
-            <option value="da_chup" className="dark:bg-slate-900">🟣 Đã chụp / Đang sửa</option>
-            <option value="hoan_thanh" className="dark:bg-slate-900">🟢 Hoàn tất (Đã trả file)</option>
+            <option value="cho_coc" className="dark:bg-slate-900">Chờ cọc / Lead</option>
+            <option value="da_chot" className="dark:bg-slate-900">Đã chốt cọc</option>
+            <option value="da_chup" className="dark:bg-slate-900">Đã chụp / Đang sửa</option>
+            <option value="hoan_thanh" className="dark:bg-slate-900">Đã hoàn thành</option>
           </select>
           <ChevronDown className="w-3.5 h-3.5 text-slate-400 flex-shrink-0 pointer-events-none" />
         </div>
@@ -353,9 +345,8 @@ export const UpcomingShootsList: React.FC<Props> = ({
                   </div>
 
                   {ev.notes && (
-                    <div className="flex items-center gap-1.5 text-gray-500 dark:text-gray-400 text-xs italic">
-                      <MessageSquareQuote className="w-3.5 h-3.5 text-gray-400 dark:text-gray-500 flex-shrink-0" />
-                      <span className="truncate">{ev.notes}</span>
+                    <div className="text-gray-500 dark:text-gray-400 text-xs italic truncate">
+                      {ev.notes}
                     </div>
                   )}
 

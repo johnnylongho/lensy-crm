@@ -129,52 +129,114 @@ module.exports = async function handler(req, res) {
       });
     }
 
-    const pkgPrice = Number(targetBooking.package_price || 0);
-    const newPaidAmount = Number(targetBooking.paid_amount || 0) + amount;
+    // 1.1. Chống trùng lặp giao dịch (Idempotency check)
+    if (referenceNumber) {
+      const { data: existingTx } = await supabase
+        .from('transactions')
+        .select('id, amount, status')
+        .eq('reference_code', referenceNumber)
+        .maybeSingle();
 
-    // 2. Cập nhật booking sang trạng thái 'da_chot'
-    const { error: updateError } = await supabase
+      if (existingTx) {
+        console.log(`[SePAY Webhook] Giao dịch ${referenceNumber} đã được xử lý trước đó. Bỏ qua trùng lặp.`);
+        return res.status(200).json({
+          success: true,
+          message: `Giao dịch ${referenceNumber} đã được xử lý trước đó.`,
+          bookingId: targetBooking.id,
+          amount,
+          status: targetBooking.status,
+        });
+      }
+    }
+
+    // 1.2. Tính toán cộng dồn tiền thực thu (paid_amount) & công nợ còn lại (remaining_amount)
+    let currentPaid = Number(targetBooking.paid_amount || 0);
+    if (
+      currentPaid === 0 &&
+      ['deposited', 'da_chot', 'shot', 'editing', 'da_tra_file', 'done', 'hoan_thanh'].includes(
+        targetBooking.status
+      )
+    ) {
+      currentPaid = Number(targetBooking.deposit_amount || 0);
+    }
+
+    const newPaidAmount = currentPaid + amount;
+    const pkgPrice = Number(targetBooking.package_price || 0);
+    const newRemainingAmount = Math.max(0, pkgPrice - newPaidAmount);
+
+    // 1.3. Điều hướng trạng thái thông minh (Không làm tụt tiến độ show)
+    let nextStatus = targetBooking.status;
+    let transactionType = 'deposit';
+
+    const isInitialPhase = ['lead', 'cho_coc', 'cho_xac_nhan_coc'].includes(targetBooking.status);
+
+    if (isInitialPhase) {
+      nextStatus = 'da_chot';
+      transactionType = 'deposit';
+    } else {
+      nextStatus = targetBooking.status;
+      transactionType = 'final_settlement';
+    }
+
+    // 2. Cập nhật booking (cộng dồn paid_amount, cập nhật deposit_amount nếu là cọc đầu)
+    const updatePayload = {
+      status: nextStatus,
+      paid_amount: newPaidAmount,
+      remaining_amount: newRemainingAmount,
+      updated_at: new Date().toISOString(),
+    };
+
+    if (isInitialPhase && !targetBooking.deposit_amount) {
+      updatePayload.deposit_amount = amount;
+    }
+
+    let { error: updateError } = await supabase
       .from('bookings')
-      .update({
-        status: 'da_chot',
-        paid_amount: newPaidAmount,
-        deposit_amount: amount,
-        updated_at: new Date().toISOString(),
-      })
+      .update(updatePayload)
       .eq('id', targetBooking.id);
 
     if (updateError) {
-      throw updateError;
+      delete updatePayload.remaining_amount;
+      const retry = await supabase.from('bookings').update(updatePayload).eq('id', targetBooking.id);
+      if (retry.error) throw retry.error;
     }
 
-    // 3. Ghi nhận dòng tiền vào bảng transactions
-    const { error: txError } = await supabase.from('transactions').insert([
-      {
-        booking_id: targetBooking.id,
-        photographer_id: targetBooking.photographer_id || null,
-        studio_id: targetBooking.studio_id || null,
-        type: 'deposit',
-        amount: amount,
-        payment_method: 'bank_transfer',
-        status: 'completed',
-        notes: `Tự động nhận cọc qua Webhook (${gateway}). Cú pháp: "${content}". Mã GD: ${referenceNumber}`,
-        transaction_date: transactionDate,
-      },
-    ]);
+    // 3. Ghi nhận dòng tiền vào bảng transactions kèm reference_code
+    const txPayload = {
+      booking_id: targetBooking.id,
+      photographer_id: targetBooking.photographer_id || null,
+      studio_id: targetBooking.studio_id || null,
+      type: transactionType,
+      amount: amount,
+      payment_method: 'bank_transfer',
+      status: 'completed',
+      notes: `Tự động nhận thanh toán qua Webhook (${gateway}). Cú pháp: "${content}". Mã GD: ${referenceNumber}`,
+      transaction_date: transactionDate,
+      reference_code: referenceNumber || null,
+    };
+
+    let { error: txError } = await supabase.from('transactions').insert([txPayload]);
+
+    if (txError && txError.message && txError.message.includes('type')) {
+      txPayload.type = 'deposit';
+      delete txPayload.reference_code;
+      const retryTx = await supabase.from('transactions').insert([txPayload]);
+      txError = retryTx.error;
+    }
 
     if (txError) {
       console.warn('[SePAY Webhook] Cảnh báo ghi log transaction:', txError.message);
     }
 
-    console.log(`[SePAY Webhook] ✅ Chốt cọc thành công cho Booking ${targetBooking.id} (${targetBooking.client_name}) - ${amount}đ`);
+    console.log(`[SePAY Webhook] ✅ Ghi nhận thanh toán thành công cho Booking ${targetBooking.id} (${targetBooking.client_name}) - ${amount}đ (${nextStatus})`);
 
     return res.status(200).json({
       success: true,
-      message: `Xác nhận cọc thành công ${amount.toLocaleString('vi-VN')}đ cho khách ${targetBooking.client_name}!`,
+      message: `Xác nhận thanh toán thành công ${amount.toLocaleString('vi-VN')}đ cho khách ${targetBooking.client_name}!`,
       bookingId: targetBooking.id,
       quoteToken: targetBooking.quote_token,
       amount,
-      status: 'da_chot',
+      status: nextStatus,
     });
   } catch (error) {
     console.error('[SePAY Webhook] Lỗi xử lý:', error);

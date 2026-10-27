@@ -4,359 +4,66 @@ import { useAuth } from '../../context/AuthContext';
 import { useTheme } from '../../context/ThemeContext';
 
 export type BillingCycle = 'monthly' | 'yearly';
-export type QuotaTier = 'starter' | 'growth' | 'pro' | 'unlimited';
 
 export const LandingPage: React.FC = () => {
   const { user } = useAuth();
   const { toggleTheme, isDark } = useTheme();
 
-  // State quản lý Bảng giá tương tác đa chiều
+  // State thanh gạt chu kỳ thanh toán
   const [billingCycle, setBillingCycle] = useState<BillingCycle>('monthly');
-  const [quotaTier, setQuotaTier] = useState<QuotaTier>('starter');
 
-  // Xác định đường dẫn và chữ hiển thị của nút CTA chính theo trạng thái đăng nhập
+  // Điều hướng CTA
   const primaryCtaLink = user ? '/dashboard' : '/login';
-  const primaryCtaText = user ? 'Vào Bảng Điều Khiển' : 'Bắt Đầu Miễn Phí Ngay';
-  const headerCtaText = user ? 'Vào Bảng Điều Khiển' : 'Đăng Nhập / Dùng Thử';
-
-  // Dữ liệu bảng giá theo từng Mức Quy Mô Vận Hành (Studio Scale Selector)
-  const pricingMatrix = {
-    starter: {
-      albumLimitLabel: '10 Show / tháng',
-      isAdvancedUnlocked: false,
-      col1: {
-        title: 'LENSY PORTAL',
-        desc: 'Dành cho Photographer chỉ cần Cổng khách hàng thả tim chọn ảnh & bàn giao file thương hiệu riêng.',
-        price: '0 đ',
-        periodText: 'Miễn phí vĩnh viễn',
-        origPrice: null,
-        yearlyNote: null,
-        cta: 'Bắt Đầu Miễn Phí',
-      },
-      col2: {
-        title: 'LENSY SOLO CRM',
-        desc: 'Dành cho Freelancer độc lập: Full hệ thống Báo giá động, Nhận cọc VietQR SePAY, Kanban 5 bước, Hạch toán lợi nhuận ròng, 01 thành viên.',
-        monthly: {
-          price: '99.000 đ',
-          origPrice: '119.000 đ',
-          periodText: '/tháng',
-          note: null,
-        },
-        yearly: {
-          price: '990.000 đ',
-          origPrice: '1.190.000 đ',
-          periodText: '/năm',
-          note: '= 83.000 đ/tháng · tiết kiệm 17%',
-        },
-        cta: 'Bắt đầu với Lensy Solo CRM',
-      },
-      col3: {
-        title: 'LENSY STUDIO COMMAND',
-        desc: 'Dành cho Studio có đội ngũ: Toàn bộ CRM Solo + Quản lý kho thiết bị & ROI hoàn vốn, Conflict Scanner 2.0 và Bảng lương Ekip, 05 thành viên.',
-        badge: 'ĐƯỢC CHỌN NHIỀU NHẤT',
-        monthly: {
-          price: '179.000 đ',
-          origPrice: '219.000 đ',
-          periodText: '/tháng',
-          note: null,
-        },
-        yearly: {
-          price: '1.790.000 đ',
-          origPrice: '2.190.000 đ',
-          periodText: '/năm',
-          note: '= 149.000 đ/tháng · tiết kiệm 17%',
-        },
-        cta: 'Dùng thử miễn phí 30 ngày',
-      },
-    },
-    growth: {
-      albumLimitLabel: '30 Show / tháng',
-      isAdvancedUnlocked: true,
-      col1: {
-        title: 'LENSY PORTAL',
-        desc: 'Dành cho Photographer chỉ cần Cổng khách hàng thả tim chọn ảnh & bàn giao file thương hiệu riêng.',
-        monthly: {
-          price: '49.000 đ',
-          origPrice: '59.000 đ',
-          periodText: '/tháng',
-          note: null,
-        },
-        yearly: {
-          price: '478.000 đ',
-          origPrice: '598.000 đ',
-          periodText: '/năm',
-          note: '= 40.000 đ/tháng · tiết kiệm 19%',
-        },
-        cta: 'Bắt đầu với Lensy Portal',
-      },
-      col2: {
-        title: 'LENSY SOLO CRM',
-        desc: 'Dành cho Freelancer độc lập: Full hệ thống Báo giá động, Nhận cọc VietQR SePAY, Kanban 5 bước, Hạch toán lợi nhuận ròng, 01 thành viên.',
-        monthly: {
-          price: '148.000 đ',
-          origPrice: '178.000 đ',
-          periodText: '/tháng',
-          note: null,
-        },
-        yearly: {
-          price: '1.468.000 đ',
-          origPrice: '1.788.000 đ',
-          periodText: '/năm',
-          note: '= 122.000 đ/tháng · tiết kiệm 17%',
-        },
-        cta: 'Bắt đầu với Lensy Solo CRM',
-      },
-      col3: {
-        title: 'LENSY STUDIO COMMAND',
-        desc: 'Dành cho Studio có đội ngũ: Toàn bộ CRM Solo + Quản lý kho thiết bị & ROI hoàn vốn, Conflict Scanner 2.0 và Bảng lương Ekip, 05 thành viên.',
-        badge: 'ĐƯỢC CHỌN NHIỀU NHẤT',
-        monthly: {
-          price: '228.000 đ',
-          origPrice: '278.000 đ',
-          periodText: '/tháng',
-          note: null,
-        },
-        yearly: {
-          price: '2.268.000 đ',
-          origPrice: '2.788.000 đ',
-          periodText: '/năm',
-          note: '= 189.000 đ/tháng · tiết kiệm 17%',
-        },
-        cta: 'Dùng thử miễn phí 30 ngày',
-      },
-    },
-    pro: {
-      albumLimitLabel: '50 Show / tháng',
-      isAdvancedUnlocked: true,
-      col1: {
-        title: 'LENSY PORTAL',
-        desc: 'Dành cho Photographer chỉ cần Cổng khách hàng thả tim chọn ảnh & bàn giao file thương hiệu riêng.',
-        monthly: {
-          price: '69.000 đ',
-          origPrice: '84.000 đ',
-          periodText: '/tháng',
-          note: null,
-        },
-        yearly: {
-          price: '678.000 đ',
-          origPrice: '838.000 đ',
-          periodText: '/năm',
-          note: '= 57.000 đ/tháng · tiết kiệm 18%',
-        },
-        cta: 'Bắt đầu với Lensy Portal',
-      },
-      col2: {
-        title: 'LENSY SOLO CRM',
-        desc: 'Dành cho Freelancer độc lập: Full hệ thống Báo giá động, Nhận cọc VietQR SePAY, Kanban 5 bước, Hạch toán lợi nhuận ròng, 01 thành viên.',
-        monthly: {
-          price: '168.000 đ',
-          origPrice: '203.000 đ',
-          periodText: '/tháng',
-          note: null,
-        },
-        yearly: {
-          price: '1.668.000 đ',
-          origPrice: '2.028.000 đ',
-          periodText: '/năm',
-          note: '= 139.000 đ/tháng · tiết kiệm 17%',
-        },
-        cta: 'Bắt đầu với Lensy Solo CRM',
-      },
-      col3: {
-        title: 'LENSY STUDIO COMMAND',
-        desc: 'Dành cho Studio có đội ngũ: Toàn bộ CRM Solo + Quản lý kho thiết bị & ROI hoàn vốn, Conflict Scanner 2.0 và Bảng lương Ekip, 05 thành viên.',
-        badge: 'ĐƯỢC CHỌN NHIỀU NHẤT',
-        monthly: {
-          price: '248.000 đ',
-          origPrice: '303.000 đ',
-          periodText: '/tháng',
-          note: null,
-        },
-        yearly: {
-          price: '2.468.000 đ',
-          origPrice: '3.028.000 đ',
-          periodText: '/năm',
-          note: '= 206.000 đ/tháng · tiết kiệm 17%',
-        },
-        cta: 'Dùng thử miễn phí 30 ngày',
-      },
-    },
-    unlimited: {
-      albumLimitLabel: 'Không giới hạn',
-      isAdvancedUnlocked: true,
-      col1: {
-        title: 'LENSY PORTAL',
-        desc: 'Dành cho Photographer chỉ cần Cổng khách hàng thả tim chọn ảnh & bàn giao file thương hiệu riêng.',
-        monthly: {
-          price: '89.000 đ',
-          origPrice: '109.000 đ',
-          periodText: '/tháng',
-          note: null,
-        },
-        yearly: {
-          price: '878.000 đ',
-          origPrice: '1.090.000 đ',
-          periodText: '/năm',
-          note: '= 73.000 đ/tháng · tiết kiệm 18%',
-        },
-        cta: 'Bắt đầu với Lensy Portal',
-      },
-      col2: {
-        title: 'LENSY SOLO CRM',
-        desc: 'Dành cho Freelancer độc lập: Full hệ thống Báo giá động, Nhận cọc VietQR SePAY, Kanban 5 bước, Hạch toán lợi nhuận ròng, 01 thành viên.',
-        monthly: {
-          price: '188.000 đ',
-          origPrice: '228.000 đ',
-          periodText: '/tháng',
-          note: null,
-        },
-        yearly: {
-          price: '1.868.000 đ',
-          origPrice: '2.280.000 đ',
-          periodText: '/năm',
-          note: '= 156.000 đ/tháng · tiết kiệm 17%',
-        },
-        cta: 'Bắt đầu với Lensy Solo CRM',
-      },
-      col3: {
-        title: 'LENSY STUDIO COMMAND',
-        desc: 'Dành cho Studio có đội ngũ: Toàn bộ CRM Solo + Quản lý kho thiết bị & ROI hoàn vốn, Conflict Scanner 2.0 và Bảng lương Ekip, 05 thành viên.',
-        badge: 'ĐƯỢC CHỌN NHIỀU NHẤT',
-        monthly: {
-          price: '268.000 đ',
-          origPrice: '328.000 đ',
-          periodText: '/tháng',
-          note: null,
-        },
-        yearly: {
-          price: '2.668.000 đ',
-          origPrice: '3.280.000 đ',
-          periodText: '/năm',
-          note: '= 222.000 đ/tháng · tiết kiệm 17%',
-        },
-        cta: 'Dùng thử miễn phí 30 ngày',
-      },
-    },
-  };
-
-  const currentTab = pricingMatrix[quotaTier];
-
-  // Helper render giá cho từng cột
-  const renderPriceBlock = (colData: any) => {
-    // Trường hợp gói Free ở mức 'starter' (giá 0 đ vĩnh viễn)
-    if (colData.periodText && !colData.monthly && !colData.yearly) {
-      return (
-        <div className="space-y-1">
-          <div className="flex items-baseline gap-2">
-            <span className="text-3xl sm:text-4xl font-mono font-black text-slate-950 dark:text-white">
-              {colData.price}
-            </span>
-          </div>
-          <p className="text-xs font-mono uppercase tracking-wider text-slate-500 dark:text-zinc-500">
-            {colData.periodText}
-          </p>
-        </div>
-      );
-    }
-
-    const priceInfo = billingCycle === 'monthly' ? colData.monthly : colData.yearly;
-    return (
-      <div className="space-y-1">
-        <div className="flex items-baseline gap-2 flex-wrap">
-          <span className="text-3xl sm:text-4xl font-mono font-black text-slate-950 dark:text-white">
-            {priceInfo.price}
-          </span>
-          {priceInfo.origPrice && (
-            <span className="text-xs sm:text-sm font-mono text-slate-400 dark:text-zinc-600 line-through">
-              {priceInfo.origPrice}
-            </span>
-          )}
-          <span className="text-xs font-mono text-slate-500 dark:text-zinc-400">
-            {priceInfo.periodText}
-          </span>
-        </div>
-        {priceInfo.note && (
-          <p className="text-[11px] font-mono font-semibold text-orange-600 dark:text-orange-400">
-            {priceInfo.note}
-          </p>
-        )}
-      </div>
-    );
-  };
-
-  const scaleOptions: { key: QuotaTier; label: string }[] = [
-    { key: 'starter', label: 'Khởi Đầu (10 Show/tháng)' },
-    { key: 'growth', label: 'Tăng Trưởng (30 Show/tháng)' },
-    { key: 'pro', label: 'Chuyên Nghiệp (50 Show/tháng)' },
-    { key: 'unlimited', label: 'Không Giới Hạn (Unlimited)' },
-  ];
+  const primaryCtaText = user ? 'Vào Bảng Điều Khiển' : 'Bắt Đầu Miễn Phí';
+  const headerCtaText = user ? 'Bảng Điều Khiển' : 'Đăng Nhập / Dùng Thử';
 
   return (
-    <div className="min-h-screen bg-slate-50 dark:bg-zinc-950 text-slate-950 dark:text-white flex flex-col font-sans selection:bg-orange-600 selection:text-white transition-colors duration-200">
+    <div className="min-h-screen bg-slate-50 dark:bg-[#050505] text-slate-900 dark:text-zinc-100 selection:bg-orange-500 selection:text-white transition-colors duration-200">
       {/* ==================================================================== */}
-      {/* PHẦN A: HEADER NAVIGATION (STRICT NO-ICON)                           */}
+      {/* 00. STICKY HEADER                                                    */}
       {/* ==================================================================== */}
-      <header className="sticky top-0 z-50 bg-slate-50/90 dark:bg-zinc-950/90 backdrop-blur-xl border-b border-slate-200 dark:border-zinc-800 px-4 sm:px-8 py-3.5 transition-colors">
-        <div className="max-w-7xl mx-auto flex items-center justify-between">
-          {/* Logo & Brand Typography */}
-          <Link to="/" className="flex items-center gap-2.5">
-            <span className="text-xl sm:text-2xl font-black tracking-tight text-slate-950 dark:text-white">
-              Lensy
+      <header className="sticky top-0 z-50 backdrop-blur-xl bg-white/80 dark:bg-[#050505]/80 border-b border-slate-200/80 dark:border-white/10">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
+          {/* Logo & Brand Identity (No Icons, Pure Typography) */}
+          <Link to="/" className="flex items-center gap-2 group">
+            <span className="text-xl font-black tracking-tighter text-slate-950 dark:text-white">
+              LENSY<span className="text-orange-500">.</span>
             </span>
-            <span className="border border-orange-500 text-orange-600 dark:text-orange-400 font-mono text-[10px] font-bold px-1.5 py-0.5 rounded uppercase tracking-wider">
-              CRM
-            </span>
-            <span className="hidden sm:inline-block text-[9px] font-mono uppercase tracking-widest text-slate-500 dark:text-zinc-500 border-l border-slate-300 dark:border-zinc-800 pl-2.5">
-              BY MIRMIA STUDIO
+            <span className="text-[10px] font-mono tracking-widest px-2 py-0.5 rounded border border-slate-300 dark:border-zinc-800 bg-slate-100 dark:bg-zinc-900 text-slate-600 dark:text-zinc-400 font-bold uppercase">
+              STUDIO OS
             </span>
           </Link>
 
-          {/* Quick Nav Anchors */}
-          <nav className="hidden md:flex items-center gap-8 text-xs font-bold uppercase tracking-wider text-slate-600 dark:text-zinc-400">
-            <a
-              href="#pain-points"
-              className="hover:text-orange-600 dark:hover:text-orange-400 transition-colors"
-            >
+          {/* Desktop Navigation */}
+          <nav className="hidden md:flex items-center gap-8 text-xs font-mono tracking-wider uppercase text-slate-600 dark:text-zinc-400">
+            <a href="#giai-phap" className="hover:text-orange-500 dark:hover:text-orange-400 transition-colors">
               Giải Pháp
             </a>
-            <a
-              href="#features"
-              className="hover:text-orange-600 dark:hover:text-orange-400 transition-colors"
-            >
+            <a href="#tinh-nang" className="hover:text-orange-500 dark:hover:text-orange-400 transition-colors">
               Tính Năng
             </a>
-            <a
-              href="#pricing"
-              className="hover:text-orange-600 dark:hover:text-orange-400 transition-colors"
-            >
+            <a href="#bang-gia" className="hover:text-orange-500 dark:hover:text-orange-400 transition-colors">
               Bảng Giá
+            </a>
+            <a href="#bao-chung" className="hover:text-orange-500 dark:hover:text-orange-400 transition-colors">
+              Bảo Chứng
             </a>
           </nav>
 
-          {/* Actions: Theme Toggle + Demo Link + CTA */}
+          {/* Actions: Theme Toggle & CTA */}
           <div className="flex items-center gap-3">
-            {/* Pure text Theme Switcher (No icon) */}
             <button
-              type="button"
               onClick={toggleTheme}
-              className="text-[11px] font-mono font-bold tracking-wide px-3 py-1.5 rounded-lg border border-slate-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 text-slate-700 dark:text-zinc-300 hover:border-orange-500 dark:hover:border-orange-500 transition-colors cursor-pointer"
-              title="Chuyển đổi giao diện Sáng / Tối"
+              type="button"
+              className="text-[11px] font-mono font-bold tracking-wider px-2.5 py-1.5 rounded border border-slate-200 dark:border-zinc-800 text-slate-600 dark:text-zinc-400 hover:border-slate-400 dark:hover:border-zinc-600 transition-colors"
+              title="Đổi giao diện Sáng / Tối"
             >
-              {isDark ? 'Giao diện: Sáng' : 'Giao diện: Tối'}
+              {isDark ? 'LIGHT' : 'DARK'}
             </button>
 
-            {/* Xem Demo */}
-            <Link
-              to="/book/johnnylongho"
-              className="hidden sm:inline-block text-xs font-bold text-slate-700 dark:text-zinc-300 hover:text-orange-600 dark:hover:text-orange-400 px-2 py-1.5 transition-colors"
-            >
-              Xem Demo
-            </Link>
-
-            {/* Primary CTA Header */}
             <Link
               to={primaryCtaLink}
-              className="px-4 py-2 rounded-xl text-xs font-bold bg-orange-600 hover:bg-orange-500 text-white transition-all tracking-wide cursor-pointer text-center"
+              className="text-xs font-mono font-bold uppercase tracking-wider px-4 py-2 rounded-lg bg-orange-600 hover:bg-orange-500 text-white shadow-sm shadow-orange-600/30 transition-all active:scale-95"
             >
               {headerCtaText}
             </Link>
@@ -365,199 +72,306 @@ export const LandingPage: React.FC = () => {
       </header>
 
       {/* ==================================================================== */}
-      {/* PHẦN B: HERO SECTION                                                */}
+      {/* 01. HERO SECTION                                                     */}
       {/* ==================================================================== */}
-      <section className="relative px-4 sm:px-8 pt-16 sm:pt-24 pb-16 sm:pb-20 max-w-6xl mx-auto text-center">
-        {/* Brand Label */}
-        <div className="inline-block mb-6">
-          <span className="text-[10px] sm:text-xs font-mono font-bold uppercase tracking-widest text-orange-600 dark:text-orange-400 px-3.5 py-1.5 rounded-full border border-orange-500/30 bg-orange-500/10">
-            NỀN TẢNG QUẢN TRỊ STUDIO & ĐẶT LỊCH NHIẾP ẢNH CHUYÊN NGHIỆP
-          </span>
-        </div>
+      <section className="relative pt-20 pb-16 sm:pt-28 sm:pb-24 px-4 sm:px-6 lg:px-8 border-b border-slate-200 dark:border-white/10 overflow-hidden">
+        {/* Subtle grid background glow */}
+        <div className="absolute inset-0 bg-[radial-gradient(#f97316_1px,transparent_1px)] [background-size:32px_32px] opacity-[0.03] dark:opacity-[0.07] pointer-events-none" />
 
-        {/* Headline H1 */}
-        <h1 className="text-3xl sm:text-5xl lg:text-6xl font-black tracking-tight text-slate-950 dark:text-white leading-[1.15] max-w-5xl mx-auto">
-          Quản Lý Lịch Chụp, Dòng Tiền Và Thiết Bị.
-          <span className="block mt-2 text-orange-600 dark:text-orange-400">
-            Chuẩn Xác Tuyệt Đối. Tự Động Hóa Toàn Diện.
-          </span>
-        </h1>
-
-        {/* Subtitle */}
-        <p className="mt-6 text-sm sm:text-base lg:text-lg text-slate-600 dark:text-zinc-400 max-w-3xl mx-auto leading-relaxed">
-          Chấm dứt tình trạng trùng lịch máy móc, thất thoát tiền cọc hay rối loạn bảng lương ekip. Lensy CRM giúp Freelancer và Studio tự động hóa từ khâu gửi báo giá, nhận cọc VietQR 3 giây, quét xung đột thiết bị đến cổng khách hàng chọn ảnh trực tuyến.
-        </p>
-
-        {/* CTA Group */}
-        <div className="mt-10 flex flex-col sm:flex-row items-center justify-center gap-4">
-          <Link
-            to={primaryCtaLink}
-            className="w-full sm:w-auto px-8 py-3.5 rounded-xl text-sm font-bold bg-orange-600 hover:bg-orange-500 active:bg-orange-700 text-white shadow-lg shadow-orange-600/20 transition-all tracking-wide text-center cursor-pointer"
-          >
-            {primaryCtaText}
-          </Link>
-
-          <Link
-            to="/book/johnnylongho"
-            className="w-full sm:w-auto px-8 py-3.5 rounded-xl text-sm font-bold bg-white dark:bg-zinc-900 border border-slate-300 dark:border-zinc-800 text-slate-900 dark:text-zinc-100 hover:border-orange-500 dark:hover:border-orange-500 transition-all text-center cursor-pointer"
-          >
-            Trải Nghiệm Cổng Đặt Lịch Mẫu
-          </Link>
-        </div>
-
-        {/* Real-world Metrics Strip (4 Columns Typography) */}
-        <div className="mt-16 pt-12 border-t border-slate-200 dark:border-zinc-800 grid grid-cols-2 lg:grid-cols-4 gap-6 sm:gap-8 text-left">
-          <div className="p-5 rounded-2xl bg-white dark:bg-zinc-900/90 border border-slate-200 dark:border-zinc-800">
-            <span className="text-2xl sm:text-3xl font-mono font-black text-orange-600 dark:text-orange-400 tracking-tight block">
-              03 GIÂY
-            </span>
-            <p className="mt-2 text-xs text-slate-600 dark:text-zinc-400 leading-relaxed">
-              Tự động xác nhận tiền cọc qua VietQR & SePAY Webhook
-            </p>
+        <div className="max-w-5xl mx-auto text-center relative z-10 space-y-8">
+          {/* Eyebrow Label */}
+          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full border border-orange-500/30 bg-orange-500/5 text-orange-600 dark:text-orange-400 font-mono text-[11px] font-bold tracking-widest uppercase">
+            <span>●</span> HỆ ĐIỀU HÀNH DÀNH RIÊNG CHO PHOTOGRAPHER & STUDIO
           </div>
 
-          <div className="p-5 rounded-2xl bg-white dark:bg-zinc-900/90 border border-slate-200 dark:border-zinc-800">
-            <span className="text-2xl sm:text-3xl font-mono font-black text-slate-950 dark:text-white tracking-tight block">
-              60 PHÚT
+          {/* H1 Heading */}
+          <h1 className="text-4xl sm:text-6xl lg:text-7xl font-black tracking-tight text-slate-950 dark:text-white leading-[1.08]">
+            Quản Trị Studio & Dòng Tiền.
+            <br />
+            <span className="text-transparent bg-clip-text bg-gradient-to-r from-orange-600 via-amber-500 to-orange-500">
+              Chuẩn Xác Đến Từng Giây.
             </span>
-            <p className="mt-2 text-xs text-slate-600 dark:text-zinc-400 leading-relaxed">
-              Độ trễ đệm an toàn trong thuật toán quét trùng lịch thiết bị & nhân sự
-            </p>
+          </h1>
+
+          {/* Subtitle */}
+          <p className="max-w-3xl mx-auto text-base sm:text-lg lg:text-xl text-slate-600 dark:text-zinc-400 font-normal leading-relaxed">
+            Tự động hóa hoàn toàn từ khâu nhận cọc VietQR, xếp lịch nhân sự đến quét trùng lặp thiết bị. Giải phóng bạn khỏi sổ sách để tập trung vào nhiếp ảnh.
+          </p>
+
+          {/* CTAs */}
+          <div className="pt-2 flex flex-col sm:flex-row items-center justify-center gap-4">
+            <Link
+              to={primaryCtaLink}
+              className="w-full sm:w-auto px-8 py-4 rounded-xl bg-orange-600 hover:bg-orange-500 text-white font-bold text-sm font-mono uppercase tracking-wider shadow-lg shadow-orange-600/25 active:scale-95 transition-all text-center"
+            >
+              {primaryCtaText}
+            </Link>
+            <Link
+              to="/book/johnnylongho"
+              className="w-full sm:w-auto px-8 py-4 rounded-xl border border-slate-300 dark:border-zinc-800 bg-white/50 dark:bg-zinc-900/50 hover:bg-slate-100 dark:hover:bg-zinc-800 text-slate-900 dark:text-white font-bold text-sm font-mono uppercase tracking-wider transition-all text-center"
+            >
+              Xem Demo Hệ Thống
+            </Link>
           </div>
 
-          <div className="p-5 rounded-2xl bg-white dark:bg-zinc-900/90 border border-slate-200 dark:border-zinc-800">
-            <span className="text-2xl sm:text-3xl font-mono font-black text-orange-600 dark:text-orange-400 tracking-tight block">
-              100%
+          {/* Live System Indicator */}
+          <div className="pt-6 flex items-center justify-center gap-4 text-[11px] font-mono text-slate-500 dark:text-zinc-500">
+            <span className="inline-flex items-center gap-1.5">
+              <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
+              SEPAY WEBHOOK 24/7
             </span>
-            <p className="mt-2 text-xs text-slate-600 dark:text-zinc-400 leading-relaxed">
-              Minh bạch hóa lợi nhuận ròng (Net Profit) và tiến độ hoàn vốn máy móc (ROI)
-            </p>
-          </div>
-
-          <div className="p-5 rounded-2xl bg-white dark:bg-zinc-900/90 border border-slate-200 dark:border-zinc-800">
-            <span className="text-2xl sm:text-3xl font-mono font-black text-slate-950 dark:text-white tracking-tight block">
-              05 BƯỚC
-            </span>
-            <p className="mt-2 text-xs text-slate-600 dark:text-zinc-400 leading-relaxed">
-              Quy trình Kanban chuẩn ngành ảnh từ lúc khách mới hỏi đến khi trả file
-            </p>
+            <span>·</span>
+            <span>KHÔNG CẦN CÀI ĐẶT APP</span>
+            <span>·</span>
+            <span>ĐỘ TRỄ DƯỚI 3 GIÂY</span>
           </div>
         </div>
       </section>
 
       {/* ==================================================================== */}
-      {/* PHẦN C: NỖI ĐAU & GIẢI PHÁP (PAIN POINTS COMPARISON - #pain-points)  */}
+      {/* 02. THANH CHỈ SỐ THỰC CHIẾN (4 CỘT DÀN NGANG)                        */}
       {/* ==================================================================== */}
-      <section
-        id="pain-points"
-        className="px-4 sm:px-8 py-16 sm:py-24 border-t border-slate-200 dark:border-zinc-800 bg-white dark:bg-zinc-900/50"
-      >
-        <div className="max-w-6xl mx-auto space-y-12">
+      <section className="border-b border-slate-200 dark:border-white/10 bg-white dark:bg-zinc-950">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10 sm:py-12">
+          <div className="grid grid-cols-2 lg:grid-cols-4 gap-6 sm:gap-8 divide-y lg:divide-y-0 lg:divide-x divide-slate-200 dark:divide-zinc-800">
+            {/* Metric 1 */}
+            <div className="pt-4 lg:pt-0 lg:px-6 first:pt-0 first:px-0">
+              <div className="text-3xl sm:text-4xl lg:text-5xl font-black font-mono tracking-tight text-slate-950 dark:text-white">
+                03<span className="text-orange-500 text-2xl sm:text-3xl"> GIÂY</span>
+              </div>
+              <p className="mt-2 text-xs sm:text-sm text-slate-600 dark:text-zinc-400 font-medium">
+                Tự động chốt cọc qua SePAY Webhook.
+              </p>
+            </div>
+
+            {/* Metric 2 */}
+            <div className="pt-4 lg:pt-0 lg:px-6">
+              <div className="text-3xl sm:text-4xl lg:text-5xl font-black font-mono tracking-tight text-slate-950 dark:text-white">
+                100%<span className="text-orange-500 text-2xl sm:text-3xl"> ROI</span>
+              </div>
+              <p className="mt-2 text-xs sm:text-sm text-slate-600 dark:text-zinc-400 font-medium">
+                Đo lường chính xác hoàn vốn từng thiết bị.
+              </p>
+            </div>
+
+            {/* Metric 3 */}
+            <div className="pt-4 lg:pt-0 lg:px-6">
+              <div className="text-3xl sm:text-4xl lg:text-5xl font-black font-mono tracking-tight text-slate-950 dark:text-white">
+                05<span className="text-orange-500 text-2xl sm:text-3xl"> BƯỚC</span>
+              </div>
+              <p className="mt-2 text-xs sm:text-sm text-slate-600 dark:text-zinc-400 font-medium">
+                Chuẩn hóa quy trình Kanban nhiếp ảnh.
+              </p>
+            </div>
+
+            {/* Metric 4 */}
+            <div className="pt-4 lg:pt-0 lg:px-6">
+              <div className="text-3xl sm:text-4xl lg:text-5xl font-black font-mono tracking-tight text-slate-950 dark:text-white">
+                0<span className="text-red-500 text-2xl sm:text-3xl"> TRANH CHẤP</span>
+              </div>
+              <p className="mt-2 text-xs sm:text-sm text-slate-600 dark:text-zinc-400 font-medium">
+                Cảnh báo đỏ ngay khi trùng lịch thiết bị/nhân sự.
+              </p>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* ==================================================================== */}
+      {/* 03. KHỐI GIẢI PHÁP (LƯỚI 3 CỘT NGANG: THỦ CÔNG VS LENSY CRM)          */}
+      {/* ==================================================================== */}
+      <section id="giai-phap" className="py-20 sm:py-28 px-4 sm:px-6 lg:px-8 border-b border-slate-200 dark:border-white/10 bg-slate-50 dark:bg-[#050505]">
+        <div className="max-w-7xl mx-auto space-y-14">
           {/* Section Header */}
-          <div className="max-w-3xl">
-            <span className="text-[10px] sm:text-xs font-mono font-bold uppercase tracking-widest text-orange-600 dark:text-orange-400 block mb-2">
-              ĐỐI CHIẾU HIỆU SUẤT VẬN HÀNH
+          <div className="space-y-3">
+            <span className="text-[11px] font-mono font-bold tracking-widest text-orange-600 dark:text-orange-400 uppercase">
+              // KHỐI GIẢI PHÁP VẬN HÀNH
             </span>
-            <h2 className="text-2xl sm:text-4xl font-black tracking-tight text-slate-950 dark:text-white">
-              Sự Khác Biệt Giữa Vận Hành Thủ Công Và Hệ Sinh Thái Lensy CRM
+            <h2 className="text-3xl sm:text-4xl lg:text-5xl font-black tracking-tight text-slate-950 dark:text-white">
+              Xóa Sổ Hỗn Loạn. Tự Động Hóa Từ Đầu Đến Cuối.
             </h2>
+            <p className="text-sm sm:text-base text-slate-600 dark:text-zinc-400 max-w-2xl">
+              So sánh trực quan giữa phương pháp ghi chép thủ công dễ sai sót và tiêu chuẩn tự động hóa của Lensy CRM.
+            </p>
           </div>
 
-          {/* 3-Column Matrix */}
+          {/* 3 Columns Grid */}
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6 sm:gap-8">
-            {/* Cột 01 */}
-            <div className="p-7 rounded-2xl bg-slate-50 dark:bg-zinc-900/90 border border-slate-200 dark:border-zinc-800 flex flex-col justify-between space-y-6">
+            {/* Cột 1 */}
+            <div className="p-8 rounded-2xl border border-slate-200 dark:border-zinc-800 bg-white dark:bg-zinc-950 flex flex-col justify-between space-y-6">
               <div className="space-y-4">
-                <span className="text-xl font-mono font-black text-orange-600 dark:text-orange-400 block">
+                <span className="text-xs font-mono font-bold tracking-widest text-orange-500 uppercase">
+                  01 / BÁO GIÁ & CỌC
+                </span>
+                <h3 className="text-2xl font-black tracking-tight text-slate-950 dark:text-white">
+                  Chống Rớt Cọc
+                </h3>
+                <p className="text-sm text-slate-600 dark:text-zinc-400 leading-relaxed">
+                  Báo giá động 1 link duy nhất. Khách tự chọn gói, chuyển khoản quét mã VietQR và hệ thống tự động khóa lịch.
+                </p>
+              </div>
+
+              {/* Contrast Tag Box */}
+              <div className="pt-4 border-t border-slate-100 dark:border-zinc-900 space-y-3 font-mono text-xs">
+                <div className="p-3 rounded-lg bg-red-500/5 border border-red-500/20 text-red-600 dark:text-red-400">
+                  <span className="font-bold">THỦ CÔNG:</span> Gửi file PDF tĩnh, nhắn tin giục cọc qua Zalo, dễ bị khách hủy lịch phút chót.
+                </div>
+                <div className="p-3 rounded-lg bg-emerald-500/5 border border-emerald-500/20 text-emerald-600 dark:text-emerald-400">
+                  <span className="font-bold">LENSY CRM:</span> Báo giá tương tác, quét mã VietQR, Webhook ghi nhận sau 3 giây và khóa lịch ngay.
+                </div>
+              </div>
+            </div>
+
+            {/* Cột 2 */}
+            <div className="p-8 rounded-2xl border border-slate-200 dark:border-zinc-800 bg-white dark:bg-zinc-950 flex flex-col justify-between space-y-6">
+              <div className="space-y-4">
+                <span className="text-xs font-mono font-bold tracking-widest text-orange-500 uppercase">
+                  02 / ĐIỀU PHỐI TÀI NGUYÊN
+                </span>
+                <h3 className="text-2xl font-black tracking-tight text-slate-950 dark:text-white">
+                  Tránh Trùng Lịch
+                </h3>
+                <p className="text-sm text-slate-600 dark:text-zinc-400 leading-relaxed">
+                  Conflict Scanner 2.0 quét chéo thiết bị và nhân sự. Cảnh báo ngay nếu thợ hoặc máy ảnh đã bị book.
+                </p>
+              </div>
+
+              {/* Contrast Tag Box */}
+              <div className="pt-4 border-t border-slate-100 dark:border-zinc-900 space-y-3 font-mono text-xs">
+                <div className="p-3 rounded-lg bg-red-500/5 border border-red-500/20 text-red-600 dark:text-red-400">
+                  <span className="font-bold">THỦ CÔNG:</span> Ghi sổ tay hoặc Google Sheets rời rạc, thợ trùng giờ chụp, mang thiếu ống kính.
+                </div>
+                <div className="p-3 rounded-lg bg-emerald-500/5 border border-emerald-500/20 text-emerald-600 dark:text-emerald-400">
+                  <span className="font-bold">LENSY CRM:</span> Thuật toán quét chéo thợ + lens + body, chặn trùng lặp thời gian thực.
+                </div>
+              </div>
+            </div>
+
+            {/* Cột 3 */}
+            <div className="p-8 rounded-2xl border border-slate-200 dark:border-zinc-800 bg-white dark:bg-zinc-950 flex flex-col justify-between space-y-6">
+              <div className="space-y-4">
+                <span className="text-xs font-mono font-bold tracking-widest text-orange-500 uppercase">
+                  03 / DÒNG TIỀN THỰC
+                </span>
+                <h3 className="text-2xl font-black tracking-tight text-slate-950 dark:text-white">
+                  Quản Trị Lợi Nhuận
+                </h3>
+                <p className="text-sm text-slate-600 dark:text-zinc-400 leading-relaxed">
+                  Tự động trừ chi phí thợ phụ, khấu hao thiết bị để tính ra Net Profit - Tiền thật bỏ túi trên từng show.
+                </p>
+              </div>
+
+              {/* Contrast Tag Box */}
+              <div className="pt-4 border-t border-slate-100 dark:border-zinc-900 space-y-3 font-mono text-xs">
+                <div className="p-3 rounded-lg bg-red-500/5 border border-red-500/20 text-red-600 dark:text-red-400">
+                  <span className="font-bold">THỦ CÔNG:</span> Nhìn doanh thu tưởng lãi to, cuối tháng trừ chi phí phát sinh mới biết thâm hụt.
+                </div>
+                <div className="p-3 rounded-lg bg-emerald-500/5 border border-emerald-500/20 text-emerald-600 dark:text-emerald-400">
+                  <span className="font-bold">LENSY CRM:</span> Tự động trừ tiền thợ, makeup, khấu hao gear, tính Net Profit rõ từng đồng.
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* ==================================================================== */}
+      {/* 04. KHỐI TÍNH NĂNG CỐT LÕI (BENTO GRID 2X2 - SỐ 01-04 LỚN)             */}
+      {/* ==================================================================== */}
+      <section id="tinh-nang" className="py-20 sm:py-28 px-4 sm:px-6 lg:px-8 border-b border-slate-200 dark:border-white/10 bg-white dark:bg-zinc-950">
+        <div className="max-w-7xl mx-auto space-y-14">
+          {/* Section Header */}
+          <div className="space-y-3">
+            <span className="text-[11px] font-mono font-bold tracking-widest text-orange-600 dark:text-orange-400 uppercase">
+              // TÍNH NĂNG CỐT LÕI
+            </span>
+            <h2 className="text-3xl sm:text-4xl lg:text-5xl font-black tracking-tight text-slate-950 dark:text-white">
+              Bento Grid: 4 Trụ Cột Vận Hành Toàn Diện.
+            </h2>
+            <p className="text-sm sm:text-base text-slate-600 dark:text-zinc-400 max-w-2xl">
+              Không tính năng rườm rà. Mọi công cụ được thiết kế chuẩn mực xoay quanh đặc thù sản xuất hình ảnh.
+            </p>
+          </div>
+
+          {/* Bento Grid 2x2 */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 sm:gap-8">
+            {/* Card 01 */}
+            <div className="p-8 sm:p-10 rounded-2xl border border-slate-200 dark:border-zinc-800 bg-slate-50 dark:bg-[#080808] relative overflow-hidden group hover:border-orange-500/50 transition-colors">
+              <div className="flex items-start justify-between">
+                <span className="text-5xl sm:text-6xl font-black font-mono text-slate-300 dark:text-zinc-800 group-hover:text-orange-500/40 transition-colors">
                   01
                 </span>
-                <h3 className="text-lg font-bold text-slate-950 dark:text-white">
-                  Tư Vấn & Giữ Lịch
+                <span className="text-[10px] font-mono uppercase tracking-widest px-2.5 py-1 rounded bg-slate-200 dark:bg-zinc-800 text-slate-700 dark:text-zinc-300 font-bold">
+                  PIPELINE
+                </span>
+              </div>
+              <div className="mt-8 space-y-3">
+                <h3 className="text-xl sm:text-2xl font-black tracking-tight text-slate-950 dark:text-white uppercase">
+                  QUẢN TRỊ KANBAN & CRM
                 </h3>
-
-                {/* Khối thủ công */}
-                <div className="p-4 rounded-xl border border-rose-500/20 bg-rose-500/5 space-y-1.5">
-                  <span className="text-[10px] font-mono font-bold uppercase tracking-wider text-rose-600 dark:text-rose-400 block">
-                    THỦ CÔNG TRUYỀN THỐNG
-                  </span>
-                  <p className="text-xs text-slate-600 dark:text-zinc-400 leading-relaxed">
-                    Nhắn tin báo giá rời rạc qua Zalo, khách xem xong im lặng, quên thu cọc dẫn đến hủy show sát ngày.
-                  </p>
-                </div>
-
-                {/* Khối Lensy */}
-                <div className="p-4 rounded-xl border border-orange-500/30 bg-orange-500/5 space-y-1.5">
-                  <span className="text-[10px] font-mono font-bold uppercase tracking-wider text-orange-600 dark:text-orange-400 block">
-                    CƠ CHẾ LENSY CRM
-                  </span>
-                  <p className="text-xs font-semibold text-slate-900 dark:text-zinc-200 leading-relaxed">
-                    Gửi 01 đường link báo giá động duy nhất. Khách tự chọn gói, quét mã VietQR đặt cọc 30% và hệ thống tự động khóa lịch.
-                  </p>
-                </div>
+                <p className="text-sm sm:text-base text-slate-600 dark:text-zinc-400 leading-relaxed">
+                  Xử lý hợp đồng từ lúc khách mới hỏi đến khi trả file. Theo dõi trực quan 5 trạng thái: Báo giá ➔ Đã cọc ➔ Đã chụp ➔ Đang hậu kỳ ➔ Hoàn tất.
+                </p>
               </div>
             </div>
 
-            {/* Cột 02 */}
-            <div className="p-7 rounded-2xl bg-slate-50 dark:bg-zinc-900/90 border border-slate-200 dark:border-zinc-800 flex flex-col justify-between space-y-6">
-              <div className="space-y-4">
-                <span className="text-xl font-mono font-black text-orange-600 dark:text-orange-400 block">
+            {/* Card 02 */}
+            <div className="p-8 sm:p-10 rounded-2xl border border-slate-200 dark:border-zinc-800 bg-slate-50 dark:bg-[#080808] relative overflow-hidden group hover:border-orange-500/50 transition-colors">
+              <div className="flex items-start justify-between">
+                <span className="text-5xl sm:text-6xl font-black font-mono text-slate-300 dark:text-zinc-800 group-hover:text-orange-500/40 transition-colors">
                   02
                 </span>
-                <h3 className="text-lg font-bold text-slate-950 dark:text-white">
-                  Điều Phối Thiết Bị & Nhân Sự
+                <span className="text-[10px] font-mono uppercase tracking-widest px-2.5 py-1 rounded bg-slate-200 dark:bg-zinc-800 text-slate-700 dark:text-zinc-300 font-bold">
+                  SMART SCAN
+                </span>
+              </div>
+              <div className="mt-8 space-y-3">
+                <h3 className="text-xl sm:text-2xl font-black tracking-tight text-slate-950 dark:text-white uppercase">
+                  CONFLICT SCANNER 2.0
                 </h3>
-
-                {/* Khối thủ công */}
-                <div className="p-4 rounded-xl border border-rose-500/20 bg-rose-500/5 space-y-1.5">
-                  <span className="text-[10px] font-mono font-bold uppercase tracking-wider text-rose-600 dark:text-rose-400 block">
-                    THỦ CÔNG TRUYỀN THỐNG
-                  </span>
-                  <p className="text-xs text-slate-600 dark:text-zinc-400 leading-relaxed">
-                    Ghi chép sổ tay hoặc Excel, thường xuyên đụng lịch Body máy ảnh, ống kính hoặc trùng giờ Thợ chụp / Thợ Makeup vào mùa cưới.
-                  </p>
-                </div>
-
-                {/* Khối Lensy */}
-                <div className="p-4 rounded-xl border border-orange-500/30 bg-orange-500/5 space-y-1.5">
-                  <span className="text-[10px] font-mono font-bold uppercase tracking-wider text-orange-600 dark:text-orange-400 block">
-                    CƠ CHẾ LENSY CRM
-                  </span>
-                  <p className="text-xs font-semibold text-slate-900 dark:text-zinc-200 leading-relaxed">
-                    Bộ quét Conflict Scanner 2.0 kiểm tra giao thoa khung giờ thực tế, cảnh báo đỏ ngay khi phân bổ trùng thiết bị hoặc nhân sự.
-                  </p>
-                </div>
+                <p className="text-sm sm:text-base text-slate-600 dark:text-zinc-400 leading-relaxed">
+                  Quản lý kho thiết bị và chống trùng lịch thông minh. Tự động kiểm tra chéo lịch trùng thợ chụp, máy ảnh, ống kính trước khi xác nhận bất kỳ hợp đồng nào.
+                </p>
               </div>
             </div>
 
-            {/* Cột 03 */}
-            <div className="p-7 rounded-2xl bg-slate-50 dark:bg-zinc-900/90 border border-slate-200 dark:border-zinc-800 flex flex-col justify-between space-y-6">
-              <div className="space-y-4">
-                <span className="text-xl font-mono font-black text-orange-600 dark:text-orange-400 block">
+            {/* Card 03 */}
+            <div className="p-8 sm:p-10 rounded-2xl border border-slate-200 dark:border-zinc-800 bg-slate-50 dark:bg-[#080808] relative overflow-hidden group hover:border-orange-500/50 transition-colors">
+              <div className="flex items-start justify-between">
+                <span className="text-5xl sm:text-6xl font-black font-mono text-slate-300 dark:text-zinc-800 group-hover:text-orange-500/40 transition-colors">
                   03
                 </span>
-                <h3 className="text-lg font-bold text-slate-950 dark:text-white">
-                  Dòng Tiền, Công Nợ & Bảng Lương
+                <span className="text-[10px] font-mono uppercase tracking-widest px-2.5 py-1 rounded bg-slate-200 dark:bg-zinc-800 text-slate-700 dark:text-zinc-300 font-bold">
+                  DELIVERY
+                </span>
+              </div>
+              <div className="mt-8 space-y-3">
+                <h3 className="text-xl sm:text-2xl font-black tracking-tight text-slate-950 dark:text-white uppercase">
+                  CLIENT PROOFING PORTAL
                 </h3>
+                <p className="text-sm sm:text-base text-slate-600 dark:text-zinc-400 leading-relaxed">
+                  Cổng nén siêu tốc cho khách hàng thả tim chọn ảnh online. Bàn giao bộ ảnh hoàn thiện với thương hiệu riêng của studio, xem mượt mà trên mọi thiết bị.
+                </p>
+              </div>
+            </div>
 
-                {/* Khối thủ công */}
-                <div className="p-4 rounded-xl border border-rose-500/20 bg-rose-500/5 space-y-1.5">
-                  <span className="text-[10px] font-mono font-bold uppercase tracking-wider text-rose-600 dark:text-rose-400 block">
-                    THỦ CÔNG TRUYỀN THỐNG
-                  </span>
-                  <p className="text-xs text-slate-600 dark:text-zinc-400 leading-relaxed">
-                    Giao ảnh xong quên thu nốt 70% công nợ còn lại; cuối tháng mất hàng giờ cộng sổ tính lương cho từng thợ chụp, makeup, retoucher.
-                  </p>
-                </div>
-
-                {/* Khối Lensy */}
-                <div className="p-4 rounded-xl border border-orange-500/30 bg-orange-500/5 space-y-1.5">
-                  <span className="text-[10px] font-mono font-bold uppercase tracking-wider text-orange-600 dark:text-orange-400 block">
-                    CƠ CHẾ LENSY CRM
-                  </span>
-                  <p className="text-xs font-semibold text-slate-900 dark:text-zinc-200 leading-relaxed">
-                    Tự động cảnh báo nợ đọng trên thẻ Kanban, tích hợp Cổng khách hàng quyết toán trước khi tải ảnh và đối soát lương Ekip bằng VietQR 1 chạm.
-                  </p>
-                </div>
+            {/* Card 04 */}
+            <div className="p-8 sm:p-10 rounded-2xl border border-slate-200 dark:border-zinc-800 bg-slate-50 dark:bg-[#080808] relative overflow-hidden group hover:border-orange-500/50 transition-colors">
+              <div className="flex items-start justify-between">
+                <span className="text-5xl sm:text-6xl font-black font-mono text-slate-300 dark:text-zinc-800 group-hover:text-orange-500/40 transition-colors">
+                  04
+                </span>
+                <span className="text-[10px] font-mono uppercase tracking-widest px-2.5 py-1 rounded bg-slate-200 dark:bg-zinc-800 text-slate-700 dark:text-zinc-300 font-bold">
+                  FINANCE
+                </span>
+              </div>
+              <div className="mt-8 space-y-3">
+                <h3 className="text-xl sm:text-2xl font-black tracking-tight text-slate-950 dark:text-white uppercase">
+                  BẢNG LƯƠNG & PAYROLL
+                </h3>
+                <p className="text-sm sm:text-base text-slate-600 dark:text-zinc-400 leading-relaxed">
+                  Hạch toán thù lao ekip và đối soát tự động cuối tháng. Phân chia công thợ chính, thợ phụ, makeup artist rõ ràng, xuất phiếu lương minh bạch chỉ với 1 click.
+                </p>
               </div>
             </div>
           </div>
@@ -565,799 +379,288 @@ export const LandingPage: React.FC = () => {
       </section>
 
       {/* ==================================================================== */}
-      {/* PHẦN D: 04 PHÂN HỆ CỐT LÕI (CORE ARCHITECTURE - #features)           */}
+      {/* 05. BẢNG GIÁ (PRICING MATRIX - 3 CỘT NGANG)                           */}
       {/* ==================================================================== */}
-      <section id="features" className="px-4 sm:px-8 py-16 sm:py-24 max-w-6xl mx-auto space-y-16">
-        <div className="max-w-3xl">
-          <span className="text-[10px] sm:text-xs font-mono font-bold uppercase tracking-widest text-orange-600 dark:text-orange-400 block mb-2">
-            KIẾN TRÚC VẬN HÀNH TOÀN DIỆN
-          </span>
-          <h2 className="text-2xl sm:text-4xl font-black tracking-tight text-slate-950 dark:text-white">
-            Bốn Phân Hệ Cốt Lõi Kiến Tạo Tiêu Chuẩn Studio 5 Sao
-          </h2>
-          <p className="mt-3 text-xs sm:text-sm text-slate-600 dark:text-zinc-400 leading-relaxed">
-            Mỗi module được thiết kế chuyên biệt dựa trên kinh nghiệm vận hành thực tế tại MIRMIA Studio & Academy.
-          </p>
-        </div>
-
-        {/* 2x2 Grid with huge 01, 02, 03, 04 numbers */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-          {/* Phân hệ 01 */}
-          <div className="p-8 sm:p-10 rounded-3xl bg-white dark:bg-zinc-900/90 border border-slate-200 dark:border-zinc-800 flex flex-col justify-between space-y-6">
-            <div className="space-y-4">
-              <span className="text-4xl sm:text-5xl font-mono font-black text-orange-600 dark:text-orange-400 block">
-                01
-              </span>
-              <h3 className="text-lg sm:text-xl font-bold uppercase tracking-tight text-slate-950 dark:text-white">
-                QUẢN TRỊ TIẾN ĐỘ KANBAN & CRM KHÁCH HÀNG
-              </h3>
-              <p className="text-xs sm:text-sm text-slate-600 dark:text-zinc-400 leading-relaxed">
-                Theo dõi trực quan 5 cột trạng thái (Mới hỏi, Đã cọc, Đã chụp, Đang sửa ảnh, Hoàn tất), tự động tính Giá trị trọn đời khách hàng (LTV) và tích hợp mẫu nhắc lịch/nhắc nợ Zalo.
-              </p>
-            </div>
-
-            {/* Typography Minimalist Data Chips & Box */}
-            <div className="space-y-3 pt-4 border-t border-slate-200 dark:border-zinc-800">
-              <div className="flex flex-wrap gap-2 text-[10px] font-mono font-bold uppercase tracking-wider text-slate-600 dark:text-zinc-400">
-                <span className="px-2 py-1 rounded bg-slate-100 dark:bg-zinc-800 border border-slate-200 dark:border-zinc-700">
-                  5 CỘT KANBAN CHUẨN
-                </span>
-                <span className="px-2 py-1 rounded bg-slate-100 dark:bg-zinc-800 border border-slate-200 dark:border-zinc-700">
-                  TÍNH LTV TỰ ĐỘNG
-                </span>
-                <span className="px-2 py-1 rounded bg-slate-100 dark:bg-zinc-800 border border-slate-200 dark:border-zinc-700">
-                  NHẮC LỊCH ZALO 1-CHẠM
-                </span>
-              </div>
-              <div className="p-3.5 rounded-xl bg-slate-50 dark:bg-zinc-950 border border-slate-200 dark:border-zinc-800/80 font-mono text-[11px] space-y-1">
-                <div className="flex justify-between text-slate-500 dark:text-zinc-400 text-[10px]">
-                  <span>HÔM NAY · 3 SHOW ĐANG CHẠY</span>
-                  <span className="text-orange-600 dark:text-orange-400 font-bold">KANBAN REAL-TIME</span>
-                </div>
-                <div className="font-semibold text-slate-900 dark:text-zinc-200">
-                  Mới hỏi (1) — Đã cọc 30% (2) — Đang sửa ảnh (4) — Hoàn tất (18)
-                </div>
-              </div>
-            </div>
-          </div>
-
-          {/* Phân hệ 02 */}
-          <div className="p-8 sm:p-10 rounded-3xl bg-white dark:bg-zinc-900/90 border border-slate-200 dark:border-zinc-800 flex flex-col justify-between space-y-6">
-            <div className="space-y-4">
-              <span className="text-4xl sm:text-5xl font-mono font-black text-orange-600 dark:text-orange-400 block">
-                02
-              </span>
-              <h3 className="text-lg sm:text-xl font-bold uppercase tracking-tight text-slate-950 dark:text-white">
-                CONFLICT SCANNER 2.0 & KHẤU HAO THIẾT BỊ (ROI)
-              </h3>
-              <p className="text-xs sm:text-sm text-slate-600 dark:text-zinc-400 leading-relaxed">
-                Quản lý danh mục máy ảnh, ống kính, đèn flash. Tự động chặn lưu khi trùng thiết bị cùng khung giờ và đo lường chính xác phần trăm hoàn vốn trên từng thiết bị đầu tư.
-              </p>
-            </div>
-
-            {/* Typography Minimalist Data Chips & Box */}
-            <div className="space-y-3 pt-4 border-t border-slate-200 dark:border-zinc-800">
-              <div className="flex flex-wrap gap-2 text-[10px] font-mono font-bold uppercase tracking-wider text-slate-600 dark:text-zinc-400">
-                <span className="px-2 py-1 rounded bg-slate-100 dark:bg-zinc-800 border border-slate-200 dark:border-zinc-700">
-                  BUFFER 60 PHÚT AN TOÀN
-                </span>
-                <span className="px-2 py-1 rounded bg-slate-100 dark:bg-zinc-800 border border-slate-200 dark:border-zinc-700">
-                  CHẶN XUNG ĐỘT REAL-TIME
-                </span>
-                <span className="px-2 py-1 rounded bg-slate-100 dark:bg-zinc-800 border border-slate-200 dark:border-zinc-700">
-                  ĐO LƯỜNG HOÀN VỐN ROI
-                </span>
-              </div>
-              <div className="p-3.5 rounded-xl bg-slate-50 dark:bg-zinc-950 border border-slate-200 dark:border-zinc-800/80 font-mono text-[11px] space-y-1">
-                <div className="flex justify-between text-slate-500 dark:text-zinc-400 text-[10px]">
-                  <span>SONY ALPHA 7 IV · ROI: 74.2%</span>
-                  <span className="text-emerald-600 dark:text-emerald-400 font-bold">0 XUNG ĐỘT TUẦN NÀY</span>
-                </div>
-                <div className="font-semibold text-slate-900 dark:text-zinc-200">
-                  Khấu hao: 350.000 đ/show · Đệm thời gian an toàn: 60 phút
-                </div>
-              </div>
-            </div>
-          </div>
-
-          {/* Phân hệ 03 */}
-          <div className="p-8 sm:p-10 rounded-3xl bg-white dark:bg-zinc-900/90 border border-slate-200 dark:border-zinc-800 flex flex-col justify-between space-y-6">
-            <div className="space-y-4">
-              <span className="text-4xl sm:text-5xl font-mono font-black text-orange-600 dark:text-orange-400 block">
-                03
-              </span>
-              <h3 className="text-lg sm:text-xl font-bold uppercase tracking-tight text-slate-950 dark:text-white">
-                CỔNG KHÁCH HÀNG CHỌN ẢNH (CLIENT PROOFING PORTAL)
-              </h3>
-              <p className="text-xs sm:text-sm text-slate-600 dark:text-zinc-400 leading-relaxed">
-                Nén ảnh xem trước siêu tốc ngay trên trình duyệt, khách hàng thả tim chọn ảnh retouch trực tuyến, xuất chuỗi mã file đồng bộ thẳng vào bộ lọc Lightroom chỉ với 1 lần sao chép.
-              </p>
-            </div>
-
-            {/* Typography Minimalist Data Chips & Box */}
-            <div className="space-y-3 pt-4 border-t border-slate-200 dark:border-zinc-800">
-              <div className="flex flex-wrap gap-2 text-[10px] font-mono font-bold uppercase tracking-wider text-slate-600 dark:text-zinc-400">
-                <span className="px-2 py-1 rounded bg-slate-100 dark:bg-zinc-800 border border-slate-200 dark:border-zinc-700">
-                  NÉN ẢNH TRÊN TRÌNH DUYỆT
-                </span>
-                <span className="px-2 py-1 rounded bg-slate-100 dark:bg-zinc-800 border border-slate-200 dark:border-zinc-700">
-                  THẢ TIM CHỌN ẢNH
-                </span>
-                <span className="px-2 py-1 rounded bg-slate-100 dark:bg-zinc-800 border border-slate-200 dark:border-zinc-700">
-                  XUẤT MÃ LIGHTROOM 1-CHẠM
-                </span>
-              </div>
-              <div className="p-3.5 rounded-xl bg-slate-50 dark:bg-zinc-950 border border-slate-200 dark:border-zinc-800/80 font-mono text-[11px] space-y-1">
-                <div className="flex justify-between text-slate-500 dark:text-zinc-400 text-[10px]">
-                  <span>MÃ FILE ĐÃ CHỐT (20/20 ẢNH)</span>
-                  <span className="text-orange-600 dark:text-orange-400 font-bold">ĐỒNG BỘ 1 CHẠM</span>
-                </div>
-                <div className="font-semibold text-slate-900 dark:text-zinc-200 truncate">
-                  IMG_4012, IMG_4019, IMG_4024, IMG_4050, IMG_4068, IMG_4091...
-                </div>
-              </div>
-            </div>
-          </div>
-
-          {/* Phân hệ 04 */}
-          <div className="p-8 sm:p-10 rounded-3xl bg-white dark:bg-zinc-900/90 border border-slate-200 dark:border-zinc-800 flex flex-col justify-between space-y-6">
-            <div className="space-y-4">
-              <span className="text-4xl sm:text-5xl font-mono font-black text-orange-600 dark:text-orange-400 block">
-                04
-              </span>
-              <h3 className="text-lg sm:text-xl font-bold uppercase tracking-tight text-slate-950 dark:text-white">
-                HẠCH TOÁN JOB COSTING & BẢNG LƯƠNG EKIP (PAYROLL)
-              </h3>
-              <p className="text-xs sm:text-sm text-slate-600 dark:text-zinc-400 leading-relaxed">
-                Tự động khấu trừ chi phí phát sinh và thù lao nhân sự (theo % gói hoặc số tiền cố định) để tính Tiền thật bỏ túi (Net Profit) trên từng show chụp.
-              </p>
-            </div>
-
-            {/* Typography Minimalist Data Chips & Box */}
-            <div className="space-y-3 pt-4 border-t border-slate-200 dark:border-zinc-800">
-              <div className="flex flex-wrap gap-2 text-[10px] font-mono font-bold uppercase tracking-wider text-slate-600 dark:text-zinc-400">
-                <span className="px-2 py-1 rounded bg-slate-100 dark:bg-zinc-800 border border-slate-200 dark:border-zinc-700">
-                  NET PROFIT THỰC TẾ
-                </span>
-                <span className="px-2 py-1 rounded bg-slate-100 dark:bg-zinc-800 border border-slate-200 dark:border-zinc-700">
-                  TÍNH THÙ LAO THEO SHOW
-                </span>
-                <span className="px-2 py-1 rounded bg-slate-100 dark:bg-zinc-800 border border-slate-200 dark:border-zinc-700">
-                  QUYẾT TOÁN VIETQR 1-CHẠM
-                </span>
-              </div>
-              <div className="p-3.5 rounded-xl bg-slate-50 dark:bg-zinc-950 border border-slate-200 dark:border-zinc-800/80 font-mono text-[11px] space-y-1">
-                <div className="flex justify-between text-slate-500 dark:text-zinc-400 text-[10px]">
-                  <span>DOANH THU: 12.000.000 đ</span>
-                  <span className="text-emerald-600 dark:text-emerald-400 font-bold">BIÊN LỢI NHUẬN: 68.3%</span>
-                </div>
-                <div className="font-semibold text-slate-900 dark:text-zinc-200">
-                  Thù lao Ekip: -3.800.000 đ — Lợi nhuận ròng: +8.200.000 đ
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* ==================================================================== */}
-      {/* PHẦN E: BẢNG GIÁ LENSY EDITORIAL BENTO (#pricing)                   */}
-      {/* ==================================================================== */}
-      <section
-        id="pricing"
-        className="px-4 sm:px-8 py-16 sm:py-24 border-t border-slate-200 dark:border-zinc-800 bg-white dark:bg-zinc-900/40"
-      >
-        <div className="max-w-6xl mx-auto space-y-12">
-          {/* Section Heading */}
-          <div className="text-center max-w-3xl mx-auto space-y-3">
-            <span className="text-[10px] sm:text-xs font-mono font-bold uppercase tracking-widest text-orange-600 dark:text-orange-400 block">
-              BIỂU PHÍ ĐẦU TƯ MINH BẠCH
+      <section id="bang-gia" className="py-20 sm:py-28 px-4 sm:px-6 lg:px-8 border-b border-slate-200 dark:border-white/10 bg-slate-50 dark:bg-[#050505]">
+        <div className="max-w-7xl mx-auto space-y-12">
+          {/* Header & Billing Cycle Switch */}
+          <div className="text-center space-y-4 max-w-3xl mx-auto">
+            <span className="text-[11px] font-mono font-bold tracking-widest text-orange-600 dark:text-orange-400 uppercase">
+              // BẢNG GIÁ MINH BẠCH
             </span>
-            <h2 className="text-2xl sm:text-4xl font-black tracking-tight text-slate-950 dark:text-white">
-              Định Giá Linh Hoạt Theo Quy Mô Vận Hành Studio
+            <h2 className="text-3xl sm:text-4xl lg:text-5xl font-black tracking-tight text-slate-950 dark:text-white">
+              Đầu Tư Đúng Vào Bộ Máy Vận Hành.
             </h2>
-            <p className="text-xs sm:text-sm text-slate-600 dark:text-zinc-400 leading-relaxed font-normal">
-              Không giới hạn tiềm năng sáng tạo. Chọn mức quy mô phù hợp và mở rộng tức thì khi mùa cưới cao điểm.
+            <p className="text-sm sm:text-base text-slate-600 dark:text-zinc-400">
+              Chi phí chỉ tương đương 1 ly cà phê mỗi ngày để loại bỏ hoàn toàn rủi ro trùng lịch và rớt cọc.
             </p>
-          </div>
 
-          {/* LENSY COMMAND BAR: Studio Scale Selector & Billing Cycle Toggle */}
-          <div className="max-w-4xl mx-auto rounded-2xl bg-slate-100 dark:bg-zinc-900/90 border border-slate-200 dark:border-zinc-800 p-2 sm:p-2.5 flex flex-col md:flex-row items-stretch md:items-center justify-between gap-3 shadow-xs">
-            {/* Segmented Control: Quy mô vận hành (Studio Scale Selector) */}
-            <div className="flex items-center gap-1.5 flex-1">
-              <span className="hidden lg:inline-block text-[10px] font-mono font-bold uppercase tracking-widest text-slate-500 dark:text-zinc-400 px-2 shrink-0">
-                QUY MÔ:
-              </span>
-              <div className="grid grid-cols-2 sm:grid-cols-4 gap-1 w-full bg-white/60 dark:bg-zinc-950/60 p-1 rounded-xl border border-slate-200/60 dark:border-zinc-800">
-                {scaleOptions.map(opt => (
-                  <button
-                    key={opt.key}
-                    type="button"
-                    onClick={() => setQuotaTier(opt.key)}
-                    className={`px-2.5 py-2 rounded-lg text-xs font-mono font-bold transition-all cursor-pointer text-center truncate ${
-                      quotaTier === opt.key
-                        ? 'bg-orange-600 text-white shadow-xs'
-                        : 'text-slate-700 dark:text-zinc-300 hover:text-slate-950 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-zinc-800/80'
-                    }`}
-                  >
-                    {opt.label}
-                  </button>
-                ))}
-              </div>
-            </div>
-
-            {/* Segmented Control: Chu kỳ thanh toán (Billing Cycle) */}
-            <div className="flex items-center justify-center shrink-0">
-              <div className="inline-flex items-center gap-1 bg-white/60 dark:bg-zinc-950/60 p-1 rounded-xl border border-slate-200/60 dark:border-zinc-800">
+            {/* Toggle Switch Tháng / Năm */}
+            <div className="pt-4 flex items-center justify-center">
+              <div className="inline-flex items-center p-1 rounded-xl border border-slate-300 dark:border-zinc-800 bg-white dark:bg-zinc-900 font-mono text-xs">
                 <button
                   type="button"
                   onClick={() => setBillingCycle('monthly')}
-                  className={`px-3.5 py-2 rounded-lg text-xs font-bold transition-all cursor-pointer ${
+                  className={`px-4 py-2 rounded-lg font-bold transition-all ${
                     billingCycle === 'monthly'
-                      ? 'bg-zinc-950 text-white dark:bg-zinc-800 shadow-xs'
+                      ? 'bg-slate-900 text-white dark:bg-white dark:text-slate-950 shadow-sm'
                       : 'text-slate-600 dark:text-zinc-400 hover:text-slate-950 dark:hover:text-white'
                   }`}
                 >
-                  Theo Tháng
+                  THANH TOÁN THÁNG
                 </button>
                 <button
                   type="button"
                   onClick={() => setBillingCycle('yearly')}
-                  className={`px-3.5 py-2 rounded-lg text-xs font-bold transition-all cursor-pointer flex items-center gap-1.5 ${
+                  className={`px-4 py-2 rounded-lg font-bold flex items-center gap-1.5 transition-all ${
                     billingCycle === 'yearly'
-                      ? 'bg-zinc-950 text-white dark:bg-zinc-800 shadow-xs'
+                      ? 'bg-orange-600 text-white shadow-sm'
                       : 'text-slate-600 dark:text-zinc-400 hover:text-slate-950 dark:hover:text-white'
                   }`}
                 >
-                  <span>Theo Năm</span>
-                  <span className="text-[9px] font-mono font-bold px-1.5 py-0.5 rounded bg-orange-600 text-white uppercase tracking-wider">
-                    -20%
+                  <span>THANH TOÁN NĂM</span>
+                  <span className="text-[10px] px-1.5 py-0.5 rounded bg-orange-500/20 text-orange-400 dark:text-orange-300 font-extrabold uppercase">
+                    TIẾT KIỆM 20%
                   </span>
                 </button>
               </div>
             </div>
           </div>
 
-          {/* 3 CỘT GÓI CƯỚC THEO PHONG CÁCH EDITORIAL BENTO */}
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 items-stretch pt-4">
-            {/* CỘT 01: LENSY PORTAL */}
-            <div className="p-8 rounded-3xl bg-slate-50 dark:bg-zinc-900/80 border border-slate-200 dark:border-zinc-800 flex flex-col justify-between space-y-8">
+          {/* 3 Horizontal Columns Grid on Desktop / Scrollable on Mobile */}
+          <div className="flex md:grid md:grid-cols-3 gap-6 overflow-x-auto pb-6 md:pb-0 snap-x snap-mandatory items-stretch">
+            {/* ================= CARD 1: LENSY PORTAL ================= */}
+            <div className="w-[85vw] sm:w-[360px] md:w-auto shrink-0 snap-center md:shrink p-8 rounded-2xl border border-slate-200 dark:border-zinc-800 bg-white dark:bg-zinc-950 flex flex-col justify-between">
               <div className="space-y-6">
-                <div>
-                  <div className="flex items-center justify-between mb-2">
-                    <span className="text-3xl font-mono font-black text-orange-600 dark:text-orange-400">
-                      01
-                    </span>
-                    <span className="text-[10px] font-mono font-bold uppercase tracking-widest text-slate-500 dark:text-zinc-400 px-2 py-0.5 rounded bg-slate-200/60 dark:bg-zinc-800">
-                      CLIENT PROOFING
-                    </span>
+                <div className="space-y-2">
+                  <span className="text-xs font-mono font-bold tracking-widest text-slate-500 dark:text-zinc-400 uppercase">
+                    01. LENSY PORTAL
+                  </span>
+                  <div className="flex items-baseline gap-2">
+                    <span className="text-4xl font-black font-mono text-slate-950 dark:text-white">0đ</span>
+                    <span className="text-xs font-mono text-slate-500 dark:text-zinc-400">/ Miễn phí vĩnh viễn</span>
                   </div>
-                  <h3 className="text-2xl font-black text-slate-950 dark:text-white tracking-tight">
-                    {currentTab.col1.title}
-                  </h3>
-                  <p className="mt-2 text-xs text-slate-600 dark:text-zinc-400 leading-relaxed min-h-[36px]">
-                    {currentTab.col1.desc}
-                  </p>
                 </div>
 
-                {renderPriceBlock(currentTab.col1)}
+                <div className="p-3 rounded-lg bg-slate-100 dark:bg-zinc-900 font-mono text-xs text-slate-700 dark:text-zinc-300">
+                  <span className="font-bold text-slate-900 dark:text-white block mb-0.5">MỤC TIÊU:</span>
+                  Phù hợp Photographer cá nhân.
+                </div>
 
+                {/* Feature List */}
+                <ul className="space-y-3 text-xs sm:text-sm text-slate-600 dark:text-zinc-400 font-mono">
+                  <li className="flex items-start gap-2">
+                    <span className="text-emerald-500 font-bold">✓</span>
+                    <span>Giao ảnh online tối đa 10 show/tháng</span>
+                  </li>
+                  <li className="flex items-start gap-2">
+                    <span className="text-emerald-500 font-bold">✓</span>
+                    <span>Cổng Client Proofing thả tim chọn ảnh</span>
+                  </li>
+                  <li className="flex items-start gap-2">
+                    <span className="text-emerald-500 font-bold">✓</span>
+                    <span>Bàn giao file ảnh thương hiệu riêng</span>
+                  </li>
+                  <li className="flex items-start gap-2 text-slate-400 dark:text-zinc-600">
+                    <span>—</span>
+                    <span>Không có CRM báo giá tự động</span>
+                  </li>
+                  <li className="flex items-start gap-2 text-slate-400 dark:text-zinc-600">
+                    <span>—</span>
+                    <span>Không có Conflict Scanner thiết bị</span>
+                  </li>
+                </ul>
+              </div>
+
+              <div className="pt-8">
                 <Link
                   to={primaryCtaLink}
-                  className="w-full py-3 rounded-xl text-center text-xs font-bold border border-slate-300 dark:border-zinc-700 bg-white dark:bg-zinc-800 hover:border-orange-500 dark:hover:border-orange-500 text-slate-900 dark:text-white transition-all cursor-pointer block"
+                  className="block w-full py-3.5 rounded-xl border border-slate-300 dark:border-zinc-800 hover:bg-slate-100 dark:hover:bg-zinc-900 text-center text-xs font-mono font-bold uppercase tracking-wider text-slate-900 dark:text-white transition-all active:scale-95"
                 >
-                  {user ? 'Vào Bảng Điều Khiển' : currentTab.col1.cta}
+                  Bắt Đầu Miễn Phí
                 </Link>
-
-                {/* Danh sách tính năng Cột 01 */}
-                <div className="space-y-5 pt-6 border-t border-slate-200 dark:border-zinc-800 text-xs">
-                  {/* Nhóm 1: CRM & Dòng tiền (Cột 01 Không có) */}
-                  <div className="space-y-2">
-                    <span className="text-[10px] font-mono font-bold uppercase tracking-wider text-slate-400 dark:text-zinc-600 block">
-                      QUẢN LÝ STUDIO (CRM & DÒNG TIỀN)
-                    </span>
-                    <ul className="space-y-2 text-slate-400 dark:text-zinc-600">
-                      <li className="flex items-start">
-                        <span className="font-mono font-bold mr-2 text-slate-400 dark:text-zinc-600">—</span>
-                        <span>Dashboard tổng quan & Biểu đồ lợi nhuận ròng</span>
-                      </li>
-                      <li className="flex items-start">
-                        <span className="font-mono font-bold mr-2 text-slate-400 dark:text-zinc-600">—</span>
-                        <span>Quản lý lịch hẹn & Bảng tiến độ Kanban 5 bước</span>
-                      </li>
-                      <li className="flex items-start">
-                        <span className="font-mono font-bold mr-2 text-slate-400 dark:text-zinc-600">—</span>
-                        <span>Báo giá động & Nhận cọc VietQR tự động (SePAY)</span>
-                      </li>
-                      <li className="flex items-start">
-                        <span className="font-mono font-bold mr-2 text-slate-400 dark:text-zinc-600">—</span>
-                        <span>Quản lý hồ sơ khách hàng (CRM & phân hạng VIP)</span>
-                      </li>
-                      <li className="flex items-start">
-                        <span className="font-mono font-bold mr-2 text-slate-400 dark:text-zinc-600">—</span>
-                        <span>Hạch toán chi phí show (Job Costing) & Nhắc nợ Zalo</span>
-                      </li>
-                    </ul>
-                  </div>
-
-                  {/* Nhóm 2: Điều phối chuyên sâu (Cột 01 Không có) */}
-                  <div className="space-y-2">
-                    <span className="text-[10px] font-mono font-bold uppercase tracking-wider text-slate-400 dark:text-zinc-600 block">
-                      CÔNG CỤ ĐIỀU PHỐI STUDIO CHUYÊN SÂU
-                    </span>
-                    <ul className="space-y-2 text-slate-400 dark:text-zinc-600">
-                      <li className="flex items-start">
-                        <span className="font-mono font-bold mr-2 text-slate-400 dark:text-zinc-600">—</span>
-                        <span>Bảng phân công nhân sự (Thợ chụp, Makeup, Hậu kỳ)</span>
-                      </li>
-                      <li className="flex items-start">
-                        <span className="font-mono font-bold mr-2 text-slate-400 dark:text-zinc-600">—</span>
-                        <span>Quản lý bảng lương Ekip & Quyết toán VietQR</span>
-                      </li>
-                      <li className="flex items-start">
-                        <span className="font-mono font-bold mr-2 text-slate-400 dark:text-zinc-600">—</span>
-                        <span>Quản lý kho thiết bị & Đo lường hoàn vốn (ROI)</span>
-                      </li>
-                      <li className="flex items-start">
-                        <span className="font-mono font-bold mr-2 text-slate-400 dark:text-zinc-600">—</span>
-                        <span>Quét trùng lịch thiết bị & nhân sự (Conflict Scanner 2.0)</span>
-                      </li>
-                      <li className="flex items-start">
-                        <span className="font-mono font-bold mr-2 text-slate-400 dark:text-zinc-600">—</span>
-                        <span>Báo cáo tổng hợp, nhập/xuất dữ liệu CSV & Google Sheets</span>
-                      </li>
-                    </ul>
-                  </div>
-
-                  {/* Nhóm 3: Client Portal (Cột 01 Có) */}
-                  <div className="space-y-2">
-                    <span className="text-[10px] font-mono font-bold uppercase tracking-wider text-orange-600 dark:text-orange-400 block">
-                      CỔNG KHÁCH CHỌN ẢNH & BÀN GIAO (CLIENT PORTAL)
-                    </span>
-                    <ul className="space-y-2 text-slate-700 dark:text-zinc-300">
-                      <li className="flex items-start">
-                        <span className="text-orange-600 dark:text-orange-400 font-bold font-mono mr-2">+</span>
-                        <span>Cổng khách hàng thả tim chọn ảnh trực tuyến</span>
-                      </li>
-                      <li className="flex items-start justify-between">
-                        <div className="flex items-start">
-                          <span className="text-orange-600 dark:text-orange-400 font-bold font-mono mr-2">+</span>
-                          <span>Hạn mức show tạo mới mỗi tháng</span>
-                        </div>
-                        <span className="font-mono font-bold text-orange-600 dark:text-orange-400 ml-2">
-                          {currentTab.albumLimitLabel}
-                        </span>
-                      </li>
-                      <li className="flex items-start">
-                        <span className="text-orange-600 dark:text-orange-400 font-bold font-mono mr-2">+</span>
-                        <span>Xuất nhanh mã file ảnh chọn cho Lightroom Library</span>
-                      </li>
-                      <li className="flex items-start">
-                        <span className="text-orange-600 dark:text-orange-400 font-bold font-mono mr-2">+</span>
-                        <span>Bàn giao link tải ảnh & Thu hồi công nợ cuối kỳ</span>
-                      </li>
-                      <li className="flex items-start">
-                        {currentTab.isAdvancedUnlocked ? (
-                          <span className="text-orange-600 dark:text-orange-400 font-bold font-mono mr-2">+</span>
-                        ) : (
-                          <span className="text-slate-400 dark:text-zinc-600 font-mono font-bold mr-2">—</span>
-                        )}
-                        <span className={currentTab.isAdvancedUnlocked ? 'text-slate-700 dark:text-zinc-300' : 'text-slate-400 dark:text-zinc-600'}>
-                          Chọn ảnh theo bộ sưu tập & ghi chú từng ảnh
-                        </span>
-                      </li>
-                      <li className="flex items-start">
-                        {currentTab.isAdvancedUnlocked ? (
-                          <span className="text-orange-600 dark:text-orange-400 font-bold font-mono mr-2">+</span>
-                        ) : (
-                          <span className="text-slate-400 dark:text-zinc-600 font-mono font-bold mr-2">—</span>
-                        )}
-                        <span className={currentTab.isAdvancedUnlocked ? 'text-slate-700 dark:text-zinc-300' : 'text-slate-400 dark:text-zinc-600'}>
-                          Đổi thương hiệu & Logo Studio riêng
-                        </span>
-                      </li>
-                      <li className="flex items-start">
-                        {currentTab.isAdvancedUnlocked ? (
-                          <span className="text-orange-600 dark:text-orange-400 font-bold font-mono mr-2">+</span>
-                        ) : (
-                          <span className="text-slate-400 dark:text-zinc-600 font-mono font-bold mr-2">—</span>
-                        )}
-                        <span className={currentTab.isAdvancedUnlocked ? 'text-slate-700 dark:text-zinc-300' : 'text-slate-400 dark:text-zinc-600'}>
-                          Liên kết đặt lịch cá nhân hóa theo Slug Studio
-                        </span>
-                      </li>
-                    </ul>
-                  </div>
-                </div>
               </div>
             </div>
 
-            {/* CỘT 02: LENSY SOLO CRM */}
-            <div className="p-8 rounded-3xl bg-slate-50 dark:bg-zinc-900/80 border border-slate-200 dark:border-zinc-800 flex flex-col justify-between space-y-8">
+            {/* ================= CARD 2: LENSY SOLO ================= */}
+            <div className="w-[85vw] sm:w-[360px] md:w-auto shrink-0 snap-center md:shrink p-8 rounded-2xl border border-slate-200 dark:border-zinc-800 bg-white dark:bg-zinc-950 flex flex-col justify-between">
               <div className="space-y-6">
-                <div>
-                  <div className="flex items-center justify-between mb-2">
-                    <span className="text-3xl font-mono font-black text-orange-600 dark:text-orange-400">
-                      02
+                <div className="space-y-2">
+                  <span className="text-xs font-mono font-bold tracking-widest text-slate-500 dark:text-zinc-400 uppercase">
+                    02. LENSY SOLO
+                  </span>
+                  <div className="flex items-baseline gap-2">
+                    <span className="text-4xl font-black font-mono text-slate-950 dark:text-white">
+                      {billingCycle === 'monthly' ? '99.000đ' : '79.000đ'}
                     </span>
-                    <span className="text-[10px] font-mono font-bold uppercase tracking-widest text-orange-600 dark:text-orange-400 px-2 py-0.5 rounded bg-orange-500/10 border border-orange-500/20">
-                      FREELANCER SOLO
-                    </span>
+                    <span className="text-xs font-mono text-slate-500 dark:text-zinc-400">/tháng</span>
                   </div>
-                  <h3 className="text-2xl font-black text-slate-950 dark:text-white tracking-tight">
-                    {currentTab.col2.title}
-                  </h3>
-                  <p className="mt-2 text-xs text-slate-600 dark:text-zinc-400 leading-relaxed min-h-[36px]">
-                    {currentTab.col2.desc}
-                  </p>
+                  {billingCycle === 'yearly' && (
+                    <p className="text-[11px] font-mono text-orange-600 dark:text-orange-400">
+                      Thanh toán 948.000đ/năm (tiết kiệm 20%)
+                    </p>
+                  )}
                 </div>
 
-                {renderPriceBlock(currentTab.col2)}
+                <div className="p-3 rounded-lg bg-slate-100 dark:bg-zinc-900 font-mono text-xs text-slate-700 dark:text-zinc-300">
+                  <span className="font-bold text-slate-900 dark:text-white block mb-0.5">MỤC TIÊU:</span>
+                  Phù hợp Freelancer chuyên nghiệp.
+                </div>
 
+                {/* Feature List */}
+                <ul className="space-y-3 text-xs sm:text-sm text-slate-600 dark:text-zinc-400 font-mono">
+                  <li className="flex items-start gap-2">
+                    <span className="text-emerald-500 font-bold">✓</span>
+                    <span>Toàn bộ tính năng Lensy Portal</span>
+                  </li>
+                  <li className="flex items-start gap-2">
+                    <span className="text-emerald-500 font-bold">✓</span>
+                    <span>Full CRM Báo giá động & nhận cọc VietQR</span>
+                  </li>
+                  <li className="flex items-start gap-2">
+                    <span className="text-emerald-500 font-bold">✓</span>
+                    <span>Kanban 5 bước quy trình sản xuất</span>
+                  </li>
+                  <li className="flex items-start gap-2">
+                    <span className="text-emerald-500 font-bold">✓</span>
+                    <span>01 Tài khoản quản trị độc lập</span>
+                  </li>
+                  <li className="flex items-start gap-2 text-slate-400 dark:text-zinc-600">
+                    <span>—</span>
+                    <span>Không có phân quyền bảng lương ekip</span>
+                  </li>
+                </ul>
+              </div>
+
+              <div className="pt-8">
                 <Link
                   to={primaryCtaLink}
-                  className="w-full py-3 rounded-xl text-center text-xs font-bold border border-slate-300 dark:border-zinc-700 bg-white dark:bg-zinc-800 hover:border-orange-500 dark:hover:border-orange-500 text-slate-900 dark:text-white transition-all cursor-pointer block"
+                  className="block w-full py-3.5 rounded-xl border border-slate-300 dark:border-zinc-800 hover:bg-slate-100 dark:hover:bg-zinc-900 text-center text-xs font-mono font-bold uppercase tracking-wider text-slate-900 dark:text-white transition-all active:scale-95"
                 >
-                  {user ? 'Vào Bảng Điều Khiển' : currentTab.col2.cta}
+                  Bắt Đầu Với Lensy Solo
                 </Link>
-
-                {/* Danh sách tính năng Cột 02 */}
-                <div className="space-y-5 pt-6 border-t border-slate-200 dark:border-zinc-800 text-xs">
-                  {/* Nhóm 1: CRM & Dòng tiền (Cột 02 Có) */}
-                  <div className="space-y-2">
-                    <span className="text-[10px] font-mono font-bold uppercase tracking-wider text-orange-600 dark:text-orange-400 block">
-                      QUẢN LÝ STUDIO (CRM & DÒNG TIỀN)
-                    </span>
-                    <ul className="space-y-2 text-slate-700 dark:text-zinc-300">
-                      <li className="flex items-start">
-                        <span className="text-orange-600 dark:text-orange-400 font-bold font-mono mr-2">+</span>
-                        <span>Dashboard tổng quan & Biểu đồ lợi nhuận ròng</span>
-                      </li>
-                      <li className="flex items-start">
-                        <span className="text-orange-600 dark:text-orange-400 font-bold font-mono mr-2">+</span>
-                        <span>Quản lý lịch hẹn & Bảng tiến độ Kanban 5 bước</span>
-                      </li>
-                      <li className="flex items-start">
-                        <span className="text-orange-600 dark:text-orange-400 font-bold font-mono mr-2">+</span>
-                        <span>Báo giá động & Nhận cọc VietQR tự động (SePAY)</span>
-                      </li>
-                      <li className="flex items-start">
-                        <span className="text-orange-600 dark:text-orange-400 font-bold font-mono mr-2">+</span>
-                        <span>Quản lý hồ sơ khách hàng (CRM & phân hạng VIP)</span>
-                      </li>
-                      <li className="flex items-start">
-                        <span className="text-orange-600 dark:text-orange-400 font-bold font-mono mr-2">+</span>
-                        <span>Hạch toán chi phí show (Job Costing) & Nhắc nợ Zalo</span>
-                      </li>
-                    </ul>
-                  </div>
-
-                  {/* Nhóm 2: Điều phối chuyên sâu (Cột 02 Không có) */}
-                  <div className="space-y-2">
-                    <span className="text-[10px] font-mono font-bold uppercase tracking-wider text-slate-400 dark:text-zinc-600 block">
-                      CÔNG CỤ ĐIỀU PHỐI STUDIO CHUYÊN SÂU
-                    </span>
-                    <ul className="space-y-2 text-slate-400 dark:text-zinc-600">
-                      <li className="flex items-start">
-                        <span className="font-mono font-bold mr-2 text-slate-400 dark:text-zinc-600">—</span>
-                        <span>Bảng phân công nhân sự (Thợ chụp, Makeup, Hậu kỳ)</span>
-                      </li>
-                      <li className="flex items-start">
-                        <span className="font-mono font-bold mr-2 text-slate-400 dark:text-zinc-600">—</span>
-                        <span>Quản lý bảng lương Ekip & Quyết toán VietQR</span>
-                      </li>
-                      <li className="flex items-start">
-                        <span className="font-mono font-bold mr-2 text-slate-400 dark:text-zinc-600">—</span>
-                        <span>Quản lý kho thiết bị & Đo lường hoàn vốn (ROI)</span>
-                      </li>
-                      <li className="flex items-start">
-                        <span className="font-mono font-bold mr-2 text-slate-400 dark:text-zinc-600">—</span>
-                        <span>Quét trùng lịch thiết bị & nhân sự (Conflict Scanner 2.0)</span>
-                      </li>
-                      <li className="flex items-start">
-                        <span className="font-mono font-bold mr-2 text-slate-400 dark:text-zinc-600">—</span>
-                        <span>Báo cáo tổng hợp, nhập/xuất dữ liệu CSV & Google Sheets</span>
-                      </li>
-                    </ul>
-                  </div>
-
-                  {/* Nhóm 3: Client Portal (Cột 02 Có) */}
-                  <div className="space-y-2">
-                    <span className="text-[10px] font-mono font-bold uppercase tracking-wider text-orange-600 dark:text-orange-400 block">
-                      CỔNG KHÁCH CHỌN ẢNH & BÀN GIAO (CLIENT PORTAL)
-                    </span>
-                    <ul className="space-y-2 text-slate-700 dark:text-zinc-300">
-                      <li className="flex items-start">
-                        <span className="text-orange-600 dark:text-orange-400 font-bold font-mono mr-2">+</span>
-                        <span>Cổng khách hàng thả tim chọn ảnh trực tuyến</span>
-                      </li>
-                      <li className="flex items-start justify-between">
-                        <div className="flex items-start">
-                          <span className="text-orange-600 dark:text-orange-400 font-bold font-mono mr-2">+</span>
-                          <span>Hạn mức show tạo mới mỗi tháng</span>
-                        </div>
-                        <span className="font-mono font-bold text-orange-600 dark:text-orange-400 ml-2">
-                          {currentTab.albumLimitLabel}
-                        </span>
-                      </li>
-                      <li className="flex items-start">
-                        <span className="text-orange-600 dark:text-orange-400 font-bold font-mono mr-2">+</span>
-                        <span>Xuất nhanh mã file ảnh chọn cho Lightroom Library</span>
-                      </li>
-                      <li className="flex items-start">
-                        <span className="text-orange-600 dark:text-orange-400 font-bold font-mono mr-2">+</span>
-                        <span>Bàn giao link tải ảnh & Thu hồi công nợ cuối kỳ</span>
-                      </li>
-                      <li className="flex items-start">
-                        {currentTab.isAdvancedUnlocked ? (
-                          <span className="text-orange-600 dark:text-orange-400 font-bold font-mono mr-2">+</span>
-                        ) : (
-                          <span className="text-slate-400 dark:text-zinc-600 font-mono font-bold mr-2">—</span>
-                        )}
-                        <span className={currentTab.isAdvancedUnlocked ? 'text-slate-700 dark:text-zinc-300' : 'text-slate-400 dark:text-zinc-600'}>
-                          Chọn ảnh theo bộ sưu tập & ghi chú từng ảnh
-                        </span>
-                      </li>
-                      <li className="flex items-start">
-                        {currentTab.isAdvancedUnlocked ? (
-                          <span className="text-orange-600 dark:text-orange-400 font-bold font-mono mr-2">+</span>
-                        ) : (
-                          <span className="text-slate-400 dark:text-zinc-600 font-mono font-bold mr-2">—</span>
-                        )}
-                        <span className={currentTab.isAdvancedUnlocked ? 'text-slate-700 dark:text-zinc-300' : 'text-slate-400 dark:text-zinc-600'}>
-                          Đổi thương hiệu & Logo Studio riêng
-                        </span>
-                      </li>
-                      <li className="flex items-start">
-                        {currentTab.isAdvancedUnlocked ? (
-                          <span className="text-orange-600 dark:text-orange-400 font-bold font-mono mr-2">+</span>
-                        ) : (
-                          <span className="text-slate-400 dark:text-zinc-600 font-mono font-bold mr-2">—</span>
-                        )}
-                        <span className={currentTab.isAdvancedUnlocked ? 'text-slate-700 dark:text-zinc-300' : 'text-slate-400 dark:text-zinc-600'}>
-                          Liên kết đặt lịch cá nhân hóa theo Slug Studio
-                        </span>
-                      </li>
-                    </ul>
-                  </div>
-                </div>
               </div>
             </div>
 
-            {/* CỘT 03: LENSY STUDIO COMMAND */}
-            <div className="p-8 rounded-3xl bg-white dark:bg-zinc-900 border-2 border-orange-500 shadow-xl shadow-orange-500/10 flex flex-col justify-between space-y-8 relative">
-              {/* Badge nổi bật */}
-              <div className="absolute top-0 right-8 -translate-y-1/2">
-                <span className="text-[10px] font-mono font-black uppercase tracking-widest px-3 py-1 rounded-full bg-orange-600 text-white shadow-md">
-                  {currentTab.col3.badge}
-                </span>
+            {/* ================= CARD 3: LENSY STUDIO (NỔI BẬT NHẤT) ================= */}
+            <div className="w-[85vw] sm:w-[360px] md:w-auto shrink-0 snap-center md:shrink p-8 rounded-2xl border-2 border-orange-500 bg-white dark:bg-zinc-900/90 shadow-xl shadow-orange-500/10 flex flex-col justify-between relative">
+              {/* Highlight Badge */}
+              <div className="absolute -top-3.5 right-6 px-3 py-1 rounded-full bg-orange-600 text-white font-mono text-[10px] font-black uppercase tracking-widest shadow-md">
+                BÁN CHẠY NHẤT
               </div>
 
               <div className="space-y-6">
-                <div>
-                  <div className="flex items-center justify-between mb-2">
-                    <span className="text-3xl font-mono font-black text-orange-600 dark:text-orange-400">
-                      03
+                <div className="space-y-2">
+                  <span className="text-xs font-mono font-bold tracking-widest text-orange-600 dark:text-orange-400 uppercase">
+                    03. LENSY STUDIO
+                  </span>
+                  <div className="flex items-baseline gap-2">
+                    <span className="text-4xl font-black font-mono text-slate-950 dark:text-white">
+                      {billingCycle === 'monthly' ? '179.000đ' : '143.000đ'}
                     </span>
-                    <span className="text-[10px] font-mono font-bold uppercase tracking-widest text-orange-600 dark:text-orange-400 px-2 py-0.5 rounded bg-orange-500/10 border border-orange-500/20">
-                      STUDIO COMMAND
-                    </span>
+                    <span className="text-xs font-mono text-slate-500 dark:text-zinc-400">/tháng</span>
                   </div>
-                  <h3 className="text-2xl font-black text-slate-950 dark:text-white tracking-tight">
-                    {currentTab.col3.title}
-                  </h3>
-                  <p className="mt-2 text-xs text-slate-600 dark:text-zinc-400 leading-relaxed min-h-[36px]">
-                    {currentTab.col3.desc}
-                  </p>
+                  {billingCycle === 'yearly' && (
+                    <p className="text-[11px] font-mono text-orange-600 dark:text-orange-400 font-bold">
+                      Thanh toán 1.718.000đ/năm (tiết kiệm 20%)
+                    </p>
+                  )}
                 </div>
 
-                {renderPriceBlock(currentTab.col3)}
+                <div className="p-3 rounded-lg bg-orange-500/10 border border-orange-500/20 font-mono text-xs text-orange-700 dark:text-orange-300">
+                  <span className="font-bold text-slate-900 dark:text-white block mb-0.5">MỤC TIÊU:</span>
+                  Phù hợp Studio đội ngũ & quy mô lớn.
+                </div>
 
+                {/* Feature List */}
+                <ul className="space-y-3 text-xs sm:text-sm text-slate-700 dark:text-zinc-300 font-mono">
+                  <li className="flex items-start gap-2">
+                    <span className="text-orange-500 font-bold">✓</span>
+                    <span>Toàn bộ tính năng của gói Solo</span>
+                  </li>
+                  <li className="flex items-start gap-2">
+                    <span className="text-orange-500 font-bold">✓</span>
+                    <span>Full ERP Studio: Tính ROI hoàn vốn thiết bị</span>
+                  </li>
+                  <li className="flex items-start gap-2">
+                    <span className="text-orange-500 font-bold">✓</span>
+                    <span>Conflict Scanner 2.0 chống trùng lịch</span>
+                  </li>
+                  <li className="flex items-start gap-2">
+                    <span className="text-orange-500 font-bold">✓</span>
+                    <span>Bảng lương & tự động đối soát thù lao ekip</span>
+                  </li>
+                  <li className="flex items-start gap-2">
+                    <span className="text-orange-500 font-bold">✓</span>
+                    <span>Tối đa 05 tài khoản thành viên ekip</span>
+                  </li>
+                </ul>
+              </div>
+
+              <div className="pt-8">
                 <Link
                   to={primaryCtaLink}
-                  className="w-full py-3 rounded-xl text-center text-xs font-bold bg-orange-600 hover:bg-orange-500 active:bg-orange-700 text-white shadow-md shadow-orange-600/20 transition-all cursor-pointer block tracking-wide"
+                  className="block w-full py-3.5 rounded-xl bg-orange-600 hover:bg-orange-500 text-center text-xs font-mono font-bold uppercase tracking-wider text-white shadow-lg shadow-orange-600/25 transition-all active:scale-95"
                 >
-                  {user ? 'Vào Bảng Điều Khiển' : currentTab.col3.cta}
+                  Dùng Thử Miễn Phí 30 Ngày
                 </Link>
-
-                {/* Danh sách tính năng Cột 03 (Đầy đủ cả 3 nhóm) */}
-                <div className="space-y-5 pt-6 border-t border-slate-200 dark:border-zinc-800 text-xs">
-                  {/* Nhóm 1: CRM & Dòng tiền */}
-                  <div className="space-y-2">
-                    <span className="text-[10px] font-mono font-bold uppercase tracking-wider text-orange-600 dark:text-orange-400 block">
-                      QUẢN LÝ STUDIO (CRM & DÒNG TIỀN)
-                    </span>
-                    <ul className="space-y-2 text-slate-700 dark:text-zinc-300">
-                      <li className="flex items-start">
-                        <span className="text-orange-600 dark:text-orange-400 font-bold font-mono mr-2">+</span>
-                        <span>Dashboard tổng quan & Biểu đồ lợi nhuận ròng</span>
-                      </li>
-                      <li className="flex items-start">
-                        <span className="text-orange-600 dark:text-orange-400 font-bold font-mono mr-2">+</span>
-                        <span>Quản lý lịch hẹn & Bảng tiến độ Kanban 5 bước</span>
-                      </li>
-                      <li className="flex items-start">
-                        <span className="text-orange-600 dark:text-orange-400 font-bold font-mono mr-2">+</span>
-                        <span>Báo giá động & Nhận cọc VietQR tự động (SePAY)</span>
-                      </li>
-                      <li className="flex items-start">
-                        <span className="text-orange-600 dark:text-orange-400 font-bold font-mono mr-2">+</span>
-                        <span>Quản lý hồ sơ khách hàng (CRM & phân hạng VIP)</span>
-                      </li>
-                      <li className="flex items-start">
-                        <span className="text-orange-600 dark:text-orange-400 font-bold font-mono mr-2">+</span>
-                        <span>Hạch toán chi phí show (Job Costing) & Nhắc nợ Zalo</span>
-                      </li>
-                    </ul>
-                  </div>
-
-                  {/* Nhóm 2: Điều phối chuyên sâu (Ưu thế độc quyền của Lensy) */}
-                  <div className="space-y-2">
-                    <span className="text-[10px] font-mono font-bold uppercase tracking-wider text-orange-600 dark:text-orange-400 block">
-                      CÔNG CỤ ĐIỀU PHỐI STUDIO CHUYÊN SÂU
-                    </span>
-                    <ul className="space-y-2 text-slate-700 dark:text-zinc-300">
-                      <li className="flex items-start">
-                        <span className="text-orange-600 dark:text-orange-400 font-bold font-mono mr-2">+</span>
-                        <span>Bảng phân công nhân sự (Thợ chụp, Makeup, Hậu kỳ)</span>
-                      </li>
-                      <li className="flex items-start">
-                        <span className="text-orange-600 dark:text-orange-400 font-bold font-mono mr-2">+</span>
-                        <span>Quản lý bảng lương Ekip & Quyết toán VietQR</span>
-                      </li>
-                      <li className="flex items-start">
-                        <span className="text-orange-600 dark:text-orange-400 font-bold font-mono mr-2">+</span>
-                        <div className="flex items-center gap-1.5 flex-wrap">
-                          <span>Quản lý kho thiết bị & Đo lường hoàn vốn (ROI)</span>
-                          <span className="text-[9px] font-mono font-bold uppercase tracking-wider px-1.5 py-0.5 rounded bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20">
-                            ĐÃ SẴN SÀNG
-                          </span>
-                        </div>
-                      </li>
-                      <li className="flex items-start">
-                        <span className="text-orange-600 dark:text-orange-400 font-bold font-mono mr-2">+</span>
-                        <div className="flex items-center gap-1.5 flex-wrap">
-                          <span>Quét trùng lịch thiết bị & nhân sự (Conflict Scanner 2.0)</span>
-                          <span className="text-[9px] font-mono font-bold uppercase tracking-wider px-1.5 py-0.5 rounded bg-orange-500/10 text-orange-600 dark:text-orange-400 border border-orange-500/30">
-                            ĐỘC QUYỀN
-                          </span>
-                        </div>
-                      </li>
-                      <li className="flex items-start">
-                        <span className="text-orange-600 dark:text-orange-400 font-bold font-mono mr-2">+</span>
-                        <span>Báo cáo tổng hợp, nhập/xuất dữ liệu CSV & Google Sheets</span>
-                      </li>
-                    </ul>
-                  </div>
-
-                  {/* Nhóm 3: Client Portal */}
-                  <div className="space-y-2">
-                    <span className="text-[10px] font-mono font-bold uppercase tracking-wider text-orange-600 dark:text-orange-400 block">
-                      CỔNG KHÁCH CHỌN ẢNH & BÀN GIAO (CLIENT PORTAL)
-                    </span>
-                    <ul className="space-y-2 text-slate-700 dark:text-zinc-300">
-                      <li className="flex items-start">
-                        <span className="text-orange-600 dark:text-orange-400 font-bold font-mono mr-2">+</span>
-                        <span>Cổng khách hàng thả tim chọn ảnh trực tuyến</span>
-                      </li>
-                      <li className="flex items-start justify-between">
-                        <div className="flex items-start">
-                          <span className="text-orange-600 dark:text-orange-400 font-bold font-mono mr-2">+</span>
-                          <span>Hạn mức show tạo mới mỗi tháng</span>
-                        </div>
-                        <span className="font-mono font-bold text-orange-600 dark:text-orange-400 ml-2">
-                          {currentTab.albumLimitLabel}
-                        </span>
-                      </li>
-                      <li className="flex items-start">
-                        <span className="text-orange-600 dark:text-orange-400 font-bold font-mono mr-2">+</span>
-                        <span>Xuất nhanh mã file ảnh chọn cho Lightroom Library</span>
-                      </li>
-                      <li className="flex items-start">
-                        <span className="text-orange-600 dark:text-orange-400 font-bold font-mono mr-2">+</span>
-                        <span>Bàn giao link tải ảnh & Thu hồi công nợ cuối kỳ</span>
-                      </li>
-                      <li className="flex items-start">
-                        {currentTab.isAdvancedUnlocked ? (
-                          <span className="text-orange-600 dark:text-orange-400 font-bold font-mono mr-2">+</span>
-                        ) : (
-                          <span className="text-slate-400 dark:text-zinc-600 font-mono font-bold mr-2">—</span>
-                        )}
-                        <span className={currentTab.isAdvancedUnlocked ? 'text-slate-700 dark:text-zinc-300' : 'text-slate-400 dark:text-zinc-600'}>
-                          Chọn ảnh theo bộ sưu tập & ghi chú từng ảnh
-                        </span>
-                      </li>
-                      <li className="flex items-start">
-                        {currentTab.isAdvancedUnlocked ? (
-                          <span className="text-orange-600 dark:text-orange-400 font-bold font-mono mr-2">+</span>
-                        ) : (
-                          <span className="text-slate-400 dark:text-zinc-600 font-mono font-bold mr-2">—</span>
-                        )}
-                        <span className={currentTab.isAdvancedUnlocked ? 'text-slate-700 dark:text-zinc-300' : 'text-slate-400 dark:text-zinc-600'}>
-                          Đổi thương hiệu & Logo Studio riêng
-                        </span>
-                      </li>
-                      <li className="flex items-start">
-                        {currentTab.isAdvancedUnlocked ? (
-                          <span className="text-orange-600 dark:text-orange-400 font-bold font-mono mr-2">+</span>
-                        ) : (
-                          <span className="text-slate-400 dark:text-zinc-600 font-mono font-bold mr-2">—</span>
-                        )}
-                        <span className={currentTab.isAdvancedUnlocked ? 'text-slate-700 dark:text-zinc-300' : 'text-slate-400 dark:text-zinc-600'}>
-                          Liên kết đặt lịch cá nhân hóa theo Slug Studio
-                        </span>
-                      </li>
-                    </ul>
-                  </div>
-                </div>
               </div>
             </div>
-          </div>
-
-          {/* KHỐI MỞ RỘNG LINH HOẠT (ADD-ON NOTIFICATION BOX) */}
-          <div className="p-5 rounded-2xl bg-slate-50 dark:bg-zinc-900/90 border border-slate-200 dark:border-zinc-800 text-xs text-slate-700 dark:text-zinc-300 leading-relaxed font-sans">
-            <span className="font-mono font-bold text-orange-600 dark:text-orange-400 uppercase tracking-wider block sm:inline mr-2">
-              MỞ RỘNG LINH HOẠT THEO NHU CẦU:
-            </span>
-            Không cần nâng cấp toàn bộ gói nếu bạn chỉ phát sinh nhu cầu nhỏ. Hỗ trợ mua lẻ +10 Album/tháng (20.000 đ) hoặc thêm thành viên Ekip Studio (+30.000 đ/thành viên/tháng).
           </div>
         </div>
       </section>
 
       {/* ==================================================================== */}
-      {/* PHẦN F: BẢO CHỨNG THỰC CHIẾN (SOCIAL PROOF) & FOOTER                 */}
+      {/* 06. CHỨNG THỰC (SOCIAL PROOF)                                         */}
       {/* ==================================================================== */}
-      <section className="px-4 sm:px-8 py-16 sm:py-24 border-t border-slate-200 dark:border-zinc-800 bg-white dark:bg-zinc-950 text-center">
-        <div className="max-w-4xl mx-auto space-y-6">
-          <span className="text-[10px] sm:text-xs font-mono font-bold uppercase tracking-widest text-orange-600 dark:text-orange-400 block">
-            BẢO CHỨNG THỰC CHIẾN
+      <section id="bao-chung" className="py-20 sm:py-28 px-4 sm:px-6 lg:px-8 border-b border-slate-200 dark:border-white/10 bg-white dark:bg-zinc-950 text-center">
+        <div className="max-w-4xl mx-auto space-y-8">
+          <span className="text-[11px] font-mono font-bold tracking-widest text-orange-600 dark:text-orange-400 uppercase">
+            // BẢO CHỨNG THỰC CHIẾN
           </span>
 
-          <blockquote className="text-lg sm:text-2xl lg:text-3xl font-extrabold text-slate-950 dark:text-white tracking-tight leading-relaxed max-w-3xl mx-auto">
-            "Từ khi đưa Lensy CRM vào quy trình vận hành tại MIRMIA Studio & Academy, chúng tôi đã giải quyết triệt để 100% bài toán trùng thiết bị và thợ chụp vào mùa cưới cao điểm. Luồng cọc VietQR qua SePAY xác nhận trong 3 giây giúp tỷ lệ chốt show tăng vọt 45%, đồng thời tiết kiệm hơn 20 giờ đối soát sổ sách bảng lương mỗi tháng."
+          <blockquote className="text-2xl sm:text-3xl lg:text-4xl font-extrabold text-slate-950 dark:text-white tracking-tight leading-snug">
+            “Hệ thống giúp MIRMIA Studio chấm dứt hoàn toàn lỗi trùng lịch thiết bị và tự động hóa khâu thu công nợ.”
           </blockquote>
 
-          <div className="pt-4 space-y-1">
-            <p className="text-sm font-bold text-slate-950 dark:text-white">
-              Hồ Hoàng Long (Johnny Long Ho)
+          <div className="pt-2 space-y-1">
+            <p className="text-base font-bold text-slate-950 dark:text-white">
+              Hồ Hoàng Long
             </p>
-            <p className="text-xs font-mono text-slate-500 dark:text-zinc-400 uppercase tracking-wider">
-              Founder & Giám Đốc Điều Hành — MIRMIA Studio & Academy
+            <p className="text-xs font-mono uppercase tracking-widest text-slate-500 dark:text-zinc-400">
+              Founder — MIRMIA Studio & Academy
             </p>
           </div>
         </div>
       </section>
 
-      {/* FOOTER */}
-      <footer className="px-4 sm:px-8 py-10 border-t border-slate-200 dark:border-zinc-900 bg-slate-50 dark:bg-zinc-950 text-slate-600 dark:text-zinc-500 text-xs">
+      {/* ==================================================================== */}
+      {/* 07. MINIMALIST FOOTER                                                */}
+      {/* ==================================================================== */}
+      <footer className="py-12 px-4 sm:px-6 lg:px-8 bg-slate-50 dark:bg-[#050505] text-xs font-mono">
         <div className="max-w-7xl mx-auto flex flex-col md:flex-row items-center justify-between gap-6 text-center md:text-left">
           <div className="space-y-1">
             <div className="flex items-center justify-center md:justify-start gap-2">
               <span className="font-bold text-slate-950 dark:text-white">LENSY CRM</span>
-              <span className="text-[10px] font-mono uppercase tracking-widest text-slate-400 dark:text-zinc-600">
-                · STUDIO OPERATING SYSTEM
+              <span className="text-[10px] text-slate-400 dark:text-zinc-600">·</span>
+              <span className="text-[10px] uppercase text-slate-500 dark:text-zinc-500">
+                STUDIO OPERATING SYSTEM
               </span>
             </div>
-            <p className="text-[11px] font-mono text-slate-500 dark:text-zinc-500">
-              Powered by Lensy CRM — Developed by Mirmia Studio & Academy
+            <p className="text-[11px] text-slate-500 dark:text-zinc-500">
+              Bản quyền © 2026 Lensy CRM. Phát triển bởi Mirmia Studio & Academy.
             </p>
           </div>
 
-          <div className="flex flex-wrap items-center justify-center gap-6 font-mono text-[11px] uppercase tracking-wider">
-            <Link
-              to="/book/johnnylongho"
-              className="hover:text-orange-600 dark:hover:text-orange-400 transition-colors"
-            >
+          <div className="flex flex-wrap items-center justify-center gap-6 text-[11px] uppercase tracking-wider text-slate-600 dark:text-zinc-400">
+            <Link to="/book/johnnylongho" className="hover:text-orange-500 transition-colors">
               Cổng Đặt Lịch Mẫu
             </Link>
-            <a
-              href="#pricing"
-              className="hover:text-orange-600 dark:hover:text-orange-400 transition-colors"
-            >
+            <a href="#bang-gia" className="hover:text-orange-500 transition-colors">
               Bảng Giá
             </a>
             <span className="text-emerald-600 dark:text-emerald-400 font-bold">
-              HỆ THỐNG HOẠT ĐỘNG 99.98%
+              ● HỆ THỐNG TRỰC TUYẾN 99.9%
             </span>
           </div>
         </div>

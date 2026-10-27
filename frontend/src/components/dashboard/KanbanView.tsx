@@ -168,9 +168,9 @@ const CompactKanbanCardContent: React.FC<{
   return (
     <div
       onClick={() => onSelectBooking && onSelectBooking(item)}
-      className={`w-full p-3.5 rounded-2xl border border-gray-200/80 dark:border-white/10 ${statusTheme.accentBorder || 'border-l-4 border-l-blue-500'} bg-white dark:bg-zinc-900/70 backdrop-blur-md select-none transition-all duration-200 shadow-sm hover:shadow-md flex flex-col gap-2.5 text-xs ${
+      className={`w-full p-3.5 rounded-xl border border-slate-200/80 dark:border-white/10 ${statusTheme.accentBorder || 'border-l-4 border-l-blue-500'} bg-white dark:bg-zinc-900/70 backdrop-blur-md select-none transition-all duration-200 shadow-sm hover:shadow flex flex-col gap-2.5 text-xs ${
         isOverlay
-          ? 'rotate-2 scale-105 shadow-2xl ring-2 ring-amber-400 cursor-grabbing'
+          ? 'rotate-2 scale-105 shadow-xl ring-2 ring-amber-400 cursor-grabbing'
           : 'hover:scale-[1.02] cursor-grab active:cursor-grabbing'
       }`}
     >
@@ -435,10 +435,10 @@ const KanbanColumn: React.FC<{
   return (
     <div
       ref={setNodeRef}
-      className={`min-w-[320px] w-[320px] flex-shrink-0 flex flex-col rounded-2xl p-4 transition-all duration-150 ${
+      className={`min-w-[320px] w-[320px] flex-shrink-0 flex flex-col rounded-xl p-4 transition-all duration-150 ${
         activeHover
-          ? 'border border-amber-400 bg-amber-500/10 dark:bg-amber-500/10 shadow-lg shadow-amber-500/10 ring-2 ring-amber-400/40 backdrop-blur-2xl'
-          : 'bg-white/80 dark:bg-zinc-900/50 border border-gray-200/80 dark:border-white/10 backdrop-blur-2xl shadow-[0_8px_32px_0_rgba(0,0,0,0.4)]'
+          ? 'border border-amber-400 bg-amber-500/10 dark:bg-amber-500/10 shadow-md ring-2 ring-amber-400/40 backdrop-blur-2xl'
+          : 'bg-white/90 dark:bg-zinc-900/50 border border-slate-200 dark:border-white/10 backdrop-blur-2xl shadow-sm'
       }`}
     >
       {/* Column Header */}

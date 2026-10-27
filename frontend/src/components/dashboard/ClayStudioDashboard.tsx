@@ -456,25 +456,25 @@ export const ClayStudioDashboard: React.FC<Props> = ({
       {/* ===================================================================== */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3.5 items-stretch">
         {/* Khối 1 (2 cột): TRUNG TÂM DÒNG TIỀN & LỢI NHUẬN RÒNG */}
-        <div className="sm:col-span-2 lg:col-span-2 rounded-2xl bg-zinc-950 dark:bg-gradient-to-br dark:from-zinc-900 dark:via-zinc-900/90 dark:to-zinc-950 text-white border border-slate-200 dark:border-orange-500/30 p-4 sm:p-5 shadow-[0_8px_32px_0_rgba(0,0,0,0.4)] relative overflow-hidden flex flex-col justify-between space-y-2.5 backdrop-blur-2xl">
+        <div className="sm:col-span-2 lg:col-span-2 rounded-xl bg-white bg-gradient-to-br from-orange-50/50 via-white to-white dark:bg-zinc-900 dark:from-zinc-900 dark:via-zinc-900/90 dark:to-zinc-950 border border-orange-500 dark:border-orange-500/30 p-4 sm:p-5 shadow-sm relative overflow-hidden flex flex-col justify-between space-y-2.5">
           <div className="absolute top-0 right-0 w-36 h-36 bg-orange-500/10 rounded-full blur-3xl pointer-events-none" />
 
           <div className="space-y-1 relative z-10">
             <div className="flex items-center justify-between">
-              <span className="text-[10px] font-mono font-bold tracking-widest uppercase text-orange-400">
+              <span className="text-[10px] font-mono font-bold tracking-widest uppercase text-orange-600 dark:text-orange-400">
                 {isStudioMember ? 'TIẾN ĐỘ TÁC CHIẾN EKIP' : 'TRUNG TÂM DÒNG TIỀN THỰC THU'}
               </span>
-              <span className="text-[9px] font-mono font-bold px-2 py-0.5 rounded bg-orange-500/15 text-orange-400 border border-orange-500/30 uppercase">
+              <span className="text-[9px] font-mono font-bold px-2 py-0.5 rounded bg-orange-100 text-orange-700 dark:bg-orange-500/15 dark:text-orange-400 border border-orange-300/80 dark:border-orange-500/30 uppercase">
                 {isStudioMember ? 'Ekip KPI' : 'Net Profit'}
               </span>
             </div>
 
-            <div className="text-xl sm:text-2xl font-mono font-black text-white tracking-tight pt-0.5">
+            <div className="text-xl sm:text-2xl font-mono font-black text-slate-900 dark:text-white tracking-tight pt-0.5">
               {isStudioMember
                 ? `${validEvents.filter(e => e.status === 'shot' || e.status === 'editing' || e.status === 'da_tra_file').length} Ca Đang Tác Chiến`
                 : formatVND(financialMetrics.totalActualRevenue)}
             </div>
-            <p className="text-[11px] text-zinc-400 font-sans line-clamp-1">
+            <p className="text-[11px] text-slate-500 dark:text-zinc-400 font-sans line-clamp-1">
               {isStudioMember
                 ? 'Tổng số ca chụp và hậu kỳ được phân bổ cho ekip'
                 : 'Dòng tiền thực tế đã thu vào tài khoản (đã cọc & quyết toán)'}
@@ -484,7 +484,7 @@ export const ClayStudioDashboard: React.FC<Props> = ({
           {/* Thanh phân bổ so với Tổng Giá Trị Hợp Đồng */}
           {!isStudioMember ? (
             <div className="space-y-1.5 relative z-10 pt-0.5">
-              <div className="w-full bg-zinc-800 rounded-full h-1.5 overflow-hidden">
+              <div className="w-full bg-slate-100 dark:bg-zinc-800 rounded-full h-1.5 overflow-hidden">
                 <div
                   className="bg-gradient-to-r from-orange-500 to-amber-500 h-1.5 rounded-full transition-all duration-500"
                   style={{ width: `${financialMetrics.contractCollectionRatio}%` }}
@@ -492,37 +492,37 @@ export const ClayStudioDashboard: React.FC<Props> = ({
               </div>
 
               <div className="flex items-center justify-between text-[11px] font-mono">
-                <span className="text-zinc-400">
-                  Đã thu: <strong className="text-white">{financialMetrics.contractCollectionRatio}%</strong>
+                <span className="text-slate-500 dark:text-zinc-400">
+                  Đã thu: <strong className="text-slate-900 dark:text-white">{financialMetrics.contractCollectionRatio}%</strong>
                 </span>
-                <span className="text-zinc-400">
-                  Tổng HĐ: <strong className="text-white">{formatVND(financialMetrics.totalContractValue)}</strong>
+                <span className="text-slate-500 dark:text-zinc-400">
+                  Tổng HĐ: <strong className="text-slate-900 dark:text-white">{formatVND(financialMetrics.totalContractValue)}</strong>
                 </span>
               </div>
 
               {/* Lợi nhuận ròng (Net Profit) thực tế sau trừ chi phí */}
-              <div className="pt-2 border-t border-zinc-800/80 flex items-center justify-between text-xs">
-                <span className="text-zinc-400 text-[11px]">Lợi Nhuận Ròng (Thực thu):</span>
+              <div className="pt-2 border-t border-slate-100 dark:border-zinc-800/80 flex items-center justify-between text-xs">
+                <span className="text-slate-500 dark:text-zinc-400 text-[11px]">Lợi Nhuận Ròng (Thực thu):</span>
                 <div className="flex items-center gap-1.5 font-mono">
-                  <span className="text-emerald-400 font-black text-sm sm:text-base">
+                  <span className="text-emerald-600 dark:text-emerald-400 font-black text-sm sm:text-base">
                     +{formatVND(financialMetrics.totalNetProfit)}
                   </span>
-                  <span className="text-[10px] text-emerald-500 font-bold">
+                  <span className="text-[10px] text-emerald-700 dark:text-emerald-500 font-bold">
                     ({financialMetrics.netMargin}%)
                   </span>
                 </div>
               </div>
             </div>
           ) : (
-            <div className="pt-2 border-t border-zinc-800/80 flex items-center justify-between text-xs text-zinc-400">
+            <div className="pt-2 border-t border-slate-100 dark:border-zinc-800/80 flex items-center justify-between text-xs text-slate-500 dark:text-zinc-400">
               <span>Trạng thái hoạt động:</span>
-              <span className="text-emerald-400 font-mono font-bold">Sẵn sàng nhận show</span>
+              <span className="text-emerald-600 dark:text-emerald-400 font-mono font-bold">Sẵn sàng nhận show</span>
             </div>
           )}
         </div>
 
         {/* Khối 2 (1 cột): CA CHỤP HÔM NAY */}
-        <div className="rounded-2xl bg-white/80 dark:bg-zinc-900/50 backdrop-blur-2xl border border-slate-200 dark:border-white/10 border-l-4 border-l-orange-500 p-4 sm:p-5 shadow-[0_8px_32px_0_rgba(0,0,0,0.4)] flex flex-col justify-between space-y-3">
+        <div className="rounded-xl bg-white dark:bg-zinc-900/60 border border-slate-200 dark:border-white/10 border-l-4 border-l-orange-500 p-4 sm:p-5 shadow-sm flex flex-col justify-between space-y-3">
           <div className="space-y-1">
             <div className="flex items-center justify-between">
               <span className="text-[10px] font-mono font-bold uppercase tracking-wider text-slate-500 dark:text-zinc-400">
@@ -563,9 +563,9 @@ export const ClayStudioDashboard: React.FC<Props> = ({
         </div>
 
         {/* Khối 3 (1 cột): CỌC & CÔNG NỢ CẦN THU */}
-        <div className={`rounded-2xl bg-white/80 dark:bg-zinc-900/50 backdrop-blur-2xl border border-slate-200 dark:border-white/10 border-l-4 ${
+        <div className={`rounded-xl bg-white dark:bg-zinc-900/60 border border-slate-200 dark:border-white/10 border-l-4 ${
           financialMetrics.totalDebt > 0 ? 'border-l-rose-500' : 'border-l-emerald-500'
-        } p-4 sm:p-5 shadow-[0_8px_32px_0_rgba(0,0,0,0.4)] flex flex-col justify-between space-y-3`}>
+        } p-4 sm:p-5 shadow-sm flex flex-col justify-between space-y-3`}>
           <div className="space-y-1">
             <div className="flex items-center justify-between">
               <span className="text-[10px] font-mono font-bold uppercase tracking-wider text-slate-500 dark:text-zinc-400">
@@ -604,7 +604,7 @@ export const ClayStudioDashboard: React.FC<Props> = ({
         </div>
 
         {/* Khối 4 (1 cột): HOÀN THÀNH & HIỆU SUẤT THÁNG */}
-        <div className="rounded-2xl bg-white/80 dark:bg-zinc-900/50 backdrop-blur-2xl border border-slate-200 dark:border-white/10 border-l-4 border-l-amber-500 p-4 sm:p-5 shadow-[0_8px_32px_0_rgba(0,0,0,0.4)] flex flex-col justify-between space-y-3">
+        <div className="rounded-xl bg-white dark:bg-zinc-900/60 border border-slate-200 dark:border-white/10 border-l-4 border-l-amber-500 p-4 sm:p-5 shadow-sm flex flex-col justify-between space-y-3">
           <div className="space-y-1">
             <div className="flex items-center justify-between">
               <span className="text-[10px] font-mono font-bold uppercase tracking-wider text-slate-500 dark:text-zinc-400">
@@ -637,7 +637,7 @@ export const ClayStudioDashboard: React.FC<Props> = ({
       {/* 3. TODAY'S TIMELINE BAR (CHỈ HIỂN THỊ KHI CÓ SHOW HÔM NAY)             */}
       {/* ===================================================================== */}
       {todayShoots.length > 0 && (
-        <div className="rounded-2xl bg-orange-500/5 dark:bg-orange-500/10 border border-orange-500/20 p-4 space-y-3">
+        <div className="rounded-xl bg-orange-50/50 dark:bg-orange-500/10 border border-orange-200/60 dark:border-orange-500/20 p-4 space-y-3 shadow-sm">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
               <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
@@ -656,7 +656,7 @@ export const ClayStudioDashboard: React.FC<Props> = ({
               <div
                 key={`today-${shoot.id}`}
                 onClick={() => onOpenDetailModal(shoot)}
-                className="flex items-center gap-3 p-3.5 rounded-2xl bg-white/80 dark:bg-zinc-900/50 backdrop-blur-md border border-slate-200/80 dark:border-white/10 shadow-[0_4px_20px_0_rgba(0,0,0,0.2)] hover:border-orange-500/50 transition-all cursor-pointer shrink-0 min-w-[260px]"
+                className="flex items-center gap-3 p-3.5 rounded-xl bg-white dark:bg-zinc-900/80 border border-slate-200 dark:border-white/10 shadow-sm hover:border-orange-500/50 transition-all cursor-pointer shrink-0 min-w-[260px]"
               >
                 <div className="text-center font-mono shrink-0 pr-3 border-r border-slate-100 dark:border-white/10">
                   <div className="text-xs font-bold text-orange-600 dark:text-orange-400">
@@ -688,7 +688,7 @@ export const ClayStudioDashboard: React.FC<Props> = ({
       {/* ===================================================================== */}
       {/* 4. WORKFLOW DISPATCH CENTER (TABS NAVIGATION & DIRECT WORKSPACE)      */}
       {/* ===================================================================== */}
-      <div className="rounded-3xl border border-slate-200/80 dark:border-white/10 bg-white/80 dark:bg-zinc-900/50 backdrop-blur-2xl p-4 sm:p-6 shadow-[0_8px_32px_0_rgba(0,0,0,0.4)]">
+      <div className="rounded-xl border border-slate-200 dark:border-white/10 bg-white dark:bg-zinc-900/50 p-4 sm:p-6 shadow-sm">
         {/* Header Tabs Navigation */}
         <div className="flex flex-col md:flex-row md:items-center justify-between pb-4 border-b border-slate-100 dark:border-white/10 gap-4">
           <div className="flex items-center gap-2 overflow-x-auto pb-1 md:pb-0">
@@ -706,7 +706,7 @@ export const ClayStudioDashboard: React.FC<Props> = ({
                   onClick={() => setDashboardView(tab.id as any)}
                   className={`flex items-center gap-2 rounded-xl px-4 py-2 text-xs font-bold transition-all whitespace-nowrap cursor-pointer ${
                     isActive
-                      ? 'bg-zinc-950 text-white dark:bg-orange-600 shadow-sm'
+                      ? 'bg-orange-100 text-orange-700 dark:bg-orange-600 dark:text-white shadow-xs'
                       : 'text-slate-600 dark:text-zinc-400 hover:bg-slate-100 dark:hover:bg-white/5'
                   }`}
                 >
@@ -793,20 +793,20 @@ export const ClayStudioDashboard: React.FC<Props> = ({
             </div>
 
             {/* Desktop Table View */}
-            <div className="hidden md:block overflow-x-auto">
+            <div className="hidden md:block overflow-x-auto rounded-xl border border-slate-200/80 dark:border-zinc-800">
               <table className="w-full text-left text-xs">
                 <thead>
-                  <tr className="border-b border-slate-200/80 dark:border-zinc-800 text-[11px] font-semibold text-slate-500 dark:text-zinc-400 uppercase tracking-wider font-mono">
-                    <th className="pb-3 pt-1">Mã Show</th>
-                    <th className="pb-3 pt-1">Khách Hàng</th>
-                    <th className="pb-3 pt-1">Gói Dịch Vụ / Ekip</th>
-                    <th className="pb-3 pt-1">Ngày Chụp</th>
-                    <th className="pb-3 pt-1">Trạng Thái</th>
-                    <th className="pb-3 pt-1 text-right">Tổng Tiền</th>
-                    <th className="pb-3 pt-1 text-center">Thao Tác</th>
+                  <tr className="border-b border-slate-200/80 dark:border-zinc-800 bg-slate-50/75 dark:bg-zinc-900/75 text-xs font-bold text-slate-500 dark:text-zinc-400 uppercase tracking-wider font-mono">
+                    <th className="py-3 px-3.5">Mã Show</th>
+                    <th className="py-3 px-3.5">Khách Hàng</th>
+                    <th className="py-3 px-3.5">Gói Dịch Vụ / Ekip</th>
+                    <th className="py-3 px-3.5">Ngày Chụp</th>
+                    <th className="py-3 px-3.5">Trạng Thái</th>
+                    <th className="py-3 px-3.5 text-right">Tổng Tiền</th>
+                    <th className="py-3 px-3.5 text-center">Thao Tác</th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-slate-100 dark:divide-zinc-800/80">
+                <tbody className="divide-y divide-slate-100 dark:divide-zinc-800/80 bg-white dark:bg-transparent">
                   {bookings.slice(0, visibleCount).map(b => (
                     <tr
                       key={b.id}
@@ -814,24 +814,26 @@ export const ClayStudioDashboard: React.FC<Props> = ({
                       className="cursor-pointer hover:bg-slate-50/80 dark:hover:bg-zinc-800/40 transition-colors group"
                     >
                       {/* ID */}
-                      <td className="py-3.5 font-mono text-[11px] font-bold text-orange-600 dark:text-orange-400">
-                        #{b.id.substring(0, 8)}
+                      <td className="py-3 px-3.5">
+                        <span className="inline-block bg-orange-50 text-orange-700 dark:bg-orange-500/10 dark:text-orange-400 px-2 py-1 rounded-md text-xs font-mono font-bold border border-orange-200/60 dark:border-orange-500/20">
+                          #{b.id.substring(0, 8)}
+                        </span>
                       </td>
 
                       {/* Client Name & Phone */}
-                      <td className="py-3.5 font-bold text-slate-900 dark:text-white">
+                      <td className="py-3 px-3.5 font-bold text-slate-900 dark:text-white">
                         <div>{b.clientName}</div>
                         {b.clientPhone && (
-                          <div className="text-[10px] text-slate-500 dark:text-zinc-400 font-mono font-normal">
+                          <div className="text-[11px] text-slate-500 dark:text-zinc-400 font-mono font-normal">
                             {b.clientPhone}
                           </div>
                         )}
                       </td>
 
                       {/* Package & Photographer */}
-                      <td className="py-3.5 text-slate-700 dark:text-zinc-300 font-medium">
+                      <td className="py-3 px-3.5 text-slate-700 dark:text-zinc-300 font-medium">
                         <div>{b.sessionType || b.category || 'Gói Studio'}</div>
-                        <div className="text-[10px] text-slate-500 dark:text-zinc-400 flex items-center gap-1">
+                        <div className="text-[11px] text-slate-500 dark:text-zinc-400 flex items-center gap-1">
                           <span>{b.photographer?.full_name || 'Johnny Long Hồ'}</span>
                           {(b.photographer?.is_verified ?? true) && (
                             <VerifiedBadge className="w-3 h-3 shrink-0" />
@@ -840,15 +842,15 @@ export const ClayStudioDashboard: React.FC<Props> = ({
                       </td>
 
                       {/* Event Date */}
-                      <td className="py-3.5 font-mono text-xs text-slate-700 dark:text-zinc-300">
+                      <td className="py-3 px-3.5 font-mono text-xs text-slate-700 dark:text-zinc-300">
                         {b.eventDate}
-                        <div className="text-[10px] text-slate-500 dark:text-zinc-400 font-sans">
+                        <div className="text-[11px] text-slate-500 dark:text-zinc-400 font-sans">
                           {b.startTime} - {b.endTime}
                         </div>
                       </td>
 
                       {/* Status */}
-                      <td className="py-3.5" onClick={e => e.stopPropagation()}>
+                      <td className="py-3 px-3.5" onClick={e => e.stopPropagation()}>
                         <BookingStatusSelect
                           status={b.status}
                           onChange={newStatus => onStatusChange(b.id, newStatus)}
@@ -857,12 +859,12 @@ export const ClayStudioDashboard: React.FC<Props> = ({
                       </td>
 
                       {/* Amount */}
-                      <td className="py-3.5 text-right font-mono font-bold text-slate-900 dark:text-white tabular-nums">
+                      <td className="py-3 px-3.5 text-right font-mono font-bold text-slate-900 dark:text-white tabular-nums">
                         {formatVND(b.packagePrice)}
                       </td>
 
                       {/* Action */}
-                      <td className="py-3.5 text-center text-slate-500">
+                      <td className="py-3 px-3.5 text-center text-slate-500">
                         <div className="flex items-center justify-center gap-1" onClick={e => e.stopPropagation()}>
                           <button
                             type="button"
@@ -901,14 +903,14 @@ export const ClayStudioDashboard: React.FC<Props> = ({
                 <div
                   key={`card-${b.id}`}
                   onClick={() => setSelectedBooking(b)}
-                  className="p-4 rounded-2xl bg-white/80 dark:bg-zinc-900/50 backdrop-blur-md border border-slate-200/80 dark:border-white/10 shadow-[0_4px_20px_0_rgba(0,0,0,0.2)] space-y-2.5 cursor-pointer hover:border-orange-500/50 transition-all"
+                  className="p-4 rounded-xl bg-white dark:bg-zinc-900/60 border border-slate-200 dark:border-white/10 shadow-sm space-y-2.5 cursor-pointer hover:border-orange-500/50 transition-all"
                 >
                   <div className="flex items-start justify-between gap-2">
                     <div>
-                      <span className="font-mono text-[10px] font-bold text-orange-600 dark:text-orange-400">
+                      <span className="inline-block bg-orange-50 text-orange-700 dark:bg-orange-500/10 dark:text-orange-400 px-2 py-0.5 rounded-md text-[10px] font-mono font-bold border border-orange-200/60 dark:border-orange-500/20">
                         #{b.id.substring(0, 8)}
                       </span>
-                      <h4 className="font-bold text-sm text-slate-900 dark:text-white leading-tight">
+                      <h4 className="font-bold text-sm text-slate-900 dark:text-white leading-tight mt-1">
                         {b.clientName}
                       </h4>
                       {b.clientPhone && (

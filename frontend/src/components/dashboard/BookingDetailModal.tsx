@@ -1135,48 +1135,52 @@ export const BookingDetailModal: React.FC<Props> = ({
           )}
 
           {/* Financial Metrics Summary */}
-          <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5 p-3.5 rounded-2xl bg-slate-950/70 border border-slate-800 text-xs">
-            <div>
-              <div className="flex items-center gap-1.5">
-                <span className="text-slate-400 block text-[10px]">Tổng Gói (Hợp Đồng)</span>
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 p-3.5 rounded-2xl bg-zinc-950/70 border border-white/10 text-xs">
+            <div className="p-3 rounded-xl bg-zinc-900/50 border border-orange-500/20 flex flex-col justify-between">
+              <div className="flex items-center justify-between gap-1.5">
+                <span className="text-zinc-400 block text-[10px] uppercase font-medium tracking-wider">Tổng Gói (HĐ)</span>
                 {onEditFinancials && (
                   <button
                     type="button"
                     onClick={() => onEditFinancials(booking)}
-                    className="text-gray-500 hover:text-white transition-colors p-0.5 rounded hover:bg-white/10 cursor-pointer"
+                    className="text-zinc-400 hover:text-white transition-colors p-0.5 rounded hover:bg-white/10 cursor-pointer"
                     title="Cập nhật tài chính"
                   >
                     <Pencil className="w-3 h-3" />
                   </button>
                 )}
               </div>
-              <span className="font-mono font-bold text-white text-xs sm:text-sm">
+              <span className="font-mono font-bold text-white text-xs sm:text-sm mt-1">
                 {booking.packagePrice.toLocaleString('vi-VN')} đ
               </span>
             </div>
-            <div>
-              <span className="text-slate-400 block text-[10px]">Khách Đã Trả (Doanh Thu)</span>
-              <span className="font-mono font-bold text-sky-400 text-xs sm:text-sm">
+            <div className="p-3 rounded-xl bg-zinc-900/50 border border-sky-500/20 flex flex-col justify-between">
+              <span className="text-zinc-400 block text-[10px] uppercase font-medium tracking-wider">Khách Đã Trả</span>
+              <span className="font-mono font-bold text-sky-400 text-xs sm:text-sm mt-1">
                 {effectivePaid.toLocaleString('vi-VN')} đ
               </span>
             </div>
-            <div>
-              <span className="text-slate-400 block text-[10px]">Tổng Chi Phí & Thù Lao</span>
-              <span className="font-mono font-bold text-amber-400 text-xs sm:text-sm">
-                {combinedTotalCost.toLocaleString('vi-VN')} đ
-              </span>
-              <span className="text-[9px] text-slate-500 block">
-                Thù lao: {totalCrewCost.toLocaleString('vi-VN')} đ
-              </span>
+            <div className="p-3 rounded-xl bg-zinc-900/50 border border-amber-500/20 flex flex-col justify-between">
+              <span className="text-zinc-400 block text-[10px] uppercase font-medium tracking-wider">Tổng Chi Phí & Thù Lao</span>
+              <div>
+                <span className="font-mono font-bold text-amber-400 text-xs sm:text-sm mt-1 block">
+                  {combinedTotalCost.toLocaleString('vi-VN')} đ
+                </span>
+                <span className="text-[9px] text-zinc-500 block">
+                  Thù lao: {totalCrewCost.toLocaleString('vi-VN')} đ
+                </span>
+              </div>
             </div>
-            <div>
-              <span className="text-slate-400 block text-[10px]">Lợi Nhuận Ròng Dự Kiến</span>
-              <span className={`font-mono font-black text-xs sm:text-sm ${projectedNetProfit >= 0 ? 'text-emerald-400' : 'text-rose-400'}`}>
-                {projectedNetProfit.toLocaleString('vi-VN')} đ
-              </span>
-              <span className="text-[9px] text-emerald-400/80 block">
-                Biên LN: {profitMargin}%
-              </span>
+            <div className="p-3 rounded-xl bg-zinc-900/50 border border-emerald-500/20 flex flex-col justify-between">
+              <span className="text-zinc-400 block text-[10px] uppercase font-medium tracking-wider">Lợi Nhuận Ròng Dự Kiến</span>
+              <div>
+                <span className={`font-mono font-bold text-xs sm:text-sm mt-1 block ${projectedNetProfit >= 0 ? 'text-emerald-400' : 'text-rose-400'}`}>
+                  {projectedNetProfit.toLocaleString('vi-VN')} đ
+                </span>
+                <span className="text-[9px] text-emerald-400/80 block">
+                  Biên LN: {profitMargin}%
+                </span>
+              </div>
             </div>
           </div>
 
@@ -1241,10 +1245,10 @@ export const BookingDetailModal: React.FC<Props> = ({
                 <select
                   value={selectedCategory}
                   onChange={e => setSelectedCategory(e.target.value)}
-                  className="w-full px-3 py-2 rounded-xl bg-slate-900 border border-slate-800 text-xs font-semibold text-slate-200 outline-none focus:border-amber-400 cursor-pointer"
+                  className="w-full px-3 py-2 rounded-xl bg-zinc-950 border border-zinc-800 text-xs font-semibold text-white outline-none focus:border-orange-500 cursor-pointer"
                 >
                   {STANDARD_CATEGORIES.map(cat => (
-                    <option key={cat.id} value={cat.id}>
+                    <option key={cat.id} value={cat.id} className="bg-zinc-950 text-white">
                       {cat.label}
                     </option>
                   ))}
@@ -1267,19 +1271,19 @@ export const BookingDetailModal: React.FC<Props> = ({
           </div>
 
           {/* Tab Switcher */}
-          <div className="flex items-center gap-2 border-b border-slate-800 pb-2 overflow-x-auto">
+          <div className="flex items-center gap-2 border-b border-zinc-800 pb-2 overflow-x-auto">
             <button
               type="button"
               onClick={() => setActiveTab('crew')}
-              className={`flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-xs font-bold transition-all whitespace-nowrap cursor-pointer ${
+              className={`flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-xs font-semibold transition-all whitespace-nowrap cursor-pointer ${
                 activeTab === 'crew'
-                  ? 'bg-amber-500 text-slate-950 shadow-md shadow-amber-500/20'
-                  : 'text-slate-400 hover:text-white bg-slate-950/60 border border-slate-800'
+                  ? 'bg-orange-500/10 text-orange-500 border border-orange-500/30 shadow-xs'
+                  : 'bg-transparent text-zinc-400 hover:text-zinc-200 border border-transparent hover:border-zinc-800'
               }`}
             >
               <Users className="w-3.5 h-3.5" />
               <span>Phân Công Ê-Kíp & Thù Lao</span>
-              <span className={`px-1.5 py-0.2 rounded-full text-[10px] font-mono ${activeTab === 'crew' ? 'bg-slate-950 text-amber-400' : 'bg-slate-900 text-slate-400'}`}>
+              <span className={`px-1.5 py-0.2 rounded-full text-[10px] font-mono ${activeTab === 'crew' ? 'bg-orange-500/20 text-orange-400 border border-orange-500/30' : 'bg-zinc-800/80 text-zinc-400'}`}>
                 {crewMembers.length}
               </span>
             </button>
@@ -1287,15 +1291,15 @@ export const BookingDetailModal: React.FC<Props> = ({
             <button
               type="button"
               onClick={() => setActiveTab('expenses')}
-              className={`flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-xs font-bold transition-all whitespace-nowrap cursor-pointer ${
+              className={`flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-xs font-semibold transition-all whitespace-nowrap cursor-pointer ${
                 activeTab === 'expenses'
-                  ? 'bg-emerald-500 text-slate-950 shadow-md shadow-emerald-500/20'
-                  : 'text-slate-400 hover:text-white bg-slate-950/60 border border-slate-800'
+                  ? 'bg-orange-500/10 text-orange-500 border border-orange-500/30 shadow-xs'
+                  : 'bg-transparent text-zinc-400 hover:text-zinc-200 border border-transparent hover:border-zinc-800'
               }`}
             >
               <Receipt className="w-3.5 h-3.5" />
               <span>Hạch Toán Chi Phí</span>
-              <span className={`px-1.5 py-0.2 rounded-full text-[10px] font-mono ${activeTab === 'expenses' ? 'bg-slate-950 text-emerald-400' : 'bg-slate-900 text-slate-400'}`}>
+              <span className={`px-1.5 py-0.2 rounded-full text-[10px] font-mono ${activeTab === 'expenses' ? 'bg-orange-500/20 text-orange-400 border border-orange-500/30' : 'bg-zinc-800/80 text-zinc-400'}`}>
                 {expenseItems.length}
               </span>
             </button>
@@ -1303,15 +1307,15 @@ export const BookingDetailModal: React.FC<Props> = ({
             <button
               type="button"
               onClick={() => setActiveTab('gears')}
-              className={`flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-xs font-bold transition-all whitespace-nowrap cursor-pointer ${
+              className={`flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-xs font-semibold transition-all whitespace-nowrap cursor-pointer ${
                 activeTab === 'gears'
-                  ? 'bg-sky-500 text-slate-950 shadow-md shadow-sky-500/20'
-                  : 'text-slate-400 hover:text-white bg-slate-950/60 border border-slate-800'
+                  ? 'bg-orange-500/10 text-orange-500 border border-orange-500/30 shadow-xs'
+                  : 'bg-transparent text-zinc-400 hover:text-zinc-200 border border-transparent hover:border-zinc-800'
               }`}
             >
               <Camera className="w-3.5 h-3.5" />
               <span>Phân Bổ Thiết Bị</span>
-              <span className={`px-1.5 py-0.2 rounded-full text-[10px] font-mono ${activeTab === 'gears' ? 'bg-slate-950 text-sky-400' : 'bg-slate-900 text-slate-400'}`}>
+              <span className={`px-1.5 py-0.2 rounded-full text-[10px] font-mono ${activeTab === 'gears' ? 'bg-orange-500/20 text-orange-400 border border-orange-500/30' : 'bg-zinc-800/80 text-zinc-400'}`}>
                 {selectedGearIds.length}
               </span>
             </button>
@@ -1319,16 +1323,16 @@ export const BookingDetailModal: React.FC<Props> = ({
             <button
               type="button"
               onClick={() => setActiveTab('delivery')}
-              className={`flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-xs font-bold transition-all whitespace-nowrap cursor-pointer ${
+              className={`flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-xs font-semibold transition-all whitespace-nowrap cursor-pointer ${
                 activeTab === 'delivery'
-                  ? 'bg-rose-500 text-slate-950 shadow-md shadow-rose-500/20'
-                  : 'text-slate-400 hover:text-white bg-slate-950/60 border border-slate-800'
+                  ? 'bg-orange-500/10 text-orange-500 border border-orange-500/30 shadow-xs'
+                  : 'bg-transparent text-zinc-400 hover:text-zinc-200 border border-transparent hover:border-zinc-800'
               }`}
             >
               <FolderOpen className="w-3.5 h-3.5" />
               <span>Chọn Ảnh & Bàn Giao</span>
               {proofingSession.is_locked ? (
-                <span className="px-1.5 py-0.2 rounded-full text-[10px] font-mono bg-emerald-400 text-slate-950 font-bold" title="Khách đã chốt chọn ảnh">
+                <span className="px-1.5 py-0.2 rounded-full text-[10px] font-mono bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 font-bold" title="Khách đã chốt chọn ảnh">
                   ✓ {proofingSession.items?.length || 0}
                 </span>
               ) : deliveryLink ? (
@@ -1366,24 +1370,24 @@ export const BookingDetailModal: React.FC<Props> = ({
               )}
 
               {/* Quick Metrics Bar */}
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 p-4 rounded-2xl bg-gradient-to-r from-slate-950 via-slate-900 to-slate-950 border border-slate-800 shadow-xl">
-                <div className="p-3 rounded-xl bg-slate-950/80 border border-amber-500/20 text-center">
-                  <span className="text-[10px] text-slate-400 font-medium block uppercase tracking-wider">Tổng Thù Lao Ê-Kíp</span>
-                  <strong className="text-sm sm:text-base font-extrabold text-amber-400 font-mono">
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 p-3.5 rounded-2xl bg-zinc-950/70 border border-white/10 shadow-xs">
+                <div className="p-3 rounded-xl bg-zinc-900/50 border border-amber-500/20 text-center">
+                  <span className="text-[10px] text-zinc-400 font-medium block uppercase tracking-wider">Tổng Thù Lao Ê-Kíp</span>
+                  <strong className="text-sm sm:text-base font-bold text-amber-400 font-mono mt-0.5 block">
                     {totalCrewCost.toLocaleString('vi-VN')} đ
                   </strong>
-                  <span className="text-[9px] text-slate-500 block">({crewMembers.length} nhân sự)</span>
+                  <span className="text-[9px] text-zinc-500 block">({crewMembers.length} nhân sự)</span>
                 </div>
-                <div className="p-3 rounded-xl bg-slate-950/80 border border-emerald-500/20 text-center">
-                  <span className="text-[10px] text-slate-400 font-medium block uppercase tracking-wider">Đã Thanh Toán</span>
-                  <strong className="text-sm sm:text-base font-extrabold text-emerald-400 font-mono">
+                <div className="p-3 rounded-xl bg-zinc-900/50 border border-emerald-500/20 text-center">
+                  <span className="text-[10px] text-zinc-400 font-medium block uppercase tracking-wider">Đã Thanh Toán</span>
+                  <strong className="text-sm sm:text-base font-bold text-emerald-400 font-mono mt-0.5 block">
                     {paidCrewCost.toLocaleString('vi-VN')} đ
                   </strong>
                   <span className="text-[9px] text-emerald-500/70 block">({crewMembers.filter(m => m.is_paid).length} đã chi)</span>
                 </div>
-                <div className="p-3 rounded-xl bg-slate-950/80 border border-rose-500/20 text-center">
-                  <span className="text-[10px] text-slate-400 font-medium block uppercase tracking-wider">Cần Chi / Còn Nợ</span>
-                  <strong className="text-sm sm:text-base font-extrabold text-rose-400 font-mono">
+                <div className="p-3 rounded-xl bg-zinc-900/50 border border-rose-500/20 text-center">
+                  <span className="text-[10px] text-zinc-400 font-medium block uppercase tracking-wider">Cần Chi / Còn Nợ</span>
+                  <strong className="text-sm sm:text-base font-bold text-rose-400 font-mono mt-0.5 block">
                     {unpaidCrewCost.toLocaleString('vi-VN')} đ
                   </strong>
                   <span className="text-[9px] text-rose-500/70 block">({crewMembers.filter(m => !m.is_paid).length} cần chuyển khoản)</span>
@@ -1425,15 +1429,15 @@ export const BookingDetailModal: React.FC<Props> = ({
                     <select
                       value={assignedPhotographerId}
                       onChange={e => handleSelectPhotographerDropdown(e.target.value)}
-                      className="w-full px-3 py-2 rounded-xl bg-slate-900 border border-slate-800 text-xs text-white focus:outline-none focus:border-amber-400 cursor-pointer font-medium"
+                      className="w-full px-3 py-2 rounded-xl bg-zinc-950 border border-zinc-800 text-xs text-white focus:outline-none focus:border-orange-500 cursor-pointer font-medium"
                     >
-                      <option value="">-- Chọn Thợ Chụp từ danh sách --</option>
+                      <option value="" className="bg-zinc-950 text-white">-- Chọn Thợ Chụp từ danh sách --</option>
                       {studioMembers
                         .filter(m => m.role === 'admin' || m.role === 'photographer')
                         .map(m => {
                           const staffUid = m.user_id || m.id;
                           return (
-                            <option key={staffUid} value={staffUid}>
+                            <option key={staffUid} value={staffUid} className="bg-zinc-950 text-white">
                               {m.user?.full_name || 'Thợ chụp'} ({m.role}){getStaffBusyNote(staffUid)}
                             </option>
                           );
@@ -1448,15 +1452,15 @@ export const BookingDetailModal: React.FC<Props> = ({
                     <select
                       value={assignedMakeupId}
                       onChange={e => handleSelectMakeupDropdown(e.target.value)}
-                      className="w-full px-3 py-2 rounded-xl bg-slate-900 border border-slate-800 text-xs text-white focus:outline-none focus:border-amber-400 cursor-pointer font-medium"
+                      className="w-full px-3 py-2 rounded-xl bg-zinc-950 border border-zinc-800 text-xs text-white focus:outline-none focus:border-orange-500 cursor-pointer font-medium"
                     >
-                      <option value="">-- Chọn Thợ Makeup từ danh sách --</option>
+                      <option value="" className="bg-zinc-950 text-white">-- Chọn Thợ Makeup từ danh sách --</option>
                       {studioMembers
                         .filter(m => m.role === 'makeup_artist')
                         .map(m => {
                           const staffUid = m.user_id || m.id;
                           return (
-                            <option key={staffUid} value={staffUid}>
+                            <option key={staffUid} value={staffUid} className="bg-zinc-950 text-white">
                               {m.user?.full_name || 'Thợ Makeup'}{getStaffBusyNote(staffUid)}
                             </option>
                           );
@@ -1484,10 +1488,10 @@ export const BookingDetailModal: React.FC<Props> = ({
                     <select
                       value={newCrewRole}
                       onChange={e => setNewCrewRole(e.target.value as CrewRole)}
-                      className="w-full px-3 py-2 rounded-xl bg-slate-900 border border-slate-800 text-xs text-white focus:outline-none focus:border-amber-400 cursor-pointer font-medium"
+                      className="w-full px-3 py-2 rounded-xl bg-zinc-950 border border-zinc-800 text-xs text-white focus:outline-none focus:border-orange-500 cursor-pointer font-medium"
                     >
                       {Object.entries(CREW_ROLE_CONFIG).map(([roleKey, conf]) => (
-                        <option key={roleKey} value={roleKey}>
+                        <option key={roleKey} value={roleKey} className="bg-zinc-950 text-white">
                           {conf.label}
                         </option>
                       ))}
@@ -1511,11 +1515,11 @@ export const BookingDetailModal: React.FC<Props> = ({
                               }
                             }
                           }}
-                          className="w-full px-3 py-2 rounded-xl bg-slate-900 border border-slate-800 text-xs text-amber-300 focus:outline-none focus:border-amber-400 cursor-pointer font-medium"
+                          className="w-full px-3 py-2 rounded-xl bg-zinc-950 border border-zinc-800 text-xs text-white focus:outline-none focus:border-orange-500 cursor-pointer font-medium"
                         >
-                          <option value="">-- Chọn thành viên Studio --</option>
+                          <option value="" className="bg-zinc-950 text-white">-- Chọn thành viên Studio --</option>
                           {studioMembers.map(m => (
-                            <option key={m.user_id || m.id} value={m.user_id || m.id}>
+                            <option key={m.user_id || m.id} value={m.user_id || m.id} className="bg-zinc-950 text-white">
                               {m.user?.full_name || 'Thành viên'} ({m.role})
                             </option>
                           ))}
@@ -1537,10 +1541,10 @@ export const BookingDetailModal: React.FC<Props> = ({
                       <select
                         value={newCrewFeeType}
                         onChange={e => setNewCrewFeeType(e.target.value as 'fixed' | 'percent')}
-                        className="w-20 px-2 py-2 rounded-xl bg-slate-900 border border-slate-800 text-xs text-slate-300 focus:outline-none focus:border-amber-400 cursor-pointer font-medium"
+                        className="w-20 px-2 py-2 rounded-xl bg-zinc-950 border border-zinc-800 text-xs text-white focus:outline-none focus:border-orange-500 cursor-pointer font-medium"
                       >
-                        <option value="fixed">VNĐ</option>
-                        <option value="percent">% Gói</option>
+                        <option value="fixed" className="bg-zinc-950 text-white">VNĐ</option>
+                        <option value="percent" className="bg-zinc-950 text-white">% Gói</option>
                       </select>
                       <input
                         type={newCrewFeeType === 'percent' ? 'number' : 'text'}

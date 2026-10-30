@@ -81,6 +81,7 @@ export const ClientProfileModal: React.FC<Props> = ({
     depositAmount: number;
     eventDate: string;
     status: string;
+    isCollab?: boolean;
   }>({
     sessionTitle: '',
     sessionType: 'portrait',
@@ -89,6 +90,7 @@ export const ClientProfileModal: React.FC<Props> = ({
     depositAmount: 0,
     eventDate: '',
     status: 'lead',
+    isCollab: false,
   });
 
   // Chế độ thêm show chụp / giao dịch quá khứ cho khách
@@ -99,12 +101,14 @@ export const ClientProfileModal: React.FC<Props> = ({
     packagePrice: number;
     paidAmount: number;
     eventDate: string;
+    isCollab?: boolean;
   }>({
     sessionTitle: '',
     sessionType: 'portrait',
     packagePrice: 0,
     paidAmount: 0,
     eventDate: new Date().toISOString().substring(0, 10),
+    isCollab: false,
   });
 
   const [isSaving, setIsSaving] = useState(false);
@@ -511,7 +515,7 @@ export const ClientProfileModal: React.FC<Props> = ({
 
       {/* Drawer Panel: Slide-over từ bên phải, phong cách Lensy Terracotta */}
       <div
-        className="fixed inset-x-0 bottom-0 md:inset-y-0 md:left-auto md:right-0 w-full md:w-[620px] lg:w-[680px] max-h-[94vh] md:max-h-full h-auto md:h-full bg-white dark:bg-zinc-900 border-t md:border-t-0 md:border-l border-zinc-200 dark:border-zinc-800 shadow-2xl flex flex-col z-50 overflow-hidden rounded-t-3xl md:rounded-t-none md:rounded-l-3xl"
+        className="fixed inset-x-0 bottom-0 md:inset-y-0 md:left-auto md:right-0 w-full max-w-full md:w-[620px] lg:w-[680px] max-h-[94vh] md:max-h-full h-auto md:h-full bg-white dark:bg-zinc-900 border-t md:border-t-0 md:border-l border-zinc-200 dark:border-zinc-800 shadow-2xl flex flex-col z-50 overflow-hidden overflow-x-hidden rounded-t-3xl md:rounded-t-none md:rounded-l-3xl"
         onClick={e => e.stopPropagation()}
       >
         {/* Drawer Header (Cố định trên cùng) */}
@@ -815,13 +819,44 @@ export const ClientProfileModal: React.FC<Props> = ({
                     </select>
                   </div>
 
+                  {/* Checkbox Show Collab / Hợp tác (Không thu phí) */}
+                  <div className="sm:col-span-2 flex items-center justify-between p-2.5 rounded-xl bg-orange-500/10 border border-orange-500/30">
+                    <label className="flex items-center gap-2 cursor-pointer select-none">
+                      <input
+                        type="checkbox"
+                        checked={newShootForm.isCollab}
+                        onChange={e => {
+                          const checked = e.target.checked;
+                          setNewShootForm(prev => ({
+                            ...prev,
+                            isCollab: checked,
+                            packagePrice: checked ? 0 : prev.packagePrice,
+                            paidAmount: checked ? 0 : prev.paidAmount,
+                          }));
+                        }}
+                        className="w-4 h-4 rounded text-orange-600 focus:ring-orange-500 border-zinc-300 dark:border-zinc-700 cursor-pointer"
+                      />
+                      <span className="text-xs font-bold text-orange-600 dark:text-orange-400">
+                        Show Collab / Hợp tác (Không thu phí)
+                      </span>
+                    </label>
+                    {newShootForm.isCollab && (
+                      <span className="text-[10px] px-2 py-0.5 rounded-full bg-orange-500 text-white font-bold uppercase tracking-wider">
+                        0 đ
+                      </span>
+                    )}
+                  </div>
+
                   <div className="space-y-1">
-                    <label className="text-[11px] font-bold text-zinc-700 dark:text-zinc-300">Giá gói chụp (đ):</label>
+                    <label className="text-[11px] font-bold text-zinc-700 dark:text-zinc-300">
+                      Giá gói chụp (đ): {newShootForm.isCollab && <span className="text-orange-500 font-normal">(Collab: 0đ)</span>}
+                    </label>
                     <input
                       type="text"
                       inputMode="numeric"
-                      required
-                      value={newShootForm.packagePrice ? formatCurrencyVND(newShootForm.packagePrice) : ''}
+                      required={!newShootForm.isCollab}
+                      disabled={newShootForm.isCollab}
+                      value={newShootForm.isCollab ? '0' : (newShootForm.packagePrice ? formatCurrencyVND(newShootForm.packagePrice) : '')}
                       onChange={e => {
                         const val = parseCurrencyVND(e.target.value);
                         setNewShootForm(prev => ({
@@ -831,20 +866,31 @@ export const ClientProfileModal: React.FC<Props> = ({
                         }));
                       }}
                       placeholder="VD: 5.000.000"
-                      className="w-full px-3 py-1.5 rounded-xl bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-700 text-xs font-mono text-zinc-900 dark:text-zinc-100 font-bold outline-none focus:border-[#df8653]"
+                      className={`w-full px-3 py-1.5 rounded-xl border text-xs font-mono font-bold outline-none transition-colors ${
+                        newShootForm.isCollab
+                          ? 'bg-zinc-100 dark:bg-zinc-800 border-zinc-200 dark:border-zinc-700 text-zinc-400 cursor-not-allowed'
+                          : 'bg-white dark:bg-zinc-900 border-zinc-200 dark:border-zinc-700 text-zinc-900 dark:text-zinc-100 focus:border-[#df8653]'
+                      }`}
                     />
                   </div>
 
                   <div className="space-y-1">
-                    <label className="text-[11px] font-bold text-zinc-700 dark:text-zinc-300">Khách đã thực trả (đ):</label>
+                    <label className="text-[11px] font-bold text-zinc-700 dark:text-zinc-300">
+                      Khách đã thực trả (đ): {newShootForm.isCollab && <span className="text-orange-500 font-normal">(Collab: 0đ)</span>}
+                    </label>
                     <input
                       type="text"
                       inputMode="numeric"
-                      required
-                      value={newShootForm.paidAmount ? formatCurrencyVND(newShootForm.paidAmount) : ''}
+                      required={!newShootForm.isCollab}
+                      disabled={newShootForm.isCollab}
+                      value={newShootForm.isCollab ? '0' : (newShootForm.paidAmount ? formatCurrencyVND(newShootForm.paidAmount) : '')}
                       onChange={e => setNewShootForm(prev => ({ ...prev, paidAmount: parseCurrencyVND(e.target.value) }))}
                       placeholder="VD: 5.000.000"
-                      className="w-full px-3 py-1.5 rounded-xl bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-700 text-xs font-mono text-emerald-600 dark:text-emerald-400 font-bold outline-none focus:border-emerald-500"
+                      className={`w-full px-3 py-1.5 rounded-xl border text-xs font-mono font-bold outline-none transition-colors ${
+                        newShootForm.isCollab
+                          ? 'bg-zinc-100 dark:bg-zinc-800 border-zinc-200 dark:border-zinc-700 text-zinc-400 cursor-not-allowed'
+                          : 'bg-white dark:bg-zinc-900 border-zinc-200 dark:border-zinc-700 text-emerald-600 dark:text-emerald-400 focus:border-emerald-500'
+                      }`}
                     />
                   </div>
 
@@ -953,29 +999,70 @@ export const ClientProfileModal: React.FC<Props> = ({
                               </select>
                             </div>
 
+                            {/* Checkbox Show Collab / Hợp tác (Không thu phí) */}
+                            <div className="sm:col-span-2 flex items-center justify-between p-2 rounded-xl bg-orange-500/10 border border-orange-500/30">
+                              <label className="flex items-center gap-2 cursor-pointer select-none">
+                                <input
+                                  type="checkbox"
+                                  checked={bookingForm.isCollab}
+                                  onChange={e => {
+                                    const checked = e.target.checked;
+                                    setBookingForm(prev => ({
+                                      ...prev,
+                                      isCollab: checked,
+                                      packagePrice: checked ? 0 : prev.packagePrice,
+                                      paidAmount: checked ? 0 : prev.paidAmount,
+                                      depositAmount: checked ? 0 : prev.depositAmount,
+                                    }));
+                                  }}
+                                  className="w-4 h-4 rounded text-orange-600 focus:ring-orange-500 border-zinc-300 dark:border-zinc-700 cursor-pointer"
+                                />
+                                <span className="text-xs font-bold text-orange-600 dark:text-orange-400">
+                                  Show Collab / Hợp tác (Không thu phí)
+                                </span>
+                              </label>
+                              {bookingForm.isCollab && (
+                                <span className="text-[10px] px-2 py-0.5 rounded-full bg-orange-500 text-white font-bold uppercase tracking-wider">
+                                  0 đ
+                                </span>
+                              )}
+                            </div>
+
                             <div className="space-y-1">
-                              <label className="text-[11px] font-bold text-zinc-700 dark:text-zinc-300">Giá chụp / Gói (đ):</label>
+                              <label className="text-[11px] font-bold text-zinc-700 dark:text-zinc-300">
+                                Giá chụp / Gói (đ): {bookingForm.isCollab && <span className="text-orange-500 font-normal">(Collab)</span>}
+                              </label>
                               <input
                                 type="text"
                                 inputMode="numeric"
-                                value={bookingForm.packagePrice ? formatCurrencyVND(bookingForm.packagePrice) : ''}
+                                disabled={bookingForm.isCollab}
+                                value={bookingForm.isCollab ? '0' : (bookingForm.packagePrice ? formatCurrencyVND(bookingForm.packagePrice) : '')}
                                 onChange={e => setBookingForm(prev => ({ ...prev, packagePrice: parseCurrencyVND(e.target.value) }))}
                                 placeholder="VD: 5.000.000"
-                                className="w-full px-3 py-1.5 rounded-xl bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-700 text-xs font-mono text-zinc-900 dark:text-zinc-100 font-bold outline-none focus:border-[#df8653]"
+                                className={`w-full px-3 py-1.5 rounded-xl border text-xs font-mono font-bold outline-none transition-colors ${
+                                  bookingForm.isCollab
+                                    ? 'bg-zinc-100 dark:bg-zinc-800 border-zinc-200 dark:border-zinc-700 text-zinc-400 cursor-not-allowed'
+                                    : 'bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-700 text-zinc-900 dark:text-zinc-100 focus:border-[#df8653]'
+                                }`}
                               />
                             </div>
 
                             <div className="space-y-1">
                               <label className="text-[11px] font-bold text-zinc-700 dark:text-zinc-300">
-                                Thực trả (Tính vào doanh thu) (đ):
+                                Thực trả (Tính vào doanh thu) (đ): {bookingForm.isCollab && <span className="text-orange-500 font-normal">(Collab)</span>}
                               </label>
                               <input
                                 type="text"
                                 inputMode="numeric"
-                                value={bookingForm.paidAmount ? formatCurrencyVND(bookingForm.paidAmount) : ''}
+                                disabled={bookingForm.isCollab}
+                                value={bookingForm.isCollab ? '0' : (bookingForm.paidAmount ? formatCurrencyVND(bookingForm.paidAmount) : '')}
                                 onChange={e => setBookingForm(prev => ({ ...prev, paidAmount: parseCurrencyVND(e.target.value) }))}
                                 placeholder="VD: 5.000.000"
-                                className="w-full px-3 py-1.5 rounded-xl bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-700 text-xs font-mono text-emerald-600 dark:text-emerald-400 font-bold outline-none focus:border-emerald-500"
+                                className={`w-full px-3 py-1.5 rounded-xl border text-xs font-mono font-bold outline-none transition-colors ${
+                                  bookingForm.isCollab
+                                    ? 'bg-zinc-100 dark:bg-zinc-800 border-zinc-200 dark:border-zinc-700 text-zinc-400 cursor-not-allowed'
+                                    : 'bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-700 text-emerald-600 dark:text-emerald-400 focus:border-emerald-500'
+                                }`}
                               />
                             </div>
 

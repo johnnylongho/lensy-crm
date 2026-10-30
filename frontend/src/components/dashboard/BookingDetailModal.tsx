@@ -178,6 +178,30 @@ export const BookingDetailModal: React.FC<Props> = ({
   // Category & Package Type States
   const [selectedCategory, setSelectedCategory] = useState<string>('portrait');
   const [packageType, setPackageType] = useState<string>('');
+  const [studioPackages, setStudioPackages] = useState<Array<{ id: string; name: string; price: number }>>([]);
+
+  // Fetch danh sách gói chụp của studio từ bảng packages
+  useEffect(() => {
+    const fetchStudioPackages = async () => {
+      if (!isSupabaseConfigured) return;
+      try {
+        let query = supabase.from('packages').select('id, name, price').eq('is_active', true);
+        if (booking?.studio_id) {
+          query = query.eq('studio_id', booking.studio_id);
+        } else if (booking?.photographer_id) {
+          query = query.eq('photographer_id', booking.photographer_id);
+        }
+        const { data, error } = await query;
+        if (!error && Array.isArray(data) && data.length > 0) {
+          setStudioPackages(data);
+        }
+      } catch (err) {
+        console.warn('Lỗi khi fetch packages cho BookingDetailModal:', err);
+      }
+    };
+
+    fetchStudioPackages();
+  }, [booking?.studio_id, booking?.photographer_id]);
 
   // Job Costing States
   const [expenseItems, setExpenseItems] = useState<ExpenseItem[]>([]);
@@ -656,7 +680,18 @@ export const BookingDetailModal: React.FC<Props> = ({
       return;
     }
 
-    const feeNum = Number(newCrewFee) || 0;
+    let parsedFeeType: 'fixed' | 'percent' = newCrewFeeType;
+    let feeNum = 0;
+    const rawFeeStr = String(newCrewFee || '').trim();
+
+    if (rawFeeStr.includes('%')) {
+      parsedFeeType = 'percent';
+      feeNum = parseFloat(rawFeeStr.replace('%', '').trim()) || 0;
+    } else if (parsedFeeType === 'percent') {
+      feeNum = parseFloat(rawFeeStr) || 0;
+    } else {
+      feeNum = parseCurrencyVND(rawFeeStr) || parseFloat(rawFeeStr) || 0;
+    }
 
     const newMember: CrewAssignmentItem = {
       id: 'crew-' + Date.now() + '-' + Math.random().toString(36).substring(2, 6),
@@ -665,7 +700,7 @@ export const BookingDetailModal: React.FC<Props> = ({
       name,
       phone,
       fee: feeNum,
-      fee_type: newCrewFeeType,
+      fee_type: parsedFeeType,
       is_paid: false,
     };
 
@@ -1036,7 +1071,7 @@ export const BookingDetailModal: React.FC<Props> = ({
       onClick={onClose}
     >
       <div
-        className="relative z-10 w-full max-w-3xl bg-slate-900 border border-slate-700/80 rounded-3xl shadow-2xl flex flex-col max-h-[90vh] overflow-y-auto"
+        className="relative z-10 w-full max-w-full sm:max-w-3xl bg-zinc-950 border border-white/10 rounded-3xl shadow-2xl flex flex-col max-h-[90vh] overflow-y-auto overflow-x-hidden"
         onClick={e => e.stopPropagation()}
       >
         {/* Modal Header */}
@@ -1154,16 +1189,16 @@ export const BookingDetailModal: React.FC<Props> = ({
                 {booking.packagePrice.toLocaleString('vi-VN')} đ
               </span>
             </div>
-            <div className="p-3 rounded-xl bg-zinc-900/50 border border-sky-500/20 flex flex-col justify-between">
+            <div className="p-3 rounded-xl bg-zinc-900/50 border border-white/10 flex flex-col justify-between">
               <span className="text-zinc-400 block text-[10px] uppercase font-medium tracking-wider">Khách Đã Trả</span>
-              <span className="font-mono font-bold text-sky-400 text-xs sm:text-sm mt-1">
+              <span className="font-mono font-bold text-emerald-500 text-xs sm:text-sm mt-1">
                 {effectivePaid.toLocaleString('vi-VN')} đ
               </span>
             </div>
-            <div className="p-3 rounded-xl bg-zinc-900/50 border border-amber-500/20 flex flex-col justify-between">
+            <div className="p-3 rounded-xl bg-zinc-900/50 border border-white/10 flex flex-col justify-between">
               <span className="text-zinc-400 block text-[10px] uppercase font-medium tracking-wider">Tổng Chi Phí & Thù Lao</span>
               <div>
-                <span className="font-mono font-bold text-amber-400 text-xs sm:text-sm mt-1 block">
+                <span className="font-mono font-bold text-orange-500 text-xs sm:text-sm mt-1 block">
                   {combinedTotalCost.toLocaleString('vi-VN')} đ
                 </span>
                 <span className="text-[9px] text-zinc-500 block">
@@ -1171,13 +1206,13 @@ export const BookingDetailModal: React.FC<Props> = ({
                 </span>
               </div>
             </div>
-            <div className="p-3 rounded-xl bg-zinc-900/50 border border-emerald-500/20 flex flex-col justify-between">
+            <div className="p-3 rounded-xl bg-zinc-900/50 border border-white/10 flex flex-col justify-between">
               <span className="text-zinc-400 block text-[10px] uppercase font-medium tracking-wider">Lợi Nhuận Ròng Dự Kiến</span>
               <div>
-                <span className={`font-mono font-bold text-xs sm:text-sm mt-1 block ${projectedNetProfit >= 0 ? 'text-emerald-400' : 'text-rose-400'}`}>
+                <span className={`font-mono font-bold text-xs sm:text-sm mt-1 block ${projectedNetProfit >= 0 ? 'text-emerald-500' : 'text-orange-500'}`}>
                   {projectedNetProfit.toLocaleString('vi-VN')} đ
                 </span>
-                <span className="text-[9px] text-emerald-400/80 block">
+                <span className="text-[9px] text-zinc-500 block">
                   Biên LN: {profitMargin}%
                 </span>
               </div>
@@ -1256,16 +1291,28 @@ export const BookingDetailModal: React.FC<Props> = ({
               </div>
 
               <div className="space-y-1.5">
-                <label className="text-[11px] font-bold text-indigo-400 block">
+                <label className="text-[11px] font-bold text-orange-400 block">
                   Tên Gói Chụp Cụ Thể
                 </label>
-                <input
-                  type="text"
+                <select
                   value={packageType}
                   onChange={e => setPackageType(e.target.value)}
-                  placeholder="VD: Gói VIP Diamond, Ngoại cảnh Đà Lạt, Lookbook 5 set..."
-                  className="w-full px-3 py-2 rounded-xl bg-slate-900 border border-slate-800 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-amber-400 font-medium"
-                />
+                  className="w-full px-3 py-2 rounded-xl bg-zinc-950 border border-zinc-800 text-xs font-semibold text-white outline-none focus:border-orange-500 cursor-pointer"
+                >
+                  <option value="" disabled className="bg-zinc-950 text-zinc-500">
+                    -- Chọn gói dịch vụ Studio --
+                  </option>
+                  {studioPackages.map(pkg => (
+                    <option key={pkg.id} value={pkg.name} className="bg-zinc-950 text-white">
+                      {pkg.name} ({pkg.price.toLocaleString('vi-VN')} đ)
+                    </option>
+                  ))}
+                  {packageType && !studioPackages.some(p => p.name === packageType) && (
+                    <option value={packageType} className="bg-zinc-950 text-white">
+                      {packageType} (Hiện tại)
+                    </option>
+                  )}
+                </select>
               </div>
             </div>
           </div>
@@ -1371,14 +1418,14 @@ export const BookingDetailModal: React.FC<Props> = ({
 
               {/* Quick Metrics Bar */}
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 p-3.5 rounded-2xl bg-zinc-950/70 border border-white/10 shadow-xs">
-                <div className="p-3 rounded-xl bg-zinc-900/50 border border-amber-500/20 text-center">
+                <div className="p-3 rounded-xl bg-zinc-900/50 border border-white/10 text-center">
                   <span className="text-[10px] text-zinc-400 font-medium block uppercase tracking-wider">Tổng Thù Lao Ê-Kíp</span>
                   <strong className="text-sm sm:text-base font-bold text-amber-400 font-mono mt-0.5 block">
                     {totalCrewCost.toLocaleString('vi-VN')} đ
                   </strong>
                   <span className="text-[9px] text-zinc-500 block">({crewMembers.length} nhân sự)</span>
                 </div>
-                <div className="p-3 rounded-xl bg-zinc-900/50 border border-emerald-500/20 text-center">
+                <div className="p-3 rounded-xl bg-zinc-900/50 border border-white/10 text-center">
                   <span className="text-[10px] text-zinc-400 font-medium block uppercase tracking-wider">Đã Thanh Toán</span>
                   <strong className="text-sm sm:text-base font-bold text-emerald-400 font-mono mt-0.5 block">
                     {paidCrewCost.toLocaleString('vi-VN')} đ
@@ -1536,7 +1583,17 @@ export const BookingDetailModal: React.FC<Props> = ({
                   </div>
 
                   <div className="sm:col-span-3 space-y-1">
-                    <label className="text-[11px] font-semibold text-slate-300">Thù lao / Chi phí</label>
+                    <div className="flex items-center justify-between">
+                      <label className="text-[11px] font-semibold text-slate-300">Thù lao / Chi phí</label>
+                      <span className="text-[10px] text-orange-400 font-mono">
+                        {(() => {
+                          const num = parseFloat(String(newCrewFee).replace(/[^0-9.]/g, '')) || 0;
+                          const isPercent = newCrewFeeType === 'percent' || String(newCrewFee).includes('%');
+                          const calc = isPercent ? Math.round((booking.packagePrice * num) / 100) : num;
+                          return calc > 0 ? `= ${calc.toLocaleString('vi-VN')} đ` : '';
+                        })()}
+                      </span>
+                    </div>
                     <div className="flex gap-1.5">
                       <select
                         value={newCrewFeeType}
@@ -1547,14 +1604,58 @@ export const BookingDetailModal: React.FC<Props> = ({
                         <option value="percent" className="bg-zinc-950 text-white">% Gói</option>
                       </select>
                       <input
-                        type={newCrewFeeType === 'percent' ? 'number' : 'text'}
-                        inputMode="numeric"
-                        min="0"
-                        value={newCrewFeeType === 'percent' ? newCrewFee : (newCrewFee ? formatCurrencyVND(newCrewFee) : '')}
-                        onChange={e => setNewCrewFee(newCrewFeeType === 'percent' ? e.target.value : parseCurrencyVND(e.target.value).toString())}
-                        placeholder={newCrewFeeType === 'percent' ? 'VD: 30' : 'VD: 500.000'}
-                        className="flex-1 px-3 py-2 rounded-xl bg-slate-900 border border-slate-800 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-amber-400 font-mono"
+                        type="text"
+                        value={
+                          newCrewFeeType === 'percent'
+                            ? (newCrewFee ? (String(newCrewFee).includes('%') ? newCrewFee : `${newCrewFee}%`) : '')
+                            : (newCrewFee ? formatCurrencyVND(newCrewFee) : '')
+                        }
+                        onChange={e => {
+                          const val = e.target.value.trim();
+                          if (val.includes('%')) {
+                            setNewCrewFeeType('percent');
+                            setNewCrewFee(val.replace('%', ''));
+                          } else if (newCrewFeeType === 'percent' && !val.includes('.')) {
+                            setNewCrewFee(val.replace(/[^0-9.]/g, ''));
+                          } else {
+                            setNewCrewFeeType('fixed');
+                            setNewCrewFee(parseCurrencyVND(val).toString());
+                          }
+                        }}
+                        placeholder="VD: 500.000 hoặc 30%"
+                        className="flex-1 px-3 py-2 rounded-xl bg-slate-900 border border-slate-800 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-orange-500 font-mono"
                       />
+                    </div>
+                    {/* Quick percentage / amount pills */}
+                    <div className="flex items-center gap-1 pt-0.5">
+                      <button
+                        type="button"
+                        onClick={() => { setNewCrewFeeType('percent'); setNewCrewFee('10'); }}
+                        className="px-1.5 py-0.5 rounded bg-zinc-800 hover:bg-zinc-700 text-zinc-300 text-[9px] font-mono transition-colors"
+                      >
+                        10%
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => { setNewCrewFeeType('percent'); setNewCrewFee('20'); }}
+                        className="px-1.5 py-0.5 rounded bg-zinc-800 hover:bg-zinc-700 text-zinc-300 text-[9px] font-mono transition-colors"
+                      >
+                        20%
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => { setNewCrewFeeType('percent'); setNewCrewFee('30'); }}
+                        className="px-1.5 py-0.5 rounded bg-zinc-800 hover:bg-zinc-700 text-zinc-300 text-[9px] font-mono transition-colors"
+                      >
+                        30%
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => { setNewCrewFeeType('fixed'); setNewCrewFee('500000'); }}
+                        className="px-1.5 py-0.5 rounded bg-zinc-800 hover:bg-zinc-700 text-zinc-300 text-[9px] font-mono transition-colors"
+                      >
+                        500k
+                      </button>
                     </div>
                   </div>
 
@@ -1563,7 +1664,7 @@ export const BookingDetailModal: React.FC<Props> = ({
                       type="button"
                       onClick={handleAddCrewMember}
                       disabled={!newCrewName.trim()}
-                      className="w-full py-2.5 px-3 rounded-xl bg-amber-500 hover:bg-amber-400 disabled:opacity-40 disabled:hover:bg-amber-500 text-slate-950 font-bold text-xs flex items-center justify-center gap-1.5 shadow-md shadow-amber-500/20 transition-all cursor-pointer"
+                      className="w-full min-h-[44px] py-2.5 px-3 rounded-xl bg-orange-600 hover:bg-orange-500 disabled:opacity-40 disabled:hover:bg-orange-600 text-white font-bold text-xs flex items-center justify-center gap-1.5 shadow-md shadow-orange-600/20 transition-all cursor-pointer"
                     >
                       <Plus className="w-3.5 h-3.5" />
                       <span>Thêm</span>

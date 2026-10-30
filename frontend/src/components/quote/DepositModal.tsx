@@ -181,7 +181,7 @@ export const DepositModal: React.FC<Props> = ({ quote, isOpen, onClose, onConfir
       onClick={onClose}
     >
       <div
-        className="relative z-10 w-full max-w-md rounded-3xl bg-slate-900 border border-slate-700/80 p-5 sm:p-6 shadow-2xl space-y-5 text-slate-100 max-h-[90vh] overflow-y-auto"
+        className="relative z-10 w-full max-w-full sm:max-w-md rounded-3xl bg-slate-900 border border-slate-700/80 p-5 sm:p-6 shadow-2xl space-y-5 text-slate-100 max-h-[90vh] overflow-y-auto overflow-x-hidden"
         onClick={e => e.stopPropagation()}
       >
         {/* Close Button */}

@@ -21,6 +21,7 @@ import {
   AlertCircle,
   ArrowLeft,
   ShieldCheck,
+  Printer,
 } from 'lucide-react';
 import { VerifiedBadge } from '../common/VerifiedBadge';
 
@@ -573,7 +574,28 @@ export const QuoteView: React.FC<Props> = ({
   const phoneUrl = `tel:${cleanStudioPhone}`;
 
   return (
-    <div className="min-h-screen bg-[#070b13] text-slate-100 flex flex-col luxury-gradient relative">
+        <div className="min-h-screen bg-slate-50 text-slate-900 dark:bg-[#090a0f] dark:text-zinc-100 flex flex-col relative transition-colors duration-200">
+      {/* Print CSS Rules */}
+      <style>{`
+        @media print {
+          @page {
+            size: A4 portrait;
+            margin: 12mm 15mm;
+          }
+          body {
+            background: #ffffff !important;
+            color: #090a0f !important;
+            -webkit-print-color-adjust: exact !important;
+            print-color-adjust: exact !important;
+          }
+          .no-print {
+            display: none !important;
+          }
+          footer, .fixed {
+            display: none !important;
+          }
+        }
+      `}</style>
       {/* Dynamic SEO & Open Graph Meta Tags cho Zalo, Facebook, Telegram Preview */}
       {isBookingPage ? (
         <Helmet>
@@ -610,24 +632,24 @@ export const QuoteView: React.FC<Props> = ({
       )}
 
       {/* Container - Responsive width */}
-      <div className={`w-full mx-auto px-4 py-4 sm:py-8 space-y-6 flex-1 pb-24 ${isBookingPage ? 'max-w-5xl' : 'max-w-xl'}`}>
+      <div className={`w-full max-w-full mx-auto px-4 py-4 sm:py-8 space-y-6 flex-1 pb-24 overflow-x-hidden ${isBookingPage ? 'max-w-5xl' : 'max-w-4xl'}`}>
         {isBookingPage ? (
           <>
           {/* Dynamic Studio Banner, Title & Dynamic Greeting */}
-          <div className="relative rounded-3xl overflow-hidden border border-slate-800 shadow-2xl bg-slate-900/90 backdrop-blur-sm animate-fadeIn">
+          <div className="relative rounded-3xl overflow-hidden border border-slate-200 dark:border-white/10 shadow-sm dark:shadow-2xl bg-white/80 dark:bg-zinc-900/50 backdrop-blur-xl animate-fadeIn">
             {/* Studio Cover Image */}
-            <div className="h-44 sm:h-52 w-full relative overflow-hidden bg-slate-950">
+            <div className="h-44 sm:h-52 w-full relative overflow-hidden bg-slate-900 dark:bg-zinc-950">
               <img
                 src={studioCoverUrl}
                 alt={quote.studioName}
                 className="w-full h-full object-cover brightness-[0.7] transform hover:scale-105 transition-transform duration-700"
               />
-              <div className="absolute inset-0 bg-gradient-to-t from-slate-950 via-slate-950/60 to-transparent" />
+              <div className="absolute inset-0 bg-gradient-to-t from-slate-900 dark:from-[#090a0f] via-slate-900/60 dark:via-[#090a0f]/60 to-transparent" />
             </div>
 
             {/* Studio Logo & Title */}
             <div className="relative px-5 sm:px-7 pb-4 pt-0 -mt-14 sm:-mt-16 flex flex-col sm:flex-row items-center sm:items-end gap-4 text-center sm:text-left">
-              <div className="w-24 h-24 sm:w-28 sm:h-28 rounded-2xl overflow-hidden border-2 border-amber-500/50 shadow-2xl bg-slate-950 p-1 flex-shrink-0">
+              <div className="w-24 h-24 sm:w-28 sm:h-28 rounded-2xl overflow-hidden border-2 border-orange-500/50 shadow-2xl bg-white dark:bg-zinc-950 p-1 flex-shrink-0">
                 <img
                   src={studioAvatarUrl}
                   alt={quote.studioName}
@@ -639,8 +661,8 @@ export const QuoteView: React.FC<Props> = ({
               </div>
               <div className="space-y-1.5 flex-1">
                 <div className="flex flex-wrap items-center gap-2">
-                  <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-amber-500/10 border border-amber-500/30 text-amber-400 text-[11px] font-semibold tracking-wide uppercase">
-                    <span className="w-1.5 h-1.5 rounded-full bg-amber-400" />
+                  <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-orange-500/10 border border-orange-500/30 text-orange-600 dark:text-orange-400 text-[11px] font-semibold tracking-wide uppercase">
+                    <span className="w-1.5 h-1.5 rounded-full bg-orange-500" />
                     <span>Studio Profile</span>
                   </div>
 
@@ -653,13 +675,13 @@ export const QuoteView: React.FC<Props> = ({
                   )}
                 </div>
 
-                <h1 className="text-2xl sm:text-3xl font-extrabold text-white tracking-tight">
+                <h1 className="text-2xl sm:text-3xl font-extrabold text-slate-900 dark:text-zinc-100 tracking-tight">
                   {quote.studioName}
                 </h1>
                 {quote.photographerName && (
-                  <p className="text-xs text-slate-400 flex items-center justify-center sm:justify-start gap-1.5 mt-0.5">
+                  <p className="text-xs text-slate-500 dark:text-zinc-400 flex items-center justify-center sm:justify-start gap-1.5 mt-0.5">
                     <span>Nhiếp ảnh gia chính:</span>
-                    <span className="text-slate-200 font-semibold">{quote.photographerName}</span>
+                    <span className="text-slate-700 dark:text-zinc-200 font-semibold">{quote.photographerName}</span>
                     {isPhotographerVerified && <VerifiedBadge className="w-3.5 h-3.5" />}
                   </p>
                 )}
@@ -668,8 +690,8 @@ export const QuoteView: React.FC<Props> = ({
 
             {/* Dynamic Standard Greeting */}
             <div className="px-5 sm:px-7 pb-6 pt-2">
-              <div className="p-4 sm:p-5 rounded-2xl bg-amber-500/10 border border-amber-500/20 text-slate-200 text-xs sm:text-sm leading-relaxed shadow-inner">
-                Chào mừng bạn đến với <strong className="text-amber-400 font-bold">{quote.studioName}</strong>. Vui lòng để lại thông tin, chúng tôi sẽ liên hệ tư vấn gói chụp phù hợp nhất cho bạn.
+              <div className="p-4 sm:p-5 rounded-2xl bg-orange-500/5 dark:bg-orange-500/10 border border-orange-500/20 text-slate-700 dark:text-zinc-300 text-xs sm:text-sm leading-relaxed">
+                Chào mừng bạn đến với <strong className="text-orange-600 dark:text-orange-400 font-bold">{quote.studioName}</strong>. Vui lòng để lại thông tin, chúng tôi sẽ liên hệ tư vấn gói chụp phù hợp nhất cho bạn.
               </div>
             </div>
           </div>
@@ -720,23 +742,47 @@ export const QuoteView: React.FC<Props> = ({
             {/* Session Primary Info */}
             <QuoteSessionInfo quote={quote} />
 
-            {/* Package Inclusions & Deliverables */}
-            <QuoteInclusions
-              inclusions={quote.inclusions}
-              deliverables={quote.deliverables}
-            />
+            {/* Print / PDF Action Bar for Client Quote (Ẩn khi in) */}
+            <div className="no-print flex items-center justify-between p-3.5 sm:p-4 rounded-2xl bg-white dark:bg-zinc-900/50 backdrop-blur-xl border border-slate-200 dark:border-white/10 shadow-sm">
+              <div className="flex items-center gap-2">
+                <span className="w-2 h-2 rounded-full bg-orange-600 animate-pulse" />
+                <span className="text-xs font-bold text-slate-800 dark:text-zinc-200">
+                  Báo Giá & Hợp Đồng Dịch Vụ
+                </span>
+              </div>
+              <button
+                type="button"
+                onClick={() => window.print()}
+                className="h-11 min-h-[44px] px-4 rounded-xl bg-orange-600 hover:bg-orange-500 active:scale-95 text-white font-semibold text-xs flex items-center gap-2 transition-all shadow-md shadow-orange-600/20 cursor-pointer"
+                title="In ra giấy hoặc lưu thành file PDF"
+              >
+                <Printer className="w-4 h-4" />
+                <span>In Báo Giá / Xuất PDF</span>
+              </button>
+            </div>
 
-            {/* Equipment Guarantee */}
-            <QuoteEquipment equipmentList={quote.equipmentList} />
+            {/* Grid 1 Cột trên Mobile, 2 Cột trên Desktop: Quyền Lợi & Quyết Toán Tài Chính */}
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 items-start">
+              {/* Cột 1: Quyền Lợi, Sản Phẩm & Thiết Bị */}
+              <div className="space-y-6">
+                <QuoteInclusions
+                  inclusions={quote.inclusions}
+                  deliverables={quote.deliverables}
+                />
+                <QuoteEquipment equipmentList={quote.equipmentList} />
+              </div>
 
-            {/* Price Breakdown & Deposit Trigger */}
-            <QuotePriceSummary
-              quote={quote}
-              onOpenDepositModal={() => {
-                setPaymentModalType('deposit');
-                setIsDepositModalOpen(true);
-              }}
-            />
+              {/* Cột 2: Quyết Toán Tài Chính */}
+              <div className="space-y-6 lg:sticky lg:top-6">
+                <QuotePriceSummary
+                  quote={quote}
+                  onOpenDepositModal={() => {
+                    setPaymentModalType('deposit');
+                    setIsDepositModalOpen(true);
+                  }}
+                />
+              </div>
+            </div>
           </>
         )}
 
@@ -762,27 +808,27 @@ export const QuoteView: React.FC<Props> = ({
         </div>
 
         {/* Photographer Contact Card */}
-        <div className="rounded-2xl bg-slate-900/40 border border-slate-800/80 p-5 text-center space-y-2.5">
-          <h4 className="text-xs font-semibold uppercase tracking-wider text-slate-400 flex items-center justify-center gap-1.5">
+        <div className="rounded-2xl bg-white dark:bg-zinc-900/50 backdrop-blur-xl border border-slate-200 dark:border-white/10 p-5 sm:p-6 text-center space-y-3 shadow-sm dark:shadow-xl">
+          <h4 className="text-xs font-bold uppercase tracking-wider text-orange-600 dark:text-orange-400 flex items-center justify-center gap-1.5">
             <span>Hỗ Trợ & Tư Vấn</span>
             {isPhotographerVerified && <VerifiedBadge className="w-3.5 h-3.5" />}
           </h4>
-          <p className="text-xs text-slate-400">
+          <p className="text-xs text-slate-500 dark:text-zinc-400">
             Mọi thắc mắc hoặc yêu cầu riêng, quý khách vui lòng liên hệ:
           </p>
           <div className="flex flex-wrap items-center justify-center gap-2 pt-1 text-xs">
             <a
               href={phoneUrl}
-              className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-slate-800/80 hover:bg-slate-700 text-slate-200 font-medium transition-colors"
+              className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-slate-100 hover:bg-orange-500/10 dark:bg-zinc-800/90 dark:hover:bg-orange-500/20 border border-slate-200 hover:border-orange-500/30 dark:border-zinc-700 dark:hover:border-orange-500/40 text-slate-700 hover:text-orange-600 dark:text-zinc-200 dark:hover:text-orange-400 font-semibold transition-all duration-200 shadow-sm"
             >
-              <Phone className="w-3.5 h-3.5 text-amber-400" />
+              <Phone className="w-3.5 h-3.5 text-orange-600 dark:text-orange-400" />
               <span>{studioPhone}</span>
             </a>
             <a
               href={zaloUrl}
               target="_blank"
               rel="noreferrer"
-              className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-blue-600/30 hover:bg-blue-600/50 border border-blue-500/30 text-blue-200 font-medium transition-colors"
+              className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-[#0068FF]/15 hover:bg-[#0068FF]/25 border border-[#0068FF]/30 hover:border-[#0068FF]/50 text-blue-300 hover:text-white font-semibold transition-all duration-200 shadow-sm"
             >
               <MessageCircle className="w-3.5 h-3.5" />
               <span>Nhắn Zalo</span>
@@ -792,8 +838,8 @@ export const QuoteView: React.FC<Props> = ({
       </div>
 
       {/* Sticky Bottom Watermark (Dấu chìm dính đáy) */}
-      <footer className="sticky bottom-0 z-30 w-full py-2.5 px-4 bg-slate-950/85 backdrop-blur-md border-t border-slate-800/50 text-center">
-        <div className="text-xs sm:text-[11px] text-slate-400 opacity-50 hover:opacity-100 transition-opacity duration-300 inline-flex items-center justify-center gap-1 cursor-default select-none">
+      <footer className="sticky bottom-0 z-30 w-full py-2.5 px-4 bg-white/80 dark:bg-[#090a0f]/85 backdrop-blur-md border-t border-slate-200 dark:border-white/10 text-center">
+        <div className="text-xs sm:text-[11px] text-slate-500 dark:text-zinc-500 opacity-50 hover:opacity-100 transition-opacity duration-300 inline-flex items-center justify-center gap-1 cursor-default select-none">
           <span>⚡ Powered by Lensy - Developed by Mirmia Studio & Academy</span>
         </div>
       </footer>
@@ -805,7 +851,7 @@ export const QuoteView: React.FC<Props> = ({
           href={zaloUrl}
           target="_blank"
           rel="noopener noreferrer"
-          className="flex items-center gap-2 px-3.5 sm:px-4 py-2.5 rounded-full bg-[#0068FF] hover:bg-[#0057d9] text-white text-xs sm:text-sm font-bold shadow-lg shadow-blue-500/40 hover:shadow-blue-500/60 transition-all transform hover:scale-105 active:scale-95 group"
+          className="relative flex items-center gap-2 px-4 py-2.5 rounded-full bg-[#0068FF] hover:bg-[#0057d9] text-white text-xs sm:text-sm font-bold shadow-xl shadow-blue-600/40 hover:shadow-blue-600/60 transition-all duration-200 transform hover:scale-105 active:scale-95 group"
           title={`Chat Zalo với ${quote.photographerName || 'Studio'} (${studioPhone})`}
         >
           <span className="w-5 h-5 rounded-full bg-white text-[#0068FF] font-black text-[11px] flex items-center justify-center tracking-tighter shadow-sm">
@@ -817,7 +863,7 @@ export const QuoteView: React.FC<Props> = ({
         {/* Nút Gọi Điện (Màu xanh lá) */}
         <a
           href={phoneUrl}
-          className="flex items-center gap-2 px-3.5 sm:px-4 py-2.5 rounded-full bg-emerald-600 hover:bg-emerald-500 text-white text-xs sm:text-sm font-bold shadow-lg shadow-emerald-600/40 hover:shadow-emerald-600/60 transition-all transform hover:scale-105 active:scale-95 group"
+          className="flex items-center gap-2 px-4 py-2.5 rounded-full bg-orange-600 hover:bg-orange-500 text-white text-xs sm:text-sm font-semibold shadow-xl shadow-orange-600/35 hover:shadow-orange-600/50 transition-all duration-200 transform hover:scale-105 active:scale-95 group"
           title={`Gọi hotline Studio: ${studioPhone}`}
         >
           <div className="w-5 h-5 rounded-full bg-white/20 flex items-center justify-center">

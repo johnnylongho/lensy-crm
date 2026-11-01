@@ -20,6 +20,7 @@ import { QuoteData } from '../../types';
 import { supabase, isSupabaseConfigured } from '../../lib/supabase';
 import { generateGoogleCalendarUrl, downloadIcsFile } from '../../lib/calendarIntegration';
 import { generateDepositReceiptMessage, openZaloChat } from '../../lib/zaloMessenger';
+import { notifyDepositReceived } from '../../lib/telegramNotifier';
 
 interface Props {
   quote: QuoteData;
@@ -122,6 +123,18 @@ export const DepositModal: React.FC<Props> = ({ quote, isOpen, onClose, onConfir
           })
           .eq('quote_token', quote.quoteToken);
       }
+
+      // Thông báo Telegram tức thì cho Studio
+      notifyDepositReceived(
+        {
+          clientName: quote.clientName,
+          depositAmount: effectiveAmount,
+          eventDate: quote.eventDate,
+          quoteToken: quote.quoteToken,
+          paymentMethod: isFinal ? 'Thanh toán quyết toán' : 'Khách đã tải bill cọc',
+        },
+        quote.studio_id
+      );
 
       setIsPendingReview(true);
     } catch (e: any) {

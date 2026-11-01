@@ -123,8 +123,8 @@ export const PackagePricingSection: React.FC<Props> = ({
         </p>
       </div>
 
-      {/* 3-Column Bento Grid on Desktop, Horizontal Scroll on Mobile */}
-      <div className="flex overflow-x-auto snap-x snap-mandatory md:grid md:grid-cols-2 lg:grid-cols-3 gap-5 pb-4 md:pb-0 scrollbar-none">
+      {/* Responsive Bento Grid: 1 cột trên Mobile, 2 cột trên Tablet, 3 cột trên Desktop (Triệt tiêu hoàn toàn cuộn ngang) */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 w-full max-w-full">
         {packages.map(pkg => {
           const isSelected = selectedPackageId === pkg.id;
           const depositAmount = Math.round(pkg.price * 0.3);
@@ -143,7 +143,7 @@ export const PackagePricingSection: React.FC<Props> = ({
               onClick={() => onSelectPackage(pkg)}
               whileHover={{ y: -4 }}
               transition={{ duration: 0.2 }}
-              className={`min-w-[85vw] sm:min-w-[340px] md:min-w-0 snap-center cursor-pointer rounded-3xl h-full flex flex-col justify-between overflow-hidden relative group text-left transition-all duration-300 ${
+              className={`w-full cursor-pointer rounded-3xl h-full flex flex-col justify-between overflow-hidden relative group text-left transition-all duration-300 ${
                 isSelected
                   ? 'bg-white dark:bg-zinc-900/90 border-2 border-orange-500 ring-2 ring-orange-500/20 shadow-xl shadow-orange-500/10'
                   : 'bg-white dark:bg-zinc-900/50 backdrop-blur-xl border border-slate-200 dark:border-white/10 hover:border-orange-500/40 hover:shadow-lg dark:hover:bg-zinc-900/80'
@@ -159,9 +159,9 @@ export const PackagePricingSection: React.FC<Props> = ({
 
               <div className="flex flex-col flex-1">
                 {/* ========================================================== */}
-                {/* MINI PORTFOLIO CAROUSEL / SLIDER                           */}
+                {/* MINI PORTFOLIO CAROUSEL / SLIDER (h-40 trên mobile, aspect 16/10 trên desktop) */}
                 {/* ========================================================== */}
-                <div className="relative aspect-[16/10] w-full bg-slate-100 dark:bg-zinc-950 overflow-hidden group/img">
+                <div className="relative h-40 sm:h-48 md:aspect-[16/10] w-full bg-slate-100 dark:bg-zinc-950 overflow-hidden group/img">
                   <AnimatePresence mode="wait">
                     <motion.img
                       key={activeImage}

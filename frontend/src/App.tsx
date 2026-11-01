@@ -4,6 +4,8 @@ import { AuthProvider } from './context/AuthContext';
 import { WorkspaceProvider } from './context/WorkspaceContext';
 import { ThemeProvider } from './context/ThemeContext';
 import { PrivateRoute } from './components/auth/PrivateRoute';
+import { ProtectedRoute } from './components/auth/ProtectedRoute';
+import { SuperAdminRoute } from './components/auth/SuperAdminRoute';
 import { DashboardLayout } from './layouts/DashboardLayout';
 import { PublicLayout } from './layouts/PublicLayout';
 import { PageLoadingFallback } from './components/common/PageLoadingFallback';
@@ -13,7 +15,7 @@ import { CalendarEvent, QuoteData } from './types';
 // Code-splitting via React.lazy: Tách các chunks độc lập tối ưu tốc độ tải
 const LandingPage = lazy(() => import('./components/home/LandingPage').then(m => ({ default: m.LandingPage })));
 const LoginPage = lazy(() => import('./components/auth/LoginPage').then(m => ({ default: m.LoginPage })));
-const QuoteView = lazy(() => import('./components/quote/QuoteView').then(m => ({ default: m.QuoteView })));
+const PublicBookingPage = lazy(() => import('./pages/PublicBookingPage').then(m => ({ default: m.PublicBookingPage })));
 const PhotographerDashboard = lazy(() => import('./components/dashboard/PhotographerDashboard').then(m => ({ default: m.PhotographerDashboard })));
 const SettingsPage = lazy(() => import('./components/dashboard/SettingsPage').then(m => ({ default: m.SettingsPage })));
 const GearsManagementPage = lazy(() => import('./components/dashboard/GearsManagementPage').then(m => ({ default: m.GearsManagementPage })));
@@ -84,7 +86,7 @@ export function App() {
             <Route
               path="/book/:username"
               element={
-                <QuoteView
+                <PublicBookingPage
                   initialQuote={quote || undefined}
                   onQuoteStatusChange={handleQuoteStatusChange}
                   onBookingSubmit={handleNewBooking}
@@ -96,7 +98,7 @@ export function App() {
             <Route
               path="/book/studio/:slug"
               element={
-                <QuoteView
+                <PublicBookingPage
                   initialQuote={quote || undefined}
                   onQuoteStatusChange={handleQuoteStatusChange}
                   onBookingSubmit={handleNewBooking}
@@ -107,7 +109,7 @@ export function App() {
             <Route
               path="/studio/:slug"
               element={
-                <QuoteView
+                <PublicBookingPage
                   initialQuote={quote || undefined}
                   onQuoteStatusChange={handleQuoteStatusChange}
                   onBookingSubmit={handleNewBooking}
@@ -118,7 +120,7 @@ export function App() {
             <Route
               path="/book/studio/:id"
               element={
-                <QuoteView
+                <PublicBookingPage
                   initialQuote={quote || undefined}
                   onQuoteStatusChange={handleQuoteStatusChange}
                   onBookingSubmit={handleNewBooking}
@@ -130,7 +132,7 @@ export function App() {
             <Route
               path="/quote/:token"
               element={
-                <QuoteView
+                <PublicBookingPage
                   initialQuote={quote || undefined}
                   onQuoteStatusChange={handleQuoteStatusChange}
                   onBookingSubmit={handleNewBooking}
@@ -142,7 +144,7 @@ export function App() {
             <Route
               path="/quote"
               element={
-                <QuoteView
+                <PublicBookingPage
                   initialQuote={quote || undefined}
                   onQuoteStatusChange={handleQuoteStatusChange}
                   onBookingSubmit={handleNewBooking}
@@ -177,24 +179,59 @@ export function App() {
             {/* Trang Quản Lý Hồ Sơ Khách Hàng (Client CRM & LTV) */}
             <Route path="/dashboard/clients" element={<ClientsManagementPage />} />
 
-            {/* Trang Quản Lý Thiết Bị Studio */}
-            <Route path="/dashboard/gears" element={<GearsManagementPage />} />
+            {/* Trang Quản Lý Thiết Bị Studio (Khóa cứng với Freelancer - Strict RBAC) */}
+            <Route
+              path="/dashboard/gears"
+              element={
+                <ProtectedRoute disallowFreelancer={true} redirectTo="/dashboard">
+                  <GearsManagementPage />
+                </ProtectedRoute>
+              }
+            />
 
-            {/* Trang Quản Lý Gói Dịch Vụ & Bảng Giá */}
-            <Route path="/dashboard/packages" element={<PackagesManagementPage />} />
+            {/* Trang Quản Lý Gói Dịch Vụ & Bảng Giá (Khóa cứng với Freelancer - Strict RBAC) */}
+            <Route
+              path="/dashboard/packages"
+              element={
+                <ProtectedRoute disallowFreelancer={true} redirectTo="/dashboard">
+                  <PackagesManagementPage />
+                </ProtectedRoute>
+              }
+            />
 
             {/* Trang Cài Đặt Hồ Sơ & Tài Khoản Ngân Hàng */}
             <Route path="/dashboard/settings" element={<SettingsPage />} />
             <Route path="/dashboard/settings/profile" element={<SettingsPage />} />
 
-            {/* Trang Quản Trị Dành Riêng Cho Studio Admin */}
-            <Route path="/dashboard/studio-settings" element={<StudioSettingsPage />} />
+            {/* Trang Quản Trị Dành Riêng Cho Studio Admin (Khóa cứng với Freelancer - Strict RBAC) */}
+            <Route
+              path="/dashboard/studio-settings"
+              element={
+                <ProtectedRoute disallowFreelancer={true} redirectTo="/dashboard">
+                  <StudioSettingsPage />
+                </ProtectedRoute>
+              }
+            />
 
-            {/* Trang Quản Lý Bảng Lương & Thù Lao Ê-kíp */}
-            <Route path="/dashboard/payroll" element={<PayrollManagementPage />} />
+            {/* Trang Quản Lý Bảng Lương & Thù Lao Ê-kíp (Khóa cứng với Freelancer - Strict RBAC) */}
+            <Route
+              path="/dashboard/payroll"
+              element={
+                <ProtectedRoute disallowFreelancer={true} redirectTo="/dashboard">
+                  <PayrollManagementPage />
+                </ProtectedRoute>
+              }
+            />
 
-            {/* Trung Tâm Quản Trị Hệ Thống Dành Cho Super Admin */}
-            <Route path="/dashboard/super-admin" element={<SuperAdminConsolePage />} />
+            {/* Trung Tâm Quản Trị Hệ Thống Dành Cho Super Admin (Được bảo vệ bởi SuperAdminRoute) */}
+            <Route
+              path="/dashboard/super-admin"
+              element={
+                <SuperAdminRoute>
+                  <SuperAdminConsolePage />
+                </SuperAdminRoute>
+              }
+            />
           </Route>
 
           {/* ==================================================================== */}

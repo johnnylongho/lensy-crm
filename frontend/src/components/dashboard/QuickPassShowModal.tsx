@@ -29,7 +29,7 @@ interface Props {
 
 export const QuickPassShowModal: React.FC<Props> = ({ isOpen, onClose, onBookingCreated }) => {
   const { user } = useAuth();
-  const { currentStudio } = useWorkspace();
+  const { currentStudio, isStudioMember } = useWorkspace();
 
   const todayStr = new Date().toISOString().split('T')[0];
 
@@ -82,7 +82,7 @@ export const QuickPassShowModal: React.FC<Props> = ({ isOpen, onClose, onBooking
       notes: notes.trim() ? `[Pass Show] ${notes.trim()}` : '[Pass Show]',
       status: 'confirmed',
       photographer_id: user?.id || null,
-      studio_id: currentStudio?.id || null,
+      studio_id: isStudioMember ? null : (currentStudio?.id || null),
     };
 
     try {

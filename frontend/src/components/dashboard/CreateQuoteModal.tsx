@@ -3,6 +3,7 @@ import { useWorkspace } from '../../context/WorkspaceContext';
 import { supabase, isSupabaseConfigured } from '../../lib/supabase';
 import { scanGearConflicts, ConflictScanResult, GearItem } from '../../lib/conflictScanner';
 import { SessionType, CalendarEvent } from '../../types';
+import { notifyNewBooking, notifyResourceConflict } from '../../lib/telegramNotifier';
 import {
   X,
   PlusCircle,
@@ -58,7 +59,7 @@ export const CreateQuoteModal: React.FC<Props> = ({
   onQuoteCreated,
 }) => {
   // Workspace state
-  const { currentStudio } = useWorkspace();
+  const { currentStudio, isStudioMember } = useWorkspace();
 
   // Real Database state
   const [packagesList, setPackagesList] = useState<DbPackage[]>([]);
@@ -295,7 +296,7 @@ export const CreateQuoteModal: React.FC<Props> = ({
       notes: combinedNotes,
       assigned_gears: selectedGears,
       package_type: packagesList.find(p => p.id === selectedPackageId)?.name || sessionTitle.trim(),
-      studio_id: currentStudio?.id || null,
+      studio_id: isStudioMember ? null : (currentStudio?.id || null),
     };
 
     try {
@@ -398,6 +399,21 @@ export const CreateQuoteModal: React.FC<Props> = ({
       };
 
       onQuoteCreated(newCalendarEvent);
+
+      // Gửi thông báo Telegram tức thì về show mới
+      notifyNewBooking(
+        {
+          clientName: newBookingRecord.client_name,
+          clientPhone: newBookingRecord.client_phone,
+          eventDate: newBookingRecord.event_date,
+          sessionType: newBookingRecord.package_type || newBookingRecord.session_type,
+          packagePrice: newBookingRecord.package_price,
+          quoteToken: quoteToken,
+        },
+        currentStudio?.id,
+        currentStudio?.name
+      );
+
       setCreatedQuoteData({
         token: quoteToken,
         clientName: clientName.trim(),

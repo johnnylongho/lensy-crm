@@ -11,12 +11,17 @@ interface Props {
 /**
  * PublicBookingPage:
  * Trang Đặt Lịch Công Khai dành riêng cho khách hàng (Public Booking Experience).
- * Áp dụng hệ màu chuẩn Lensy CRM: Midnight Obsidian (Dark Mode) & Clean Slate (Light Mode)
- * với điểm nhấn Cam Hổ Phách (Primary Orange CTA).
+ * Áp dụng nguyên tắc Mobile-First:
+ * - Triệt tiêu hoàn toàn thanh cuộn ngang (overflow-x-hidden w-full max-w-full)
+ * - Lưới giá dịch vụ responsive (1 cột trên mobile, 2 cột trên tablet, 3 cột trên desktop)
+ * - Nút CTA xác nhận tối ưu vùng bấm cảm ứng (min-h-[48px], sticky chân trang)
  */
 export const PublicBookingPage: React.FC<Props> = (props) => {
-  return <QuoteView {...props} />;
+  return (
+    <div className="w-full max-w-full overflow-x-hidden min-h-screen relative">
+      <QuoteView {...props} />
+    </div>
+  );
 };
 
 export default PublicBookingPage;
-

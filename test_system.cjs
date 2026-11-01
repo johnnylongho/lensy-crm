@@ -1806,7 +1806,7 @@ console.log('\n▶ 40. Kiểm tra Phân Hệ Bảng Lương, Quét Xung Đột N
   if (fs.existsSync(dashLayoutFile)) {
     const dlContent = fs.readFileSync(dashLayoutFile, 'utf8');
     assert(dlContent.includes('/dashboard/payroll') && dlContent.includes('Bảng Lương Ekip'), 'DashboardLayout.tsx tích hợp menu Bảng Lương Ekip');
-    assert(dlContent.includes('Thu Nhập (My Payroll)'), 'DashboardLayout.tsx tích hợp menu Thu Nhập (My Payroll) cho thành viên');
+    assert(dlContent.includes('Thu Nhập (My Payroll)') || dlContent.includes('My Payroll') || dlContent.includes('Bảng Lương & Thù Lao'), 'DashboardLayout.tsx tích hợp menu Thu Nhập (My Payroll) cho thành viên');
   }
 
   // 40.3 Conflict Scanner 2.0 trong conflictScanner.ts
@@ -1835,6 +1835,392 @@ console.log('\n▶ 40. Kiểm tra Phân Hệ Bảng Lương, Quét Xung Đột N
   if (fs.existsSync(clientProofingFile)) {
     const cpContent = fs.readFileSync(clientProofingFile, 'utf8');
     assert(cpContent.includes('submit_client_proofing_selection'), 'ClientProofingSection ưu tiên gọi RPC submit_client_proofing_selection');
+  }
+}
+
+// --------------------------------------------------------------------
+// 41. KIỂM TRA GIAI ĐOẠN 1: TELEGRAM BOT, NOTIFICATION HUB & EXPORT REPORTS
+// --------------------------------------------------------------------
+console.log('\n▶ 41. Kiểm tra Giai Đoạn 1: Telegram Bot, Notification Hub & Xuất Báo Cáo...');
+{
+  // 41.1 Telegram Bot Notifier Service
+  const telegramServiceFile = path.join(__dirname, 'frontend', 'src', 'lib', 'telegramNotifier.ts');
+  assert(fs.existsSync(telegramServiceFile), 'Module telegramNotifier.ts tồn tại tại frontend/src/lib/');
+
+  if (fs.existsSync(telegramServiceFile)) {
+    const tgContent = fs.readFileSync(telegramServiceFile, 'utf8');
+    assert(tgContent.includes('getTelegramConfig'), 'telegramNotifier export hàm getTelegramConfig');
+    assert(tgContent.includes('saveTelegramConfig'), 'telegramNotifier export hàm saveTelegramConfig');
+    assert(tgContent.includes('testTelegramConnection'), 'telegramNotifier export hàm testTelegramConnection');
+    assert(tgContent.includes('notifyNewBooking'), 'telegramNotifier export hàm notifyNewBooking');
+    assert(tgContent.includes('notifyDepositReceived'), 'telegramNotifier export hàm notifyDepositReceived');
+    assert(tgContent.includes('notifyProofingLocked'), 'telegramNotifier export hàm notifyProofingLocked');
+    assert(tgContent.includes('notifyResourceConflict'), 'telegramNotifier export hàm notifyResourceConflict');
+  }
+
+  // 41.2 Report Exporter Utility
+  const reportExporterFile = path.join(__dirname, 'frontend', 'src', 'utils', 'reportExporter.ts');
+  assert(fs.existsSync(reportExporterFile), 'Module reportExporter.ts tồn tại tại frontend/src/utils/');
+
+  if (fs.existsSync(reportExporterFile)) {
+    const repContent = fs.readFileSync(reportExporterFile, 'utf8');
+    assert(repContent.includes('exportBookingsToCsv'), 'reportExporter export hàm exportBookingsToCsv');
+    assert(repContent.includes('exportPayrollToCsv'), 'reportExporter export hàm exportPayrollToCsv');
+    assert(repContent.includes('exportFinancialSummaryToCsv'), 'reportExporter export hàm exportFinancialSummaryToCsv');
+    assert(repContent.includes('\\uFEFF'), 'reportExporter hỗ trợ UTF-8 BOM chống lỗi font tiếng Việt trên Microsoft Excel');
+  }
+
+  // 41.3 In-App Notification Hub & Dropdown
+  const notifDropdownFile = path.join(__dirname, 'frontend', 'src', 'components', 'navigation', 'NotificationDropdown.tsx');
+  assert(fs.existsSync(notifDropdownFile), 'Component NotificationDropdown.tsx tồn tại tại frontend/src/components/navigation/');
+
+  if (fs.existsSync(notifDropdownFile)) {
+    const ndContent = fs.readFileSync(notifDropdownFile, 'utf8');
+    assert(ndContent.includes('AppNotification'), 'NotificationDropdown khai báo kiểu AppNotification');
+    assert(ndContent.includes('unreadCount'), 'NotificationDropdown tính toán số lượng thông báo chưa đọc');
+    assert(ndContent.includes('activeFilter'), 'NotificationDropdown hỗ trợ lọc thông báo theo danh mục');
+  }
+
+  // 41.4 Tích hợp NotificationDropdown vào DashboardLayout
+  const dashboardLayoutFile = path.join(__dirname, 'frontend', 'src', 'layouts', 'DashboardLayout.tsx');
+  if (fs.existsSync(dashboardLayoutFile)) {
+    const dlContent = fs.readFileSync(dashboardLayoutFile, 'utf8');
+    assert(dlContent.includes('NotificationDropdown'), 'DashboardLayout tích hợp NotificationDropdown vào thanh điều hướng đầu trang');
+  }
+
+  // 41.5 Tích hợp Xuất Báo Cáo vào ClayStudioDashboard & PayrollManagementPage
+  const clayDashboardFile = path.join(__dirname, 'frontend', 'src', 'components', 'dashboard', 'ClayStudioDashboard.tsx');
+  if (fs.existsSync(clayDashboardFile)) {
+    const cdContent = fs.readFileSync(clayDashboardFile, 'utf8');
+    assert(cdContent.includes('exportBookingsToCsv'), 'ClayStudioDashboard tích hợp hàm xuất báo cáo danh sách lịch chụp');
+    assert(cdContent.includes('exportFinancialSummaryToCsv'), 'ClayStudioDashboard tích hợp hàm xuất báo cáo tài chính P&L');
+    assert(cdContent.includes('Xuất Báo Cáo'), 'ClayStudioDashboard hiển thị nút Xuất Báo Cáo');
+  }
+
+  const payrollPageFile = path.join(__dirname, 'frontend', 'src', 'components', 'dashboard', 'PayrollManagementPage.tsx');
+  if (fs.existsSync(payrollPageFile)) {
+    const ppContent = fs.readFileSync(payrollPageFile, 'utf8');
+    assert(ppContent.includes('exportPayrollToCsv'), 'PayrollManagementPage tích hợp hàm xuất bảng lương ra CSV/Excel');
+    assert(ppContent.includes('Xuất Excel Bảng Lương'), 'PayrollManagementPage hiển thị nút Xuất Excel Bảng Lương');
+  }
+
+  // 41.6 Tab Cấu hình Telegram Bot trong StudioSettingsPage
+  const studioSettingsFile = path.join(__dirname, 'frontend', 'src', 'components', 'dashboard', 'StudioSettingsPage.tsx');
+  if (fs.existsSync(studioSettingsFile)) {
+    const ssContent = fs.readFileSync(studioSettingsFile, 'utf8');
+    assert(ssContent.includes("'integrations'"), 'StudioSettingsPage mở rộng activeTab bao gồm integrations');
+    assert(ssContent.includes('handleTestTelegram'), 'StudioSettingsPage cung cấp hàm testTelegramConnection gửi tin nhắn kiểm tra');
+    assert(ssContent.includes('Tích Hợp & Telegram Bot'), 'StudioSettingsPage hiển thị tab Tích Hợp & Telegram Bot');
+  }
+}
+
+// --------------------------------------------------------------------
+// 42. KIỂM TRA PHÂN HỆ LỌC ẢNH PROOFING & RAW SCRIPT CHO CANON R / LIGHTROOM
+// --------------------------------------------------------------------
+console.log('\n▶ 42. Kiểm tra Phân Hệ Lọc Ảnh Proofing & RAW Script (Canon R / Lightroom)...');
+
+const rawBatchScriptGenFile = path.join(__dirname, 'frontend', 'src', 'utils', 'rawBatchScriptGenerator.ts');
+assert(fs.existsSync(rawBatchScriptGenFile), 'File rawBatchScriptGenerator.ts tồn tại');
+
+if (fs.existsSync(rawBatchScriptGenFile)) {
+  const rbsContent = fs.readFileSync(rawBatchScriptGenFile, 'utf8');
+  assert(rbsContent.includes('generateRawFilterBatchScript'), 'rawBatchScriptGenerator export hàm generateRawFilterBatchScript');
+  assert(rbsContent.includes('downloadRawFilterBatchScript'), 'rawBatchScriptGenerator export hàm downloadRawFilterBatchScript');
+  assert(rbsContent.includes('Selected_RAW_HauKy'), 'Kịch bản .bat tự động tạo thư mục gom file Selected_RAW_HauKy');
+  assert(rbsContent.includes('CR3') && rbsContent.includes('ARW'), 'Kịch bản hỗ trợ định dạng RAW Canon R (.CR3) và Sony (.ARW)');
+}
+
+if (fs.existsSync(bookingDetailModalFile)) {
+  const bdmContent = fs.readFileSync(bookingDetailModalFile, 'utf8');
+  assert(bdmContent.includes('downloadRawFilterBatchScript'), 'BookingDetailModal import downloadRawFilterBatchScript');
+  assert(bdmContent.includes('6N7A0663.JPG'), 'BookingDetailModal nạp demo ảnh thực tế Canon R series 6N7A');
+  assert(bdmContent.includes("join(' ')"), 'BookingDetailModal định dạng cú pháp Lightroom bằng dấu cách thay vì dấu phẩy');
+  assert(bdmContent.includes('⚡ Tải Script Lọc RAW (.bat)'), 'BookingDetailModal hiển thị nút ⚡ Tải Script Lọc RAW (.bat)');
+  assert(bdmContent.includes('retouchedMap'), 'BookingDetailModal có checklist quản lý tiến độ hậu kỳ từng ảnh');
+}
+
+const clientProofingSectionFile = path.join(__dirname, 'frontend', 'src', 'components', 'quote', 'ClientProofingSection.tsx');
+if (fs.existsSync(clientProofingSectionFile)) {
+  const cpsContent = fs.readFileSync(clientProofingSectionFile, 'utf8');
+  assert(cpsContent.includes('downloadRawFilterBatchScript'), 'ClientProofingSection import downloadRawFilterBatchScript');
+  assert(cpsContent.includes('Lọc RAW (.bat)'), 'ClientProofingSection có nút Lọc RAW (.bat)');
+  assert(cpsContent.includes('Phí chỉnh sửa phát sinh tạm tính'), 'ClientProofingSection hiển thị cảnh báo Upsell khi chọn vượt số lượng gói');
+  assert(cpsContent.includes("join(' ')"), 'ClientProofingSection định dạng Lightroom query phân cách bằng dấu cách');
+}
+
+// --------------------------------------------------------------------
+// 43. KIỂM TRA BẢO MẬT PHÂN QUYỀN RBAC & KHÓA CỨNG ROUTING THEO DB
+// --------------------------------------------------------------------
+console.log('\n▶ 43. Kiểm tra Bảo Mật Phân Quyền RBAC & Khóa Cứng Routing Theo DB...');
+
+{
+  const protectedRouteFile = path.join(__dirname, 'frontend', 'src', 'components', 'auth', 'ProtectedRoute.tsx');
+  assert(fs.existsSync(protectedRouteFile), 'Component ProtectedRoute.tsx tồn tại');
+
+  if (fs.existsSync(protectedRouteFile)) {
+    const prContent = fs.readFileSync(protectedRouteFile, 'utf8');
+    assert(prContent.includes('disallowFreelancer'), 'ProtectedRoute hỗ trợ cờ disallowFreelancer để chặn Freelancer');
+    assert(prContent.includes('redirectTo'), 'ProtectedRoute hỗ trợ cấu hình đường dẫn redirect (mặc định /dashboard)');
+    assert(prContent.includes('actualAccountType'), 'ProtectedRoute xác thực account_type thực tế');
+  }
+
+  const appComponentFile = path.join(__dirname, 'frontend', 'src', 'App.tsx');
+  if (fs.existsSync(appComponentFile)) {
+    const appContent = fs.readFileSync(appComponentFile, 'utf8');
+    assert(appContent.includes("import { ProtectedRoute }"), 'App.tsx import component ProtectedRoute');
+    assert(appContent.includes('path="/dashboard/gears"') && appContent.includes('<ProtectedRoute disallowFreelancer'), 'Route /dashboard/gears được bọc bởi ProtectedRoute');
+    assert(appContent.includes('path="/dashboard/packages"') && appContent.includes('<ProtectedRoute disallowFreelancer'), 'Route /dashboard/packages được bọc bởi ProtectedRoute');
+    assert(appContent.includes('path="/dashboard/payroll"') && appContent.includes('<ProtectedRoute disallowFreelancer'), 'Route /dashboard/payroll được bọc bởi ProtectedRoute');
+    assert(appContent.includes('path="/dashboard/studio-settings"') && appContent.includes('<ProtectedRoute disallowFreelancer'), 'Route /dashboard/studio-settings được bọc bởi ProtectedRoute');
+  }
+
+  const workspaceCtxFile = path.join(__dirname, 'frontend', 'src', 'context', 'WorkspaceContext.tsx');
+  if (fs.existsSync(workspaceCtxFile)) {
+    const wsContent = fs.readFileSync(workspaceCtxFile, 'utf8');
+    assert(!wsContent.includes("localStorage.getItem('lensy_active_role')"), 'WorkspaceContext loại bỏ hoàn toàn đọc lensy_active_role từ localStorage');
+    assert(!wsContent.includes("localStorage.setItem('lensy_active_role'"), 'WorkspaceContext loại bỏ hoàn toàn ghi đè lensy_active_role vào localStorage');
+    assert(wsContent.includes('johnnyho1705@gmail.com'), 'Hàm switchAccountType chỉ cho phép duy nhất master email johnnyho1705@gmail.com');
+    assert(wsContent.includes("accountType === 'freelancer'"), 'Biến isFreelancer phụ thuộc trực tiếp vào account_type thực tế');
+  }
+
+  const dashboardLayoutFile = path.join(__dirname, 'frontend', 'src', 'layouts', 'DashboardLayout.tsx');
+  if (fs.existsSync(dashboardLayoutFile)) {
+    const dlContent = fs.readFileSync(dashboardLayoutFile, 'utf8');
+    assert(dlContent.includes("johnnyho1705@gmail.com"), 'DashboardLayout ẩn hoàn toàn Role Switcher, chỉ hiển thị cho johnnyho1705@gmail.com');
+  }
+
+  const clayDashboardFile = path.join(__dirname, 'frontend', 'src', 'components', 'dashboard', 'ClayStudioDashboard.tsx');
+  if (fs.existsSync(clayDashboardFile)) {
+    const cdContent = fs.readFileSync(clayDashboardFile, 'utf8');
+    assert(cdContent.includes("johnnyho1705@gmail.com"), 'ClayStudioDashboard ẩn hoàn toàn Role Switcher trong dropdown, chỉ hiển thị cho johnnyho1705@gmail.com');
+  }
+
+  const authCtxFile = path.join(__dirname, 'frontend', 'src', 'context', 'AuthContext.tsx');
+  if (fs.existsSync(authCtxFile)) {
+    const acContent = fs.readFileSync(authCtxFile, 'utf8');
+    assert(acContent.includes("localStorage.removeItem('lensy_active_role')"), 'AuthContext tự động dọn sạch lensy_active_role khi khởi động và đăng xuất');
+    assert(acContent.includes("accountType"), 'AuthContext export biến accountType');
+  }
+}
+
+// --------------------------------------------------------------------
+// 44. KIỂM TRA MOBILE-FIRST PUBLIC BOOKING & LOẠI BỎ CUỘN NGANG
+// --------------------------------------------------------------------
+console.log('▶ 44. Kiểm tra Tái Cấu Trúc Mobile-First Public Booking & Loại Bỏ Cuộn Ngang...');
+{
+  const packagePricingFile = path.join(__dirname, 'frontend', 'src', 'components', 'quote', 'PackagePricingSection.tsx');
+  if (fs.existsSync(packagePricingFile)) {
+    const ppContent = fs.readFileSync(packagePricingFile, 'utf8');
+    assert(
+      ppContent.includes('grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6'),
+      'PackagePricingSection áp dụng cấu hình Grid bắt buộc: grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6'
+    );
+    assert(
+      !ppContent.includes('overflow-x-auto snap-x'),
+      'PackagePricingSection đã loại bỏ hoàn toàn thanh cuộn ngang flex overflow-x-auto snap-x trên khối gói dịch vụ'
+    );
+    assert(
+      ppContent.includes('h-40'),
+      'Ảnh bìa gói chụp giảm chiều cao trên Mobile xuống h-40 để tối ưu không gian hiển thị text'
+    );
+  }
+
+  const calendarFile = path.join(__dirname, 'frontend', 'src', 'components', 'quote', 'InteractiveAvailabilityCalendar.tsx');
+  if (fs.existsSync(calendarFile)) {
+    const calContent = fs.readFileSync(calendarFile, 'utf8');
+    assert(
+      calContent.includes('w-full max-w-full') && calContent.includes('overflow-hidden'),
+      'Lịch trực quan (Interactive Calendar) thiết lập w-full max-w-full overflow-hidden không tràn màn hình'
+    );
+    assert(
+      calContent.includes('h-9') && calContent.includes('text-[11px]'),
+      'Ô ngày tháng trong lịch tối ưu kích thước và font chữ trên di động (h-9, text-[11px])'
+    );
+  }
+
+  const bookingFormFile = path.join(__dirname, 'frontend', 'src', 'components', 'quote', 'ClientBookingForm.tsx');
+  if (fs.existsSync(bookingFormFile)) {
+    const bfContent = fs.readFileSync(bookingFormFile, 'utf8');
+    assert(
+      bfContent.includes('min-h-[48px]'),
+      'Nút CTA Xác Nhận & Thanh Toán có chiều cao tối thiểu min-h-[48px] theo chuẩn cảm ứng chạm Mobile'
+    );
+    assert(
+      bfContent.includes('sticky bottom-') || bfContent.includes('w-full'),
+      'Nút CTA hỗ trợ sticky ở đáy màn hình hoặc full width trên Mobile'
+    );
+  }
+
+  const publicPageFile = path.join(__dirname, 'frontend', 'src', 'pages', 'PublicBookingPage.tsx');
+  if (fs.existsSync(publicPageFile)) {
+    const pageContent = fs.readFileSync(publicPageFile, 'utf8');
+    assert(
+      pageContent.includes('overflow-x-hidden') && pageContent.includes('w-full'),
+      'PublicBookingPage bọc ngoài bằng thẻ div có class overflow-x-hidden w-full max-w-full'
+    );
+  }
+
+  const publicLayoutFile = path.join(__dirname, 'frontend', 'src', 'layouts', 'PublicLayout.tsx');
+  if (fs.existsSync(publicLayoutFile)) {
+    const plContent = fs.readFileSync(publicLayoutFile, 'utf8');
+    assert(
+      plContent.includes('overflow-x-hidden') && plContent.includes('w-full'),
+      'PublicLayout được bọc class overflow-x-hidden w-full max-w-full'
+    );
+  }
+}
+
+// --------------------------------------------------------------------
+// 45. KIỂM TRA CÔ LẬP TUYỆT ĐỐI SUPER ADMIN & BẢO VỆ ĐỊNH TUYẾN
+// --------------------------------------------------------------------
+console.log('▶ 45. Kiểm tra Cô Lập Tuyệt Đối Super Admin & Bảo Vệ Định Tuyến...');
+{
+  const dashboardLayoutFile = path.join(__dirname, 'frontend', 'src', 'layouts', 'DashboardLayout.tsx');
+  if (fs.existsSync(dashboardLayoutFile)) {
+    const dlContent = fs.readFileSync(dashboardLayoutFile, 'utf8');
+    assert(
+      dlContent.includes("account_type === 'super_admin'") && dlContent.includes('johnnyho1705@gmail.com'),
+      'DashboardLayout chỉ render menu Super Admin khi account_type là super_admin hoặc email johnnyho1705@gmail.com'
+    );
+    assert(
+      !dlContent.includes("isStudioAdmin ||\n      accountType === 'studio_admin'") &&
+      !dlContent.includes("isStudioAdmin || accountType === 'studio_admin'"),
+      'DashboardLayout triệt tiêu hoàn toàn quyền xem menu Super Admin đối với studio_admin'
+    );
+    assert(
+      !dlContent.includes("Boolean(user?.email?.includes('admin'))"),
+      'DashboardLayout đã xóa điều kiện lỏng lẻo email chứa admin'
+    );
+    assert(
+      dlContent.includes('toastBanner') && dlContent.includes('ShieldAlert'),
+      'DashboardLayout tích hợp thanh thông báo lỗi Toast và icon ShieldAlert khi bị từ chối truy cập'
+    );
+  }
+
+  const superAdminRouteFile = path.join(__dirname, 'frontend', 'src', 'components', 'auth', 'SuperAdminRoute.tsx');
+  assert(fs.existsSync(superAdminRouteFile), 'File SuperAdminRoute.tsx đã được khởi tạo để bảo vệ URL');
+  if (fs.existsSync(superAdminRouteFile)) {
+    const sarContent = fs.readFileSync(superAdminRouteFile, 'utf8');
+    assert(
+      sarContent.includes("account_type === 'super_admin'") && sarContent.includes('johnnyho1705@gmail.com'),
+      'SuperAdminRoute kiểm tra điều kiện tuyệt đối super_admin hoặc email johnnyho1705@gmail.com'
+    );
+    assert(
+      sarContent.includes("Navigate") && sarContent.includes("redirectTo") && sarContent.includes("Access Denied"),
+      'SuperAdminRoute tự động redirect về /dashboard kèm thông báo Từ chối truy cập (Access Denied)'
+    );
+    assert(
+      sarContent.includes("lensy:toast") || sarContent.includes("lensy_toast"),
+      'SuperAdminRoute kích hoạt Toast cảnh báo an ninh tới người dùng'
+    );
+  }
+
+  const appFile = path.join(__dirname, 'frontend', 'src', 'App.tsx');
+  if (fs.existsSync(appFile)) {
+    const appContent = fs.readFileSync(appFile, 'utf8');
+    assert(
+      appContent.includes('SuperAdminRoute'),
+      'App.tsx import component SuperAdminRoute'
+    );
+    assert(
+      appContent.includes('<SuperAdminRoute>') && appContent.includes('<SuperAdminConsolePage />'),
+      'Route /dashboard/super-admin được bọc kín bởi Guard <SuperAdminRoute>'
+    );
+  }
+
+  const authFile = path.join(__dirname, 'frontend', 'src', 'context', 'AuthContext.tsx');
+  if (fs.existsSync(authFile)) {
+    const authContent = fs.readFileSync(authFile, 'utf8');
+    assert(
+      authContent.includes("'super_admin'"),
+      'AuthContext định nghĩa kiểu AccountType hỗ trợ super_admin'
+    );
+  }
+}
+
+// --------------------------------------------------------------------
+// 46. KIỂM TRA ĐỒNG BỘ ROLE RADIO VÀ DYNAMIC HOST CÀI ĐẶT HỒ SƠ
+// --------------------------------------------------------------------
+console.log('▶ 46. Kiểm tra Đồng Bộ Role Radio & Dynamic Host Cài Đặt Hồ Sơ...');
+{
+  const settingsFile = path.join(__dirname, 'frontend', 'src', 'components', 'dashboard', 'SettingsPage.tsx');
+  if (fs.existsSync(settingsFile)) {
+    const setContent = fs.readFileSync(settingsFile, 'utf8');
+    assert(
+      setContent.includes('resolveActualAccountType') && setContent.includes('resolveActualUserRole'),
+      'SettingsPage tự động đồng bộ giá trị mặc định của radio button từ Context và Database ngay khi mount'
+    );
+    assert(
+      !setContent.includes('name="user_role"'),
+      'SettingsPage đã xóa hoàn toàn cụm Radio Button chọn PHÂN LOẠI TÀI KHOẢN theo chuẩn SaaS B2B'
+    );
+    assert(
+      setContent.includes('Vai trò tài khoản hiện tại') || setContent.includes('Vai trò hiện tại'),
+      'SettingsPage hiển thị thẻ Badge tĩnh thông báo vai trò hiện tại của tài khoản'
+    );
+    assert(
+      setContent.includes('window.location.origin') && setContent.includes('${currentOrigin}/book/'),
+      'SettingsPage lấy host động qua window.location.origin, loại bỏ hardcode localhost'
+    );
+  }
+
+  const userSettingsFile = path.join(__dirname, 'frontend', 'src', 'components', 'dashboard', 'UserSettingsPage.tsx');
+  assert(fs.existsSync(userSettingsFile), 'Tạo alias UserSettingsPage.tsx kết nối liền mạch tới SettingsPage');
+}
+
+// --------------------------------------------------------------------
+// 47. KIỂM TRA LUỒNG NÂNG CẤP, GIA NHẬP & HYBRID WORKSPACE STUDIO MEMBER
+// --------------------------------------------------------------------
+console.log('▶ 47. Kiểm tra Luồng Nâng Cấp, Gia Nhập & Hybrid Workspace Studio Member...');
+{
+  const settingsFile = path.join(__dirname, 'frontend', 'src', 'components', 'dashboard', 'SettingsPage.tsx');
+  if (fs.existsSync(settingsFile)) {
+    const setContent = fs.readFileSync(settingsFile, 'utf8');
+    assert(
+      setContent.includes('Nâng Cấp Lên Chủ Studio') && setContent.includes('/dashboard/packages'),
+      'Khối 1 (Up-sell): Cung cấp nút Nâng Cấp Lên Chủ Studio chuyển hướng sang trang chọn gói SaaS'
+    );
+    assert(
+      setContent.includes('Gia Nhập Studio (Studio Member)') &&
+      setContent.includes('handleJoinStudioByCode') &&
+      setContent.includes('Gửi Yêu Cầu'),
+      'Khối 2 (Join Studio): Cung cấp form nhập mã lời mời/mã Studio và gửi yêu cầu gia nhập cho Chủ Studio duyệt'
+    );
+  }
+
+  const dashboardLayoutFile = path.join(__dirname, 'frontend', 'src', 'layouts', 'DashboardLayout.tsx');
+  if (fs.existsSync(dashboardLayoutFile)) {
+    const dlContent = fs.readFileSync(dashboardLayoutFile, 'utf8');
+    assert(
+      dlContent.includes('Tài Khoản Cá Nhân') && dlContent.includes('Không Gian Studio'),
+      'Sidebar của Studio Member chia làm 2 khu vực rõ ràng: Tài Khoản Cá Nhân và Không Gian Studio (Hybrid Workspace)'
+    );
+    assert(
+      dlContent.includes('Bảng Điều Khiển Cá Nhân') && dlContent.includes('Khách Hàng Của Tôi'),
+      'Khu vực 1 Tài Khoản Cá Nhân chứa đầy đủ Bảng điều khiển cá nhân và Khách hàng của tôi để quản lý Job ngoài'
+    );
+    assert(
+      dlContent.includes('Lịch Phân Công Từ Studio') && dlContent.includes('Bảng Lương & Thù Lao'),
+      'Khu vực 2 Không Gian Studio chứa Lịch phân công từ Studio và Bảng lương/Thù lao'
+    );
+  }
+
+  const quickPassFile = path.join(__dirname, 'frontend', 'src', 'components', 'dashboard', 'QuickPassShowModal.tsx');
+  if (fs.existsSync(quickPassFile)) {
+    const qpFile = fs.readFileSync(quickPassFile, 'utf8');
+    assert(
+      qpFile.includes('isStudioMember ? null :'),
+      'QuickPassShowModal đảm bảo show cá nhân của Studio Member có studio_id là null, không đồng bộ lên Studio'
+    );
+  }
+
+  const createQuoteFile = path.join(__dirname, 'frontend', 'src', 'components', 'dashboard', 'CreateQuoteModal.tsx');
+  if (fs.existsSync(createQuoteFile)) {
+    const cqFile = fs.readFileSync(createQuoteFile, 'utf8');
+    assert(
+      cqFile.includes('isStudioMember ? null :'),
+      'CreateQuoteModal đảm bảo lịch/báo giá cá nhân của Studio Member có studio_id là null, bảo vệ quyền riêng tư job ngoài'
+    );
   }
 }
 

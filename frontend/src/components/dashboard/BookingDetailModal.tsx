@@ -59,11 +59,15 @@ import {
   Image as ImageIcon,
   Upload,
   Heart,
+  Zap,
+  CheckSquare,
+  Square,
 } from 'lucide-react';
 import { batchCompressImages } from '../../utils/imageCompressor';
 import { openZaloChat, generatePhotoDeliveryMessage } from '../../lib/zaloMessenger';
 import { VerifiedBadge } from '../common/VerifiedBadge';
 import { generateGoogleCalendarUrl, downloadIcsFile } from '../../utils/googleCalendarSync';
+import { downloadRawFilterBatchScript } from '../../utils/rawBatchScriptGenerator';
 
 const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
@@ -101,18 +105,18 @@ const CREW_ROLE_CONFIG: Record<CrewRole, { label: string; badgeClass: string; do
 };
 
 const DEMO_GALLERY_PHOTOS = [
-  { filename: 'IMG_2041.JPG', url: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=800&q=80' },
-  { filename: 'IMG_2042.JPG', url: 'https://images.unsplash.com/photo-1517841905240-472988babdf9?auto=format&fit=crop&w=800&q=80' },
-  { filename: 'IMG_2043.JPG', url: 'https://images.unsplash.com/photo-1524504388940-b1c1722653e1?auto=format&fit=crop&w=800&q=80' },
-  { filename: 'IMG_2044.JPG', url: 'https://images.unsplash.com/photo-1506794778202-cad84cf45f1d?auto=format&fit=crop&w=800&q=80' },
-  { filename: 'IMG_2045.JPG', url: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&w=800&q=80' },
-  { filename: 'IMG_2046.JPG', url: 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?auto=format&fit=crop&w=800&q=80' },
-  { filename: 'IMG_2047.JPG', url: 'https://images.unsplash.com/photo-1519741497674-611481863552?auto=format&fit=crop&w=800&q=80' },
-  { filename: 'IMG_2048.JPG', url: 'https://images.unsplash.com/photo-1511285560929-80b456fea0bc?auto=format&fit=crop&w=800&q=80' },
-  { filename: 'IMG_2049.JPG', url: 'https://images.unsplash.com/photo-1469334031218-e382a71b716b?auto=format&fit=crop&w=800&q=80' },
-  { filename: 'IMG_2050.JPG', url: 'https://images.unsplash.com/photo-1500917293891-ef795e70e1f6?auto=format&fit=crop&w=800&q=80' },
-  { filename: 'IMG_2051.JPG', url: 'https://images.unsplash.com/photo-1529139574466-a303027c1d8b?auto=format&fit=crop&w=800&q=80' },
-  { filename: 'IMG_2052.JPG', url: 'https://images.unsplash.com/photo-1492562080023-ab3db95bfbce?auto=format&fit=crop&w=800&q=80' },
+  { filename: '6N7A0663.JPG', url: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=800&q=80' },
+  { filename: '6N7A0642.JPG', url: 'https://images.unsplash.com/photo-1517841905240-472988babdf9?auto=format&fit=crop&w=800&q=80' },
+  { filename: '6N7A0574.JPG', url: 'https://images.unsplash.com/photo-1524504388940-b1c1722653e1?auto=format&fit=crop&w=800&q=80' },
+  { filename: '6N7A0589.JPG', url: 'https://images.unsplash.com/photo-1506794778202-cad84cf45f1d?auto=format&fit=crop&w=800&q=80' },
+  { filename: '6N7A0601.JPG', url: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&w=800&q=80' },
+  { filename: '6N7A0612.JPG', url: 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?auto=format&fit=crop&w=800&q=80' },
+  { filename: '6N7A0625.JPG', url: 'https://images.unsplash.com/photo-1519741497674-611481863552?auto=format&fit=crop&w=800&q=80' },
+  { filename: '6N7A0633.JPG', url: 'https://images.unsplash.com/photo-1511285560929-80b456fea0bc?auto=format&fit=crop&w=800&q=80' },
+  { filename: '6N7A0650.JPG', url: 'https://images.unsplash.com/photo-1469334031218-e382a71b716b?auto=format&fit=crop&w=800&q=80' },
+  { filename: '6N7A0671.JPG', url: 'https://images.unsplash.com/photo-1500917293891-ef795e70e1f6?auto=format&fit=crop&w=800&q=80' },
+  { filename: '6N7A0682.JPG', url: 'https://images.unsplash.com/photo-1529139574466-a303027c1d8b?auto=format&fit=crop&w=800&q=80' },
+  { filename: '6N7A0695.JPG', url: 'https://images.unsplash.com/photo-1492562080023-ab3db95bfbce?auto=format&fit=crop&w=800&q=80' },
 ];
 
 interface Props {
@@ -160,6 +164,7 @@ export const BookingDetailModal: React.FC<Props> = ({
   const [copiedLightroomQuery, setCopiedLightroomQuery] = useState(false);
   const [isUploadingPreviews, setIsUploadingPreviews] = useState(false);
   const [uploadProgress, setUploadProgress] = useState<{ current: number; total: number } | null>(null);
+  const [retouchedMap, setRetouchedMap] = useState<Record<string, boolean>>({});
 
   // Staff Assignment States
   const [assignedPhotographerId, setAssignedPhotographerId] = useState<string>('');
@@ -751,15 +756,44 @@ export const BookingDetailModal: React.FC<Props> = ({
 
   const handleCopyLightroomQuery = () => {
     const listToCopy = clientSelectedItems.length > 0 ? clientSelectedItems : (proofingSession.items || []);
-    const filenames = listToCopy.map(i => i.filename).join(', ');
-    if (!filenames) {
+    // Cú pháp chuẩn Lightroom Mobile & CC trên PC: Tên gốc không đuôi mở rộng, cách nhau bởi 1 dấu cách
+    const cleanFilenames = listToCopy
+      .map(i => i.filename.replace(/\.[^/.]+$/, '').trim())
+      .filter(Boolean)
+      .join(' ');
+
+    if (!cleanFilenames) {
       setToastMessage({ type: 'error', text: 'Chưa có ảnh nào trong danh sách chọn!' });
       return;
     }
-    navigator.clipboard.writeText(filenames);
+    navigator.clipboard.writeText(cleanFilenames);
     setCopiedLightroomQuery(true);
     setTimeout(() => setCopiedLightroomQuery(false), 2500);
-    setToastMessage({ type: 'success', text: `Đã copy ${listToCopy.length} mã file cho Lightroom Library!` });
+    setToastMessage({ type: 'success', text: `Đã copy ${listToCopy.length} mã file (${cleanFilenames}) cho Lightroom!` });
+  };
+
+  const handleDownloadRawBatchScript = () => {
+    const listToExport = clientSelectedItems.length > 0 ? clientSelectedItems : (proofingSession.items || []);
+    if (listToExport.length === 0) {
+      setToastMessage({ type: 'error', text: 'Chưa có ảnh nào được chọn để tạo file lọc RAW!' });
+      return;
+    }
+    const success = downloadRawFilterBatchScript(listToExport, booking?.clientName || 'KhachHang');
+    if (success) {
+      setToastMessage({
+        type: 'success',
+        text: `Đã tải file .bat lọc tự động ${listToExport.length} file RAW Canon R (.CR3) thành công!`,
+      });
+    } else {
+      setToastMessage({ type: 'error', text: 'Không thể tạo file script lọc RAW.' });
+    }
+  };
+
+  const handleToggleRetouched = (filename: string) => {
+    setRetouchedMap(prev => ({
+      ...prev,
+      [filename]: !prev[filename],
+    }));
   };
 
   const handleUnlockProofing = () => {
@@ -2428,8 +2462,8 @@ export const BookingDetailModal: React.FC<Props> = ({
                         <button
                           type="button"
                           onClick={handleCopyLightroomQuery}
-                          className="px-3 py-1.5 rounded-xl bg-purple-500/20 hover:bg-purple-500/30 text-purple-300 border border-purple-500/40 text-xs font-bold flex items-center gap-1.5 transition-all cursor-pointer shadow-sm"
-                          title="Sao chép danh sách file để dán vào Lightroom Library Text Search"
+                          className="px-3 py-1.5 rounded-xl bg-purple-500/20 hover:bg-purple-500/30 text-purple-300 border border-purple-500/40 text-xs font-bold flex items-center gap-1.5 transition-all cursor-pointer shadow-sm hover:scale-[1.02]"
+                          title="Sao chép tên file cách nhau bởi dấu cách để dán trực tiếp vào Text Search của Lightroom Mobile / CC"
                         >
                           {copiedLightroomQuery ? (
                             <>
@@ -2439,9 +2473,19 @@ export const BookingDetailModal: React.FC<Props> = ({
                           ) : (
                             <>
                               <Copy className="w-3.5 h-3.5 text-purple-400" />
-                              <span>Copy mã file cho Lightroom</span>
+                              <span>Copy mã cho Lightroom</span>
                             </>
                           )}
+                        </button>
+
+                        <button
+                          type="button"
+                          onClick={handleDownloadRawBatchScript}
+                          className="px-3 py-1.5 rounded-xl bg-amber-500/20 hover:bg-amber-500/30 text-amber-300 border border-amber-500/40 text-xs font-bold flex items-center gap-1.5 transition-all cursor-pointer shadow-sm hover:scale-[1.02]"
+                          title="Tự động tạo file .bat để lọc và copy file RAW .CR3 sang folder Selected_RAW_HauKy chỉ bằng 1 cú click đúp"
+                        >
+                          <Zap className="w-3.5 h-3.5 text-amber-400" />
+                          <span>⚡ Tải Script Lọc RAW (.bat)</span>
                         </button>
 
                         <button
@@ -2468,38 +2512,79 @@ export const BookingDetailModal: React.FC<Props> = ({
                       </div>
                     </div>
 
-                    <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-2 max-h-48 overflow-y-auto pr-1">
-                      {clientSelectedItems.map((item, idx) => (
-                        <div
-                          key={item.id || idx}
-                          className="p-2.5 rounded-xl bg-slate-900/90 border border-slate-800 text-xs flex items-start gap-2.5"
-                        >
-                          {item.preview_url ? (
-                            <img
-                              src={item.preview_url}
-                              alt={item.filename}
-                              className="w-10 h-10 rounded-lg object-cover bg-slate-950 flex-shrink-0 border border-slate-700"
-                            />
-                          ) : (
-                            <span className="w-6 h-6 rounded-full bg-purple-500/20 text-purple-300 text-[10px] font-bold flex items-center justify-center font-mono flex-shrink-0">
-                              {idx + 1}
-                            </span>
-                          )}
-                          <div className="flex-1 min-w-0">
-                            <div className="flex items-center justify-between gap-1">
-                              <strong className="font-mono text-white text-xs truncate">{item.filename}</strong>
-                              <Heart className="w-3 h-3 text-rose-500 fill-rose-500 flex-shrink-0" />
-                            </div>
-                            {item.notes ? (
-                              <p className="text-[11px] text-amber-300/90 mt-0.5 line-clamp-2 italic">
-                                "{item.notes}"
-                              </p>
+                    {/* Tiến độ Retouching */}
+                    <div className="flex items-center justify-between text-[11px] text-slate-400 px-1">
+                      <span>Tiến độ hậu kỳ của Studio:</span>
+                      <span className="font-mono text-emerald-400 font-bold">
+                        Đã sửa xong: {clientSelectedItems.filter(it => retouchedMap[it.filename]).length} / {clientSelectedItems.length} ảnh
+                      </span>
+                    </div>
+
+                    <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-2.5 max-h-56 overflow-y-auto pr-1">
+                      {clientSelectedItems.map((item, idx) => {
+                        const isDone = Boolean(retouchedMap[item.filename]);
+                        return (
+                          <div
+                            key={item.id || idx}
+                            className={`p-2.5 rounded-xl border text-xs flex items-start gap-2.5 transition-all ${
+                              isDone
+                                ? 'bg-emerald-950/20 border-emerald-500/40 shadow-sm'
+                                : 'bg-slate-900/90 border-slate-800'
+                            }`}
+                          >
+                            {item.preview_url ? (
+                              <img
+                                src={item.preview_url}
+                                alt={item.filename}
+                                className={`w-12 h-12 rounded-lg object-cover bg-slate-950 flex-shrink-0 border transition-all ${
+                                  isDone ? 'border-emerald-500 ring-1 ring-emerald-500' : 'border-slate-700'
+                                }`}
+                              />
                             ) : (
-                              <p className="text-[10px] text-slate-500 mt-0.5">Retouch chuẩn gói</p>
+                              <span className="w-7 h-7 rounded-full bg-purple-500/20 text-purple-300 text-[10px] font-bold flex items-center justify-center font-mono flex-shrink-0">
+                                {idx + 1}
+                              </span>
                             )}
+                            <div className="flex-1 min-w-0">
+                              <div className="flex items-center justify-between gap-1">
+                                <strong className="font-mono text-white text-xs truncate">{item.filename}</strong>
+                                <button
+                                  type="button"
+                                  onClick={() => handleToggleRetouched(item.filename)}
+                                  className={`p-0.5 rounded transition-colors cursor-pointer ${
+                                    isDone ? 'text-emerald-400 hover:text-emerald-300' : 'text-slate-500 hover:text-slate-400'
+                                  }`}
+                                  title={isDone ? 'Đánh dấu chưa sửa' : 'Đánh dấu đã sửa xong'}
+                                >
+                                  {isDone ? (
+                                    <CheckSquare className="w-4 h-4 fill-emerald-500/20" />
+                                  ) : (
+                                    <Square className="w-4 h-4" />
+                                  )}
+                                </button>
+                              </div>
+                              {item.notes ? (
+                                <p className="text-[11px] text-amber-300 mt-1 line-clamp-2 italic bg-amber-500/10 px-1.5 py-0.5 rounded border border-amber-500/20">
+                                  "{item.notes}"
+                                </p>
+                              ) : (
+                                <p className="text-[10px] text-slate-500 mt-1">Retouch chuẩn tone gói</p>
+                              )}
+                              <div className="mt-1 flex items-center gap-1.5">
+                                <span
+                                  className={`text-[9px] font-bold px-1.5 py-0.5 rounded-full ${
+                                    isDone
+                                      ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/30'
+                                      : 'bg-slate-800 text-slate-400'
+                                  }`}
+                                >
+                                  {isDone ? '✓ Đã xong' : '⏳ Chờ hậu kỳ'}
+                                </span>
+                              </div>
+                            </div>
                           </div>
-                        </div>
-                      ))}
+                        );
+                      })}
                     </div>
                   </div>
                 ) : (

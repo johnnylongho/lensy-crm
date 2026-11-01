@@ -17,6 +17,7 @@ import {
 import { CalendarEvent } from '../../types';
 import { supabase, isSupabaseConfigured } from '../../lib/supabase';
 import { openZaloChat } from '../../lib/zaloMessenger';
+import { notifyDepositReceived } from '../../lib/telegramNotifier';
 
 interface Props {
   isOpen: boolean;
@@ -74,6 +75,18 @@ export const ReceiptReviewModal: React.FC<Props> = ({
           },
         ]);
       }
+
+      // Gửi thông báo Telegram tức thì cho Studio
+      notifyDepositReceived(
+        {
+          clientName: booking.clientName,
+          depositAmount: booking.depositAmount,
+          eventDate: booking.eventDate,
+          quoteToken: booking.quoteToken,
+          paymentMethod: 'Duyệt biên lai cọc',
+        },
+        booking.studio_id
+      );
 
       onConfirmSuccess(booking.id);
       onClose();

@@ -28,7 +28,10 @@ import {
   ArrowUpRight,
   ArrowLeft,
   ShieldCheck,
+  Download,
+  FileSpreadsheet,
 } from 'lucide-react';
+import { exportPayrollToCsv } from '../../utils/reportExporter';
 
 const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
@@ -620,6 +623,41 @@ export const PayrollManagementPage: React.FC = () => {
               ? 'Theo dõi thù lao chụp, makeup và tiến độ thanh toán từ Studio.'
               : 'Quyết toán phân bổ thù lao, quét nợ nhân sự và tạo mã VietQR chuyển khoản 1 chạm.'}
           </p>
+        </div>
+
+        {/* Action Buttons */}
+        <div className="flex items-center gap-2 self-start sm:self-center">
+          <button
+            type="button"
+            onClick={() => {
+              exportPayrollToCsv(
+                filteredRows.map(r => ({
+                  id: r.rowId,
+                  bookingId: r.bookingId,
+                  memberName: r.staffName,
+                  roleLabel: CREW_ROLE_LABELS[r.role]?.label || r.role,
+                  phone: r.staffPhone,
+                  clientName: r.clientName,
+                  eventDate: r.eventDate,
+                  calculatedFee: r.calculatedAmount,
+                  feeType: r.feeType,
+                  rawFee: r.rawFee,
+                  isPaid: r.isPaid,
+                  bankAccount: r.bankAccount,
+                  bankName: r.bankName,
+                })),
+                {
+                  studioName: currentStudio?.name,
+                  monthLabel: selectedMonth === 'all' ? 'Toan_Thoi_Gian' : `Thang_${selectedMonth}`,
+                }
+              );
+            }}
+            className="flex items-center gap-2 px-3.5 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs shadow-xs transition-all active:scale-95 cursor-pointer"
+            title="Xuất bảng lương ra file Excel / CSV"
+          >
+            <Download className="w-4 h-4 stroke-[2.2]" />
+            <span>Xuất Excel Bảng Lương</span>
+          </button>
         </div>
       </div>
 

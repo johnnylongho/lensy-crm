@@ -3,10 +3,6 @@ import { useAuth, AccountType } from './AuthContext';
 import { supabase, isSupabaseConfigured } from '../lib/supabase';
 import { Studio, StudioRole, UserRole } from '../types';
 
-// Hằng số UUID hợp lệ chuẩn RFC 4122 cho chế độ Fallback / Demo Role Switcher
-const FALLBACK_ADMIN_STUDIO_ID = 'a0000000-0000-0000-0000-000000000001';
-const FALLBACK_MEMBER_STUDIO_ID = 'a0000000-0000-0000-0000-000000000002';
-
 export const isValidUuid = (value?: string | null): boolean => {
   if (!value) return false;
   return /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(value);
@@ -32,53 +28,49 @@ interface WorkspaceContextType {
 
 const WorkspaceContext = createContext<WorkspaceContextType | undefined>(undefined);
 
-// Helper lấy role lưu trữ từ localStorage để loại bỏ UI Flickering
-const getSavedActiveRole = (): AccountType => {
-  try {
-    const saved = localStorage.getItem('lensy_active_role');
-    if (saved === 'freelancer' || saved === 'studio_member' || saved === 'studio_admin') {
-      return saved as AccountType;
-    }
-  } catch (e) {
-    // Ignore error
-  }
-  return 'studio_admin';
-};
-
 export const WorkspaceProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const { user } = useAuth();
 
-  // Khởi tạo state từ localStorage (Persist Demo Role Switcher)
-  const initialSavedType = getSavedActiveRole();
+  // KHÓA CỨNG: Mặc định khởi tạo theo user_metadata hoặc freelancer (Không đọc từ localStorage)
+  const initialType: AccountType = (user?.user_metadata?.account_type as AccountType) || 'freelancer';
   const initialResolvedRole: UserRole =
-    initialSavedType === 'freelancer'
+    initialType === 'freelancer'
       ? 'freelancer'
-      : initialSavedType === 'studio_member'
+      : initialType === 'studio_member'
       ? 'member'
       : 'manager';
 
   const [currentStudio, setCurrentStudio] = useState<Studio | null>(null);
   const [studioRole, setStudioRole] = useState<StudioRole | null>(
-    initialSavedType === 'studio_admin' ? 'admin' : 'photographer'
+    initialType === 'studio_admin' ? 'admin' : initialType === 'studio_member' ? 'photographer' : null
   );
-  const [isStudioAdmin, setIsStudioAdmin] = useState<boolean>(initialSavedType === 'studio_admin');
-  const [isStudioOwner, setIsStudioOwner] = useState<boolean>(initialSavedType === 'studio_admin');
+  const [isStudioAdminState, setIsStudioAdminState] = useState<boolean>(initialType === 'studio_admin');
+  const [isStudioOwner, setIsStudioOwner] = useState<boolean>(initialType === 'studio_admin');
   const [userStudios, setUserStudios] = useState<Studio[]>([]);
-  const [isLoading, setIsLoading] = useState<boolean>(false);
+  const [isLoading, setIsLoading] = useState<boolean>(true);
 
-  const [accountType, setAccountType] = useState<AccountType>(initialSavedType);
+  const [accountType, setAccountType] = useState<AccountType>(initialType);
   const [userRole, setUserRole] = useState<UserRole>(initialResolvedRole);
 
   // Ref lưu trạng thái đang fetch để tránh nhiều fetch chồng chéo
   const isFetchingRef = useRef(false);
 
+  // Xóa sạch vết tích role giả lập cũ nếu có trong localStorage
+  useEffect(() => {
+    try {
+      localStorage.removeItem('lensy_active_role');
+    } catch (_) {}
+  }, []);
+
   const refreshWorkspace = useCallback(async () => {
     if (!user) {
       setCurrentStudio(null);
       setStudioRole(null);
-      setIsStudioAdmin(false);
+      setIsStudioAdminState(false);
       setIsStudioOwner(false);
       setUserStudios([]);
+      setAccountType('freelancer');
+      setUserRole('freelancer');
       setIsLoading(false);
       return;
     }
@@ -86,18 +78,16 @@ export const WorkspaceProvider: React.FC<{ children: React.ReactNode }> = ({ chi
     if (isFetchingRef.current) return;
     isFetchingRef.current = true;
 
-    // STALE-WHILE-REVALIDATE: Giữ nguyên state cũ, không reset isStudioAdmin hay role về default!
     try {
-      const savedActiveRole = getSavedActiveRole();
-      let resolvedRole: UserRole = 'manager';
-      let resolvedType: AccountType = 'studio_admin';
+      let resolvedRole: UserRole = 'freelancer';
+      let resolvedType: AccountType = 'freelancer';
       let resolvedStudio: Studio | null = null;
       let resolvedUserStudios: Studio[] = [];
-      let resolvedStudioRole: StudioRole | null = 'admin';
-      let resolvedIsAdmin = true;
-      let resolvedIsOwner = true;
+      let resolvedStudioRole: StudioRole | null = null;
+      let resolvedIsAdmin = false;
+      let resolvedIsOwner = false;
 
-      // 1. Phân tích Metadata mặc định
+      // 1. Phân tích Metadata mặc định khi đăng ký
       const userMetaRole = user.user_metadata?.role as UserRole | undefined;
       const userMetaType = user.user_metadata?.account_type as any;
       if (userMetaRole) {
@@ -111,17 +101,17 @@ export const WorkspaceProvider: React.FC<{ children: React.ReactNode }> = ({ chi
       } else if (userMetaType === 'studio_member' || userMetaType === 'member') {
         resolvedType = 'studio_member';
         resolvedRole = 'member';
-      } else if (userMetaType === 'freelancer') {
+      } else {
         resolvedType = 'freelancer';
         resolvedRole = 'freelancer';
       }
 
-      if (isSupabaseConfigured && isValidUuid(user.id)) {
-        // Query song song để tối ưu tốc độ và không giật state
+      // 2. Query dữ liệu thực tế từ Supabase DB
+      if (isSupabaseConfigured && user.id) {
         const [dbUserRes, ownedStudiosRes, memberRecordsRes] = await Promise.all([
           supabase
             .from('users')
-            .select('role, studio_id')
+            .select('role, studio_id, account_type')
             .eq('id', user.id)
             .maybeSingle(),
           supabase
@@ -140,9 +130,7 @@ export const WorkspaceProvider: React.FC<{ children: React.ReactNode }> = ({ chi
         const ownedStudios = ownedStudiosRes.data;
         const memberRecords = memberRecordsRes.data;
 
-        const safeDbStudioId = isValidUuid(dbUser?.studio_id) ? dbUser!.studio_id : null;
-
-        // Nếu user là chủ Studio (Owner/Admin)
+        // ƯU TIÊN 1: Nếu user là chủ sở hữu thực sự của Studio trong DB (Studio Owner/Admin)
         if (ownedStudios && ownedStudios.length > 0) {
           resolvedStudio = ownedStudios[0] as Studio;
           resolvedUserStudios = ownedStudios as Studio[];
@@ -151,7 +139,9 @@ export const WorkspaceProvider: React.FC<{ children: React.ReactNode }> = ({ chi
           resolvedIsOwner = true;
           resolvedType = 'studio_admin';
           resolvedRole = 'manager';
-        } else if (memberRecords && memberRecords.length > 0) {
+        }
+        // ƯU TIÊN 2: Nếu user là thành viên được duyệt trong Studio (Studio Member)
+        else if (memberRecords && memberRecords.length > 0) {
           const firstApproved = memberRecords[0];
           resolvedStudio = firstApproved.studios as unknown as Studio;
           resolvedUserStudios = memberRecords.map(m => m.studios as unknown as Studio).filter(Boolean);
@@ -161,106 +151,55 @@ export const WorkspaceProvider: React.FC<{ children: React.ReactNode }> = ({ chi
           resolvedIsOwner = false;
           resolvedType = isAdmin ? 'studio_admin' : 'studio_member';
           resolvedRole = isAdmin ? 'manager' : 'member';
-        } else {
-          // Fallback an toàn
-          if (dbUser?.role === 'freelancer' || resolvedRole === 'freelancer') {
-            resolvedStudio = null;
-            resolvedStudioRole = null;
-            resolvedIsAdmin = false;
-            resolvedIsOwner = false;
-            resolvedUserStudios = [];
-            resolvedType = 'freelancer';
-            resolvedRole = 'freelancer';
-          } else if (dbUser?.role === 'member' || resolvedRole === 'member') {
-            resolvedStudio = {
-              id: safeDbStudioId || FALLBACK_MEMBER_STUDIO_ID,
-              name: user.user_metadata?.studio_name || 'Mirmia Studio Partner',
-              logo_url: '/mirmia-logo.png',
-              invite_code: 'MIRMIA-JOIN',
-              verified_status: true,
-              owner_id: user.id,
-            };
-            resolvedUserStudios = [resolvedStudio];
-            resolvedStudioRole = 'photographer';
-            resolvedIsAdmin = false;
-            resolvedIsOwner = false;
-            resolvedType = 'studio_member';
-            resolvedRole = 'member';
-          } else {
-            resolvedStudio = {
-              id: safeDbStudioId || FALLBACK_ADMIN_STUDIO_ID,
-              name: user.user_metadata?.studio_name || 'MIRMIA STUDIO & ACADEMY WORKSPACE',
-              logo_url: '/mirmia-logo.png',
-              invite_code: 'MIRMIA-VIP88',
-              verified_status: true,
-              owner_id: user.id,
-            };
-            resolvedUserStudios = [resolvedStudio];
-            resolvedStudioRole = 'admin';
-            resolvedIsAdmin = true;
-            resolvedIsOwner = true;
+        }
+        // ƯU TIÊN 3: Dựa trên cột account_type thực tế trong bảng users
+        else if (dbUser?.account_type) {
+          if (dbUser.account_type === 'studio_admin') {
             resolvedType = 'studio_admin';
             resolvedRole = 'manager';
+            resolvedIsAdmin = true;
+            resolvedIsOwner = true;
+          } else if (dbUser.account_type === 'studio_member') {
+            resolvedType = 'studio_member';
+            resolvedRole = 'member';
+            resolvedIsAdmin = false;
+            resolvedIsOwner = false;
+          } else {
+            resolvedType = 'freelancer';
+            resolvedRole = 'freelancer';
+            resolvedIsAdmin = false;
+            resolvedIsOwner = false;
           }
         }
-      } else {
-        // Mock fallback khi chưa kết nối Supabase
-        const mockStudio: Studio = {
-          id: FALLBACK_ADMIN_STUDIO_ID,
-          name: 'MIRMIA STUDIO & ACADEMY WORKSPACE',
-          logo_url: '/mirmia-logo.png',
-          invite_code: 'MIRMIA-VIP88',
-          verified_status: true,
-          owner_id: user.id,
-        };
-        resolvedStudio = mockStudio;
-        resolvedUserStudios = [mockStudio];
-        resolvedStudioRole = 'admin';
-        resolvedIsAdmin = true;
-        resolvedIsOwner = true;
-        resolvedType = 'studio_admin';
-        resolvedRole = 'manager';
       }
 
-      // NẾU NGƯỜI DÙNG ĐÃ CHỌN ROLE QUA ROLE SWITCHER, DUY TRÌ LỰA CHỌN ĐÓ (PERSIST DEMO ROLE)
-      if (savedActiveRole) {
-        if (savedActiveRole === 'studio_admin') {
-          resolvedType = 'studio_admin';
-          resolvedRole = 'manager';
-          resolvedIsAdmin = true;
-        } else if (savedActiveRole === 'studio_member') {
-          resolvedType = 'studio_member';
-          resolvedRole = 'member';
-          resolvedIsAdmin = false;
-        } else if (savedActiveRole === 'freelancer') {
-          resolvedType = 'freelancer';
-          resolvedRole = 'freelancer';
-          resolvedIsAdmin = false;
-        }
-      }
-
-      // BATCH UPDATE TOÀN BỘ STATE MỘT LẦN DUY NHẤT (Không có intermediate state gây flash)
+      // Cập nhật State từ DB (Không có bất kỳ override nào từ LocalStorage)
       setCurrentStudio(resolvedStudio);
       setUserStudios(resolvedUserStudios);
       setStudioRole(resolvedStudioRole);
-      setIsStudioAdmin(resolvedIsAdmin);
+      setIsStudioAdminState(resolvedIsAdmin);
       setIsStudioOwner(resolvedIsOwner);
       setAccountType(resolvedType);
       setUserRole(resolvedRole);
     } catch (err) {
-      console.error('[WorkspaceContext] Lỗi tải thông tin Workspace:', err);
+      console.error('[WorkspaceContext] Lỗi tải thông tin Workspace từ Supabase:', err);
     } finally {
       setIsLoading(false);
       isFetchingRef.current = false;
     }
-  }, [user?.id]); // QUAN TRỌNG: Chỉ re-run khi user.id thay đổi, không re-run khi chỉ re-focus tab
+  }, [user?.id]);
 
   useEffect(() => {
     refreshWorkspace();
   }, [refreshWorkspace]);
 
-  // Chuyển đổi nhanh giữa 3 góc nhìn vai trò (RBAC Switcher) kèm Lưu LocalStorage
+  // HÀM SWITCH ROLE: Chỉ duy nhất developer master johnnyho1705@gmail.com được phép chuyển đổi để test giao diện
   const switchAccountType = (newType: AccountType | UserRole) => {
+    if (user?.email !== 'johnnyho1705@gmail.com') {
+      console.warn('[RBAC Security] Chặn hành vi role spoofing từ user:', user?.email);
+      return;
+    }
+
     const normalizedType: AccountType =
       newType === 'manager' || newType === 'studio_admin'
         ? 'studio_admin'
@@ -268,50 +207,24 @@ export const WorkspaceProvider: React.FC<{ children: React.ReactNode }> = ({ chi
         ? 'studio_member'
         : 'freelancer';
 
-    try {
-      localStorage.setItem('lensy_active_role', normalizedType);
-    } catch (e) {
-      console.warn('Cannot write to localStorage', e);
-    }
-
-    const existingValidId = isValidUuid(currentStudio?.id) ? currentStudio!.id : null;
-
     if (normalizedType === 'freelancer') {
       setAccountType('freelancer');
       setUserRole('freelancer');
       setCurrentStudio(null);
       setStudioRole(null);
-      setIsStudioAdmin(false);
+      setIsStudioAdminState(false);
       setIsStudioOwner(false);
     } else if (normalizedType === 'studio_member') {
       setAccountType('studio_member');
       setUserRole('member');
-      const memberStudio: Studio = {
-        id: existingValidId || FALLBACK_MEMBER_STUDIO_ID,
-        name: user?.user_metadata?.studio_name || 'Mirmia Creative Team',
-        logo_url: '/mirmia-logo.png',
-        invite_code: 'MIRMIA-CREW',
-        verified_status: true,
-        owner_id: user?.id || FALLBACK_ADMIN_STUDIO_ID,
-      };
-      setCurrentStudio(memberStudio);
       setStudioRole('photographer');
-      setIsStudioAdmin(false);
+      setIsStudioAdminState(false);
       setIsStudioOwner(false);
     } else {
       setAccountType('studio_admin');
       setUserRole('manager');
-      const adminStudio: Studio = {
-        id: existingValidId || FALLBACK_ADMIN_STUDIO_ID,
-        name: user?.user_metadata?.studio_name || 'MIRMIA STUDIO & ACADEMY WORKSPACE',
-        logo_url: '/mirmia-logo.png',
-        invite_code: 'MIRMIA-VIP88',
-        verified_status: true,
-        owner_id: user?.id || FALLBACK_ADMIN_STUDIO_ID,
-      };
-      setCurrentStudio(adminStudio);
       setStudioRole('admin');
-      setIsStudioAdmin(true);
+      setIsStudioAdminState(true);
       setIsStudioOwner(true);
     }
   };
@@ -320,9 +233,12 @@ export const WorkspaceProvider: React.FC<{ children: React.ReactNode }> = ({ chi
     switchAccountType(newRole);
   };
 
-  const isFreelancer = userRole === 'freelancer' || accountType === 'freelancer';
-  const isMember = userRole === 'member' || accountType === 'studio_member';
-  const isManager = userRole === 'manager' || accountType === 'studio_admin';
+  // GÁN CỨNG QUYỀN HẠN PHỤ THUỘC 100% VÀO DỮ LIỆU THỰC TẾ
+  const isFreelancer = accountType === 'freelancer' || userRole === 'freelancer';
+  const isStudioMember = accountType === 'studio_member' || userRole === 'member';
+  const isStudioAdmin = accountType === 'studio_admin' || userRole === 'manager' || isStudioAdminState;
+  const isManager = isStudioAdmin;
+  const isMember = isStudioMember;
 
   return (
     <WorkspaceContext.Provider
@@ -332,9 +248,9 @@ export const WorkspaceProvider: React.FC<{ children: React.ReactNode }> = ({ chi
         accountType,
         role: userRole,
         isManager,
-        isStudioAdmin: isManager,
+        isStudioAdmin,
         isStudioOwner,
-        isStudioMember: isMember,
+        isStudioMember,
         isMember,
         isFreelancer,
         isLoading,

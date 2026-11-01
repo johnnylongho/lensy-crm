@@ -574,7 +574,7 @@ export const QuoteView: React.FC<Props> = ({
   const phoneUrl = `tel:${cleanStudioPhone}`;
 
   return (
-        <div className="min-h-screen bg-slate-50 text-slate-900 dark:bg-[#090a0f] dark:text-zinc-100 flex flex-col relative transition-colors duration-200">
+    <div className="min-h-screen w-full max-w-full overflow-x-hidden bg-slate-50 text-slate-900 dark:bg-[#090a0f] dark:text-zinc-100 flex flex-col relative transition-colors duration-200">
       {/* Print CSS Rules */}
       <style>{`
         @media print {

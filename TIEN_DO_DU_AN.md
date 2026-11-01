@@ -1,7 +1,7 @@
 # 📌 NHẬT KÝ TIẾN ĐỘ DỰ ÁN LENSY CRM (MIRMIA STUDIO)
 
-> **Cập nhật lần cuối:** 24/09/2026  
-> **Trạng thái tổng thể:** Đã hoàn thành 100% Giai Đoạn 1, Giai Đoạn 2 & Hoàn thiện USP Quản lý thiết bị & Cảnh báo trùng lặp (Conflict Scanner). Toàn bộ 50/50 tiêu chí kiểm thử ĐẠT (100% PASS). Sẵn sàng cho Giai Đoạn 3 (Deploy & Domain).
+> **Cập nhật lần cuối:** 01/11/2026  
+> **Trạng thái tổng thể:** Đã hoàn thành 100% Giai Đoạn 1 (Telegram Bot Notifier, Notification Hub In-App & Xuất Báo Cáo Excel/CSV Tài Chính + Bảng Lương). Toàn bộ 514/514 tiêu chí kiểm thử ĐẠT (100% PASS - Tuyệt đối). Production build hoàn tất trong 3.92s, 0 lỗi TypeScript.
 
 ---
 
@@ -155,10 +155,36 @@
 
 ---
 
+### ✅ Giai Đoạn Vận Hành Chuyên Sâu: Telegram Bot Notifier, Notification Hub & Xuất Báo Cáo Excel (ĐÃ XONG 100%)
+*   **1. Kênh Thông Báo Telegram Bot Tức Thì (Zero-Cost & Real-Time):**
+    *   File: `frontend/src/lib/telegramNotifier.ts` & `frontend/src/components/dashboard/StudioSettingsPage.tsx`.
+    *   Tự động gửi tin nhắn Telegram về điện thoại hoặc Group ê-kíp khi:
+        *   Có khách đặt lịch mới (`notifyNewBooking`).
+        *   Khách cọc tiền thành công hoặc admin duyệt bill (`notifyDepositReceived`).
+        *   Khách khóa phiên chọn ảnh (`notifyProofingLocked`).
+        *   Cảnh báo xung đột thiết bị hoặc nhân sự (`notifyResourceConflict`).
+    *   Giao diện quản trị Telegram Bot tại tab `Tích Hợp & Telegram Bot` trong `StudioSettingsPage`:
+        *   Nút kiểm tra kết nối 1-chạm gửi tin nhắn test trực tiếp.
+        *   Các toggle bật/tắt từng sự kiện thông báo.
+        *   Hướng dẫn 4 bước tạo bot miễn phí với `@BotFather`.
+*   **2. Trung Tâm Thông Báo Đa Nhiệm In-App (Notification Hub):**
+    *   File: `frontend/src/components/navigation/NotificationDropdown.tsx` & `frontend/src/layouts/DashboardLayout.tsx`.
+    *   Icon chuông thông báo trên Header kèm badge đếm số lượng thông báo chưa đọc.
+    *   Quét thông minh tự động: Ca chụp hôm nay & ngày mai, show quá hạn chưa trả file, khách đã khóa chọn ảnh cần retouch, khách còn nợ tiền, thù lao ê-kíp chưa thanh toán.
+    *   Hỗ trợ lọc theo danh mục: Tất cả, Khẩn cấp, Lịch chụp, Tài chính, cùng nút "Đã đọc hết".
+*   **3. Trình Xuất Báo Cáo Excel / CSV Chuyên Nghiệp:**
+    *   File: `frontend/src/utils/reportExporter.ts`.
+    *   Hỗ trợ mã hóa UTF-8 BOM (`\uFEFF`) giúp mở trực tiếp trên Microsoft Excel tiếng Việt không bị lỗi font dấu.
+    *   **Báo cáo Lịch chụp & Doanh thu:** Xuất danh sách chi tiết show chụp, tiền cọc, thực thu, công nợ, chi phí (Job Costing) và lợi nhuận ròng (Net Profit) từng show chụp.
+    *   **Báo cáo Bảng lương ê-kíp:** Tích hợp nút "Xuất Excel Bảng Lương" trên `PayrollManagementPage.tsx`, tổng hợp thù lao, số tài khoản, ngân hàng, trạng thái thanh toán.
+    *   **Báo cáo Tài chính P&L:** Tích hợp tại `ClayStudioDashboard.tsx`, xuất bảng tổng kết doanh thu, công nợ, tổng chi phí và tỷ suất lợi nhuận (Profit Margin %).
+
+---
+
 ### 📊 BẢNG TỔNG KẾT KIỂM THỬ HỆ THỐNG
-*   **Hệ thống Test Suites:** 37 Phases kiểm tra toàn diện (`test_system.cjs`).
-*   **Kết quả:** **440/440 tiêu chí ĐẠT (100% PASS - Tuyệt đối)**.
-*   **Build Production:** `tsc && vite build` thành công trong 12.02s, 0 lỗi TypeScript, PWA precache sẵn sàng.
+*   **Hệ thống Test Suites:** 41 Phases kiểm tra toàn diện (`test_system.cjs`).
+*   **Kết quả:** **514/514 tiêu chí ĐẠT (100% PASS - Tuyệt đối)**.
+*   **Build Production:** `tsc && vite build` hoàn tất sạch sẽ trong 3.92s, 0 lỗi TypeScript, PWA precache sẵn sàng.
 
 
 

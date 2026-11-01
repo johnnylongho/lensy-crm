@@ -39,10 +39,13 @@ import {
   Crown,
   Camera,
   AlertCircle,
+  Download,
+  FileSpreadsheet,
 } from 'lucide-react';
 import { format, parseISO, isBefore, startOfToday } from 'date-fns';
 import { vi } from 'date-fns/locale';
 import { useAuth } from '../../context/AuthContext';
+import { exportBookingsToCsv, exportFinancialSummaryToCsv } from '../../utils/reportExporter';
 import { useWorkspace } from '../../context/WorkspaceContext';
 import { CalendarView } from './CalendarView';
 import { KanbanView } from './KanbanView';
@@ -104,13 +107,18 @@ export const ClayStudioDashboard: React.FC<Props> = ({
   const { user } = useAuth();
   const { currentStudio, isStudioAdmin, isStudioMember, isFreelancer, accountType, switchAccountType } = useWorkspace();
   const [isWorkspaceDropdownOpen, setIsWorkspaceDropdownOpen] = useState(false);
+  const [isExportDropdownOpen, setIsExportDropdownOpen] = useState(false);
   const [isCopiedInviteCode, setIsCopiedInviteCode] = useState(false);
   const workspaceDropdownRef = useRef<HTMLDivElement>(null);
+  const exportDropdownRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     const handleClickOutside = (e: MouseEvent) => {
       if (workspaceDropdownRef.current && !workspaceDropdownRef.current.contains(e.target as Node)) {
         setIsWorkspaceDropdownOpen(false);
+      }
+      if (exportDropdownRef.current && !exportDropdownRef.current.contains(e.target as Node)) {
+        setIsExportDropdownOpen(false);
       }
     };
     document.addEventListener('mousedown', handleClickOutside);
@@ -386,56 +394,58 @@ export const ClayStudioDashboard: React.FC<Props> = ({
                 </button>
               </div>
 
-              {/* Role Switcher Trực Tiếp */}
-              <div className="p-2.5 rounded-xl bg-orange-500/5 border border-orange-500/20 space-y-2">
-                <span className="text-[10px] font-bold uppercase text-orange-600 dark:text-orange-400 block tracking-wider">
-                  Chuyển Nhanh Góc Nhìn (RBAC):
-                </span>
-                <div className="grid grid-cols-3 gap-1">
-                  <button
-                    type="button"
-                    onClick={() => {
-                      switchAccountType?.('freelancer');
-                      setIsWorkspaceDropdownOpen(false);
-                    }}
-                    className={`p-1.5 rounded-lg text-[10px] font-bold transition-all text-center cursor-pointer ${
-                      isFreelancer
-                        ? 'bg-amber-500 text-white shadow-xs'
-                        : 'bg-white/60 dark:bg-zinc-800 text-slate-600 dark:text-zinc-400 hover:bg-white dark:hover:bg-zinc-700'
-                    }`}
-                  >
-                    Solo
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => {
-                      switchAccountType?.('manager');
-                      setIsWorkspaceDropdownOpen(false);
-                    }}
-                    className={`p-1.5 rounded-lg text-[10px] font-bold transition-all text-center cursor-pointer ${
-                      isStudioAdmin
-                        ? 'bg-orange-600 text-white shadow-xs'
-                        : 'bg-white/60 dark:bg-zinc-800 text-slate-600 dark:text-zinc-400 hover:bg-white dark:hover:bg-zinc-700'
-                    }`}
-                  >
-                    Quản Lý
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => {
-                      switchAccountType?.('member');
-                      setIsWorkspaceDropdownOpen(false);
-                    }}
-                    className={`p-1.5 rounded-lg text-[10px] font-bold transition-all text-center cursor-pointer ${
-                      isStudioMember
-                        ? 'bg-emerald-600 text-white shadow-xs'
-                        : 'bg-white/60 dark:bg-zinc-800 text-slate-600 dark:text-zinc-400 hover:bg-white dark:hover:bg-zinc-700'
-                    }`}
-                  >
-                    Ekip
-                  </button>
+              {/* Role Switcher Trực Tiếp (Chỉ cho phép developer master johnnyho1705@gmail.com) */}
+              {user?.email === 'johnnyho1705@gmail.com' && (
+                <div className="p-2.5 rounded-xl bg-orange-500/5 border border-orange-500/20 space-y-2">
+                  <span className="text-[10px] font-bold uppercase text-orange-600 dark:text-orange-400 block tracking-wider">
+                    [Dev Only] Chuyển Nhanh Góc Nhìn (RBAC):
+                  </span>
+                  <div className="grid grid-cols-3 gap-1">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        switchAccountType?.('freelancer');
+                        setIsWorkspaceDropdownOpen(false);
+                      }}
+                      className={`p-1.5 rounded-lg text-[10px] font-bold transition-all text-center cursor-pointer ${
+                        isFreelancer
+                          ? 'bg-amber-500 text-white shadow-xs'
+                          : 'bg-white/60 dark:bg-zinc-800 text-slate-600 dark:text-zinc-400 hover:bg-white dark:hover:bg-zinc-700'
+                      }`}
+                    >
+                      Solo
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        switchAccountType?.('manager');
+                        setIsWorkspaceDropdownOpen(false);
+                      }}
+                      className={`p-1.5 rounded-lg text-[10px] font-bold transition-all text-center cursor-pointer ${
+                        isStudioAdmin
+                          ? 'bg-orange-600 text-white shadow-xs'
+                          : 'bg-white/60 dark:bg-zinc-800 text-slate-600 dark:text-zinc-400 hover:bg-white dark:hover:bg-zinc-700'
+                      }`}
+                    >
+                      Quản Lý
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        switchAccountType?.('member');
+                        setIsWorkspaceDropdownOpen(false);
+                      }}
+                      className={`p-1.5 rounded-lg text-[10px] font-bold transition-all text-center cursor-pointer ${
+                        isStudioMember
+                          ? 'bg-emerald-600 text-white shadow-xs'
+                          : 'bg-white/60 dark:bg-zinc-800 text-slate-600 dark:text-zinc-400 hover:bg-white dark:hover:bg-zinc-700'
+                      }`}
+                    >
+                      Ekip
+                    </button>
+                  </div>
                 </div>
-              </div>
+              )}
             </div>
           )}
         </div>
@@ -755,6 +765,54 @@ export const ClayStudioDashboard: React.FC<Props> = ({
                 <span className="hidden sm:inline">Mô Phỏng Webhook</span>
               </button>
             )}
+
+            {/* Nút Xuất Báo Cáo Excel / CSV */}
+            <div className="relative" ref={exportDropdownRef}>
+              <button
+                type="button"
+                onClick={() => setIsExportDropdownOpen(!isExportDropdownOpen)}
+                className="flex items-center gap-1.5 rounded-xl border border-slate-200/80 dark:border-white/10 bg-white dark:bg-white/5 hover:bg-slate-50 dark:hover:bg-white/10 px-3 py-1.5 text-xs font-semibold text-slate-700 dark:text-zinc-200 transition-all shadow-2xs active:scale-95 cursor-pointer"
+                title="Xuất báo cáo ra file Excel / CSV"
+              >
+                <Download className="h-3.5 w-3.5 text-orange-500" />
+                <span className="hidden sm:inline">Xuất Báo Cáo</span>
+                <ChevronDown className={`h-3 w-3 text-slate-400 transition-transform ${isExportDropdownOpen ? 'rotate-180' : ''}`} />
+              </button>
+
+              {isExportDropdownOpen && (
+                <div className="absolute right-0 top-full mt-1.5 w-64 rounded-2xl bg-white dark:bg-zinc-950/95 backdrop-blur-2xl border border-slate-200 dark:border-white/10 shadow-[0_12px_36px_0_rgba(0,0,0,0.35)] p-1.5 z-40 text-xs space-y-1 animate-fadeIn">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      exportBookingsToCsv(events, { studioName: currentStudio?.name });
+                      setIsExportDropdownOpen(false);
+                    }}
+                    className="w-full p-2.5 rounded-xl text-left hover:bg-orange-50/70 dark:hover:bg-zinc-900 transition-colors flex items-start gap-2.5 cursor-pointer text-slate-800 dark:text-zinc-200"
+                  >
+                    <FileSpreadsheet className="w-4 h-4 text-emerald-500 shrink-0 mt-0.5" />
+                    <div>
+                      <div className="font-bold text-xs">Danh Sách Lịch Chụp (.csv)</div>
+                      <div className="text-[10px] text-slate-500 dark:text-zinc-400">Doanh thu, tiền cọc, chi phí & lợi nhuận từng show</div>
+                    </div>
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => {
+                      exportFinancialSummaryToCsv(events, { studioName: currentStudio?.name });
+                      setIsExportDropdownOpen(false);
+                    }}
+                    className="w-full p-2.5 rounded-xl text-left hover:bg-orange-50/70 dark:hover:bg-zinc-900 transition-colors flex items-start gap-2.5 cursor-pointer text-slate-800 dark:text-zinc-200"
+                  >
+                    <TrendingUp className="w-4 h-4 text-amber-500 shrink-0 mt-0.5" />
+                    <div>
+                      <div className="font-bold text-xs">Báo Cáo Tài Chính P&L (.csv)</div>
+                      <div className="text-[10px] text-slate-500 dark:text-zinc-400">Tổng kết doanh thu, công nợ, lợi nhuận ròng</div>
+                    </div>
+                  </button>
+                </div>
+              )}
+            </div>
           </div>
         </div>
 

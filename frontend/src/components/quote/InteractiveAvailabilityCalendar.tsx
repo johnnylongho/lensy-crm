@@ -162,9 +162,9 @@ export const InteractiveAvailabilityCalendar: React.FC<Props> = ({
   }, [selectedDate]);
 
   return (
-    <div className="rounded-2xl bg-slate-50 dark:bg-zinc-950/60 border border-slate-200 dark:border-white/10 p-4 sm:p-5 transition-colors">
+    <div className="w-full max-w-full overflow-hidden rounded-2xl bg-slate-50 dark:bg-zinc-950/60 border border-slate-200 dark:border-white/10 p-3 sm:p-5 transition-colors">
       {/* Calendar Header: Month Navigator & Status Indicator */}
-      <div className="flex items-center justify-between mb-4 pb-3 border-b border-slate-200 dark:border-white/10">
+      <div className="flex items-center justify-between mb-3 sm:mb-4 pb-2.5 sm:pb-3 border-b border-slate-200 dark:border-white/10">
         <div className="flex items-center gap-2">
           <CalendarIcon className="w-4 h-4 text-orange-600 dark:text-orange-400" />
           <h4 className="text-sm font-bold text-slate-900 dark:text-zinc-100">
@@ -203,12 +203,12 @@ export const InteractiveAvailabilityCalendar: React.FC<Props> = ({
         </div>
       </div>
 
-      {/* Weekday Labels */}
-      <div className="grid grid-cols-7 gap-1 text-center mb-2">
+      {/* Weekday Labels (Tối ưu Mobile-First) */}
+      <div className="grid grid-cols-7 gap-1 text-center mb-1.5 sm:mb-2 w-full max-w-full">
         {DAYS_OF_WEEK.map((day, idx) => (
           <div
             key={day}
-            className={`text-[11px] font-semibold py-1 ${
+            className={`text-[10px] sm:text-[11px] font-semibold py-0.5 sm:py-1 ${
               idx >= 5 ? 'text-orange-600 dark:text-orange-400' : 'text-slate-400 dark:text-zinc-500'
             }`}
           >
@@ -217,11 +217,11 @@ export const InteractiveAvailabilityCalendar: React.FC<Props> = ({
         ))}
       </div>
 
-      {/* Calendar Days Grid */}
-      <div className="grid grid-cols-7 gap-1.5">
+      {/* Calendar Days Grid (w-full max-w-full) */}
+      <div className="grid grid-cols-7 gap-1 sm:gap-1.5 w-full max-w-full">
         {calendarCells.map((cell, idx) => {
           if (!cell.isCurrentMonth) {
-            return <div key={cell.dateStr || idx} className="h-10 sm:h-11" />;
+            return <div key={cell.dateStr || idx} className="h-9 sm:h-11" />;
           }
 
           const isSelected = selectedDate === cell.dateStr;
@@ -234,7 +234,7 @@ export const InteractiveAvailabilityCalendar: React.FC<Props> = ({
           const isDisabled = cell.isPast || isFullDayBlocked;
 
           let cellClasses =
-            'h-10 sm:h-11 relative rounded-xl flex flex-col items-center justify-center text-xs font-semibold transition-all duration-150 select-none';
+            'h-9 sm:h-11 relative rounded-lg sm:rounded-xl flex flex-col items-center justify-center text-[11px] sm:text-xs font-semibold transition-all duration-150 select-none p-0.5 sm:p-1';
 
           if (isDisabled) {
             if (cell.isPast) {

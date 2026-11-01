@@ -2,11 +2,12 @@ import React, { createContext, useContext, useState, useEffect } from 'react';
 import { User, Session } from '@supabase/supabase-js';
 import { supabase, isSupabaseConfigured } from '../lib/supabase';
 
-export type AccountType = 'freelancer' | 'studio_member' | 'studio_admin';
+export type AccountType = 'freelancer' | 'studio_member' | 'studio_admin' | 'super_admin';
 
 interface AuthContextType {
   user: User | null;
   session: Session | null;
+  accountType: AccountType;
   loading: boolean;
   signIn: (email: string, password: string) => Promise<{ error: Error | null }>;
   signUp: (
@@ -26,7 +27,15 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [session, setSession] = useState<Session | null>(null);
   const [loading, setLoading] = useState<boolean>(true);
 
+  // Gán cứng account_type theo dữ liệu thực tế từ user_metadata của Supabase Auth
+  const accountType: AccountType = (user?.user_metadata?.account_type as AccountType) || 'freelancer';
+
   useEffect(() => {
+    // Xóa sạch mọi vết tích role giả lập cũ trong localStorage (loại bỏ lỗ hổng Role Spoofing)
+    try {
+      localStorage.removeItem('lensy_active_role');
+    } catch (_) {}
+
     if (!isSupabaseConfigured) {
       setLoading(false);
       return;
@@ -152,6 +161,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   // Hàm Đăng xuất
   const signOut = async () => {
+    try {
+      localStorage.removeItem('lensy_active_role');
+    } catch (_) {}
     if (isSupabaseConfigured) {
       await supabase.auth.signOut();
     }
@@ -164,6 +176,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       value={{
         user,
         session,
+        accountType,
         loading,
         signIn,
         signUp,

@@ -31,6 +31,9 @@ import {
   BadgeCheck,
   Crown,
   KeyRound,
+  Lock,
+  Zap,
+  Send,
 } from 'lucide-react';
 
 // Danh sách gợi ý các ngân hàng phổ biến tại Việt Nam
@@ -58,11 +61,47 @@ export const SettingsPage: React.FC = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
   const [isCopiedLink, setIsCopiedLink] = useState(false);
-  const { currentStudio, switchAccountType, refreshWorkspace: refreshGlobalWorkspace } = useWorkspace();
+  const {
+    currentStudio,
+    accountType: workspaceAccountType,
+    role: workspaceRole,
+    isStudioAdmin,
+    isStudioMember,
+    isFreelancer,
+    switchAccountType,
+    refreshWorkspace: refreshGlobalWorkspace,
+  } = useWorkspace();
 
-  // Form State
-  const [userRole, setUserRole] = useState<UserRole>('freelancer');
-  const [accountType, setAccountType] = useState<AccountType>('freelancer');
+  // Helper hàm xác định vai trò thực tế ngay lập tức từ payload user & Context (Tránh default sai về Freelancer)
+  const resolveActualAccountType = (): AccountType => {
+    const rawType =
+      (user as any)?.account_type ||
+      user?.user_metadata?.account_type ||
+      workspaceAccountType;
+    if (rawType === 'studio_admin' || rawType === 'manager') return 'studio_admin';
+    if (rawType === 'studio_member' || rawType === 'member') return 'studio_member';
+    if (isStudioAdmin) return 'studio_admin';
+    if (isStudioMember) return 'studio_member';
+    return (rawType as AccountType) || 'freelancer';
+  };
+
+  const resolveActualUserRole = (type: AccountType): UserRole => {
+    if (type === 'studio_admin') return 'manager';
+    if (type === 'studio_member') return 'member';
+    return 'freelancer';
+  };
+
+  // 1. ĐỒNG BỘ DEFAULT VALUE CỦA RADIO BUTTONS BẰNG GIÁ TRỊ THỰC TẾ NGAY KHI MOUNT
+  const initialResolvedType = resolveActualAccountType();
+  const [userRole, setUserRole] = useState<UserRole>(() => resolveActualUserRole(initialResolvedType));
+  const [accountType, setAccountType] = useState<AccountType>(() => initialResolvedType);
+
+  // Lắng nghe và đồng bộ hóa state radio button ngay khi user hoặc workspace context có dữ liệu
+  useEffect(() => {
+    const actualType = resolveActualAccountType();
+    setAccountType(actualType);
+    setUserRole(resolveActualUserRole(actualType));
+  }, [user, workspaceAccountType, isStudioAdmin, isStudioMember]);
   const [studioName, setStudioName] = useState('');
   const [username, setUsername] = useState('');
   const [fullName, setFullName] = useState('');
@@ -122,9 +161,13 @@ export const SettingsPage: React.FC = () => {
             message: 'Không thể tải thông tin cài đặt: ' + error.message,
           });
         } else if (data) {
-          const resolvedRole: UserRole = (data.role || (data.account_type === 'studio_admin' ? 'manager' : data.account_type === 'studio_member' ? 'member' : 'freelancer')) as UserRole;
+          // Đồng bộ với dữ liệu trả về từ Supabase DB
+          const resolvedType: AccountType =
+            (data.account_type as AccountType) ||
+            (data.role === 'manager' ? 'studio_admin' : data.role === 'member' ? 'studio_member' : resolveActualAccountType());
+          const resolvedRole: UserRole = resolveActualUserRole(resolvedType);
           setUserRole(resolvedRole);
-          setAccountType(data.account_type || (resolvedRole === 'manager' ? 'studio_admin' : resolvedRole === 'member' ? 'studio_member' : 'freelancer'));
+          setAccountType(resolvedType);
           setStudioName(data.studio_name || '');
           setUsername(data.username || '');
           setFullName(data.full_name || '');
@@ -325,6 +368,123 @@ export const SettingsPage: React.FC = () => {
       setToast({
         type: 'error',
         message: 'Lỗi gửi yêu cầu: ' + (err.message || 'Không thể gửi yêu cầu'),
+      });
+    } finally {
+      setIsJoiningStudio(false);
+    }
+  };
+
+  // 3b. Gửi yêu cầu gia nhập Studio bằng Mã Lời Mời / Mã Studio (Dành cho Freelancer)
+  const handleJoinStudioByCode = async () => {
+    if (!studioSearchQuery.trim()) {
+      setToast({
+        type: 'error',
+        message: 'Vui lòng nhập mã lời mời hoặc mã định danh Studio.',
+      });
+      return;
+    }
+
+    setIsJoiningStudio(true);
+    const cleanCode = studioSearchQuery.trim();
+
+    try {
+      if (isSupabaseConfigured && user) {
+        // Tìm studio theo invite_code, slug hoặc id
+        const { data: foundStudios, error } = await supabase
+          .from('studios')
+          .select('*')
+          .or(`invite_code.eq.${cleanCode},slug.eq.${cleanCode}`)
+          .limit(1);
+
+        if (error) throw error;
+
+        let targetStudio = foundStudios && foundStudios.length > 0 ? foundStudios[0] : null;
+
+        if (!targetStudio && cleanCode.length === 36) {
+          const { data: byId } = await supabase
+            .from('studios')
+            .select('*')
+            .eq('id', cleanCode)
+            .maybeSingle();
+          targetStudio = byId;
+        }
+
+        if (!targetStudio) {
+          setToast({
+            type: 'error',
+            message: `Không tìm thấy Studio với mã "${cleanCode}". Vui lòng kiểm tra lại với Chủ Studio!`,
+          });
+          setIsJoiningStudio(false);
+          return;
+        }
+
+        // Gửi yêu cầu gia nhập
+        const { data: memberRecord, error: insertError } = await supabase
+          .from('studio_members')
+          .insert({
+            studio_id: targetStudio.id,
+            user_id: user.id,
+            role: 'photographer',
+            status: 'pending',
+          })
+          .select(`
+            id,
+            studio_id,
+            user_id,
+            role,
+            status,
+            created_at,
+            studios:studio_id (
+              id,
+              name,
+              logo_url,
+              verified_status
+            )
+          `)
+          .single();
+
+        if (insertError) throw insertError;
+
+        setCurrentMembership({
+          id: memberRecord.id,
+          studio_id: memberRecord.studio_id,
+          user_id: memberRecord.user_id,
+          role: memberRecord.role,
+          status: memberRecord.status,
+          created_at: memberRecord.created_at,
+          studio: (memberRecord as any).studios,
+        });
+
+        setStudioSearchQuery('');
+        setToast({
+          type: 'success',
+          message: `🎉 Đã gửi yêu cầu gia nhập Studio "${targetStudio.name}". Vui lòng chờ Chủ Studio phê duyệt trong trang Quản lý Nhân sự!`,
+        });
+      } else {
+        await new Promise(r => setTimeout(r, 400));
+        setCurrentMembership({
+          id: 'mock-pending-' + Date.now(),
+          studio_id: 'studio-demo-1',
+          user_id: user?.id || 'demo-user',
+          role: 'photographer',
+          status: 'pending',
+          studio: {
+            id: 'studio-demo-1',
+            name: cleanCode.toUpperCase(),
+            verified_status: 'verified',
+          } as any,
+        });
+        setStudioSearchQuery('');
+        setToast({
+          type: 'success',
+          message: `🎉 [Demo] Đã gửi yêu cầu gia nhập Studio "${cleanCode}". Vui lòng chờ Chủ Studio phê duyệt!`,
+        });
+      }
+    } catch (err: any) {
+      console.error('Lỗi khi gửi yêu cầu gia nhập Studio:', err);
+      setToast({
+        type: 'error',
+        message: 'Lỗi gửi yêu cầu: ' + (err.message || 'Không thể kết nối'),
       });
     } finally {
       setIsJoiningStudio(false);
@@ -613,7 +773,14 @@ export const SettingsPage: React.FC = () => {
     }
   };
 
-  const bookingUrl = `${window.location.origin}/book/${username || 'username'}`;
+  // 3. SỬA LỖI ĐƯỜNG DẪN LOCALHOST Ở MỤC SAO CHÉP LINK:
+  // Lấy host động qua window.location.origin hoặc fallback biến môi trường (tự động đúng ở cả dev và Vercel)
+  const currentOrigin =
+    typeof window !== 'undefined' && window.location?.origin
+      ? window.location.origin
+      : (import.meta.env.VITE_APP_URL || 'http://localhost:5173');
+  const activeUsername = username || (user as any)?.username || user?.user_metadata?.username || 'user';
+  const bookingUrl = `${currentOrigin}/book/${activeUsername}`;
 
   const handleCopyBookingLink = async () => {
     try {
@@ -621,7 +788,7 @@ export const SettingsPage: React.FC = () => {
       setIsCopiedLink(true);
       setToast({
         type: 'success',
-        message: '📋 Đã copy link đặt lịch vào Clipboard!',
+        message: `📋 Đã copy link đặt lịch (${bookingUrl}) vào Clipboard!`,
       });
       setTimeout(() => setIsCopiedLink(false), 2500);
     } catch (err) {
@@ -772,101 +939,162 @@ export const SettingsPage: React.FC = () => {
             </div>
           </div>
 
-          {/* Radio Buttons Cards - 3 Roles (Freelancer / Studio Manager / Studio Member) */}
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            {/* Option 1: Freelancer */}
-            <label
-              className={`p-4 rounded-2xl border transition-all cursor-pointer flex items-start gap-3.5 ${
-                userRole === 'freelancer'
-                  ? 'bg-amber-500/10 border-amber-500/60 shadow-lg shadow-amber-500/10'
-                  : 'bg-slate-100/50 dark:bg-black/20 border-slate-200 dark:border-white/5 hover:border-slate-300 dark:hover:border-white/20'
-              }`}
-            >
-              <input
-                type="radio"
-                name="user_role"
-                value="freelancer"
-                checked={userRole === 'freelancer'}
-                onChange={() => {
-                  setUserRole('freelancer');
-                  setAccountType('freelancer');
-                  switchAccountType?.('freelancer');
-                }}
-                className="mt-1 text-amber-500 focus:ring-amber-400"
-              />
-              <div className="space-y-1">
-                <div className="flex items-center gap-1.5 font-bold text-xs sm:text-sm text-slate-900 dark:text-white">
-                  <User className="w-4 h-4 text-amber-500" />
-                  <span>Freelancer (Thợ ảnh tự do)</span>
-                </div>
-                <p className="text-[11px] text-slate-500 dark:text-slate-400 leading-relaxed">
-                  Tự do xây dựng thương hiệu cá nhân độc lập. Quản lý lịch chụp và dòng tiền solo.
-                </p>
+          {/* THẺ BADGE TĨNH HIỂN THỊ VAI TRÒ HIỆN TẠI (Chuẩn SaaS B2B - Loại bỏ hoàn toàn Radio buttons) */}
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 p-4 sm:p-5 rounded-2xl bg-slate-100/80 dark:bg-black/30 border border-slate-200 dark:border-white/10">
+            <div className="flex items-center gap-3.5">
+              <div
+                className={`w-12 h-12 rounded-2xl flex items-center justify-center flex-shrink-0 shadow-sm ${
+                  accountType === 'studio_admin'
+                    ? 'bg-orange-500/10 text-orange-500 border border-orange-500/30'
+                    : accountType === 'studio_member'
+                    ? 'bg-emerald-500/10 text-emerald-500 border border-emerald-500/30'
+                    : 'bg-amber-500/10 text-amber-500 border border-amber-500/30'
+                }`}
+              >
+                {accountType === 'studio_admin' ? (
+                  <Crown className="w-6 h-6" />
+                ) : accountType === 'studio_member' ? (
+                  <Building2 className="w-6 h-6" />
+                ) : (
+                  <User className="w-6 h-6" />
+                )}
               </div>
-            </label>
+              <div className="space-y-0.5">
+                <div className="text-[10px] font-bold uppercase tracking-wider text-slate-400 dark:text-zinc-500">
+                  Vai trò tài khoản hiện tại
+                </div>
+                <div className="flex items-center gap-2">
+                  <span className="text-sm sm:text-base font-bold text-slate-900 dark:text-white">
+                    {accountType === 'studio_admin'
+                      ? 'Chủ Studio / Quản Lý (Studio Admin)'
+                      : accountType === 'studio_member'
+                      ? 'Thành Viên Studio (Ekip / Studio Member)'
+                      : 'Freelancer (Thợ ảnh tự do)'}
+                  </span>
+                  <span
+                    className={`text-[9px] font-black uppercase px-2 py-0.5 rounded-full border ${
+                      accountType === 'studio_admin'
+                        ? 'bg-orange-500/15 text-orange-600 dark:text-orange-400 border-orange-500/30'
+                        : accountType === 'studio_member'
+                        ? 'bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 border-emerald-500/30'
+                        : 'bg-amber-500/15 text-amber-600 dark:text-amber-400 border-amber-500/30'
+                    }`}
+                  >
+                    Đang Hoạt Động
+                  </span>
+                </div>
+              </div>
+            </div>
 
-            {/* Option 2: Studio Manager */}
-            <label
-              className={`p-4 rounded-2xl border transition-all cursor-pointer flex items-start gap-3.5 ${
-                userRole === 'manager'
-                  ? 'bg-orange-500/10 border-orange-500/60 shadow-lg shadow-orange-500/10'
-                  : 'bg-slate-100/50 dark:bg-black/20 border-slate-200 dark:border-white/5 hover:border-slate-300 dark:hover:border-white/20'
-              }`}
-            >
-              <input
-                type="radio"
-                name="user_role"
-                value="manager"
-                checked={userRole === 'manager'}
-                onChange={() => {
-                  setUserRole('manager');
-                  setAccountType('studio_admin');
-                  switchAccountType?.('manager');
-                }}
-                className="mt-1 text-orange-500 focus:ring-orange-400"
-              />
-              <div className="space-y-1">
-                <div className="flex items-center gap-1.5 font-bold text-xs sm:text-sm text-slate-900 dark:text-white">
-                  <Crown className="w-4 h-4 text-orange-500" />
-                  <span>Chủ Studio / Quản Lý</span>
-                </div>
-                <p className="text-[11px] text-slate-500 dark:text-slate-400 leading-relaxed">
-                  Toàn quyền quản trị Studio, phân công ekip thợ, theo dõi doanh thu và bảng giá.
-                </p>
-              </div>
-            </label>
-
-            {/* Option 3: Studio Member */}
-            <label
-              className={`p-4 rounded-2xl border transition-all cursor-pointer flex items-start gap-3.5 ${
-                userRole === 'member'
-                  ? 'bg-emerald-500/10 border-emerald-500/60 shadow-lg shadow-emerald-500/10'
-                  : 'bg-slate-100/50 dark:bg-black/20 border-slate-200 dark:border-white/5 hover:border-slate-300 dark:hover:border-white/20'
-              }`}
-            >
-              <input
-                type="radio"
-                name="user_role"
-                value="member"
-                checked={userRole === 'member'}
-                onChange={() => {
-                  setUserRole('member');
-                  setAccountType('studio_member');
-                  switchAccountType?.('member');
-                }}
-                className="mt-1 text-emerald-500 focus:ring-emerald-400"
-              />
-              <div className="space-y-1">
-                <div className="flex items-center gap-1.5 font-bold text-xs sm:text-sm text-slate-900 dark:text-white">
-                  <Building2 className="w-4 h-4 text-emerald-500" />
-                  <span>Thành Viên Studio (Ekip)</span>
-                </div>
-                <p className="text-[11px] text-slate-500 dark:text-slate-400 leading-relaxed">
-                  Gia nhập Studio đã có trên Lensy. Xem lịch phân công và thu nhập cá nhân.
-                </p>
-              </div>
-            </label>
+            <div className="text-xs text-slate-500 dark:text-zinc-400 sm:text-right">
+              {accountType === 'studio_admin' ? (
+                <span className="inline-flex items-center gap-1.5 text-orange-600 dark:text-orange-400 font-medium">
+                  <Sparkles className="w-4 h-4" /> Không gian Studio mở rộng
+                </span>
+              ) : accountType === 'studio_member' ? (
+                <span className="inline-flex items-center gap-1.5 text-emerald-600 dark:text-emerald-400 font-medium">
+                  <Sparkles className="w-4 h-4" /> Không gian Hybrid (Job Studio & Job Riêng)
+                </span>
+              ) : (
+                <span className="inline-flex items-center gap-1.5 text-amber-600 dark:text-amber-400 font-medium">
+                  <ShieldCheck className="w-4 h-4" /> Không gian vận hành Solo độc lập
+                </span>
+              )}
+            </div>
           </div>
+
+          {/* ==================================================================== */}
+          {/* 2 KHỐI CHỨC NĂNG DÀNH CHO FREELANCER (NÂNG CẤP STUDIO & GIA NHẬP)     */}
+          {/* ==================================================================== */}
+          {accountType === 'freelancer' && (
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pt-1">
+              {/* Khối 1 (Up-sell): Nâng Cấp Lên Chủ Studio */}
+              <div className="p-5 rounded-2xl bg-gradient-to-br from-orange-500/10 via-amber-500/5 to-transparent border border-orange-500/30 flex flex-col justify-between space-y-4">
+                <div className="space-y-2">
+                  <div className="flex items-center gap-2 text-orange-600 dark:text-orange-400 font-bold text-xs uppercase tracking-wider">
+                    <Zap className="w-4 h-4" />
+                    <span>Nâng Cấp Lên Chủ Studio (SaaS Pro)</span>
+                  </div>
+                  <h3 className="text-sm font-bold text-slate-900 dark:text-white">
+                    Mở rộng quy mô, quản trị ekip & thiết bị
+                  </h3>
+                  <p className="text-xs text-slate-600 dark:text-zinc-400 leading-relaxed">
+                    Nâng cấp tài khoản để tạo Studio riêng, phân công thợ, tính bảng lương ekip tự động và tạo bảng giá không giới hạn.
+                  </p>
+                </div>
+
+                <button
+                  type="button"
+                  onClick={() => navigate('/dashboard/packages')}
+                  className="w-full py-2.5 px-4 rounded-xl bg-gradient-to-r from-orange-500 to-amber-500 hover:from-orange-600 hover:to-amber-600 text-white font-bold text-xs shadow-md shadow-orange-500/20 flex items-center justify-center gap-2 transition-all cursor-pointer"
+                >
+                  <Crown className="w-4 h-4" />
+                  <span>Nâng Cấp Lên Chủ Studio</span>
+                </button>
+              </div>
+
+              {/* Khối 2 (Join Studio): Nhập Mã Lời Mời / Mã Studio */}
+              <div className="p-5 rounded-2xl bg-slate-100/80 dark:bg-black/30 border border-slate-200 dark:border-white/10 flex flex-col justify-between space-y-4">
+                <div className="space-y-2">
+                  <div className="flex items-center gap-2 text-blue-600 dark:text-blue-400 font-bold text-xs uppercase tracking-wider">
+                    <Building2 className="w-4 h-4" />
+                    <span>Gia Nhập Studio (Studio Member)</span>
+                  </div>
+                  <h3 className="text-sm font-bold text-slate-900 dark:text-white">
+                    Nhập mã lời mời hoặc mã định danh Studio
+                  </h3>
+                  <p className="text-xs text-slate-600 dark:text-zinc-400 leading-relaxed">
+                    Nhập mã do Chủ Studio cung cấp để gửi yêu cầu gia nhập ekip. Bạn vẫn giữ quyền quản lý lịch chụp riêng (Hybrid Workspace).
+                  </p>
+                </div>
+
+                <div className="space-y-2">
+                  <div className="flex items-center gap-2">
+                    <input
+                      type="text"
+                      value={studioSearchQuery}
+                      onChange={e => setStudioSearchQuery(e.target.value)}
+                      placeholder="Nhập mã Studio (VD: MIRMIA-VIP88)"
+                      className="flex-1 px-3.5 py-2.5 rounded-xl bg-white dark:bg-black/40 border border-slate-200 dark:border-white/10 text-xs font-mono text-slate-900 dark:text-white placeholder:font-sans placeholder:text-slate-400 outline-none focus:border-blue-400"
+                    />
+                    <button
+                      type="button"
+                      onClick={handleJoinStudioByCode}
+                      disabled={isJoiningStudio || !studioSearchQuery.trim()}
+                      className="py-2.5 px-4 rounded-xl bg-blue-600 hover:bg-blue-500 disabled:opacity-50 text-white font-bold text-xs flex items-center justify-center gap-1.5 transition-all shadow-md shadow-blue-600/20 cursor-pointer flex-shrink-0"
+                    >
+                      {isJoiningStudio ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Send className="w-3.5 h-3.5" />}
+                      <span>Gửi Yêu Cầu</span>
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* Trạng thái yêu cầu gia nhập đang chờ duyệt nếu có */}
+          {currentMembership && currentMembership.status === 'pending' && (
+            <div className="p-4 rounded-2xl bg-amber-500/10 border border-amber-500/30 flex items-center justify-between gap-3 animate-fadeIn">
+              <div className="flex items-center gap-3">
+                <Clock className="w-5 h-5 text-amber-500 flex-shrink-0" />
+                <div className="text-xs">
+                  <p className="font-bold text-amber-700 dark:text-amber-300">
+                    Yêu cầu gia nhập Studio đang chờ phê duyệt
+                  </p>
+                  <p className="text-slate-600 dark:text-zinc-400">
+                    Bạn đã gửi yêu cầu gia nhập <strong>{currentMembership.studio?.name || 'Studio'}</strong>. Khi Chủ Studio duyệt, vai trò của bạn sẽ tự động chuyển sang Studio Member.
+                  </p>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={handleCancelJoinRequest}
+                className="text-xs text-rose-600 dark:text-rose-400 hover:underline flex-shrink-0 font-medium"
+              >
+                Hủy yêu cầu
+              </button>
+            </div>
+          )}
 
           {/* KỊCH BẢN QUẢN LÝ STUDIO: Hiển thị Tên Studio & Mã Mời Nhân Sự */}
           {userRole === 'manager' && (

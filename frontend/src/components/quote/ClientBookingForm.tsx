@@ -829,24 +829,26 @@ export const ClientBookingForm: React.FC<Props> = ({
           )}
         </div>
 
-        {/* CTA Cuối Cùng: Nút lớn Xác Nhận Yêu Cầu & Thanh Toán Cọc */}
-        <button
-          type="submit"
-          disabled={isLoading}
-          className="w-full min-h-[44px] py-4 px-6 rounded-2xl bg-orange-600 hover:bg-orange-500 text-white font-semibold text-base transition-all duration-200 shadow-lg shadow-orange-600/25 hover:shadow-orange-600/40 hover:scale-[1.005] active:scale-[0.99] flex items-center justify-center gap-2.5 disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
-        >
-          {isLoading ? (
-            <>
-              <Loader2 className="w-5 h-5 animate-spin text-white" />
-              <span>Đang khởi tạo đơn đặt cọc...</span>
-            </>
-          ) : (
-            <>
-              <CheckCircle2 className="w-5 h-5 text-white" />
-              <span>Xác Nhận Yêu Cầu & Thanh Toán Cọc</span>
-            </>
-          )}
-        </button>
+        {/* CTA Cuối Cùng: Nút lớn Xác Nhận Yêu Cầu & Thanh Toán Cọc (Sticky đáy màn hình trên Mobile, chiều cao >= 48px) */}
+        <div className="w-full sticky bottom-3 z-30 sm:static sm:z-auto pt-2 pb-1 bg-white/95 dark:bg-zinc-950/95 sm:bg-transparent backdrop-blur-md sm:backdrop-blur-none p-2 sm:p-0 rounded-2xl sm:rounded-none border border-slate-200/60 dark:border-white/10 sm:border-0 shadow-lg sm:shadow-none">
+          <button
+            type="submit"
+            disabled={isLoading}
+            className="w-full min-h-[48px] py-3.5 sm:py-4 px-6 rounded-2xl bg-orange-600 hover:bg-orange-500 text-white font-bold text-sm sm:text-base transition-all duration-200 shadow-xl shadow-orange-600/30 hover:shadow-orange-600/45 hover:scale-[1.005] active:scale-[0.98] flex items-center justify-center gap-2.5 disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
+          >
+            {isLoading ? (
+              <>
+                <Loader2 className="w-5 h-5 animate-spin text-white" />
+                <span>Đang khởi tạo đơn đặt cọc...</span>
+              </>
+            ) : (
+              <>
+                <CheckCircle2 className="w-5 h-5 text-white" />
+                <span>Xác Nhận Yêu Cầu & Thanh Toán Cọc</span>
+              </>
+            )}
+          </button>
+        </div>
       </form>
     </div>
   );

@@ -21,9 +21,13 @@ import {
   Grid3X3,
   ListOrdered,
   Keyboard,
+  Zap,
+  AlertTriangle,
 } from 'lucide-react';
 import { supabase, isSupabaseConfigured } from '../../lib/supabase';
 import { VisualProofingGallery } from './VisualProofingGallery';
+import { notifyProofingLocked } from '../../lib/telegramNotifier';
+import { downloadRawFilterBatchScript } from '../../utils/rawBatchScriptGenerator';
 
 interface Props {
   quote: QuoteData;
@@ -170,35 +174,54 @@ export const ClientProofingSection: React.FC<Props> = ({ quote, onProofingUpdate
     const rawName = singleFilename.trim();
     if (!rawName) return;
 
-    // Chuẩn hóa tên file: nếu chỉ gõ 3-5 số đuôi, tự biến thành IMG_xxxx.JPG
+    // Chuẩn hóa tên file: nếu chỉ gõ 3-5 số đuôi, tự động dò tìm trong danh sách ảnh preview
     let formatted = rawName.toUpperCase();
+    const existing = [...(session.items || [])];
+
     if (/^\d{3,5}$/.test(formatted)) {
-      formatted = `IMG_${formatted}.JPG`;
+      const match = existing.find(i => {
+        const base = i.filename.replace(/\.[^/.]+$/, '').toUpperCase();
+        return base.endsWith(formatted) || base.endsWith(formatted.padStart(4, '0'));
+      });
+      if (match) {
+        formatted = match.filename;
+      } else {
+        formatted = `IMG_${formatted}.JPG`;
+      }
     } else if (!formatted.includes('.')) {
-      formatted = `${formatted}.JPG`;
+      const match = existing.find(i => {
+        const base = i.filename.replace(/\.[^/.]+$/, '').toUpperCase();
+        return base === formatted;
+      });
+      if (match) {
+        formatted = match.filename;
+      } else {
+        formatted = `${formatted}.JPG`;
+      }
     }
 
-    const existing = session.items || [];
-    if (existing.some(i => i.filename.toUpperCase() === formatted)) {
-      showToast('⚠️ Mã ảnh này đã có trong danh sách!');
+    const foundIdx = existing.findIndex(i => i.filename.toUpperCase() === formatted.toUpperCase());
+    if (foundIdx >= 0 && existing[foundIdx].is_selected) {
+      showToast('⚠️ Mã ảnh này đã có trong danh sách chọn!');
       return;
     }
 
-    if (currentCount >= maxAllowed) {
-      showToast(`⚠️ Bạn đã chọn đủ ${maxAllowed} ảnh theo gói!`);
-      return;
+    let newItems: ProofingItem[];
+    if (foundIdx >= 0) {
+      newItems = existing.map((it, idx) =>
+        idx === foundIdx ? { ...it, is_selected: true, notes: singleNotes.trim() || it.notes } : it
+      );
+    } else {
+      const newItem: ProofingItem = {
+        id: 'proof-' + Date.now(),
+        filename: formatted,
+        notes: singleNotes.trim(),
+        is_selected: true,
+      };
+      newItems = [...existing, newItem];
     }
 
-    const newItem: ProofingItem = {
-      id: 'proof-' + Date.now(),
-      filename: formatted,
-      notes: singleNotes.trim(),
-      is_selected: true,
-    };
-
-    const newItems = [...existing, newItem];
     const newFilenames = newItems.filter(i => i.is_selected).map(i => i.filename);
-
     const updated: ProofingSession = {
       ...session,
       items: newItems,
@@ -211,57 +234,78 @@ export const ClientProofingSection: React.FC<Props> = ({ quote, onProofingUpdate
     showToast(`Đã chọn ảnh ${formatted}!`);
   };
 
-  // Bóc tách tự động từ tin nhắn Zalo hoặc danh sách mã số (Smart Zalo & Text Parser)
+  // Bóc tách tự động từ tin nhắn Zalo hoặc danh sách mã số (Smart Canon R / Sony / Nikon Parser)
   const handleAddBatch = () => {
     if (!quickInput.trim()) return;
 
-    // Quét tìm tất cả các token dạng mã ảnh hoặc số nguyên 3-5 chữ số
-    const matches = quickInput.match(/(IMG_?\d{3,5}(\.JPG|\.CR3|\.PNG)?)|(\b\d{3,5}\b)/gi);
+    // Quét tìm tất cả các token dạng mã ảnh máy ảnh (6N7A0663, DSC01234, IMG_0663, v.v.) hoặc dãy số 3-5 chữ số
+    const matches = quickInput.match(/\b[A-Za-z0-9_]{3,8}\d{3,5}(\.[a-zA-Z0-9]{3,4})?\b|\b\d{3,5}\b/gi);
 
     if (!matches || matches.length === 0) {
       showToast('Không tìm thấy mã số ảnh hợp lệ trong đoạn văn bản.');
       return;
     }
 
-    const existing = session.items || [];
-    const existingSet = new Set(existing.map(i => i.filename.toUpperCase()));
-    const addedItems: ProofingItem[] = [];
+    const existing = [...(session.items || [])];
+    let newlySelectedCount = 0;
 
     matches.forEach(rawToken => {
       let cleaned = rawToken.trim().toUpperCase();
+
       if (/^\d{3,5}$/.test(cleaned)) {
-        cleaned = `IMG_${cleaned}.JPG`;
+        // Khách chỉ gõ 4 số đuôi (ví dụ: 0663) -> khớp với ảnh có sẵn trong thư viện preview
+        const match = existing.find(i => {
+          const base = i.filename.replace(/\.[^/.]+$/, '').toUpperCase();
+          return base.endsWith(cleaned) || base.endsWith(cleaned.padStart(4, '0'));
+        });
+        if (match) {
+          cleaned = match.filename;
+        } else {
+          cleaned = `IMG_${cleaned}.JPG`;
+        }
       } else if (!cleaned.includes('.')) {
-        cleaned = `${cleaned}.JPG`;
+        const match = existing.find(i => {
+          const base = i.filename.replace(/\.[^/.]+$/, '').toUpperCase();
+          return base === cleaned;
+        });
+        if (match) {
+          cleaned = match.filename;
+        } else {
+          cleaned = `${cleaned}.JPG`;
+        }
       }
 
-      if (!existingSet.has(cleaned)) {
-        existingSet.add(cleaned);
-        addedItems.push({
+      const foundIdx = existing.findIndex(i => i.filename.toUpperCase() === cleaned.toUpperCase());
+      if (foundIdx >= 0) {
+        if (!existing[foundIdx].is_selected) {
+          existing[foundIdx] = { ...existing[foundIdx], is_selected: true };
+          newlySelectedCount++;
+        }
+      } else {
+        existing.push({
           id: 'proof-' + Math.random().toString(36).substring(2, 9),
           filename: cleaned,
           is_selected: true,
         });
+        newlySelectedCount++;
       }
     });
 
-    if (addedItems.length === 0) {
+    if (newlySelectedCount === 0) {
       showToast('Tất cả các ảnh vừa nhập đã có trong danh sách chọn.');
       return;
     }
 
-    const newItems = [...existing, ...addedItems];
-    const newFilenames = newItems.filter(i => i.is_selected).map(i => i.filename);
-
+    const newFilenames = existing.filter(i => i.is_selected).map(i => i.filename);
     const updated: ProofingSession = {
       ...session,
-      items: newItems,
+      items: existing,
       selected_filenames: newFilenames,
     };
 
     setQuickInput('');
     saveSessionToDb(updated);
-    showToast(`Bóc tách thành công ${addedItems.length} ảnh vào danh sách chọn!`);
+    showToast(`Đã nhận diện và chọn thành công ${newlySelectedCount} ảnh!`);
   };
 
   // Khóa & Chốt danh sách chọn
@@ -278,16 +322,47 @@ export const ClientProofingSection: React.FC<Props> = ({ quote, onProofingUpdate
     };
 
     saveSessionToDb(updated, true);
+
+    // Bắn thông báo Telegram tức thì cho Studio
+    notifyProofingLocked(
+      {
+        clientName: quote.clientName,
+        selectedCount: currentCount,
+        maxSelections: maxAllowed,
+        clientNotes: session.client_notes,
+        quoteToken: quote.quoteToken,
+      },
+      quote.studio_id,
+      quote.studioName
+    );
+
     showToast('🎉 Chúc mừng! Bạn đã chốt và gửi danh sách ảnh thành công cho Studio.');
   };
 
-  // Copy Lightroom search query
+  // Copy Lightroom search query (Cú pháp chuẩn Lightroom Mobile & CC trên PC: Tên gốc cách nhau dấu cách)
   const handleCopyLightroomQuery = () => {
-    const filenames = selectedItems.map(i => i.filename).join(', ');
-    if (!filenames) return;
-    navigator.clipboard.writeText(filenames);
+    const cleanFilenames = selectedItems
+      .map(i => i.filename.replace(/\.[^/.]+$/, '').trim())
+      .filter(Boolean)
+      .join(' ');
+
+    if (!cleanFilenames) return;
+    navigator.clipboard.writeText(cleanFilenames);
     setCopiedLightroom(true);
     setTimeout(() => setCopiedLightroom(false), 2500);
+    showToast(`Đã chép ${selectedItems.length} mã file (${cleanFilenames}) cho Lightroom!`);
+  };
+
+  // Tải file kịch bản lọc RAW tự động (.bat)
+  const handleDownloadRawBatchScript = () => {
+    if (selectedItems.length === 0) {
+      showToast('Chưa có ảnh nào được chọn!');
+      return;
+    }
+    const success = downloadRawFilterBatchScript(selectedItems, quote.clientName || 'KhachHang');
+    if (success) {
+      showToast(`Đã tải script tự động lọc ${selectedItems.length} file RAW (.CR3/.ARW)!`);
+    }
   };
 
   // Nếu không có link preview và cũng chưa có ảnh nào, ẩn phần này
@@ -364,6 +439,21 @@ export const ClientProofingSection: React.FC<Props> = ({ quote, onProofingUpdate
             />
           </div>
         </div>
+
+        {/* Cảnh báo Upsell khi chọn vượt số lượng gói */}
+        {currentCount > maxAllowed && (
+          <div className="w-full relative z-10 p-3 sm:p-4 rounded-2xl bg-amber-500/10 border border-amber-500/30 flex items-start gap-3 text-amber-200 animate-fadeIn">
+            <AlertTriangle className="w-5 h-5 text-amber-400 flex-shrink-0 mt-0.5" />
+            <div className="text-xs sm:text-sm space-y-1">
+              <p className="font-bold text-amber-300">
+                Bạn đã chọn vượt {currentCount - maxAllowed} ảnh so với gói tiêu chuẩn ({maxAllowed} ảnh)!
+              </p>
+              <p className="text-stone-300 text-xs">
+                Phí chỉnh sửa phát sinh tạm tính: <strong className="text-amber-400 font-mono">{((currentCount - maxAllowed) * 80000).toLocaleString('vi-VN')} đ</strong> (80.000 đ/ảnh). Studio sẽ liên hệ tư vấn thêm hoặc bạn có thể bỏ bớt ảnh nếu muốn giữ nguyên ngân sách gói.
+              </p>
+            </div>
+          </div>
+        )}
 
         {/* Mode Switcher Tabs */}
         <div className="flex items-center gap-1 p-1 rounded-2xl bg-stone-900 border border-stone-800 text-xs">
@@ -570,24 +660,36 @@ export const ClientProofingSection: React.FC<Props> = ({ quote, onProofingUpdate
               </span>
 
               {selectedItems.length > 0 && (
-                <button
-                  type="button"
-                  onClick={handleCopyLightroomQuery}
-                  className="text-[11px] text-stone-300 hover:text-white flex items-center gap-1 px-2.5 py-1 rounded-lg bg-stone-900 border border-stone-800 hover:border-stone-700 transition-all cursor-pointer font-mono"
-                  title="Sao chép danh sách mã file"
-                >
-                  {copiedLightroom ? (
-                    <>
-                      <Check className="w-3 h-3 text-emerald-400" />
-                      <span className="text-emerald-400 font-bold">Đã sao chép!</span>
-                    </>
-                  ) : (
-                    <>
-                      <Copy className="w-3 h-3 text-stone-400" />
-                      <span>Copy mã file</span>
-                    </>
-                  )}
-                </button>
+                <div className="flex items-center gap-2">
+                  <button
+                    type="button"
+                    onClick={handleCopyLightroomQuery}
+                    className="text-[11px] text-purple-300 hover:text-white flex items-center gap-1.5 px-2.5 py-1 rounded-xl bg-purple-500/10 hover:bg-purple-500/20 border border-purple-500/30 transition-all cursor-pointer font-medium shadow-sm"
+                    title="Sao chép tên file cách nhau dấu cách để dán vào Text Search của Lightroom Mobile / CC"
+                  >
+                    {copiedLightroom ? (
+                      <>
+                        <Check className="w-3 h-3 text-emerald-400" />
+                        <span className="text-emerald-400 font-bold">Đã sao chép!</span>
+                      </>
+                    ) : (
+                      <>
+                        <Copy className="w-3 h-3 text-purple-400" />
+                        <span>Copy cho Lightroom</span>
+                      </>
+                    )}
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={handleDownloadRawBatchScript}
+                    className="text-[11px] text-amber-300 hover:text-white flex items-center gap-1.5 px-2.5 py-1 rounded-xl bg-amber-500/10 hover:bg-amber-500/20 border border-amber-500/30 transition-all cursor-pointer font-medium shadow-sm"
+                    title="Tải file script .bat tự động gom file RAW Canon R (.CR3) sang folder riêng"
+                  >
+                    <Zap className="w-3 h-3 text-amber-400" />
+                    <span>Lọc RAW (.bat)</span>
+                  </button>
+                </div>
               )}
             </div>
 

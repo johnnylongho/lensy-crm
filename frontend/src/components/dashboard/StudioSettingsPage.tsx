@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import { supabase, isSupabaseConfigured } from '../../lib/supabase';
 import { Studio, StudioMember, StudioRole } from '../../types';
@@ -26,16 +26,33 @@ import {
   UserPlus,
   BadgeCheck,
   ExternalLink,
+  Bot,
+  Send,
+  Key,
+  MessageSquare,
+  Check,
+  BellRing,
+  Eye,
+  EyeOff,
 } from 'lucide-react';
 import { VerifiedBadge } from '../common/VerifiedBadge';
+import {
+  getTelegramConfig,
+  saveTelegramConfig,
+  testTelegramConnection,
+  TelegramConfig,
+} from '../../lib/telegramNotifier';
 
 export const StudioSettingsPage: React.FC = () => {
   const { user } = useAuth();
   const navigate = useNavigate();
+  const [searchParams, setSearchParams] = useSearchParams();
 
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
-  const [activeTab, setActiveTab] = useState<'general' | 'members'>('general');
+  const [activeTab, setActiveTab] = useState<'general' | 'members' | 'integrations'>(
+    (searchParams.get('tab') as any) || 'general'
+  );
 
   // Studio Data
   const [studio, setStudio] = useState<Studio | null>(null);
@@ -162,6 +179,57 @@ export const StudioSettingsPage: React.FC = () => {
     type: 'success' | 'error' | 'info';
     message: string;
   } | null>(null);
+
+  // Telegram Bot Integration State
+  const [telegramConfig, setTelegramConfig] = useState<TelegramConfig>(() => getTelegramConfig(null));
+  const [isTestingTelegram, setIsTestingTelegram] = useState(false);
+  const [isSavingTelegram, setIsSavingTelegram] = useState(false);
+  const [showTelegramToken, setShowTelegramToken] = useState(false);
+
+  useEffect(() => {
+    if (studio) {
+      setTelegramConfig(getTelegramConfig(studio.id));
+    }
+  }, [studio]);
+
+  const handleSaveTelegram = (e: React.FormEvent) => {
+    e.preventDefault();
+    setIsSavingTelegram(true);
+    const success = saveTelegramConfig(telegramConfig, studio?.id);
+    setIsSavingTelegram(false);
+    if (success) {
+      setToast({
+        type: 'success',
+        message: '🎉 Đã lưu cấu hình Telegram Bot thành công!',
+      });
+    } else {
+      setToast({
+        type: 'error',
+        message: 'Không thể lưu cấu hình Telegram.',
+      });
+    }
+  };
+
+  const handleTestTelegram = async () => {
+    if (!telegramConfig.botToken.trim() || !telegramConfig.chatId.trim()) {
+      setToast({
+        type: 'error',
+        message: 'Vui lòng nhập Bot Token và Chat ID trước khi kiểm tra.',
+      });
+      return;
+    }
+    setIsTestingTelegram(true);
+    const result = await testTelegramConnection(
+      telegramConfig.botToken,
+      telegramConfig.chatId,
+      studioName || studio?.name || 'Lensy Studio'
+    );
+    setIsTestingTelegram(false);
+    setToast({
+      type: result.success ? 'success' : 'error',
+      message: result.message,
+    });
+  };
 
   useEffect(() => {
     if (toast) {
@@ -1024,6 +1092,25 @@ export const StudioSettingsPage: React.FC = () => {
             </span>
           )}
         </button>
+
+        <button
+          type="button"
+          onClick={() => {
+            setActiveTab('integrations');
+            setSearchParams({ tab: 'integrations' });
+          }}
+          className={`flex items-center gap-2 px-4 py-2.5 rounded-2xl text-xs font-bold transition-all relative ${
+            activeTab === 'integrations'
+              ? 'bg-amber-500 text-slate-950 shadow-md shadow-amber-500/20'
+              : 'text-slate-600 dark:text-slate-400 hover:bg-white/10 hover:text-slate-900 dark:hover:text-white'
+          }`}
+        >
+          <Bot className="w-4 h-4" />
+          <span>Tích Hợp & Telegram Bot</span>
+          {telegramConfig.isEnabled && (
+            <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" title="Telegram Bot đang hoạt động" />
+          )}
+        </button>
       </div>
 
       {/* ==================================================================== */}
@@ -1704,6 +1791,204 @@ export const StudioSettingsPage: React.FC = () => {
               </div>
             </div>
           )}
+        </div>
+      )}
+
+      {/* ==================================================================== */}
+      {/* TAB 3: TÍCH HỢP & TELEGRAM BOT                                       */}
+      {/* ==================================================================== */}
+      {activeTab === 'integrations' && (
+        <div className="space-y-6 animate-fadeIn">
+          <form onSubmit={handleSaveTelegram} className="space-y-6">
+            <div className="p-6 sm:p-8 rounded-3xl bg-white/60 dark:bg-white/5 backdrop-blur-xl border border-white/60 dark:border-white/10 shadow-[0_8px_32px_0_rgba(0,0,0,0.25)] space-y-6">
+              {/* Header */}
+              <div className="flex flex-wrap items-center justify-between gap-3 pb-4 border-b border-slate-200 dark:border-white/10">
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-2xl bg-sky-500/10 border border-sky-500/20 text-sky-500 flex items-center justify-center flex-shrink-0">
+                    <Bot className="w-5 h-5" />
+                  </div>
+                  <div>
+                    <h2 className="text-sm font-bold text-slate-900 dark:text-white uppercase tracking-wider flex items-center gap-2">
+                      <span>Kênh Thông Báo Telegram Bot</span>
+                      <span className="text-[9px] font-black px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-400 border border-emerald-500/30">
+                        MIỄN PHÍ
+                      </span>
+                    </h2>
+                    <p className="text-[11px] text-slate-500 dark:text-white/50">
+                      Nhận thông báo tức thì về điện thoại hoặc Group ê-kíp khi có cọc mới, khách đặt lịch hoặc chọn ảnh
+                    </p>
+                  </div>
+                </div>
+
+                {/* Master Switch */}
+                <label className="flex items-center gap-2 cursor-pointer select-none">
+                  <span className="text-xs font-bold text-slate-700 dark:text-zinc-300">
+                    {telegramConfig.isEnabled ? 'Đang Bật' : 'Đang Tắt'}
+                  </span>
+                  <input
+                    type="checkbox"
+                    checked={telegramConfig.isEnabled}
+                    onChange={e => setTelegramConfig(prev => ({ ...prev, isEnabled: e.target.checked }))}
+                    className="sr-only peer"
+                  />
+                  <div className="w-11 h-6 bg-slate-300 dark:bg-zinc-800 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-emerald-500 relative" />
+                </label>
+              </div>
+
+              {/* Bot Token & Chat ID */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div className="space-y-1.5">
+                  <label className="text-xs font-bold text-slate-700 dark:text-slate-300 flex items-center justify-between">
+                    <span className="flex items-center gap-1.5">
+                      <Key className="w-3.5 h-3.5 text-amber-500" />
+                      <span>Telegram Bot Token *</span>
+                    </span>
+                    <button
+                      type="button"
+                      onClick={() => setShowTelegramToken(!showTelegramToken)}
+                      className="text-[10px] text-amber-500 hover:underline flex items-center gap-1 cursor-pointer"
+                    >
+                      {showTelegramToken ? <EyeOff className="w-3 h-3" /> : <Eye className="w-3 h-3" />}
+                      <span>{showTelegramToken ? 'Ẩn token' : 'Hiện token'}</span>
+                    </button>
+                  </label>
+                  <input
+                    type={showTelegramToken ? 'text' : 'password'}
+                    value={telegramConfig.botToken}
+                    onChange={e => setTelegramConfig(prev => ({ ...prev, botToken: e.target.value }))}
+                    placeholder="VD: 7123456789:AAFn_XXXXXXX_XXXXXXXX"
+                    className="w-full px-3.5 py-2.5 rounded-xl bg-slate-100/90 dark:bg-black/40 border border-slate-200 dark:border-white/10 text-xs font-mono text-slate-900 dark:text-white outline-none focus:border-amber-400"
+                  />
+                  <p className="text-[10px] text-slate-500 dark:text-white/40">
+                    Lấy mã token từ bot <b>@BotFather</b> trên Telegram
+                  </p>
+                </div>
+
+                <div className="space-y-1.5">
+                  <label className="text-xs font-bold text-slate-700 dark:text-slate-300 flex items-center gap-1.5">
+                    <Send className="w-3.5 h-3.5 text-sky-500" />
+                    <span>Telegram Chat ID / Group ID *</span>
+                  </label>
+                  <input
+                    type="text"
+                    value={telegramConfig.chatId}
+                    onChange={e => setTelegramConfig(prev => ({ ...prev, chatId: e.target.value }))}
+                    placeholder="VD: 123456789 (Cá nhân) hoặc -100123456789 (Group)"
+                    className="w-full px-3.5 py-2.5 rounded-xl bg-slate-100/90 dark:bg-black/40 border border-slate-200 dark:border-white/10 text-xs font-mono text-slate-900 dark:text-white outline-none focus:border-amber-400"
+                  />
+                  <p className="text-[10px] text-slate-500 dark:text-white/40">
+                    Chat ID cá nhân hoặc Group nội bộ Studio (bắt đầu bằng dấu trừ <code>-100...</code>)
+                  </p>
+                </div>
+              </div>
+
+              {/* Tùy chọn sự kiện nhận thông báo */}
+              <div className="space-y-3 pt-2 border-t border-slate-200 dark:border-white/10">
+                <h4 className="text-xs font-bold uppercase tracking-wider text-slate-700 dark:text-slate-300 flex items-center gap-2">
+                  <BellRing className="w-3.5 h-3.5 text-amber-500" />
+                  <span>Sự Kiện Nhận Thông Báo Qua Telegram:</span>
+                </h4>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
+                  <label className="flex items-center gap-2.5 p-3 rounded-xl bg-slate-50 dark:bg-zinc-900/60 border border-slate-200 dark:border-zinc-800 cursor-pointer hover:border-amber-400/50 transition-colors">
+                    <input
+                      type="checkbox"
+                      checked={telegramConfig.notifyOnNewBooking}
+                      onChange={e => setTelegramConfig(prev => ({ ...prev, notifyOnNewBooking: e.target.checked }))}
+                      className="rounded text-orange-500 focus:ring-0 cursor-pointer"
+                    />
+                    <div>
+                      <p className="font-bold text-slate-800 dark:text-zinc-100">🎉 Khách đặt lịch mới</p>
+                      <p className="text-[10px] text-slate-500 dark:text-zinc-400">Khi khách gửi yêu cầu qua link báo giá hoặc đặt lịch</p>
+                    </div>
+                  </label>
+
+                  <label className="flex items-center gap-2.5 p-3 rounded-xl bg-slate-50 dark:bg-zinc-900/60 border border-slate-200 dark:border-zinc-800 cursor-pointer hover:border-amber-400/50 transition-colors">
+                    <input
+                      type="checkbox"
+                      checked={telegramConfig.notifyOnDeposit}
+                      onChange={e => setTelegramConfig(prev => ({ ...prev, notifyOnDeposit: e.target.checked }))}
+                      className="rounded text-orange-500 focus:ring-0 cursor-pointer"
+                    />
+                    <div>
+                      <p className="font-bold text-slate-800 dark:text-zinc-100">⚡ Nhận cọc & Khóa lịch</p>
+                      <p className="text-[10px] text-slate-500 dark:text-zinc-400">Khi tiền cọc VietQR về tài khoản hoặc duyệt bill cọc</p>
+                    </div>
+                  </label>
+
+                  <label className="flex items-center gap-2.5 p-3 rounded-xl bg-slate-50 dark:bg-zinc-900/60 border border-slate-200 dark:border-zinc-800 cursor-pointer hover:border-amber-400/50 transition-colors">
+                    <input
+                      type="checkbox"
+                      checked={telegramConfig.notifyOnProofingLocked}
+                      onChange={e => setTelegramConfig(prev => ({ ...prev, notifyOnProofingLocked: e.target.checked }))}
+                      className="rounded text-orange-500 focus:ring-0 cursor-pointer"
+                    />
+                    <div>
+                      <p className="font-bold text-slate-800 dark:text-zinc-100">🎨 Khách chốt chọn ảnh</p>
+                      <p className="text-[10px] text-slate-500 dark:text-zinc-400">Khách hoàn tất chọn ảnh để retoucher chỉnh màu ngay</p>
+                    </div>
+                  </label>
+
+                  <label className="flex items-center gap-2.5 p-3 rounded-xl bg-slate-50 dark:bg-zinc-900/60 border border-slate-200 dark:border-zinc-800 cursor-pointer hover:border-amber-400/50 transition-colors">
+                    <input
+                      type="checkbox"
+                      checked={telegramConfig.notifyOnConflict}
+                      onChange={e => setTelegramConfig(prev => ({ ...prev, notifyOnConflict: e.target.checked }))}
+                      className="rounded text-orange-500 focus:ring-0 cursor-pointer"
+                    />
+                    <div>
+                      <p className="font-bold text-slate-800 dark:text-zinc-100">⚠️ Cảnh báo trùng thiết bị / thợ</p>
+                      <p className="text-[10px] text-slate-500 dark:text-zinc-400">Khi có nguy cơ đụng máy ảnh hoặc trùng thợ makeup</p>
+                    </div>
+                  </label>
+                </div>
+              </div>
+
+              {/* Action Buttons */}
+              <div className="flex flex-wrap items-center justify-between gap-3 pt-4 border-t border-slate-200 dark:border-white/10">
+                <button
+                  type="button"
+                  onClick={handleTestTelegram}
+                  disabled={isTestingTelegram || !telegramConfig.botToken || !telegramConfig.chatId}
+                  className="px-4 py-2.5 rounded-xl bg-sky-500/10 hover:bg-sky-500/20 border border-sky-500/30 text-sky-600 dark:text-sky-400 font-bold text-xs flex items-center gap-2 transition-all cursor-pointer disabled:opacity-50"
+                >
+                  {isTestingTelegram ? <Loader2 className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4" />}
+                  <span>Gửi Thử Tin Nhắn (Kiểm Tra Kết Nối)</span>
+                </button>
+
+                <button
+                  type="submit"
+                  disabled={isSavingTelegram}
+                  className="px-5 py-2.5 rounded-xl bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-400 hover:to-orange-400 text-slate-950 font-extrabold text-xs flex items-center gap-2 shadow-lg shadow-amber-500/25 transition-all cursor-pointer"
+                >
+                  {isSavingTelegram ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
+                  <span>Lưu Cấu Hình Telegram</span>
+                </button>
+              </div>
+            </div>
+          </form>
+
+          {/* Quick Guide Card */}
+          <div className="p-5 sm:p-6 rounded-3xl bg-amber-500/5 border border-amber-500/20 space-y-3">
+            <h3 className="text-xs font-bold uppercase tracking-wider text-amber-600 dark:text-amber-400 flex items-center gap-2">
+              <Sparkles className="w-4 h-4" />
+              <span>Hướng Dẫn 4 Bước Tạo Telegram Bot Miễn Phí Trong 1 Phút</span>
+            </h3>
+            <ol className="text-xs text-slate-600 dark:text-zinc-400 space-y-2 list-decimal list-inside leading-relaxed">
+              <li>
+                Mở ứng dụng Telegram, tìm kiếm <b>@BotFather</b> và gửi lệnh <code>/newbot</code>.
+              </li>
+              <li>
+                Đặt tên cho Bot (VD: <i>Mirmia Studio Notifier</i>) và username (kết thúc bằng chữ <i>bot</i>).
+              </li>
+              <li>
+                Copy đoạn <b>HTTP API Token</b> do BotFather gửi và dán vào ô <b>Telegram Bot Token</b> ở trên.
+              </li>
+              <li>
+                Để lấy <b>Chat ID</b>: Nhắn tin cho bot <b>@userinfobot</b> để xem ID cá nhân, hoặc thêm Bot vừa tạo vào Group Studio rồi gửi lệnh test để lấy ID group (thường bắt đầu bằng dấu trừ <code>-100...</code>).
+              </li>
+            </ol>
+          </div>
         </div>
       )}
     </motion.div>

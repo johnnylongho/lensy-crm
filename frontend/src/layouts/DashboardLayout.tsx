@@ -21,10 +21,12 @@ import {
   PanelLeftClose,
   PanelLeftOpen,
   ShieldCheck,
+  ShieldAlert,
   Check,
   DollarSign,
 } from 'lucide-react';
 import { ThemeToggle } from '../components/common/ThemeToggle';
+import { NotificationDropdown } from '../components/navigation/NotificationDropdown';
 import { TierBadge } from '../components/dashboard/TierBadge';
 import { TierConfig, TIER_CONFIGS, calculateYtdRevenue, getTierProgress } from '../utils/tierSystem';
 import { QuickPassShowModal } from '../components/dashboard/QuickPassShowModal';
@@ -50,8 +52,45 @@ export const DashboardLayout: React.FC = () => {
   const [isUserMenuOpen, setIsUserMenuOpen] = useState(false);
   const [isPassShowOpen, setIsPassShowOpen] = useState(false);
   const [studioTier, setStudioTier] = useState<TierConfig>(TIER_CONFIGS.gold);
+  const [toastBanner, setToastBanner] = useState<{ type: 'error' | 'success'; text: string } | null>(null);
   const mobileMenuRef = useRef<HTMLDivElement>(null);
   const userMenuRef = useRef<HTMLDivElement>(null);
+
+  // Lắng nghe Toast thông báo lỗi / từ chối truy cập (Access Denied)
+  useEffect(() => {
+    // 1. Kiểm tra location.state?.error
+    if (location.state && (location.state as any).error) {
+      setToastBanner({ type: 'error', text: (location.state as any).error });
+      window.history.replaceState({}, document.title);
+    }
+
+    // 2. Kiểm tra sessionStorage lensy_toast
+    try {
+      const stored = sessionStorage.getItem('lensy_toast');
+      if (stored) {
+        sessionStorage.removeItem('lensy_toast');
+        const parsed = JSON.parse(stored);
+        setToastBanner(parsed);
+      }
+    } catch (_) {}
+
+    // 3. Lắng nghe CustomEvent lensy:toast
+    const handleToastEvent = (e: any) => {
+      if (e.detail) {
+        setToastBanner(e.detail);
+      }
+    };
+    window.addEventListener('lensy:toast', handleToastEvent);
+    return () => window.removeEventListener('lensy:toast', handleToastEvent);
+  }, [location]);
+
+  // Tự tắt Toast sau 4.5 giây
+  useEffect(() => {
+    if (toastBanner) {
+      const timer = setTimeout(() => setToastBanner(null), 4500);
+      return () => clearTimeout(timer);
+    }
+  }, [toastBanner]);
 
   const toggleSidebar = () => {
     setIsSidebarCollapsed(prev => {
@@ -138,29 +177,55 @@ export const DashboardLayout: React.FC = () => {
 
   // Cấu trúc danh mục Menu theo đúng 3 nhóm vai trò RBAC:
   // - Role manager: Hiển thị Full Menu (Dashboard, Lịch chụp, Khách hàng, Thiết bị, Nhân sự, Cài đặt)
-  // - Role freelancer: Ẩn menu Nhân sự, Ẩn menu Studio Bays. Chỉ hiện: Lịch cá nhân, Khách hàng, Thiết bị (cá nhân), Cài đặt
-  // - Role member: Sidebar tối giản nhất. Chỉ hiện: "Lịch của tôi (My Schedule)", "Thu nhập (My Payroll)", "Hồ sơ cá nhân"
   const menuGroups = useMemo(() => {
+    // =====================================================================
+    // 3. HYBRID WORKSPACE DÀNH CHO STUDIO MEMBER (Thành viên Ekip có Job ngoài)
+    // Phân tách 2 khu vực rõ ràng:
+    // - Khu vực 1: TÀI KHOẢN CÁ NHÂN (Bảng điều khiển cá nhân, Khách hàng của tôi)
+    // - Khu vực 2: KHÔNG GIAN STUDIO (Lịch phân công từ Studio, Bảng lương & Thù lao)
+    // =====================================================================
     if (isStudioMember) {
       return [
         {
-          title: 'Công Việc & Thu Nhập',
+          title: 'Tài Khoản Cá Nhân',
           items: [
             {
               to: '/dashboard',
-              label: 'Lịch Của Tôi (My Schedule)',
+              label: 'Bảng Điều Khiển Cá Nhân',
               icon: Layers,
-              isActive: location.pathname === '/dashboard',
+              isActive: location.pathname === '/dashboard' && !location.search.includes('view=studio'),
+            },
+            {
+              to: '/dashboard/clients',
+              label: 'Khách Hàng Của Tôi',
+              icon: Users,
+              isActive: location.pathname.startsWith('/dashboard/clients'),
+            },
+          ],
+        },
+        {
+          title: 'Không Gian Studio',
+          items: [
+            {
+              to: '/dashboard?view=studio',
+              label: 'Lịch Phân Công Từ Studio',
+              icon: Building2,
+              isActive: location.pathname === '/dashboard' && location.search.includes('view=studio'),
             },
             {
               to: '/dashboard/payroll',
-              label: 'Thu Nhập (My Payroll)',
+              label: 'Bảng Lương & Thù Lao (My Payroll)',
               icon: DollarSign,
               isActive: location.pathname.startsWith('/dashboard/payroll'),
             },
+          ],
+        },
+        {
+          title: 'Hồ Sơ & Cài Đặt',
+          items: [
             {
               to: '/dashboard/settings',
-              label: 'Hồ Sơ Cá Nhân',
+              label: 'Cài Đặt Hồ Sơ',
               icon: Settings,
               isActive: location.pathname.startsWith('/dashboard/settings'),
             },
@@ -169,12 +234,16 @@ export const DashboardLayout: React.FC = () => {
       ];
     }
 
-    const isSuperAdmin =
-      isStudioAdmin ||
-      accountType === 'studio_admin' ||
-      user?.user_metadata?.account_type === 'studio_admin' ||
-      user?.email === 'johnnylongho@gmail.com' ||
-      Boolean(user?.email?.includes('admin'));
+    // BẢO MẬT SUPER ADMIN (STRICT RBAC ISOLATION):
+    // CHỈ render menu này NẾU thỏa mãn điều kiện tuyệt đối:
+    // user?.account_type === 'super_admin' HOẶC user?.email === 'johnnyho1705@gmail.com'.
+    // ĐẢM BẢO isStudioAdmin hoặc account_type === 'studio_admin' KHÔNG BAO GIỜ được nhìn thấy mục menu này.
+    const isSuperAdmin = Boolean(
+      (user as any)?.account_type === 'super_admin' ||
+      user?.user_metadata?.account_type === 'super_admin' ||
+      (accountType as string) === 'super_admin' ||
+      user?.email === 'johnnyho1705@gmail.com'
+    );
 
     if (isFreelancer) {
       return [
@@ -192,18 +261,6 @@ export const DashboardLayout: React.FC = () => {
               label: 'Khách Hàng',
               icon: Users,
               isActive: location.pathname.startsWith('/dashboard/clients'),
-            },
-            {
-              to: '/dashboard/gears',
-              label: 'Thiết Bị (Cá Nhân)',
-              icon: SlidersHorizontal,
-              isActive: location.pathname.startsWith('/dashboard/gears'),
-            },
-            {
-              to: '/dashboard/payroll',
-              label: 'Thù Lao & Chi Phí',
-              icon: DollarSign,
-              isActive: location.pathname === '/dashboard/payroll',
             },
             ...(isSuperAdmin
               ? [
@@ -602,6 +659,9 @@ export const DashboardLayout: React.FC = () => {
               </>
             )}
 
+            {/* Trung Tâm Thông Báo (In-App Notification Hub) */}
+            <NotificationDropdown />
+
             {/* Theme Mode Toggle (Dark/Light) */}
             <ThemeToggle size="sm" />
 
@@ -653,11 +713,11 @@ export const DashboardLayout: React.FC = () => {
                     </div>
                   </div>
 
-                  {/* BỘ CHUYỂN ĐỔI ROLE NHANH ĐỂ TRẢI NGHIỆM GIAO DIỆN (Switch Role) */}
-                  {switchAccountType && (
+                  {/* BỘ CHUYỂN ĐỔI ROLE NHANH: CHỈ HIỂN THỊ DUY NHẤT CHO MASTER DEVELOPER johnnyho1705@gmail.com */}
+                  {switchAccountType && user?.email === 'johnnyho1705@gmail.com' && (
                     <div className="p-2 rounded-xl bg-orange-50/50 dark:bg-zinc-800/80 border border-orange-200/60 dark:border-zinc-700/60 space-y-1.5">
                       <span className="text-[10px] font-bold uppercase tracking-wider text-[#df8653] dark:text-orange-400 block">
-                        Chuyển Đổi Trải Nghiệm Role:
+                        [Dev Only] Giả Lập Role:
                       </span>
                       <div className="grid grid-cols-3 gap-1 text-[10px]">
                         <button
@@ -754,6 +814,43 @@ export const DashboardLayout: React.FC = () => {
 
         {/* Dynamic Nested Page Content via Outlet */}
         <div className="relative">
+          {/* Floating Toast Notification (Access Denied / Security Feedback) */}
+          {toastBanner && (
+            <div className="fixed top-20 right-4 sm:right-8 z-50 max-w-md animate-in fade-in slide-in-from-top-4 duration-300">
+              <div
+                className={`p-4 rounded-2xl shadow-2xl backdrop-blur-xl border flex items-start gap-3.5 ${
+                  toastBanner.type === 'error'
+                    ? 'bg-rose-950/90 dark:bg-rose-950/95 border-rose-500/40 text-rose-100 shadow-rose-950/50'
+                    : 'bg-emerald-950/90 dark:bg-emerald-950/95 border-emerald-500/40 text-emerald-100 shadow-emerald-950/50'
+                }`}
+              >
+                {toastBanner.type === 'error' ? (
+                  <div className="p-1.5 rounded-xl bg-rose-500/20 text-rose-400 border border-rose-500/30 flex-shrink-0">
+                    <ShieldAlert className="w-5 h-5" />
+                  </div>
+                ) : (
+                  <div className="p-1.5 rounded-xl bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 flex-shrink-0">
+                    <Check className="w-5 h-5" />
+                  </div>
+                )}
+                <div className="flex-1 text-xs">
+                  <p className="font-bold text-sm tracking-tight mb-0.5">
+                    {toastBanner.type === 'error' ? 'Cảnh Báo An Ninh' : 'Thông Báo Hệ Thống'}
+                  </p>
+                  <p className="leading-relaxed opacity-90">{toastBanner.text}</p>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setToastBanner(null)}
+                  className="p-1 rounded-lg text-white/60 hover:text-white hover:bg-white/10 transition-colors"
+                  aria-label="Đóng thông báo"
+                >
+                  <X className="w-4 h-4" />
+                </button>
+              </div>
+            </div>
+          )}
+
           <Outlet />
         </div>
       </main>

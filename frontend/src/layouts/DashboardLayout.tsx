@@ -596,35 +596,35 @@ export const DashboardLayout: React.FC = () => {
       {/* ===================================================================== */}
       <main className="flex-1 h-full overflow-y-auto p-4 sm:p-6 md:p-8 bg-slate-50/50 dark:bg-[#090a0f]">
         {/* Header: Page Title + Actions + Profile Pill */}
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
-          <div className="flex items-center gap-3">
+        <div className="flex flex-row items-center justify-between w-full gap-2 mb-6">
+          <div className="flex items-center gap-2 sm:gap-3 min-w-0">
             {/* Mobile menu trigger */}
             <button
               type="button"
               onClick={() => setIsMobileMenuOpen(true)}
-              className="lg:hidden p-2 rounded-xl border border-gray-200 dark:border-white/10 bg-white dark:bg-zinc-900/60 backdrop-blur-xl text-gray-700 dark:text-zinc-200 hover:bg-gray-100 dark:hover:bg-zinc-800 transition-colors cursor-pointer"
+              className="lg:hidden p-2 rounded-xl border border-gray-200 dark:border-white/10 bg-white dark:bg-zinc-900/60 backdrop-blur-xl text-gray-700 dark:text-zinc-200 hover:bg-gray-100 dark:hover:bg-zinc-800 transition-colors cursor-pointer shrink-0"
               aria-label="Mở menu"
             >
               <Menu className="h-5 w-5" />
             </button>
 
-            <div>
-              <div className="flex items-center gap-2">
-                <h2 className="text-2xl sm:text-3xl font-extrabold tracking-tight text-gray-900 dark:text-white">
+            <div className="min-w-0">
+              <div className="flex items-center gap-2 min-w-0">
+                <h1 className="text-xl sm:text-2xl md:text-3xl font-bold truncate tracking-tight text-gray-900 dark:text-white">
                   {getPageTitle()}
-                </h2>
+                </h1>
                 {isStudioAdmin ? (
-                  <span className="hidden sm:inline-flex items-center gap-1.5 text-[11px] font-semibold px-2.5 py-0.5 rounded-full bg-orange-500/10 border border-orange-500/25 text-orange-600 dark:text-orange-400">
+                  <span className="hidden md:inline-flex items-center gap-1.5 text-[11px] font-semibold px-2.5 py-0.5 rounded-full bg-orange-500/10 border border-orange-500/25 text-orange-600 dark:text-orange-400 shrink-0">
                     <ShieldCheck className="w-3.5 h-3.5 text-orange-500" />
                     <span>Quản Lý Studio</span>
                   </span>
                 ) : isStudioMember ? (
-                  <span className="hidden sm:inline-flex items-center gap-1.5 text-[11px] font-semibold px-2.5 py-0.5 rounded-full bg-emerald-500/10 border border-emerald-500/25 text-emerald-600 dark:text-emerald-400">
+                  <span className="hidden md:inline-flex items-center gap-1.5 text-[11px] font-semibold px-2.5 py-0.5 rounded-full bg-emerald-500/10 border border-emerald-500/25 text-emerald-600 dark:text-emerald-400 shrink-0">
                     <Users className="w-3.5 h-3.5 text-emerald-500" />
                     <span>Thành Viên Ekip</span>
                   </span>
                 ) : (
-                  <span className="hidden sm:inline-flex items-center gap-1.5 text-[11px] font-semibold px-2.5 py-0.5 rounded-full bg-amber-500/10 border border-amber-500/25 text-amber-600 dark:text-amber-400">
+                  <span className="hidden md:inline-flex items-center gap-1.5 text-[11px] font-semibold px-2.5 py-0.5 rounded-full bg-amber-500/10 border border-amber-500/25 text-amber-600 dark:text-amber-400 shrink-0">
                     <Camera className="w-3.5 h-3.5 text-amber-500" />
                     <span>Freelancer Solo</span>
                   </span>
@@ -634,14 +634,14 @@ export const DashboardLayout: React.FC = () => {
           </div>
 
           {/* Top Action Buttons & Profile Card Pill */}
-          <div className="flex items-center gap-2.5 sm:gap-3 flex-wrap">
+          <div className="flex items-center gap-1.5 sm:gap-2.5 shrink-0">
             {/* Chỉ hiển thị nút Pass Show & Tạo Lịch Mới cho Quản lý Studio hoặc Freelancer */}
             {!isStudioMember && (
               <>
                 <button
                   type="button"
                   onClick={() => setIsPassShowOpen(true)}
-                  className="inline-flex items-center gap-1.5 rounded-xl bg-amber-500/15 hover:bg-amber-500/25 border border-amber-500/40 text-amber-700 dark:text-amber-300 px-3 py-2 text-xs font-bold shadow-xs active:scale-95 transition-all cursor-pointer"
+                  className="hidden md:inline-flex items-center gap-1.5 rounded-xl bg-amber-500/15 hover:bg-amber-500/25 border border-amber-500/40 text-amber-700 dark:text-amber-300 px-3 py-2 text-xs font-bold shadow-xs active:scale-95 transition-all cursor-pointer"
                   title="Tạo lịch chụp thủ công / Nhận pass show"
                 >
                   <Zap className="h-4 w-4 stroke-[2.5] text-amber-500" />
@@ -651,10 +651,11 @@ export const DashboardLayout: React.FC = () => {
                 <button
                   type="button"
                   onClick={handleOpenNewBooking}
-                  className="inline-flex items-center gap-1.5 rounded-xl bg-orange-600 hover:bg-orange-500 px-3.5 py-2 text-xs font-bold text-white shadow-xs hover:brightness-105 active:scale-95 transition-all cursor-pointer"
+                  className="inline-flex items-center gap-1.5 rounded-xl bg-orange-600 hover:bg-orange-500 px-2.5 sm:px-3.5 py-2 text-xs font-bold text-white shadow-xs hover:brightness-105 active:scale-95 transition-all cursor-pointer"
+                  title="Tạo Lịch Mới"
                 >
                   <Plus className="h-4 w-4 stroke-[2.5]" />
-                  <span>Tạo Lịch Mới</span>
+                  <span className="hidden sm:inline">Tạo Lịch Mới</span>
                 </button>
               </>
             )}
@@ -663,16 +664,18 @@ export const DashboardLayout: React.FC = () => {
             <NotificationDropdown />
 
             {/* Theme Mode Toggle (Dark/Light) */}
-            <ThemeToggle size="sm" />
+            <div className="hidden sm:block">
+              <ThemeToggle size="sm" />
+            </div>
 
             {/* Profile Card Pill in top right */}
             <div className="relative" ref={userMenuRef}>
               <button
                 type="button"
                 onClick={() => setIsUserMenuOpen(!isUserMenuOpen)}
-                className="flex items-center gap-2.5 rounded-full border border-gray-200 dark:border-white/10 bg-white/90 dark:bg-zinc-900/60 backdrop-blur-xl px-3 py-1.5 shadow-2xs hover:bg-gray-50 dark:hover:bg-zinc-800 transition-all cursor-pointer"
+                className="flex items-center gap-1.5 sm:gap-2.5 rounded-full border border-gray-200 dark:border-white/10 bg-white/90 dark:bg-zinc-900/60 backdrop-blur-xl p-1 sm:px-3 sm:py-1.5 shadow-2xs hover:bg-gray-50 dark:hover:bg-zinc-800 transition-all cursor-pointer"
               >
-                <div className="flex h-8 w-8 items-center justify-center rounded-full bg-orange-500 text-xs font-bold text-white shadow-xs">
+                <div className="flex h-7 w-7 sm:h-8 sm:w-8 items-center justify-center rounded-full bg-orange-500 text-xs font-bold text-white shadow-xs shrink-0">
                   {userInitials}
                 </div>
                 <div className="hidden sm:block text-left">
@@ -687,12 +690,12 @@ export const DashboardLayout: React.FC = () => {
                       : 'Freelancer Solo'}
                   </div>
                 </div>
-                <ChevronDown className={`h-3.5 w-3.5 text-gray-400 dark:text-zinc-400 transition-transform ${isUserMenuOpen ? 'rotate-180' : ''}`} />
+                <ChevronDown className={`hidden sm:block h-3.5 w-3.5 text-gray-400 dark:text-zinc-400 transition-transform ${isUserMenuOpen ? 'rotate-180' : ''}`} />
               </button>
 
               {/* Dropdown Menu */}
               {isUserMenuOpen && (
-                <div className="absolute right-0 top-full mt-2 w-72 rounded-2xl bg-white dark:bg-zinc-900/95 backdrop-blur-2xl border border-gray-200 dark:border-white/10 shadow-[0_8px_32px_0_rgba(0,0,0,0.4)] p-2.5 z-50 text-xs space-y-2">
+                <div className="absolute right-0 left-auto top-full mt-2 w-[calc(100vw-32px)] max-w-sm sm:w-72 rounded-2xl bg-white dark:bg-zinc-900/95 backdrop-blur-2xl border border-gray-200 dark:border-white/10 shadow-[0_8px_32px_0_rgba(0,0,0,0.4)] p-2.5 z-50 text-xs space-y-2">
                   <div className="p-3 rounded-xl bg-gray-50 dark:bg-zinc-800/60 space-y-1">
                     <div className="flex items-center justify-between gap-2">
                       <p className="font-bold text-gray-900 dark:text-white truncate">{userFullName}</p>

@@ -339,7 +339,7 @@ export const GearsManagementPage: React.FC = () => {
             </div>
             <div>
               <div className="flex items-center gap-2">
-                <h1 className="text-xl sm:text-2xl font-light text-slate-900 dark:text-white/90 tracking-tight">
+                <h1 className="text-xl sm:text-2xl md:text-3xl font-bold truncate text-slate-900 dark:text-white/90 tracking-tight">
                   Quản Lý Thiết Bị Studio
                 </h1>
               </div>

@@ -615,7 +615,7 @@ export const PayrollManagementPage: React.FC = () => {
               <span>Quay lại Dashboard</span>
             </Link>
           </div>
-          <h1 className="text-xl sm:text-2xl font-black text-slate-900 dark:text-white tracking-tight">
+          <h1 className="text-xl sm:text-2xl md:text-3xl font-bold truncate text-slate-900 dark:text-white tracking-tight">
             {isStudioMember ? 'Bảng Thù Lao & Thu Nhập Của Tôi' : 'Bảng Lương & Đối Soát Thù Lao Ekip'}
           </h1>
           <p className="mt-1 text-xs sm:text-sm text-slate-500 dark:text-zinc-400">

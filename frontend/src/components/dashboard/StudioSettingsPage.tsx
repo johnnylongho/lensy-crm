@@ -64,6 +64,7 @@ export const StudioSettingsPage: React.FC = () => {
   const [logoUrl, setLogoUrl] = useState('');
   const [studioAddress, setStudioAddress] = useState('');
   const [studioFanpage, setStudioFanpage] = useState('');
+  const [studioPhone, setStudioPhone] = useState('');
   const [verifiedStatus, setVerifiedStatus] = useState(false);
   const [isUploadingLogo, setIsUploadingLogo] = useState(false);
   const logoFileInputRef = React.useRef<HTMLInputElement | null>(null);
@@ -452,19 +453,38 @@ export const StudioSettingsPage: React.FC = () => {
     fetchStudioData();
   }, [user]);
 
-  // Lưu thông tin Tab "Thông tin chung"
-  const handleSaveGeneralInfo = async (e: React.FormEvent) => {
+  // Lưu thông tin Tab "Thông tin chung" (handleSaveStudioInfo)
+  const handleSaveStudioInfo = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!studio) return;
 
     setIsSaving(true);
     try {
+      const cleanName = studioName.trim();
+      const cleanLogo = logoUrl.trim();
+      const cleanAddress = studioAddress.trim();
+      const cleanFanpage = studioFanpage.trim();
+      const cleanPhone = studioPhone.trim();
+
+      // Đồng bộ ngay vào localStorage metadata để đảm bảo offline & schema fallback luôn persist dữ liệu mới nhất
+      localStorage.setItem(`lensy_studio_meta_${studio.id}`, JSON.stringify({
+        address: cleanAddress,
+        location: cleanAddress,
+        fanpage: cleanFanpage,
+        fanpage_url: cleanFanpage,
+        phone: cleanPhone,
+        hotline: cleanPhone,
+      }));
+
       if (isSupabaseConfigured) {
         let updatePayload: any = {
-          name: studioName.trim(),
-          logo_url: logoUrl.trim() || null,
-          address: studioAddress.trim() || null,
-          fanpage_url: studioFanpage.trim() || null,
+          name: cleanName,
+          logo_url: cleanLogo || null,
+          address: cleanAddress || null,
+          location: cleanAddress || null,
+          fanpage_url: cleanFanpage || null,
+          facebook_url: cleanFanpage || null,
+          phone: cleanPhone || null,
           updated_at: new Date().toISOString(),
         };
 
@@ -473,28 +493,29 @@ export const StudioSettingsPage: React.FC = () => {
           .update(updatePayload)
           .eq('id', studio.id);
 
-        if (error && (error.message?.includes('fanpage_url') || error.message?.includes('address'))) {
-          console.warn('[Supabase Schema Cache] Cột address/fanpage_url chưa có trong schema cache studios, tự động fallback.');
-          delete updatePayload.fanpage_url;
-          delete updatePayload.address;
+        if (error) {
+          const errMsg = error.message || '';
+          console.warn('[Supabase Schema Cache] Cột mở rộng chưa có trong schema cache studios, tự động fallback:', errMsg);
+          if (errMsg.includes('location')) delete updatePayload.location;
+          if (errMsg.includes('facebook_url')) delete updatePayload.facebook_url;
+          if (errMsg.includes('phone')) delete updatePayload.phone;
+          if (errMsg.includes('fanpage_url')) delete updatePayload.fanpage_url;
+          if (errMsg.includes('address')) delete updatePayload.address;
+
           const retryRes = await supabase
             .from('studios')
             .update(updatePayload)
             .eq('id', studio.id);
           error = retryRes.error;
-          localStorage.setItem(`lensy_studio_meta_${studio.id}`, JSON.stringify({
-            address: studioAddress.trim(),
-            fanpage: studioFanpage.trim(),
-          }));
         }
 
         if (error) throw error;
 
         setStudio(prev => prev ? {
           ...prev,
-          name: studioName.trim(),
-          logo_url: logoUrl.trim() || null,
-          address: studioAddress.trim() || undefined,
+          name: cleanName,
+          logo_url: cleanLogo || null,
+          address: cleanAddress || undefined,
         } : null);
         setToast({
           type: 'success',
@@ -504,9 +525,9 @@ export const StudioSettingsPage: React.FC = () => {
         await new Promise(r => setTimeout(r, 500));
         setStudio(prev => prev ? {
           ...prev,
-          name: studioName.trim(),
-          logo_url: logoUrl.trim() || null,
-          address: studioAddress.trim() || undefined,
+          name: cleanName,
+          logo_url: cleanLogo || null,
+          address: cleanAddress || undefined,
         } : null);
         setToast({
           type: 'success',
@@ -523,6 +544,8 @@ export const StudioSettingsPage: React.FC = () => {
       setIsSaving(false);
     }
   };
+
+  const handleSaveGeneralInfo = handleSaveStudioInfo;
 
   // Tạo Studio mới (dành cho người dùng chưa có Studio)
   const handleCreateNewStudio = async (e: React.FormEvent) => {
@@ -1036,7 +1059,7 @@ export const StudioSettingsPage: React.FC = () => {
             </div>
             <div>
               <div className="flex items-center gap-2">
-                <h1 className="text-xl sm:text-2xl font-light text-slate-900 dark:text-white/90 tracking-tight">
+                <h1 className="text-xl sm:text-2xl md:text-3xl font-bold truncate text-slate-900 dark:text-white/90 tracking-tight">
                   Quản Trị Studio & Nhân Sự
                 </h1>
                 <span className="px-2 py-0.5 rounded-full bg-amber-500/20 text-amber-600 dark:text-amber-300 text-[10px] font-bold border border-amber-500/30 uppercase tracking-wider">
@@ -1117,7 +1140,7 @@ export const StudioSettingsPage: React.FC = () => {
       {/* TAB 1: THÔNG TIN CHUNG                                               */}
       {/* ==================================================================== */}
       {activeTab === 'general' && (
-        <form onSubmit={handleSaveGeneralInfo} className="space-y-6 animate-fadeIn">
+        <form onSubmit={handleSaveStudioInfo} className="space-y-6 animate-fadeIn">
           <div className="p-6 sm:p-8 rounded-3xl bg-white/60 dark:bg-white/5 backdrop-blur-xl border border-white/60 dark:border-white/10 shadow-[0_8px_32px_0_rgba(0,0,0,0.25)] space-y-6">
             <div className="flex items-center justify-between pb-4 border-b border-slate-200 dark:border-white/10">
               <div>
@@ -1137,9 +1160,9 @@ export const StudioSettingsPage: React.FC = () => {
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-              {/* Logo Preview */}
-              <div className="md:col-span-1 flex flex-col items-center justify-center p-4 rounded-2xl bg-black/20 border border-white/5 text-center space-y-3">
-                <div className="w-24 h-24 rounded-2xl overflow-hidden border-2 border-amber-500/50 bg-slate-950 p-1 shadow-lg">
+              {/* Logo Preview & Tải Ảnh (Loại bỏ ô nhập URL bằng text) */}
+              <div className="md:col-span-1 flex flex-col items-center justify-center p-6 rounded-2xl bg-slate-50 dark:bg-zinc-900/50 backdrop-blur-xl border border-slate-200 dark:border-white/10 shadow-sm text-center space-y-4">
+                <div className="w-28 h-28 rounded-2xl overflow-hidden border border-slate-200 dark:border-white/10 bg-white dark:bg-zinc-950 p-2 shadow-sm flex items-center justify-center">
                   <img
                     src={logoUrl || '/mirmia-logo.png'}
                     alt="Studio Logo"
@@ -1149,10 +1172,40 @@ export const StudioSettingsPage: React.FC = () => {
                     }}
                   />
                 </div>
-                <div>
-                  <p className="text-xs font-bold text-slate-800 dark:text-slate-200">{studioName || 'Tên Studio'}</p>
-                  <p className="text-[10px] text-slate-400">Xem trước Logo</p>
+                <div className="space-y-1">
+                  <p className="text-xs font-bold text-slate-800 dark:text-slate-200 truncate max-w-[180px]">{studioName || 'Tên Studio'}</p>
+                  <p className="text-[10px] text-slate-400">Xem trước Logo Studio</p>
                 </div>
+
+                {/* Nút Upload trực tiếp từ máy (loại bỏ ô text URL) */}
+                <input
+                  ref={logoFileInputRef}
+                  type="file"
+                  accept="image/*"
+                  onChange={handleLogoFileSelected}
+                  className="hidden"
+                />
+                <button
+                  type="button"
+                  disabled={isUploadingLogo}
+                  onClick={() => logoFileInputRef.current?.click()}
+                  className="w-full px-3 py-2 rounded-xl bg-orange-600 hover:bg-orange-500 text-white text-xs font-semibold shadow-xs flex items-center justify-center gap-1.5 transition-all cursor-pointer disabled:opacity-50"
+                >
+                  {isUploadingLogo ? (
+                    <>
+                      <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                      <span>Đang tải lên...</span>
+                    </>
+                  ) : (
+                    <>
+                      <Upload className="w-3.5 h-3.5" />
+                      <span>Tải Ảnh Từ Máy</span>
+                    </>
+                  )}
+                </button>
+                <p className="text-[10px] text-slate-400 leading-tight">
+                  Hỗ trợ PNG, JPG, WEBP hoặc SVG (tối đa 5MB)
+                </p>
               </div>
 
               {/* Form Inputs */}
@@ -1172,48 +1225,19 @@ export const StudioSettingsPage: React.FC = () => {
                   />
                 </div>
 
+                {/* Trường Số Điện Thoại / Hotline Studio */}
                 <div className="space-y-1.5">
-                  <div className="flex items-center justify-between">
-                    <label className="text-xs font-bold text-slate-700 dark:text-slate-300 flex items-center gap-1.5">
-                      <Upload className="w-3.5 h-3.5 text-amber-500 dark:text-amber-400" />
-                      <span>URL Logo Studio</span>
-                    </label>
-                    <input
-                      ref={logoFileInputRef}
-                      type="file"
-                      accept="image/*"
-                      onChange={handleLogoFileSelected}
-                      className="hidden"
-                    />
-                    <button
-                      type="button"
-                      disabled={isUploadingLogo}
-                      onClick={() => logoFileInputRef.current?.click()}
-                      className="px-2.5 py-1 rounded-lg bg-amber-500/10 hover:bg-amber-500/20 text-amber-500 dark:text-amber-400 text-[11px] font-bold border border-amber-500/30 flex items-center gap-1.5 transition-all cursor-pointer disabled:opacity-50"
-                    >
-                      {isUploadingLogo ? (
-                        <>
-                          <Loader2 className="w-3 h-3 animate-spin" />
-                          <span>Đang tải lên...</span>
-                        </>
-                      ) : (
-                        <>
-                          <Upload className="w-3 h-3" />
-                          <span>Tải Ảnh Từ Máy</span>
-                        </>
-                      )}
-                    </button>
-                  </div>
+                  <label className="text-xs font-bold text-slate-700 dark:text-slate-300 flex items-center gap-1.5">
+                    <span>📞</span>
+                    <span>Số Điện Thoại / Hotline Studio</span>
+                  </label>
                   <input
-                    type="url"
-                    value={logoUrl}
-                    onChange={e => setLogoUrl(e.target.value)}
-                    placeholder="https://domain.com/path-to-logo.png"
-                    className="w-full px-3.5 py-2.5 rounded-xl bg-slate-100/90 dark:bg-black/40 border border-slate-200 dark:border-white/10 text-xs text-slate-900 dark:text-white outline-none focus:border-amber-400 font-mono"
+                    type="tel"
+                    value={studioPhone}
+                    onChange={e => setStudioPhone(e.target.value)}
+                    placeholder="VD: 0901234567"
+                    className="w-full px-3.5 py-2.5 rounded-xl bg-slate-100/90 dark:bg-black/40 border border-slate-200 dark:border-white/10 text-xs text-slate-900 dark:text-white outline-none focus:border-amber-400"
                   />
-                  <p className="text-[10px] text-slate-400">
-                    Khuyến nghị file ảnh PNG trong suốt. Bạn có thể dán URL hoặc nhấn "Tải Ảnh Từ Máy" để upload tự động.
-                  </p>
                 </div>
 
                 {/* Trường Địa chỉ Studio */}

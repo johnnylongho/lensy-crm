@@ -336,7 +336,7 @@ export const ClientsManagementPage: React.FC = () => {
               Gamification Tiering
             </span>
           </div>
-          <h1 className="text-xl sm:text-2xl font-black text-slate-900 dark:text-white flex items-center gap-2">
+          <h1 className="text-xl sm:text-2xl md:text-3xl font-bold truncate text-slate-900 dark:text-white flex items-center gap-2">
             <span>Danh Sách Khách Hàng Studio</span>
             <span className="text-xs px-2.5 py-0.5 rounded-full bg-white/40 dark:bg-white/10 text-slate-700 dark:text-white/80 font-mono border border-white/40 dark:border-white/10">
               {clients.length} khách

@@ -14,6 +14,7 @@ import {
   MapPin,
   Clock,
   MoreVertical,
+  MoreHorizontal,
   X,
   ExternalLink,
   Phone,
@@ -108,9 +109,11 @@ export const ClayStudioDashboard: React.FC<Props> = ({
   const { currentStudio, isStudioAdmin, isStudioMember, isFreelancer, accountType, switchAccountType } = useWorkspace();
   const [isWorkspaceDropdownOpen, setIsWorkspaceDropdownOpen] = useState(false);
   const [isExportDropdownOpen, setIsExportDropdownOpen] = useState(false);
+  const [isActionMenuOpen, setIsActionMenuOpen] = useState(false);
   const [isCopiedInviteCode, setIsCopiedInviteCode] = useState(false);
   const workspaceDropdownRef = useRef<HTMLDivElement>(null);
   const exportDropdownRef = useRef<HTMLDivElement>(null);
+  const actionMenuRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     const handleClickOutside = (e: MouseEvent) => {
@@ -462,188 +465,188 @@ export const ClayStudioDashboard: React.FC<Props> = ({
       </div>
 
       {/* ===================================================================== */}
-      {/* 2. BENTO EXECUTIVE STRIP (5-COLUMN EXECUTIVE METRICS MATRIX)          */}
+      {/* 2. HERO METRICS BLOCK (KHỐI NỀN CAM TỔNG & 4 THẺ KPI GLASS/SOLID) */}
       {/* ===================================================================== */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3.5 items-stretch">
-        {/* Khối 1 (2 cột): TRUNG TÂM DÒNG TIỀN & LỢI NHUẬN RÒNG */}
-        <div className="sm:col-span-2 lg:col-span-2 rounded-xl bg-white bg-gradient-to-br from-orange-50/50 via-white to-white dark:bg-zinc-900 dark:from-zinc-900 dark:via-zinc-900/90 dark:to-zinc-950 border border-orange-500 dark:border-orange-500/30 p-4 sm:p-5 shadow-sm relative overflow-hidden flex flex-col justify-between space-y-2.5">
-          <div className="absolute top-0 right-0 w-36 h-36 bg-orange-500/10 rounded-full blur-3xl pointer-events-none" />
+      <div className="rounded-3xl bg-gradient-to-br from-orange-500 via-[#df8653] to-amber-500 p-5 sm:p-7 shadow-lg shadow-orange-500/20 relative overflow-hidden">
+        {/* Ambient Lighting Accents */}
+        <div className="absolute -top-24 -right-24 w-72 h-72 bg-white/15 rounded-full blur-3xl pointer-events-none" />
+        <div className="absolute -bottom-24 -left-24 w-72 h-72 bg-black/10 rounded-full blur-3xl pointer-events-none" />
 
-          <div className="space-y-1 relative z-10">
-            <div className="flex items-center justify-between">
-              <span className="text-[10px] font-mono font-bold tracking-widest uppercase text-orange-600 dark:text-orange-400">
-                {isStudioMember ? 'TIẾN ĐỘ TÁC CHIẾN EKIP' : 'TRUNG TÂM DÒNG TIỀN THỰC THU'}
-              </span>
-              <span className="text-[9px] font-mono font-bold px-2 py-0.5 rounded bg-orange-100 text-orange-700 dark:bg-orange-500/15 dark:text-orange-400 border border-orange-300/80 dark:border-orange-500/30 uppercase">
-                {isStudioMember ? 'Ekip KPI' : 'Net Profit'}
-              </span>
-            </div>
-
-            <div className="text-xl sm:text-2xl font-mono font-black text-slate-900 dark:text-white tracking-tight pt-0.5">
-              {isStudioMember
-                ? `${validEvents.filter(e => e.status === 'shot' || e.status === 'editing' || e.status === 'da_tra_file').length} Ca Đang Tác Chiến`
-                : formatVND(financialMetrics.totalActualRevenue)}
-            </div>
-            <p className="text-[11px] text-slate-500 dark:text-zinc-400 font-sans line-clamp-1">
-              {isStudioMember
-                ? 'Tổng số ca chụp và hậu kỳ được phân bổ cho ekip'
-                : 'Dòng tiền thực tế đã thu vào tài khoản (đã cọc & quyết toán)'}
-            </p>
-          </div>
-
-          {/* Thanh phân bổ so với Tổng Giá Trị Hợp Đồng */}
-          {!isStudioMember ? (
-            <div className="space-y-1.5 relative z-10 pt-0.5">
-              <div className="w-full bg-slate-100 dark:bg-zinc-800 rounded-full h-1.5 overflow-hidden">
-                <div
-                  className="bg-gradient-to-r from-orange-500 to-amber-500 h-1.5 rounded-full transition-all duration-500"
-                  style={{ width: `${financialMetrics.contractCollectionRatio}%` }}
-                />
-              </div>
-
-              <div className="flex items-center justify-between text-[11px] font-mono">
-                <span className="text-slate-500 dark:text-zinc-400">
-                  Đã thu: <strong className="text-slate-900 dark:text-white">{financialMetrics.contractCollectionRatio}%</strong>
+        {/* Grid 4 Thẻ KPI Cân Đối Hoàn Hảo */}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 relative z-10 items-stretch">
+          {/* Thẻ 1: TRUNG TÂM DÒNG TIỀN & LỢI NHUẬN RÒNG */}
+          <div className="rounded-2xl bg-white dark:bg-zinc-900/95 backdrop-blur-md p-4 sm:p-5 shadow-xs flex flex-col justify-between space-y-3 transition-all hover:shadow-md">
+            <div className="space-y-1">
+              <div className="flex items-center justify-between">
+                <span className="text-[10px] font-mono font-bold tracking-widest uppercase text-orange-600 dark:text-orange-400">
+                  {isStudioMember ? 'TIẾN ĐỘ TÁC CHIẾN' : 'TRUNG TÂM DÒNG TIỀN'}
                 </span>
-                <span className="text-slate-500 dark:text-zinc-400">
-                  Tổng HĐ: <strong className="text-slate-900 dark:text-white">{formatVND(financialMetrics.totalContractValue)}</strong>
+                <span className="text-[9px] font-mono font-bold px-2 py-0.5 rounded-full bg-orange-100 text-orange-700 dark:bg-orange-500/15 dark:text-orange-400 uppercase">
+                  {isStudioMember ? 'Ekip KPI' : 'Net Profit'}
                 </span>
               </div>
 
-              {/* Lợi nhuận ròng (Net Profit) thực tế sau trừ chi phí */}
-              <div className="pt-2 border-t border-slate-100 dark:border-zinc-800/80 flex items-center justify-between text-xs">
-                <span className="text-slate-500 dark:text-zinc-400 text-[11px]">Lợi Nhuận Ròng (Thực thu):</span>
-                <div className="flex items-center gap-1.5 font-mono">
-                  <span className="text-emerald-600 dark:text-emerald-400 font-black text-sm sm:text-base">
-                    +{formatVND(financialMetrics.totalNetProfit)}
+              <div className="text-xl sm:text-2xl font-mono font-black text-slate-900 dark:text-white tracking-tight pt-0.5">
+                {isStudioMember
+                  ? `${validEvents.filter(e => e.status === 'shot' || e.status === 'editing' || e.status === 'da_tra_file').length} Ca Đang Chạy`
+                  : formatVND(financialMetrics.totalActualRevenue)}
+              </div>
+              <p className="text-[11px] text-slate-500 dark:text-zinc-400 font-sans line-clamp-1">
+                {isStudioMember
+                  ? 'Số ca chụp và hậu kỳ được phân bổ cho ekip'
+                  : 'Dòng tiền thực tế đã thu vào tài khoản'}
+              </p>
+            </div>
+
+            {!isStudioMember ? (
+              <div className="space-y-1.5 pt-0.5">
+                <div className="w-full bg-slate-100 dark:bg-zinc-800 rounded-full h-1.5 overflow-hidden">
+                  <div
+                    className="bg-gradient-to-r from-orange-500 to-amber-500 h-1.5 rounded-full transition-all duration-500"
+                    style={{ width: `${financialMetrics.contractCollectionRatio}%` }}
+                  />
+                </div>
+
+                <div className="flex items-center justify-between text-[11px] font-mono">
+                  <span className="text-slate-500 dark:text-zinc-400">
+                    Đã thu: <strong className="text-slate-900 dark:text-white">{financialMetrics.contractCollectionRatio}%</strong>
                   </span>
-                  <span className="text-[10px] text-emerald-700 dark:text-emerald-500 font-bold">
-                    ({financialMetrics.netMargin}%)
+                  <span className="text-slate-500 dark:text-zinc-400">
+                    Tổng HĐ: <strong className="text-slate-900 dark:text-white">{formatVND(financialMetrics.totalContractValue)}</strong>
                   </span>
                 </div>
-              </div>
-            </div>
-          ) : (
-            <div className="pt-2 border-t border-slate-100 dark:border-zinc-800/80 flex items-center justify-between text-xs text-slate-500 dark:text-zinc-400">
-              <span>Trạng thái hoạt động:</span>
-              <span className="text-emerald-600 dark:text-emerald-400 font-mono font-bold">Sẵn sàng nhận show</span>
-            </div>
-          )}
-        </div>
 
-        {/* Khối 2 (1 cột): CA CHỤP HÔM NAY */}
-        <div className="rounded-xl bg-white dark:bg-zinc-900/60 border border-slate-200 dark:border-white/10 border-l-4 border-l-orange-500 p-4 sm:p-5 shadow-sm flex flex-col justify-between space-y-3">
-          <div className="space-y-1">
-            <div className="flex items-center justify-between">
-              <span className="text-[10px] font-mono font-bold uppercase tracking-wider text-slate-500 dark:text-zinc-400">
-                CA CHỤP HÔM NAY
-              </span>
-              <span className="text-[10px] font-mono font-bold px-1.5 py-0.5 rounded bg-slate-100 dark:bg-white/10 text-slate-700 dark:text-zinc-300">
-                {format(currentDate, 'dd/MM')}
-              </span>
-            </div>
-            <div className="text-xl sm:text-2xl font-mono font-black text-slate-900 dark:text-white tracking-tight pt-0.5">
-              {todayShoots.length}
-            </div>
-            <div className="text-xs font-semibold text-slate-700 dark:text-zinc-300">
-              {todayShoots.length > 0 ? 'Buổi chụp trong ngày' : 'Trống lịch hôm nay'}
-            </div>
-          </div>
-
-          <div className="pt-2 border-t border-slate-100 dark:border-white/10 text-xs">
-            {todayShoots.length > 0 ? (
-              <div className="text-[11px] text-slate-600 dark:text-zinc-400 truncate">
-                <span className="font-bold text-orange-600 dark:text-orange-400 font-mono mr-1">
-                  {todayShoots[0].startTime || '08:00'}:
-                </span>
-                <span className="font-semibold text-slate-800 dark:text-zinc-200">
-                  {todayShoots[0].clientName}
-                </span>
+                <div className="pt-2 border-t border-slate-100 dark:border-zinc-800 flex items-center justify-between text-xs">
+                  <span className="text-slate-500 dark:text-zinc-400 text-[11px]">Lợi Nhuận Ròng:</span>
+                  <div className="flex items-center gap-1 font-mono">
+                    <span className="text-emerald-600 dark:text-emerald-400 font-black text-xs sm:text-sm">
+                      +{formatVND(financialMetrics.totalNetProfit)}
+                    </span>
+                    <span className="text-[10px] text-emerald-700 dark:text-emerald-500 font-bold">
+                      ({financialMetrics.netMargin}%)
+                    </span>
+                  </div>
+                </div>
               </div>
             ) : (
-              <button
-                type="button"
-                onClick={onOpenCreateQuote}
-                className="text-orange-600 dark:text-orange-400 font-bold hover:underline cursor-pointer block text-xs"
-              >
-                + Lên lịch chụp ngay
-              </button>
+              <div className="pt-2 border-t border-slate-100 dark:border-zinc-800 flex items-center justify-between text-xs text-slate-500 dark:text-zinc-400">
+                <span>Trạng thái hoạt động:</span>
+                <span className="text-emerald-600 dark:text-emerald-400 font-mono font-bold">Sẵn sàng nhận show</span>
+              </div>
             )}
           </div>
-        </div>
 
-        {/* Khối 3 (1 cột): CỌC & CÔNG NỢ CẦN THU */}
-        <div className={`rounded-xl bg-white dark:bg-zinc-900/60 border border-slate-200 dark:border-white/10 border-l-4 ${
-          financialMetrics.totalDebt > 0 ? 'border-l-rose-500' : 'border-l-emerald-500'
-        } p-4 sm:p-5 shadow-sm flex flex-col justify-between space-y-3`}>
-          <div className="space-y-1">
-            <div className="flex items-center justify-between">
-              <span className="text-[10px] font-mono font-bold uppercase tracking-wider text-slate-500 dark:text-zinc-400">
-                CỌC & CÔNG NỢ
-              </span>
-              <span className={`text-[9px] font-mono font-bold px-1.5 py-0.5 rounded ${
-                pendingCount > 0
-                  ? 'bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/20'
-                  : 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20'
-              }`}>
-                {pendingCount > 0 ? 'CẦN CHỐT' : 'ỔN ĐỊNH'}
-              </span>
-            </div>
-            <div className="text-xl sm:text-2xl font-mono font-black text-slate-900 dark:text-white tracking-tight pt-0.5">
-              {pendingCount}
-            </div>
-            <div className="text-xs font-semibold text-slate-700 dark:text-zinc-300">
-              Khách chờ chốt cọc
-            </div>
-          </div>
-
-          <div className="pt-2 border-t border-slate-100 dark:border-white/10 text-xs">
-            {financialMetrics.totalDebt > 0 ? (
-              <div className="text-[11px] font-mono flex items-center justify-between">
-                <span className="text-slate-500 dark:text-zinc-400 font-sans">Nợ đọng:</span>
-                <span className="text-rose-600 dark:text-rose-400 font-bold">
-                  {formatVND(financialMetrics.totalDebt)}
+          {/* Thẻ 2: CA CHỤP HÔM NAY */}
+          <div className="rounded-2xl bg-white dark:bg-zinc-900/95 backdrop-blur-md p-4 sm:p-5 shadow-xs flex flex-col justify-between space-y-3 transition-all hover:shadow-md">
+            <div className="space-y-1">
+              <div className="flex items-center justify-between">
+                <span className="text-[10px] font-mono font-bold uppercase tracking-wider text-slate-500 dark:text-zinc-400">
+                  CA CHỤP HÔM NAY
+                </span>
+                <span className="text-[10px] font-mono font-bold px-2 py-0.5 rounded-full bg-slate-100 dark:bg-zinc-800 text-slate-700 dark:text-zinc-300">
+                  {format(currentDate, 'dd/MM')}
                 </span>
               </div>
-            ) : (
-              <span className="text-[11px] font-mono text-emerald-600 dark:text-emerald-400 font-bold">
-                Đã thu đủ 100%
-              </span>
-            )}
-          </div>
-        </div>
+              <div className="text-xl sm:text-2xl font-mono font-black text-slate-900 dark:text-white tracking-tight pt-0.5">
+                {todayShoots.length}
+              </div>
+              <div className="text-xs font-semibold text-slate-700 dark:text-zinc-300">
+                {todayShoots.length > 0 ? 'Buổi chụp trong ngày' : 'Trống lịch hôm nay'}
+              </div>
+            </div>
 
-        {/* Khối 4 (1 cột): HOÀN THÀNH & HIỆU SUẤT THÁNG */}
-        <div className="rounded-xl bg-white dark:bg-zinc-900/60 border border-slate-200 dark:border-white/10 border-l-4 border-l-amber-500 p-4 sm:p-5 shadow-sm flex flex-col justify-between space-y-3">
-          <div className="space-y-1">
-            <div className="flex items-center justify-between">
-              <span className="text-[10px] font-mono font-bold uppercase tracking-wider text-slate-500 dark:text-zinc-400">
-                HIỆU SUẤT THÁNG
-              </span>
-              <span className="text-[10px] font-mono font-bold px-1.5 py-0.5 rounded bg-slate-100 dark:bg-white/10 text-slate-700 dark:text-zinc-300">
-                {format(currentDate, 'MM/yyyy')}
-              </span>
-            </div>
-            <div className="text-xl sm:text-2xl font-mono font-black text-slate-900 dark:text-white tracking-tight pt-0.5">
-              {completedMonthCount}
-            </div>
-            <div className="text-xs font-semibold text-slate-700 dark:text-zinc-300">
-              Show đã giao file
+            <div className="pt-2 border-t border-slate-100 dark:border-zinc-800 text-xs">
+              {todayShoots.length > 0 ? (
+                <div className="text-[11px] text-slate-600 dark:text-zinc-400 truncate">
+                  <span className="font-bold text-orange-600 dark:text-orange-400 font-mono mr-1">
+                    {todayShoots[0].startTime || '08:00'}:
+                  </span>
+                  <span className="font-semibold text-slate-800 dark:text-zinc-200">
+                    {todayShoots[0].clientName}
+                  </span>
+                </div>
+              ) : (
+                <button
+                  type="button"
+                  onClick={onOpenCreateQuote}
+                  className="text-orange-600 dark:text-orange-400 font-bold hover:underline cursor-pointer block text-xs"
+                >
+                  + Lên lịch chụp ngay
+                </button>
+              )}
             </div>
           </div>
 
-          <div className="pt-2 border-t border-slate-100 dark:border-white/10 text-xs">
-            <div className="flex items-center justify-between text-[11px]">
-              <span className="text-slate-500 dark:text-zinc-400">Tỷ lệ hoàn thành:</span>
-              <span className="font-mono font-bold text-amber-600 dark:text-amber-400">
-                {monthCompletionPct}%
-              </span>
+          {/* Thẻ 3: CỌC & CÔNG NỢ */}
+          <div className="rounded-2xl bg-white dark:bg-zinc-900/95 backdrop-blur-md p-4 sm:p-5 shadow-xs flex flex-col justify-between space-y-3 transition-all hover:shadow-md">
+            <div className="space-y-1">
+              <div className="flex items-center justify-between">
+                <span className="text-[10px] font-mono font-bold uppercase tracking-wider text-slate-500 dark:text-zinc-400">
+                  CỌC & CÔNG NỢ
+                </span>
+                <span className={`text-[9px] font-mono font-bold px-2 py-0.5 rounded-full ${
+                  pendingCount > 0
+                    ? 'bg-amber-100 text-amber-700 dark:bg-amber-500/15 dark:text-amber-400'
+                    : 'bg-emerald-100 text-emerald-700 dark:bg-emerald-500/15 dark:text-emerald-400'
+                }`}>
+                  {pendingCount > 0 ? 'CẦN CHỐT' : 'ỔN ĐỊNH'}
+                </span>
+              </div>
+              <div className="text-xl sm:text-2xl font-mono font-black text-slate-900 dark:text-white tracking-tight pt-0.5">
+                {pendingCount}
+              </div>
+              <div className="text-xs font-semibold text-slate-700 dark:text-zinc-300">
+                Khách chờ chốt cọc
+              </div>
+            </div>
+
+            <div className="pt-2 border-t border-slate-100 dark:border-zinc-800 text-xs">
+              {financialMetrics.totalDebt > 0 ? (
+                <div className="text-[11px] font-mono flex items-center justify-between">
+                  <span className="text-slate-500 dark:text-zinc-400 font-sans">Nợ đọng:</span>
+                  <span className="text-rose-600 dark:text-rose-400 font-bold">
+                    {formatVND(financialMetrics.totalDebt)}
+                  </span>
+                </div>
+              ) : (
+                <span className="text-[11px] font-mono text-emerald-600 dark:text-emerald-400 font-bold">
+                  Đã thu đủ 100%
+                </span>
+              )}
+            </div>
+          </div>
+
+          {/* Thẻ 4: HIỆU SUẤT THÁNG */}
+          <div className="rounded-2xl bg-white dark:bg-zinc-900/95 backdrop-blur-md p-4 sm:p-5 shadow-xs flex flex-col justify-between space-y-3 transition-all hover:shadow-md">
+            <div className="space-y-1">
+              <div className="flex items-center justify-between">
+                <span className="text-[10px] font-mono font-bold uppercase tracking-wider text-slate-500 dark:text-zinc-400">
+                  HIỆU SUẤT THÁNG
+                </span>
+                <span className="text-[10px] font-mono font-bold px-2 py-0.5 rounded-full bg-slate-100 dark:bg-zinc-800 text-slate-700 dark:text-zinc-300">
+                  {format(currentDate, 'MM/yyyy')}
+                </span>
+              </div>
+              <div className="text-xl sm:text-2xl font-mono font-black text-slate-900 dark:text-white tracking-tight pt-0.5">
+                {completedMonthCount}
+              </div>
+              <div className="text-xs font-semibold text-slate-700 dark:text-zinc-300">
+                Show đã giao file
+              </div>
+            </div>
+
+            <div className="pt-2 border-t border-slate-100 dark:border-zinc-800 text-xs">
+              <div className="flex items-center justify-between text-[11px]">
+                <span className="text-slate-500 dark:text-zinc-400">Tỷ lệ hoàn thành:</span>
+                <span className="font-mono font-bold text-amber-600 dark:text-amber-400">
+                  {monthCompletionPct}%
+                </span>
+              </div>
             </div>
           </div>
         </div>
       </div>
-
-      {/* ===================================================================== */}
+      
       {/* 3. TODAY'S TIMELINE BAR (CHỈ HIỂN THỊ KHI CÓ SHOW HÔM NAY)             */}
       {/* ===================================================================== */}
       {todayShoots.length > 0 && (
@@ -699,9 +702,36 @@ export const ClayStudioDashboard: React.FC<Props> = ({
       {/* 4. WORKFLOW DISPATCH CENTER (TABS NAVIGATION & DIRECT WORKSPACE)      */}
       {/* ===================================================================== */}
       <div className="rounded-xl border border-slate-200 dark:border-white/10 bg-white dark:bg-zinc-900/50 p-4 sm:p-6 shadow-sm">
-        {/* Header Tabs Navigation */}
-        <div className="flex flex-col md:flex-row md:items-center justify-between pb-4 border-b border-slate-100 dark:border-white/10 gap-4">
-          <div className="flex items-center gap-2 overflow-x-auto pb-1 md:pb-0">
+        {/* ================================================================= */}
+        {/* TẦNG 1: TABS ĐIỀU HƯỚNG RIÊNG BIỆT (LAYER 1: RESPONSIVE TABS)     */}
+        {/* ================================================================= */}
+        <div className="pb-3.5 border-b border-slate-100 dark:border-white/10">
+          {/* Mobile: Thẻ Select (Dropdown Menu) - Chuyển Tab tức thì, 0% lỗi tràn viền */}
+          <div className="sm:hidden w-full">
+            <select
+              value={dashboardView}
+              onChange={e => setDashboardView(e.target.value as any)}
+              className="w-full h-9 rounded-xl border border-slate-200/80 dark:border-white/10 bg-slate-50 dark:bg-white/5 px-3 text-xs font-bold text-slate-800 dark:text-zinc-100 focus:outline-hidden focus:ring-1 focus:ring-orange-500 cursor-pointer"
+            >
+              {[
+                { id: 'table', label: isStudioMember ? 'Ca Chụp Phân Công' : isFreelancer ? 'Lịch Chụp Cá Nhân' : 'Danh Sách Lịch Chụp' },
+                { id: 'kanban', label: 'Quy Trình Kanban (5 bước)' },
+                { id: 'calendar', label: 'Thời Khóa Biểu Tuần' },
+                ...(!isStudioMember ? [{ id: 'roi', label: isFreelancer ? 'Dòng Tiền Cá Nhân' : 'Biểu Đồ Tài Chính & ROI Thiết Bị' }] : []),
+              ].map(tab => (
+                <option
+                  key={tab.id}
+                  value={tab.id}
+                  className="bg-white dark:bg-zinc-900 text-slate-800 dark:text-zinc-100 font-semibold"
+                >
+                  {tab.label}
+                </option>
+              ))}
+            </select>
+          </div>
+
+          {/* Desktop & Tablet: flex flex-wrap gap-2, các Tab tự xuống dòng gọn gàng, KHÔNG ép cuộn ngang */}
+          <div className="hidden sm:flex flex-wrap items-center gap-2">
             {[
               { id: 'table', label: isStudioMember ? 'Ca Chụp Phân Công' : isFreelancer ? 'Lịch Chụp Cá Nhân' : 'Danh Sách Lịch Chụp', icon: Briefcase },
               { id: 'kanban', label: 'Quy Trình Kanban (5 bước)', icon: Kanban },
@@ -714,7 +744,7 @@ export const ClayStudioDashboard: React.FC<Props> = ({
                 <button
                   key={tab.id}
                   onClick={() => setDashboardView(tab.id as any)}
-                  className={`flex items-center gap-2 rounded-xl px-4 py-2 text-xs font-bold transition-all whitespace-nowrap cursor-pointer ${
+                  className={`flex items-center gap-2 rounded-xl px-3.5 py-2 text-xs font-bold transition-all whitespace-nowrap cursor-pointer ${
                     isActive
                       ? 'bg-orange-100 text-orange-700 dark:bg-orange-600 dark:text-white shadow-xs'
                       : 'text-slate-600 dark:text-zinc-400 hover:bg-slate-100 dark:hover:bg-white/5'
@@ -726,90 +756,142 @@ export const ClayStudioDashboard: React.FC<Props> = ({
               );
             })}
           </div>
+        </div>
 
-          {/* Quick Actions Bar */}
-          <div className="flex items-center gap-2 self-end md:self-auto flex-wrap">
+        {/* ================================================================= */}
+        {/* TẦNG 2: TOOLBAR TÌM KIẾM, LỌC & ACTION MENU (LAYER 2: TOOLBAR)   */}
+        {/* ================================================================= */}
+        <div className="flex flex-col md:flex-row items-stretch md:items-center justify-between gap-3 w-full mt-4">
+          {/* Search Bar: Hàng 1 trên mobile, flex-1 trên desktop */}
+          <div className="relative flex-1 max-w-full md:max-w-md">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-slate-400 dark:text-zinc-500" />
+            <input
+              type="text"
+              placeholder="Tìm theo tên khách, SĐT, mã show..."
+              value={searchQuery}
+              onChange={e => setSearchQuery(e.target.value)}
+              className="w-full h-8.5 rounded-xl border border-slate-200/80 dark:border-zinc-800 bg-white dark:bg-zinc-900 pl-8 pr-3 text-xs text-slate-900 dark:text-zinc-100 placeholder-slate-400 dark:placeholder-zinc-500 focus:outline-hidden focus:ring-1 focus:ring-orange-500"
+            />
+          </div>
+
+          {/* Right: Filter & Action Buttons: Hàng 2 trên mobile */}
+          <div className="flex items-center gap-2 flex-wrap sm:flex-nowrap justify-between md:justify-end">
+            {/* Dropdown "Tất Cả Trạng Thái" */}
+            <div className="flex items-center gap-1.5 flex-1 sm:flex-none">
+              <Filter className="h-3.5 w-3.5 text-slate-400 dark:text-zinc-500 shrink-0" />
+              <select
+                value={statusFilter}
+                onChange={e => setStatusFilter(e.target.value)}
+                className="w-full sm:w-auto h-8.5 rounded-xl border border-slate-200/80 dark:border-zinc-800 bg-white dark:bg-zinc-900 px-3 text-xs font-semibold text-slate-700 dark:text-zinc-200 focus:outline-hidden focus:ring-1 focus:ring-orange-500 cursor-pointer"
+              >
+                <option value="All" className="bg-white dark:bg-zinc-900 text-slate-800 dark:text-zinc-100">Tất Cả Trạng Thái</option>
+                <option value="Deposited" className="bg-white dark:bg-zinc-900 text-slate-800 dark:text-zinc-100">Đã Cọc (Deposited)</option>
+                <option value="In Progress" className="bg-white dark:bg-zinc-900 text-slate-800 dark:text-zinc-100">Đang Chụp / Sửa (In Progress)</option>
+                <option value="Done" className="bg-white dark:bg-zinc-900 text-slate-800 dark:text-zinc-100">Đã Hoàn Thành (Done)</option>
+                <option value="Lead" className="bg-white dark:bg-zinc-900 text-slate-800 dark:text-zinc-100">Chờ Chốt / Lead</option>
+              </select>
+            </div>
+
+            {/* DUY NHẤT 1 NÚT CHÍNH HIỂN THỊ BÊN NGOÀI: "Làm Mới" */}
             {onRefreshData && (
               <button
                 type="button"
                 onClick={onRefreshData}
                 disabled={isLoading}
-                className="flex items-center gap-1.5 rounded-xl border border-slate-200/80 dark:border-white/10 bg-white dark:bg-white/5 hover:bg-slate-50 dark:hover:bg-white/10 px-3 py-1.5 text-xs font-semibold text-slate-700 dark:text-zinc-200 transition-all shadow-2xs active:scale-95 disabled:opacity-50 cursor-pointer"
+                className="flex items-center gap-1.5 h-8.5 rounded-xl border border-slate-200/80 dark:border-white/10 bg-white dark:bg-white/5 hover:bg-slate-50 dark:hover:bg-white/10 px-3 text-xs font-semibold text-slate-700 dark:text-zinc-200 transition-all shadow-2xs active:scale-95 disabled:opacity-50 cursor-pointer shrink-0"
                 title="Làm mới dữ liệu từ Supabase"
               >
                 <RefreshCw className={`h-3.5 w-3.5 text-orange-500 ${isLoading ? 'animate-spin' : ''}`} />
-                <span className="hidden sm:inline">Làm Mới</span>
+                <span>Làm Mới</span>
               </button>
             )}
 
-            {onOpenImportCsv && (
+            {/* GOM TẤT CẢ CÁC NÚT CÒN LẠI VÀO DROPDOWN: "Thao tác khác" */}
+            <div className="relative shrink-0" ref={actionMenuRef}>
               <button
                 type="button"
-                onClick={onOpenImportCsv}
-                className="flex items-center gap-1.5 rounded-xl border border-slate-200/80 dark:border-white/10 bg-white dark:bg-white/5 hover:bg-slate-50 dark:hover:bg-white/10 px-3 py-1.5 text-xs font-semibold text-slate-700 dark:text-zinc-200 transition-all shadow-2xs active:scale-95 cursor-pointer"
-                title="Nhập danh sách từ file CSV"
+                onClick={() => setIsActionMenuOpen(!isActionMenuOpen)}
+                className="flex items-center gap-1.5 h-8.5 rounded-xl border border-slate-200/80 dark:border-white/10 bg-white dark:bg-white/5 hover:bg-slate-50 dark:hover:bg-white/10 px-3 text-xs font-semibold text-slate-700 dark:text-zinc-200 transition-all shadow-2xs active:scale-95 cursor-pointer whitespace-nowrap"
+                title="Các thao tác dữ liệu khác"
               >
-                <Upload className="h-3.5 w-3.5 text-orange-500" />
-                <span className="hidden sm:inline">Import CSV</span>
-              </button>
-            )}
-
-            {onOpenWebhookSimulator && (
-              <button
-                type="button"
-                onClick={onOpenWebhookSimulator}
-                className="flex items-center gap-1.5 rounded-xl border border-slate-200/80 dark:border-white/10 bg-white dark:bg-white/5 hover:bg-slate-50 dark:hover:bg-white/10 px-3 py-1.5 text-xs font-semibold text-slate-700 dark:text-zinc-200 transition-all shadow-2xs active:scale-95 cursor-pointer"
-                title="Mô phỏng Webhook chuyển khoản ngân hàng"
-              >
-                <Radio className="h-3.5 w-3.5 text-orange-500" />
-                <span className="hidden sm:inline">Mô Phỏng Webhook</span>
-              </button>
-            )}
-
-            {/* Nút Xuất Báo Cáo Excel / CSV */}
-            <div className="relative" ref={exportDropdownRef}>
-              <button
-                type="button"
-                onClick={() => setIsExportDropdownOpen(!isExportDropdownOpen)}
-                className="flex items-center gap-1.5 rounded-xl border border-slate-200/80 dark:border-white/10 bg-white dark:bg-white/5 hover:bg-slate-50 dark:hover:bg-white/10 px-3 py-1.5 text-xs font-semibold text-slate-700 dark:text-zinc-200 transition-all shadow-2xs active:scale-95 cursor-pointer"
-                title="Xuất báo cáo ra file Excel / CSV"
-              >
-                <Download className="h-3.5 w-3.5 text-orange-500" />
-                <span className="hidden sm:inline">Xuất Báo Cáo</span>
-                <ChevronDown className={`h-3 w-3 text-slate-400 transition-transform ${isExportDropdownOpen ? 'rotate-180' : ''}`} />
+                <MoreHorizontal className="h-3.5 w-3.5 text-orange-500" />
+                <span>Thao tác khác</span>
+                <ChevronDown className={`h-3 w-3 text-slate-400 transition-transform ${isActionMenuOpen ? 'rotate-180' : ''}`} />
               </button>
 
-              {isExportDropdownOpen && (
-                <div className="absolute right-0 top-full mt-1.5 w-64 rounded-2xl bg-white dark:bg-zinc-950/95 backdrop-blur-2xl border border-slate-200 dark:border-white/10 shadow-[0_12px_36px_0_rgba(0,0,0,0.35)] p-1.5 z-40 text-xs space-y-1 animate-fadeIn">
-                  <button
-                    type="button"
-                    onClick={() => {
-                      exportBookingsToCsv(events, { studioName: currentStudio?.name });
-                      setIsExportDropdownOpen(false);
-                    }}
-                    className="w-full p-2.5 rounded-xl text-left hover:bg-orange-50/70 dark:hover:bg-zinc-900 transition-colors flex items-start gap-2.5 cursor-pointer text-slate-800 dark:text-zinc-200"
-                  >
-                    <FileSpreadsheet className="w-4 h-4 text-emerald-500 shrink-0 mt-0.5" />
-                    <div>
-                      <div className="font-bold text-xs">Danh Sách Lịch Chụp (.csv)</div>
-                      <div className="text-[10px] text-slate-500 dark:text-zinc-400">Doanh thu, tiền cọc, chi phí & lợi nhuận từng show</div>
+              {isActionMenuOpen && (
+                <div className="absolute right-0 top-full mt-1.5 w-72 rounded-2xl bg-white dark:bg-zinc-950/95 backdrop-blur-2xl border border-slate-200 dark:border-white/10 shadow-[0_12px_36px_0_rgba(0,0,0,0.35)] p-1.5 z-40 text-xs space-y-1 animate-fadeIn">
+                  {/* Nút Import CSV */}
+                  {onOpenImportCsv && (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setIsActionMenuOpen(false);
+                        onOpenImportCsv();
+                      }}
+                      className="w-full p-2.5 rounded-xl text-left hover:bg-orange-50/70 dark:hover:bg-zinc-900 transition-colors flex items-start gap-2.5 cursor-pointer text-slate-700 dark:text-zinc-200"
+                    >
+                      <Upload className="w-4 h-4 text-orange-500 shrink-0 mt-0.5" />
+                      <div>
+                        <div className="font-bold text-xs text-slate-800 dark:text-zinc-100">Import CSV</div>
+                        <div className="text-[10px] text-slate-500 dark:text-zinc-400">Nhập danh sách lịch chụp từ file CSV / Excel</div>
+                      </div>
+                    </button>
+                  )}
+
+                  {/* Nút Mô Phỏng Webhook */}
+                  {onOpenWebhookSimulator && (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setIsActionMenuOpen(false);
+                        onOpenWebhookSimulator();
+                      }}
+                      className="w-full p-2.5 rounded-xl text-left hover:bg-orange-50/70 dark:hover:bg-zinc-900 transition-colors flex items-start gap-2.5 cursor-pointer text-slate-700 dark:text-zinc-200"
+                    >
+                      <Radio className="w-4 h-4 text-orange-500 shrink-0 mt-0.5" />
+                      <div>
+                        <div className="font-bold text-xs text-slate-800 dark:text-zinc-100">Mô Phỏng Webhook</div>
+                        <div className="text-[10px] text-slate-500 dark:text-zinc-400">Giả lập biến động số dư chuyển khoản ngân hàng</div>
+                      </div>
+                    </button>
+                  )}
+
+                  {/* Khối Xuất Báo Cáo */}
+                  <div className="pt-1 border-t border-slate-100 dark:border-zinc-800">
+                    <div className="px-2.5 py-1 text-[10px] font-bold uppercase tracking-wider text-slate-400 dark:text-zinc-500">
+                      Xuất Báo Cáo
                     </div>
-                  </button>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        exportBookingsToCsv(events, { studioName: currentStudio?.name });
+                        setIsActionMenuOpen(false);
+                      }}
+                      className="w-full p-2.5 rounded-xl text-left hover:bg-orange-50/70 dark:hover:bg-zinc-900 transition-colors flex items-start gap-2.5 cursor-pointer text-slate-800 dark:text-zinc-200"
+                    >
+                      <FileSpreadsheet className="w-4 h-4 text-emerald-500 shrink-0 mt-0.5" />
+                      <div>
+                        <div className="font-bold text-xs">Xuất Báo Cáo Lịch Chụp (.csv)</div>
+                        <div className="text-[10px] text-slate-500 dark:text-zinc-400">Doanh thu, tiền cọc, chi phí & lợi nhuận từng show</div>
+                      </div>
+                    </button>
 
-                  <button
-                    type="button"
-                    onClick={() => {
-                      exportFinancialSummaryToCsv(events, { studioName: currentStudio?.name });
-                      setIsExportDropdownOpen(false);
-                    }}
-                    className="w-full p-2.5 rounded-xl text-left hover:bg-orange-50/70 dark:hover:bg-zinc-900 transition-colors flex items-start gap-2.5 cursor-pointer text-slate-800 dark:text-zinc-200"
-                  >
-                    <TrendingUp className="w-4 h-4 text-amber-500 shrink-0 mt-0.5" />
-                    <div>
-                      <div className="font-bold text-xs">Báo Cáo Tài Chính P&L (.csv)</div>
-                      <div className="text-[10px] text-slate-500 dark:text-zinc-400">Tổng kết doanh thu, công nợ, lợi nhuận ròng</div>
-                    </div>
-                  </button>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        exportFinancialSummaryToCsv(events, { studioName: currentStudio?.name });
+                        setIsActionMenuOpen(false);
+                      }}
+                      className="w-full p-2.5 rounded-xl text-left hover:bg-orange-50/70 dark:hover:bg-zinc-900 transition-colors flex items-start gap-2.5 cursor-pointer text-slate-800 dark:text-zinc-200"
+                    >
+                      <TrendingUp className="w-4 h-4 text-amber-500 shrink-0 mt-0.5" />
+                      <div>
+                        <div className="font-bold text-xs">Xuất Báo Cáo Tài Chính P&L (.csv)</div>
+                        <div className="text-[10px] text-slate-500 dark:text-zinc-400">Tổng kết doanh thu, công nợ, lợi nhuận ròng</div>
+                      </div>
+                    </button>
+                  </div>
                 </div>
               )}
             </div>
@@ -821,35 +903,6 @@ export const ClayStudioDashboard: React.FC<Props> = ({
         {/* ------------------------------------------------------------------- */}
         {dashboardView === 'table' && (
           <div className="pt-4 space-y-4">
-            {/* Search & Filter Bar */}
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-              <div className="relative flex-1 max-w-sm">
-                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-slate-400 dark:text-zinc-500" />
-                <input
-                  type="text"
-                  placeholder="Tìm theo tên khách, SĐT, mã show..."
-                  value={searchQuery}
-                  onChange={e => setSearchQuery(e.target.value)}
-                  className="w-full h-8 rounded-xl border border-slate-200/80 dark:border-zinc-800 bg-white dark:bg-zinc-900 pl-8 pr-3 text-xs text-slate-900 dark:text-zinc-100 placeholder-slate-400 dark:placeholder-zinc-500 focus:outline-hidden focus:ring-1 focus:ring-orange-500"
-                />
-              </div>
-
-              <div className="flex items-center gap-2">
-                <Filter className="h-3.5 w-3.5 text-slate-400 dark:text-zinc-500" />
-                <select
-                  value={statusFilter}
-                  onChange={e => setStatusFilter(e.target.value)}
-                  className="h-8 rounded-xl border border-slate-200/80 dark:border-zinc-800 bg-white dark:bg-zinc-900 px-3 text-xs font-semibold text-slate-700 dark:text-zinc-200 focus:outline-hidden focus:ring-1 focus:ring-orange-500 cursor-pointer"
-                >
-                  <option value="All" className="bg-white dark:bg-zinc-900 text-slate-800 dark:text-zinc-100">Tất Cả Trạng Thái</option>
-                  <option value="Deposited" className="bg-white dark:bg-zinc-900 text-slate-800 dark:text-zinc-100">Đã Cọc (Deposited)</option>
-                  <option value="In Progress" className="bg-white dark:bg-zinc-900 text-slate-800 dark:text-zinc-100">Đang Chụp / Sửa (In Progress)</option>
-                  <option value="Done" className="bg-white dark:bg-zinc-900 text-slate-800 dark:text-zinc-100">Đã Hoàn Thành (Done)</option>
-                  <option value="Lead" className="bg-white dark:bg-zinc-900 text-slate-800 dark:text-zinc-100">Chờ Chốt / Lead</option>
-                </select>
-              </div>
-            </div>
-
             {/* Desktop Table View */}
             <div className="hidden md:block overflow-x-auto rounded-xl border border-slate-200/80 dark:border-zinc-800">
               <table className="w-full text-left text-xs">

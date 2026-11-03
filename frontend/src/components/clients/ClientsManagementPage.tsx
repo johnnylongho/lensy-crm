@@ -325,33 +325,17 @@ export const ClientsManagementPage: React.FC = () => {
       transition={{ duration: 0.2 }}
       className="w-full space-y-6"
     >
-      {/* Page Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-        <div>
-          <div className="flex items-center gap-2 mb-1">
-            <span className="text-[10px] uppercase font-bold tracking-wider px-2.5 py-0.5 rounded-full bg-amber-500/20 text-amber-500 dark:text-amber-300 border border-amber-500/30">
-              Hồ Sơ Khách Hàng (Client CRM & LTV)
-            </span>
-            <span className="text-[10px] text-slate-500 dark:text-white/50 font-medium">
-              Gamification Tiering
-            </span>
-          </div>
-          <h1 className="text-xl sm:text-2xl md:text-3xl font-bold truncate text-slate-900 dark:text-white flex items-center gap-2">
-            <span>Danh Sách Khách Hàng Studio</span>
-            <span className="text-xs px-2.5 py-0.5 rounded-full bg-white/40 dark:bg-white/10 text-slate-700 dark:text-white/80 font-mono border border-white/40 dark:border-white/10">
-              {clients.length} khách
-            </span>
-          </h1>
-          <p className="text-xs text-slate-500 dark:text-white/50 mt-1">
-            Theo dõi giá trị trọn đời (LTV), số lần chụp và tự động gắn nhãn VIP 👑 cho khách quen.
-          </p>
-        </div>
+      {/* Page Header & Action (Single row aligned, no duplicate h1) */}
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
+        <p className="text-sm text-zinc-500 dark:text-zinc-400">
+          Theo dõi giá trị trọn đời (LTV), số lần chụp và tự động gắn nhãn VIP 👑 cho khách quen.
+        </p>
 
         <button
           type="button"
           onClick={fetchClientsFromSupabase}
           disabled={isLoading}
-          className="self-start sm:self-auto px-4 py-2.5 rounded-2xl bg-white/30 dark:bg-white/5 hover:bg-white/50 dark:hover:bg-white/10 border border-white/40 dark:border-white/10 text-slate-700 dark:text-white/80 text-xs font-bold transition-all flex items-center gap-2 disabled:opacity-50 backdrop-blur-md shadow-sm active:scale-95"
+          className="self-start sm:self-auto px-4 py-2 rounded-xl bg-white/30 dark:bg-white/5 hover:bg-white/50 dark:hover:bg-white/10 border border-slate-200 dark:border-white/10 text-slate-700 dark:text-white/80 text-xs font-bold transition-all flex items-center gap-2 disabled:opacity-50 backdrop-blur-md shadow-sm active:scale-95 shrink-0"
         >
           <RefreshCw className={`w-3.5 h-3.5 ${isLoading ? 'animate-spin text-amber-400' : ''}`} />
           <span>Làm Mới</span>
@@ -359,9 +343,9 @@ export const ClientsManagementPage: React.FC = () => {
       </div>
 
       {/* 4 Thẻ Thống Kê Tổng Quan (KPIs) - Liquid Glass */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 mb-6">
         {/* Tổng Khách */}
-        <div className="p-5 sm:p-6 rounded-3xl bg-white/60 dark:bg-white/5 backdrop-blur-xl border border-white/60 dark:border-white/10 shadow-[0_8px_32px_0_rgba(0,0,0,0.06)] dark:shadow-[0_8px_32px_0_rgba(0,0,0,0.3)] space-y-1.5 hover:shadow-md hover:-translate-y-0.5 transition-all duration-300">
+        <div className="p-5 sm:p-6 rounded-3xl bg-white/60 dark:bg-white/5 backdrop-blur-xl border border-slate-200 dark:border-white/10 shadow-sm space-y-1.5 hover:shadow-md hover:-translate-y-0.5 transition-all duration-300">
           <span className="text-xs font-medium text-slate-500 dark:text-white/50 flex items-center gap-1.5">
             <Users className="w-3.5 h-3.5 text-blue-500 dark:text-blue-400" />
             <span>Tổng Khách Hàng</span>
@@ -376,7 +360,7 @@ export const ClientsManagementPage: React.FC = () => {
         </div>
 
         {/* Khách VIP */}
-        <div className="p-5 sm:p-6 rounded-3xl bg-gradient-to-br from-amber-500/10 via-white/60 to-amber-500/5 dark:from-amber-950/40 dark:via-white/5 dark:to-transparent backdrop-blur-xl border border-amber-400/40 dark:border-amber-500/30 shadow-[0_8px_32px_0_rgba(0,0,0,0.06)] dark:shadow-[0_8px_32px_0_rgba(0,0,0,0.3)] space-y-1.5 hover:shadow-md hover:-translate-y-0.5 transition-all duration-300">
+        <div className="p-5 sm:p-6 rounded-3xl bg-gradient-to-br from-amber-500/10 via-white/60 to-amber-500/5 dark:from-amber-950/40 dark:via-white/5 dark:to-transparent backdrop-blur-xl border border-amber-400/40 dark:border-amber-500/30 shadow-sm space-y-1.5 hover:shadow-md hover:-translate-y-0.5 transition-all duration-300">
           <span className="text-xs font-medium text-amber-600 dark:text-amber-400 flex items-center gap-1.5">
             <Crown className="w-3.5 h-3.5 text-amber-500" />
             <span>Khách Hàng VIP (👑)</span>
@@ -396,7 +380,7 @@ export const ClientsManagementPage: React.FC = () => {
         </div>
 
         {/* Tổng Doanh Thu Thực Thu */}
-        <div className="p-5 sm:p-6 rounded-3xl bg-white/60 dark:bg-white/5 backdrop-blur-xl border border-white/60 dark:border-white/10 shadow-[0_8px_32px_0_rgba(0,0,0,0.06)] dark:shadow-[0_8px_32px_0_rgba(0,0,0,0.3)] space-y-1.5 hover:shadow-md hover:-translate-y-0.5 transition-all duration-300">
+        <div className="p-5 sm:p-6 rounded-3xl bg-white/60 dark:bg-white/5 backdrop-blur-xl border border-slate-200 dark:border-white/10 shadow-sm space-y-1.5 hover:shadow-md hover:-translate-y-0.5 transition-all duration-300">
           <span className="text-xs font-medium text-slate-500 dark:text-white/50 flex items-center gap-1.5">
             <DollarSign className="w-3.5 h-3.5 text-emerald-500 dark:text-emerald-400" />
             <span>Tổng Doanh Thu Thực Thu</span>
@@ -414,7 +398,7 @@ export const ClientsManagementPage: React.FC = () => {
         </div>
 
         {/* AOV */}
-        <div className="p-5 sm:p-6 rounded-3xl bg-white/60 dark:bg-white/5 backdrop-blur-xl border border-white/60 dark:border-white/10 shadow-[0_8px_32px_0_rgba(0,0,0,0.06)] dark:shadow-[0_8px_32px_0_rgba(0,0,0,0.3)] space-y-1.5 hover:shadow-md hover:-translate-y-0.5 transition-all duration-300">
+        <div className="p-5 sm:p-6 rounded-3xl bg-white/60 dark:bg-white/5 backdrop-blur-xl border border-slate-200 dark:border-white/10 shadow-sm space-y-1.5 hover:shadow-md hover:-translate-y-0.5 transition-all duration-300">
           <span className="text-xs font-medium text-slate-500 dark:text-white/50 flex items-center gap-1.5">
             <TrendingUp className="w-3.5 h-3.5 text-purple-500 dark:text-purple-400" />
             <span>Giá Trị Trung Bình / Khách</span>
@@ -430,7 +414,7 @@ export const ClientsManagementPage: React.FC = () => {
       </div>
 
       {/* Toolbar: Tìm kiếm & Bộ lọc Tab Phân Loại Khách Hàng (Mobile App First) */}
-      <div className="flex flex-col lg:flex-row items-stretch lg:items-center justify-between gap-3 p-3 sm:p-4 rounded-3xl bg-white/70 dark:bg-white/5 backdrop-blur-xl border border-white/80 dark:border-white/10 shadow-[0_8px_32px_0_rgba(0,0,0,0.06)] dark:shadow-[0_8px_32px_0_rgba(0,0,0,0.3)]">
+      <div className="flex flex-col lg:flex-row items-stretch lg:items-center justify-between gap-3 p-3 sm:p-4 rounded-3xl bg-white/70 dark:bg-white/5 backdrop-blur-xl border border-slate-200 dark:border-white/10 shadow-sm">
         {/* Khung Tìm Kiếm Linh Hoạt */}
         <div className="relative flex-1">
           <Search className="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2" />

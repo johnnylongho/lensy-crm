@@ -845,40 +845,17 @@ export const SettingsPage: React.FC = () => {
         </div>
       )}
 
-      {/* Top Header & Breadcrumb */}
-      <div className="flex flex-wrap items-center justify-between gap-4">
-        <div>
-          <div className="flex items-center gap-2 mb-1">
-            <Link
-              to="/dashboard"
-              className="text-xs font-bold text-slate-500 dark:text-white/60 hover:text-amber-500 dark:hover:text-amber-400 flex items-center gap-1 transition-colors"
-            >
-              <ArrowLeft className="w-3.5 h-3.5" />
-              <span>Quay lại Dashboard</span>
-            </Link>
-          </div>
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-2xl bg-gradient-to-tr from-amber-500 to-orange-500 p-0.5 shadow-lg shadow-amber-950/40">
-              <div className="w-full h-full bg-white dark:bg-black/60 rounded-[14px] flex items-center justify-center">
-                <Settings className="w-5 h-5 text-amber-500 dark:text-amber-400" />
-              </div>
-            </div>
-            <div>
-              <h1 className="text-xl sm:text-2xl md:text-3xl font-bold truncate text-slate-900 dark:text-white/90 tracking-tight">
-                Thiết Lập Hồ Sơ & Bán Chuyên
-              </h1>
-              <p className="text-xs text-slate-500 dark:text-white/50">
-                Phân loại tài khoản Freelancer / Studio, thương hiệu và nhận cọc VietQR
-              </p>
-            </div>
-          </div>
-        </div>
+      {/* Top Header & Action Link (Single row aligned, no duplicate h1 or back btn) */}
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
+        <p className="text-sm text-zinc-500 dark:text-zinc-400">
+          Phân loại tài khoản Freelancer / Studio, thương hiệu và nhận cọc VietQR.
+        </p>
 
         <Link
           to={`/book/${username || 'johnnylongho'}`}
           target="_blank"
           rel="noreferrer"
-          className="px-3.5 py-2 rounded-xl bg-white/60 dark:bg-white/5 hover:bg-white/80 dark:hover:bg-white/10 backdrop-blur-xl border border-white/60 dark:border-white/10 text-slate-700 dark:text-slate-200 text-xs font-bold flex items-center gap-1.5 transition-all shadow-sm"
+          className="px-3.5 py-2 rounded-xl bg-white/60 dark:bg-white/5 hover:bg-white/80 dark:hover:bg-white/10 backdrop-blur-xl border border-slate-200 dark:border-white/10 text-slate-700 dark:text-slate-200 text-xs font-bold flex items-center gap-1.5 transition-all shadow-sm shrink-0"
         >
           <ExternalLink className="w-3.5 h-3.5 text-amber-500 dark:text-amber-400" />
           <span>Xem Trang Đặt Lịch Của Tôi</span>
@@ -886,7 +863,7 @@ export const SettingsPage: React.FC = () => {
       </div>
 
       {/* Dynamic Booking Link Preview Card */}
-      <div className="p-5 sm:p-6 rounded-3xl bg-white/60 dark:bg-white/5 backdrop-blur-xl border border-amber-500/30 shadow-[0_8px_32px_0_rgba(0,0,0,0.25)] space-y-3">
+      <div className="p-5 sm:p-6 rounded-3xl bg-white/60 dark:bg-white/5 backdrop-blur-xl border border-amber-500/30 shadow-sm space-y-3">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2 text-amber-500 dark:text-amber-400 font-bold text-xs">
             <Sparkles className="w-4 h-4" />

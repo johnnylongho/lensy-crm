@@ -424,35 +424,15 @@ export const SuperAdminConsolePage: React.FC = () => {
       )}
 
       {/* ===================================================================== */}
-      {/* 1. HEADER SECTION (SUPER ADMIN ROOT)                                  */}
+      {/* 1. HEADER SECTION (SUPER ADMIN ROOT - Single row aligned, no h1)     */}
       {/* ===================================================================== */}
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 pb-2 border-b border-slate-200/80 dark:border-white/10">
-        <div>
-          <div className="flex items-center gap-2 mb-2">
-            <Link
-              to="/dashboard"
-              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl border border-slate-200/80 dark:border-white/10 bg-white/80 dark:bg-zinc-900/50 backdrop-blur-xl text-xs font-bold text-slate-600 dark:text-zinc-300 hover:text-orange-600 dark:hover:text-orange-400 hover:border-orange-500/30 transition-all shadow-2xs group"
-            >
-              <ArrowLeft className="w-3.5 h-3.5 transition-transform group-hover:-translate-x-0.5" />
-              <span>Quay lại Dashboard</span>
-            </Link>
-          </div>
-          <div className="flex items-center gap-2">
-            <span className="px-2.5 py-0.5 rounded-full text-[10px] font-mono font-extrabold uppercase tracking-wider bg-orange-500/10 text-orange-600 dark:text-orange-400 border border-orange-500/20">
-              SYSTEM ROOT • SUPER ADMIN CONSOLE
-            </span>
-            <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
-          </div>
-          <h1 className="text-xl sm:text-2xl md:text-3xl font-bold truncate text-slate-900 dark:text-white tracking-tight mt-1">
-            Trung Tâm Quản Trị Hệ Thống SaaS
-          </h1>
-          <p className="text-xs sm:text-sm text-slate-500 dark:text-zinc-400 mt-1">
-            Quản trị toàn diện các Studio đa khách hàng (Tenants), phân quyền tài khoản người dùng và kiểm soát phân bổ gói cước nền tảng.
-          </p>
-        </div>
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
+        <p className="text-sm text-zinc-500 dark:text-zinc-400">
+          Quản trị toàn diện các Studio đa khách hàng (Tenants), phân quyền tài khoản người dùng và kiểm soát phân bổ gói cước nền tảng.
+        </p>
 
         {/* Nút Refresh */}
-        <div className="flex items-center gap-2 self-start md:self-auto">
+        <div className="flex items-center gap-2 self-start md:self-auto shrink-0">
           <button
             type="button"
             onClick={fetchAllData}
@@ -468,9 +448,9 @@ export const SuperAdminConsolePage: React.FC = () => {
       {/* ===================================================================== */}
       {/* 2. TOP 3 KPI BENTO CARDS (EXECUTIVE METRICS)                           */}
       {/* ===================================================================== */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 mb-6">
         {/* Card 1: Studios */}
-        <div className="rounded-3xl bg-white/80 dark:bg-zinc-900/50 backdrop-blur-2xl border border-slate-200/80 dark:border-white/10 border-l-4 border-l-orange-500 p-6 shadow-[0_8px_32px_0_rgba(0,0,0,0.4)] flex flex-col justify-between space-y-4">
+        <div className="rounded-3xl bg-white/80 dark:bg-zinc-900/50 backdrop-blur-2xl border border-slate-200/80 dark:border-white/10 border-l-4 border-l-orange-500 p-6 shadow-sm flex flex-col justify-between space-y-4">
           <div className="flex items-start justify-between">
             <div>
               <span className="text-[11px] font-mono font-bold uppercase tracking-wider text-slate-500 dark:text-zinc-400">
@@ -493,7 +473,7 @@ export const SuperAdminConsolePage: React.FC = () => {
         </div>
 
         {/* Card 2: Users */}
-        <div className="rounded-3xl bg-white/80 dark:bg-zinc-900/50 backdrop-blur-2xl border border-slate-200/80 dark:border-white/10 border-l-4 border-l-blue-500 p-6 shadow-[0_8px_32px_0_rgba(0,0,0,0.4)] flex flex-col justify-between space-y-4">
+        <div className="rounded-3xl bg-white/80 dark:bg-zinc-900/50 backdrop-blur-2xl border border-slate-200/80 dark:border-white/10 border-l-4 border-l-blue-500 p-6 shadow-sm flex flex-col justify-between space-y-4">
           <div className="flex items-start justify-between">
             <div>
               <span className="text-[11px] font-mono font-bold uppercase tracking-wider text-slate-500 dark:text-zinc-400">
@@ -516,7 +496,7 @@ export const SuperAdminConsolePage: React.FC = () => {
         </div>
 
         {/* Card 3: Bookings Volume */}
-        <div className="rounded-3xl bg-white/80 dark:bg-zinc-900/50 backdrop-blur-2xl border border-slate-200/80 dark:border-white/10 border-l-4 border-l-amber-500 p-6 shadow-[0_8px_32px_0_rgba(0,0,0,0.4)] flex flex-col justify-between space-y-4">
+        <div className="rounded-3xl bg-white/80 dark:bg-zinc-900/50 backdrop-blur-2xl border border-slate-200/80 dark:border-white/10 border-l-4 border-l-amber-500 p-6 shadow-sm flex flex-col justify-between space-y-4">
           <div className="flex items-start justify-between">
             <div>
               <span className="text-[11px] font-mono font-bold uppercase tracking-wider text-slate-500 dark:text-zinc-400">
@@ -540,7 +520,7 @@ export const SuperAdminConsolePage: React.FC = () => {
       {/* ===================================================================== */}
       {/* 3. TABS CONTAINER & WORKSPACE CONTROLS                                */}
       {/* ===================================================================== */}
-      <div className="rounded-3xl border border-slate-200/80 dark:border-white/10 bg-white/80 dark:bg-zinc-900/50 backdrop-blur-2xl p-4 sm:p-6 shadow-[0_8px_32px_0_rgba(0,0,0,0.4)] space-y-5">
+      <div className="rounded-3xl border border-slate-200/80 dark:border-white/10 bg-white/80 dark:bg-zinc-900/50 backdrop-blur-2xl p-4 sm:p-6 shadow-sm space-y-5">
         {/* Navigation Tabs */}
         <div className="flex flex-col sm:flex-row sm:items-center justify-between pb-4 border-b border-slate-100 dark:border-white/10 gap-3">
           <div className="flex items-center gap-2">

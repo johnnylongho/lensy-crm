@@ -380,7 +380,20 @@ export const PackagesManagementPage: React.FC = () => {
       }
     } catch (err: any) {
       console.error('Lỗi khi tải ảnh lên Supabase Storage:', err);
-      setToast({ type: 'error', message: 'Không thể upload ảnh: ' + (err.message || 'Lỗi lưu trữ') });
+      const reader = new FileReader();
+      reader.onload = event => {
+        if (event.target?.result) {
+          setImageUrls(prev => [...prev, event.target!.result as string]);
+        }
+      };
+      reader.readAsDataURL(file);
+      const isRls = err?.message?.toLowerCase().includes('row-level security') || err?.message?.toLowerCase().includes('violates');
+      setToast({
+        type: 'error',
+        message: isRls
+          ? 'Lỗi RLS Storage: Chưa cấp quyền bảng storage.objects (Đã lưu preview tạm thời, vui lòng chạy setup_package_images_storage.sql)!'
+          : 'Không thể upload ảnh lên Cloud: ' + (err.message || 'Lỗi lưu trữ'),
+      });
     } finally {
       setIsUploading(false);
       if (fileInputRef.current) fileInputRef.current.value = '';
@@ -626,40 +639,18 @@ export const PackagesManagementPage: React.FC = () => {
       )}
 
       {/* ==================================================================== */}
-      {/* TOP HEADER SECTION                                                   */}
+      {/* TOP HEADER SECTION (Single row aligned, no duplicate h1 or back btn)  */}
       {/* ==================================================================== */}
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-        <div>
-          <div className="flex items-center gap-2 mb-2">
-            <Link
-              to="/dashboard"
-              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl border border-slate-200/80 dark:border-white/10 bg-white/80 dark:bg-zinc-900/50 backdrop-blur-xl text-xs font-bold text-slate-600 dark:text-zinc-300 hover:text-orange-600 dark:hover:text-orange-400 hover:border-orange-500/30 transition-all shadow-2xs group"
-            >
-              <ArrowLeft className="w-3.5 h-3.5 transition-transform group-hover:-translate-x-0.5" />
-              <span>Quay lại Dashboard</span>
-            </Link>
-          </div>
-          <div className="flex items-center gap-2.5">
-            <div className="w-9 h-9 rounded-2xl bg-amber-500/10 border border-amber-500/30 text-amber-400 flex items-center justify-center">
-              <Package className="w-5 h-5" />
-            </div>
-            <h1 className="text-xl sm:text-2xl md:text-3xl font-bold truncate text-slate-900 dark:text-white tracking-tight">
-              Quản Lý Gói Dịch Vụ (Packages)
-            </h1>
-            <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-amber-500/15 text-amber-600 dark:text-amber-400 border border-amber-500/20">
-              Menu Báo Giá
-            </span>
-          </div>
-          <p className="mt-1 text-xs sm:text-sm text-slate-500 dark:text-slate-400">
-            Thiết lập bảng giá, phân tầng quyền lợi và hình ảnh mẫu demo hiển thị trên trang đặt lịch công khai.
-          </p>
-        </div>
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
+        <p className="text-sm text-zinc-500 dark:text-zinc-400">
+          Thiết lập bảng giá, phân tầng quyền lợi và hình ảnh mẫu demo hiển thị trên trang đặt lịch công khai.
+        </p>
 
         {/* Nút Thêm Gói Mới */}
-        <div className="flex items-center gap-2.5">
+        <div className="flex items-center gap-2.5 shrink-0">
           <button
             onClick={handleOpenCreateModal}
-            className="px-4 py-2.5 rounded-2xl bg-gradient-to-r from-amber-500 via-amber-400 to-yellow-400 hover:from-amber-400 hover:to-yellow-300 text-slate-950 font-black text-xs sm:text-sm flex items-center gap-2 shadow-lg shadow-amber-500/25 hover:scale-[1.02] active:scale-95 transition-all"
+            className="px-4 py-2.5 rounded-2xl bg-gradient-to-r from-amber-500 via-amber-400 to-yellow-400 hover:from-amber-400 hover:to-yellow-300 text-slate-950 font-black text-xs sm:text-sm flex items-center gap-2 shadow-sm hover:scale-[1.02] active:scale-95 transition-all cursor-pointer"
           >
             <Plus className="w-4 h-4" />
             <span>Thêm Gói Dịch Vụ Mới</span>
@@ -670,7 +661,7 @@ export const PackagesManagementPage: React.FC = () => {
       {/* ==================================================================== */}
       {/* 4 STATS CARDS LIQUID GLASS                                           */}
       {/* ==================================================================== */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 mb-6">
         <div className="p-4 rounded-3xl bg-white/70 dark:bg-white/[0.04] backdrop-blur-xl border border-white/60 dark:border-white/10 shadow-sm space-y-1">
           <span className="text-[11px] font-bold uppercase tracking-wider text-slate-400">Tổng Gói Chụp</span>
           <div className="flex items-baseline justify-between">

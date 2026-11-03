@@ -319,41 +319,16 @@ export const GearsManagementPage: React.FC = () => {
         </div>
       )}
 
-      {/* Header & Breadcrumb */}
-      <div className="flex flex-wrap items-center justify-between gap-4">
-        <div>
-          <div className="flex items-center gap-2 mb-2">
-            <Link
-              to="/dashboard"
-              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl border border-slate-200/80 dark:border-white/10 bg-white/80 dark:bg-zinc-900/50 backdrop-blur-xl text-xs font-bold text-slate-600 dark:text-zinc-300 hover:text-orange-600 dark:hover:text-orange-400 hover:border-orange-500/30 transition-all shadow-2xs group"
-            >
-              <ArrowLeft className="w-3.5 h-3.5 transition-transform group-hover:-translate-x-0.5" />
-              <span>Quay lại Dashboard</span>
-            </Link>
-          </div>
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-2xl bg-gradient-to-tr from-sky-500 to-indigo-500 p-0.5 shadow-lg shadow-sky-950/40">
-              <div className="w-full h-full bg-white dark:bg-black/60 rounded-[14px] flex items-center justify-center">
-                <Camera className="w-5 h-5 text-sky-500 dark:text-sky-400" />
-              </div>
-            </div>
-            <div>
-              <div className="flex items-center gap-2">
-                <h1 className="text-xl sm:text-2xl md:text-3xl font-bold truncate text-slate-900 dark:text-white/90 tracking-tight">
-                  Quản Lý Thiết Bị Studio
-                </h1>
-              </div>
-              <p className="text-xs text-slate-500 dark:text-white/50">
-                Kho thiết bị Camera, Lens, Đèn chụp phục vụ gán thiết bị vào từng show và chống trùng lịch
-              </p>
-            </div>
-          </div>
-        </div>
+      {/* Header & Action (Single row aligned, no duplicate h1 or back button) */}
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
+        <p className="text-sm text-zinc-500 dark:text-zinc-400">
+          Kho thiết bị Camera, Lens, Đèn chụp phục vụ gán thiết bị vào từng show và chống trùng lịch.
+        </p>
 
         <button
           type="button"
           onClick={handleOpenAddModal}
-          className="px-4 py-2.5 rounded-xl bg-gradient-to-r from-amber-500 via-amber-400 to-yellow-500 text-slate-950 text-xs font-bold flex items-center gap-2 shadow-lg shadow-amber-500/20 transition-all hover:scale-[1.02]"
+          className="px-4 py-2.5 rounded-xl bg-gradient-to-r from-amber-500 via-amber-400 to-yellow-500 text-slate-950 text-xs font-bold flex items-center gap-2 shadow-sm transition-all hover:scale-[1.02] shrink-0 cursor-pointer"
         >
           <Plus className="w-4 h-4" />
           <span>Thêm Thiết Bị Mới</span>
@@ -361,28 +336,28 @@ export const GearsManagementPage: React.FC = () => {
       </div>
 
       {/* Metrics Row */}
-      <div className="grid grid-cols-2 sm:grid-cols-6 gap-3">
-        <div className="p-4 rounded-2xl bg-white/60 dark:bg-white/5 backdrop-blur-xl border border-white/60 dark:border-white/10 shadow-[0_8px_32px_0_rgba(0,0,0,0.15)] space-y-1">
+      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3 mb-6">
+        <div className="p-4 rounded-2xl bg-white/60 dark:bg-white/5 backdrop-blur-xl border border-slate-200 dark:border-white/10 shadow-sm space-y-1">
           <span className="text-[10px] font-bold text-slate-500 dark:text-white/50 uppercase tracking-wider">Tổng Thiết Bị</span>
           <div className="text-2xl font-light font-mono text-slate-900 dark:text-white/90">{totalCount}</div>
         </div>
-        <div className="p-4 rounded-2xl bg-white/60 dark:bg-white/5 backdrop-blur-xl border border-white/60 dark:border-white/10 shadow-[0_8px_32px_0_rgba(0,0,0,0.15)] space-y-1">
+        <div className="p-4 rounded-2xl bg-white/60 dark:bg-white/5 backdrop-blur-xl border border-slate-200 dark:border-white/10 shadow-sm space-y-1">
           <span className="text-[10px] font-bold text-sky-500 dark:text-sky-400 uppercase tracking-wider">Body Máy Ảnh</span>
           <div className="text-2xl font-light font-mono text-sky-600 dark:text-sky-300">{cameraCount}</div>
         </div>
-        <div className="p-4 rounded-2xl bg-white/60 dark:bg-white/5 backdrop-blur-xl border border-white/60 dark:border-white/10 shadow-[0_8px_32px_0_rgba(0,0,0,0.15)] space-y-1">
+        <div className="p-4 rounded-2xl bg-white/60 dark:bg-white/5 backdrop-blur-xl border border-slate-200 dark:border-white/10 shadow-sm space-y-1">
           <span className="text-[10px] font-bold text-purple-500 dark:text-purple-400 uppercase tracking-wider">Ống Kính (Lens)</span>
           <div className="text-2xl font-light font-mono text-purple-600 dark:text-purple-300">{lensCount}</div>
         </div>
-        <div className="p-4 rounded-2xl bg-white/60 dark:bg-white/5 backdrop-blur-xl border border-white/60 dark:border-white/10 shadow-[0_8px_32px_0_rgba(0,0,0,0.15)] space-y-1">
+        <div className="p-4 rounded-2xl bg-white/60 dark:bg-white/5 backdrop-blur-xl border border-slate-200 dark:border-white/10 shadow-sm space-y-1">
           <span className="text-[10px] font-bold text-amber-500 dark:text-amber-400 uppercase tracking-wider">Đèn Studio</span>
           <div className="text-2xl font-light font-mono text-amber-600 dark:text-amber-300">{lightingCount}</div>
         </div>
-        <div className="p-4 rounded-2xl bg-white/60 dark:bg-white/5 backdrop-blur-xl border border-white/60 dark:border-white/10 shadow-[0_8px_32px_0_rgba(0,0,0,0.15)] space-y-1">
+        <div className="p-4 rounded-2xl bg-white/60 dark:bg-white/5 backdrop-blur-xl border border-slate-200 dark:border-white/10 shadow-sm space-y-1">
           <span className="text-[10px] font-bold text-emerald-500 dark:text-emerald-400 uppercase tracking-wider">Sẵn Sàng</span>
           <div className="text-2xl font-light font-mono text-emerald-600 dark:text-emerald-300">{activeCount} / {totalCount}</div>
         </div>
-        <div className="p-4 rounded-2xl bg-gradient-to-br from-amber-500/10 to-yellow-500/5 backdrop-blur-xl border border-amber-500/30 space-y-1 col-span-2 sm:col-span-1 shadow-[0_8px_32px_0_rgba(0,0,0,0.15)]">
+        <div className="p-4 rounded-2xl bg-gradient-to-br from-amber-500/10 to-yellow-500/5 backdrop-blur-xl border border-amber-500/30 space-y-1 col-span-2 sm:col-span-1 shadow-sm">
           <span className="text-[10px] font-bold text-amber-500 dark:text-amber-400 uppercase tracking-wider flex items-center gap-1">
             <Coins className="w-3 h-3 text-amber-500 dark:text-amber-400" />
             <span>Tổng Tài Sản Kho</span>
@@ -394,7 +369,7 @@ export const GearsManagementPage: React.FC = () => {
       </div>
 
       {/* Filter, Search, and View Mode Bar */}
-      <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 p-3.5 rounded-2xl bg-white/60 dark:bg-white/5 backdrop-blur-xl border border-white/60 dark:border-white/10 shadow-[0_8px_32px_0_rgba(0,0,0,0.15)]">
+      <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 p-3.5 rounded-2xl bg-white/60 dark:bg-white/5 backdrop-blur-xl border border-slate-200 dark:border-white/10 shadow-sm">
         {/* Search */}
         <div className="relative flex-1 max-w-md">
           <Search className="w-4 h-4 text-slate-400 dark:text-slate-500 absolute left-3 top-3" />
@@ -488,7 +463,7 @@ export const GearsManagementPage: React.FC = () => {
         /* DẠNG BẢNG (TABLE VIEW TRÊN DESKTOP & AUTO-WRAP THÀNH CARDS TRÊN MOBILE) */
         <div className="space-y-4">
           {/* 1. Màn hình Desktop: Table đầy đủ các cột */}
-          <div className="hidden md:block rounded-3xl border border-white/60 dark:border-white/10 bg-white/60 dark:bg-white/5 backdrop-blur-xl overflow-hidden shadow-[0_8px_32px_0_rgba(0,0,0,0.25)]">
+          <div className="hidden md:block rounded-3xl border border-slate-200 dark:border-white/10 bg-white/60 dark:bg-white/5 backdrop-blur-xl overflow-hidden shadow-sm">
             <div className="overflow-x-auto">
               <table className="w-full text-left text-xs text-slate-700 dark:text-slate-300 border-collapse">
                 <thead>
@@ -653,7 +628,7 @@ export const GearsManagementPage: React.FC = () => {
             return (
               <div
                 key={gear.id}
-                className="p-5 rounded-3xl bg-white/60 dark:bg-white/5 backdrop-blur-xl border border-white/60 dark:border-white/10 hover:border-amber-500/40 transition-all shadow-[0_8px_32px_0_rgba(0,0,0,0.12)] space-y-3 flex flex-col justify-between group hover:-translate-y-0.5"
+                className="p-5 rounded-3xl bg-white/60 dark:bg-white/5 backdrop-blur-xl border border-white/60 dark:border-white/10 hover:border-amber-500/40 transition-all shadow-sm space-y-3 flex flex-col justify-between group hover:-translate-y-0.5"
               >
                 <div className="space-y-2">
                   <div className="flex items-start justify-between gap-2">

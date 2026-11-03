@@ -603,30 +603,16 @@ export const PayrollManagementPage: React.FC = () => {
         </div>
       )}
 
-      {/* 0. HEADER & BACK LINK */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-2 border-b border-slate-200/80 dark:border-white/10">
-        <div>
-          <div className="flex items-center gap-2 mb-2">
-            <Link
-              to="/dashboard"
-              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl border border-slate-200/80 dark:border-white/10 bg-white/80 dark:bg-zinc-900/50 backdrop-blur-xl text-xs font-bold text-slate-600 dark:text-zinc-300 hover:text-orange-600 dark:hover:text-orange-400 hover:border-orange-500/30 transition-all shadow-2xs group"
-            >
-              <ArrowLeft className="w-3.5 h-3.5 transition-transform group-hover:-translate-x-0.5" />
-              <span>Quay lại Dashboard</span>
-            </Link>
-          </div>
-          <h1 className="text-xl sm:text-2xl md:text-3xl font-bold truncate text-slate-900 dark:text-white tracking-tight">
-            {isStudioMember ? 'Bảng Thù Lao & Thu Nhập Của Tôi' : 'Bảng Lương & Đối Soát Thù Lao Ekip'}
-          </h1>
-          <p className="mt-1 text-xs sm:text-sm text-slate-500 dark:text-zinc-400">
-            {isStudioMember
-              ? 'Theo dõi thù lao chụp, makeup và tiến độ thanh toán từ Studio.'
-              : 'Quyết toán phân bổ thù lao, quét nợ nhân sự và tạo mã VietQR chuyển khoản 1 chạm.'}
-          </p>
-        </div>
+      {/* 0. HEADER & ACTION (Single row aligned, no duplicate h1 or back btn) */}
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
+        <p className="text-sm text-zinc-500 dark:text-zinc-400">
+          {isStudioMember
+            ? 'Theo dõi thù lao chụp, makeup và tiến độ thanh toán từ Studio.'
+            : 'Quyết toán phân bổ thù lao, quét nợ nhân sự và tạo mã VietQR chuyển khoản 1 chạm.'}
+        </p>
 
         {/* Action Buttons */}
-        <div className="flex items-center gap-2 self-start sm:self-center">
+        <div className="flex items-center gap-2 self-start sm:self-center shrink-0">
           <button
             type="button"
             onClick={() => {
@@ -662,8 +648,8 @@ export const PayrollManagementPage: React.FC = () => {
       </div>
 
       {/* 1. KPI SUMMARY CARDS */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        <div className="p-5 rounded-3xl bg-white/80 dark:bg-zinc-900/50 backdrop-blur-2xl border border-slate-200/80 dark:border-white/10 shadow-[0_8px_32px_0_rgba(0,0,0,0.4)] space-y-1.5">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 mb-6">
+        <div className="p-5 rounded-3xl bg-white/80 dark:bg-zinc-900/50 backdrop-blur-2xl border border-slate-200/80 dark:border-white/10 shadow-sm space-y-1.5">
           <div className="flex items-center justify-between text-xs text-gray-500 dark:text-zinc-400 font-semibold">
             <span>{isStudioMember ? 'Tổng Thù Lao Của Tôi' : 'Tổng Quỹ Lương & Thù Lao Ekip'}</span>
             <div className="p-2 rounded-xl bg-amber-500/10 text-amber-500 border border-amber-500/20">
@@ -678,7 +664,7 @@ export const PayrollManagementPage: React.FC = () => {
           </p>
         </div>
 
-        <div className="p-5 rounded-3xl bg-white/80 dark:bg-zinc-900/50 backdrop-blur-2xl border border-slate-200/80 dark:border-white/10 shadow-[0_8px_32px_0_rgba(0,0,0,0.4)] space-y-1.5">
+        <div className="p-5 rounded-3xl bg-white/80 dark:bg-zinc-900/50 backdrop-blur-2xl border border-slate-200/80 dark:border-white/10 shadow-sm space-y-1.5">
           <div className="flex items-center justify-between text-xs text-gray-500 dark:text-zinc-400 font-semibold">
             <span>{isStudioMember ? 'Đã Nhận Thanh Toán' : 'Đã Chi Trả Cho Ekip'}</span>
             <div className="p-2 rounded-xl bg-emerald-500/10 text-emerald-500 border border-emerald-500/20">
@@ -693,7 +679,7 @@ export const PayrollManagementPage: React.FC = () => {
           </p>
         </div>
 
-        <div className="p-5 rounded-3xl bg-white/80 dark:bg-zinc-900/50 backdrop-blur-2xl border border-rose-200/70 dark:border-rose-900/40 shadow-[0_8px_32px_0_rgba(0,0,0,0.4)] space-y-1.5 border-l-4 border-l-rose-500">
+        <div className="p-5 rounded-3xl bg-white/80 dark:bg-zinc-900/50 backdrop-blur-2xl border border-rose-200/70 dark:border-rose-900/40 shadow-sm space-y-1.5 border-l-4 border-l-rose-500">
           <div className="flex items-center justify-between text-xs text-gray-500 dark:text-zinc-400 font-semibold">
             <span>{isStudioMember ? 'Chờ Studio Thanh Toán' : 'Công Nợ Lương Cần Chi'}</span>
             <div className="p-2 rounded-xl bg-rose-500/10 text-rose-500 border border-rose-500/20">
@@ -710,7 +696,7 @@ export const PayrollManagementPage: React.FC = () => {
       </div>
 
       {/* 2. FILTER BAR */}
-      <div className="p-4 rounded-3xl bg-white/80 dark:bg-zinc-900/50 backdrop-blur-2xl border border-slate-200/80 dark:border-white/10 shadow-[0_8px_32px_0_rgba(0,0,0,0.4)] flex flex-col md:flex-row items-stretch md:items-center justify-between gap-3">
+      <div className="p-4 rounded-3xl bg-white/80 dark:bg-zinc-900/50 backdrop-blur-2xl border border-slate-200/80 dark:border-white/10 shadow-sm flex flex-col md:flex-row items-stretch md:items-center justify-between gap-3">
         <div className="flex flex-wrap items-center gap-2.5">
           {/* Thanh Chọn Tháng Trực Quan Dạng Dropdown + Nút Nhanh */}
           <div className="flex items-center gap-1.5 bg-slate-50 dark:bg-white/5 border border-slate-200/80 dark:border-white/10 rounded-2xl px-3 py-1.5 text-xs">

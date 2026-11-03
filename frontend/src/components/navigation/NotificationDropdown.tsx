@@ -286,7 +286,7 @@ export const NotificationDropdown: React.FC<Props> = ({ events: propEvents, onOp
 
       {/* Dropdown Menu */}
       {isOpen && (
-        <div className="absolute right-0 left-auto top-full mt-2 w-[calc(100vw-32px)] max-w-sm sm:w-96 rounded-2xl bg-white dark:bg-zinc-950/95 backdrop-blur-2xl border border-gray-200 dark:border-white/10 shadow-[0_12px_40px_0_rgba(0,0,0,0.45)] z-50 text-xs overflow-hidden animate-fadeIn">
+        <div className="fixed top-16 right-4 left-4 sm:absolute sm:top-full sm:right-0 sm:left-auto sm:mt-2 w-auto sm:w-96 rounded-2xl bg-white dark:bg-zinc-950/95 backdrop-blur-2xl border border-gray-200 dark:border-white/10 shadow-[0_12px_40px_0_rgba(0,0,0,0.45)] z-50 text-xs overflow-hidden animate-fadeIn">
           {/* Header */}
           <div className="p-3.5 border-b border-gray-100 dark:border-zinc-800 flex items-center justify-between bg-gray-50/70 dark:bg-zinc-900/50">
             <div className="flex items-center gap-2">

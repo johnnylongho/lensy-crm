@@ -286,8 +286,21 @@ export const StudioSettingsPage: React.FC = () => {
           setIsStudioAdmin(isAdmin);
           setStudioName(currentStudio.name);
           setLogoUrl(currentStudio.logo_url || '');
-          setStudioAddress((currentStudio as any).address || (currentStudio as any).location || '');
-          setStudioFanpage((currentStudio as any).fanpage_url || (currentStudio as any).facebook_url || '');
+          // Khôi phục trường Địa Chỉ trực tiếp từ cột address
+          let initialAddress = currentStudio.address || '';
+          let initialFanpage = currentStudio.facebook_url || '';
+          try {
+            const rawMeta = localStorage.getItem('lensy_studio_meta_' + currentStudio.id);
+            if (rawMeta) {
+              const meta = JSON.parse(rawMeta);
+              if (!initialAddress && meta.address) initialAddress = meta.address;
+              if (!initialFanpage && meta.facebook_url) initialFanpage = meta.facebook_url;
+            }
+          } catch {
+            // ignore
+          }
+          setStudioAddress(initialAddress);
+          setStudioFanpage(initialFanpage);
           setVerifiedStatus(currentStudio.verified_status || false);
 
           // Fetch members
@@ -469,22 +482,23 @@ export const StudioSettingsPage: React.FC = () => {
       // Đồng bộ ngay vào localStorage metadata để đảm bảo offline & schema fallback luôn persist dữ liệu mới nhất
       localStorage.setItem(`lensy_studio_meta_${studio.id}`, JSON.stringify({
         address: cleanAddress,
-        location: cleanAddress,
-        fanpage: cleanFanpage,
-        fanpage_url: cleanFanpage,
+        facebook_url: cleanFanpage,
         phone: cleanPhone,
-        hotline: cleanPhone,
       }));
 
       if (isSupabaseConfigured) {
-        let updatePayload: any = {
+        // Payload gửi lên Database với định dạng chuẩn xác: address, facebook_url (không dùng location)
+        let updatePayload: {
+          name: string;
+          logo_url: string | null;
+          address?: string | null;
+          facebook_url?: string | null;
+          updated_at: string;
+        } = {
           name: cleanName,
           logo_url: cleanLogo || null,
           address: cleanAddress || null,
-          location: cleanAddress || null,
-          fanpage_url: cleanFanpage || null,
           facebook_url: cleanFanpage || null,
-          phone: cleanPhone || null,
           updated_at: new Date().toISOString(),
         };
 
@@ -496,10 +510,7 @@ export const StudioSettingsPage: React.FC = () => {
         if (error) {
           const errMsg = error.message || '';
           console.warn('[Supabase Schema Cache] Cột mở rộng chưa có trong schema cache studios, tự động fallback:', errMsg);
-          if (errMsg.includes('location')) delete updatePayload.location;
           if (errMsg.includes('facebook_url')) delete updatePayload.facebook_url;
-          if (errMsg.includes('phone')) delete updatePayload.phone;
-          if (errMsg.includes('fanpage_url')) delete updatePayload.fanpage_url;
           if (errMsg.includes('address')) delete updatePayload.address;
 
           const retryRes = await supabase
@@ -545,6 +556,7 @@ export const StudioSettingsPage: React.FC = () => {
     }
   };
 
+  const updateStudioInfo = handleSaveStudioInfo;
   const handleSaveGeneralInfo = handleSaveStudioInfo;
 
   // Tạo Studio mới (dành cho người dùng chưa có Studio)
@@ -1039,43 +1051,15 @@ export const StudioSettingsPage: React.FC = () => {
         </div>
       )}
 
-      {/* Header & Back Link */}
-      <div className="flex flex-wrap items-center justify-between gap-4">
-        <div>
-          <div className="flex items-center gap-2 mb-2">
-            <Link
-              to="/dashboard"
-              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl border border-slate-200/80 dark:border-white/10 bg-white/80 dark:bg-zinc-900/50 backdrop-blur-xl text-xs font-bold text-slate-600 dark:text-zinc-300 hover:text-orange-600 dark:hover:text-orange-400 hover:border-orange-500/30 transition-all shadow-2xs group"
-            >
-              <ArrowLeft className="w-3.5 h-3.5 transition-transform group-hover:-translate-x-0.5" />
-              <span>Quay lại Dashboard</span>
-            </Link>
-          </div>
-          <div className="flex items-center gap-3">
-            <div className="w-11 h-11 rounded-2xl bg-gradient-to-tr from-amber-500 to-orange-500 p-0.5 shadow-lg shadow-amber-950/40 flex-shrink-0">
-              <div className="w-full h-full bg-white dark:bg-black/60 rounded-[14px] flex items-center justify-center">
-                <Building2 className="w-5 h-5 text-amber-500 dark:text-amber-400" />
-              </div>
-            </div>
-            <div>
-              <div className="flex items-center gap-2">
-                <h1 className="text-xl sm:text-2xl md:text-3xl font-bold truncate text-slate-900 dark:text-white/90 tracking-tight">
-                  Quản Trị Studio & Nhân Sự
-                </h1>
-                <span className="px-2 py-0.5 rounded-full bg-amber-500/20 text-amber-600 dark:text-amber-300 text-[10px] font-bold border border-amber-500/30 uppercase tracking-wider">
-                  {isStudioOwner ? 'Studio Owner' : 'Studio Admin'}
-                </span>
-              </div>
-              <p className="text-xs text-slate-500 dark:text-white/50">
-                Không gian làm việc cho Studio: {studio?.name}
-              </p>
-            </div>
-          </div>
-        </div>
+      {/* Header & Action Button (Single row aligned, no duplicate h1 or back btn) */}
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
+        <p className="text-sm text-zinc-500 dark:text-zinc-400">
+          Không gian làm việc và quản trị nhân sự Studio: {studio?.name || 'Mirmia Studio'}
+        </p>
 
         <button
           onClick={fetchStudioData}
-          className="px-3.5 py-2 rounded-xl bg-white/60 dark:bg-white/5 hover:bg-white/80 dark:hover:bg-white/10 border border-white/60 dark:border-white/10 text-slate-700 dark:text-slate-200 text-xs font-bold flex items-center gap-1.5 transition-all shadow-sm"
+          className="px-3.5 py-2 rounded-xl bg-white/60 dark:bg-white/5 hover:bg-white/80 dark:hover:bg-white/10 border border-slate-200 dark:border-white/10 text-slate-700 dark:text-slate-200 text-xs font-bold flex items-center gap-1.5 transition-all shadow-sm shrink-0 cursor-pointer"
           title="Tải lại dữ liệu"
         >
           <RefreshCw className="w-3.5 h-3.5 text-amber-500" />
@@ -1141,7 +1125,7 @@ export const StudioSettingsPage: React.FC = () => {
       {/* ==================================================================== */}
       {activeTab === 'general' && (
         <form onSubmit={handleSaveStudioInfo} className="space-y-6 animate-fadeIn">
-          <div className="p-6 sm:p-8 rounded-3xl bg-white/60 dark:bg-white/5 backdrop-blur-xl border border-white/60 dark:border-white/10 shadow-[0_8px_32px_0_rgba(0,0,0,0.25)] space-y-6">
+          <div className="p-6 sm:p-8 rounded-3xl bg-white/60 dark:bg-white/5 backdrop-blur-xl border border-slate-200 dark:border-white/10 shadow-sm space-y-6">
             <div className="flex items-center justify-between pb-4 border-b border-slate-200 dark:border-white/10">
               <div>
                 <h2 className="text-sm font-bold text-slate-900 dark:text-white uppercase tracking-wider">
@@ -1296,7 +1280,7 @@ export const StudioSettingsPage: React.FC = () => {
       {activeTab === 'members' && (
         <div className="space-y-8 animate-fadeIn">
           {/* Section 1: Yêu cầu gia nhập đang chờ duyệt (Pending) */}
-          <div className="p-6 sm:p-7 rounded-3xl bg-white/60 dark:bg-white/5 backdrop-blur-xl border border-white/60 dark:border-white/10 shadow-[0_8px_32px_0_rgba(0,0,0,0.25)] space-y-4">
+          <div className="p-6 sm:p-7 rounded-3xl bg-white/60 dark:bg-white/5 backdrop-blur-xl border border-slate-200 dark:border-white/10 shadow-sm space-y-4">
             <div className="flex items-center justify-between pb-3 border-b border-slate-200 dark:border-white/10">
               <div className="flex items-center gap-2">
                 <Clock className="w-5 h-5 text-amber-500 dark:text-amber-400" />
@@ -1824,7 +1808,7 @@ export const StudioSettingsPage: React.FC = () => {
       {activeTab === 'integrations' && (
         <div className="space-y-6 animate-fadeIn">
           <form onSubmit={handleSaveTelegram} className="space-y-6">
-            <div className="p-6 sm:p-8 rounded-3xl bg-white/60 dark:bg-white/5 backdrop-blur-xl border border-white/60 dark:border-white/10 shadow-[0_8px_32px_0_rgba(0,0,0,0.25)] space-y-6">
+            <div className="p-6 sm:p-8 rounded-3xl bg-white/60 dark:bg-white/5 backdrop-blur-xl border border-slate-200 dark:border-white/10 shadow-sm space-y-6">
               {/* Header */}
               <div className="flex flex-wrap items-center justify-between gap-3 pb-4 border-b border-slate-200 dark:border-white/10">
                 <div className="flex items-center gap-3">

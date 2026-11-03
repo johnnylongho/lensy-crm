@@ -214,6 +214,9 @@ export interface Studio {
   name: string;
   slug?: string;
   logo_url?: string | null;
+  address?: string | null;
+  facebook_url?: string | null;
+  phone?: string | null;
   invite_code?: string;
   verified_status: boolean;
   owner_id: string;

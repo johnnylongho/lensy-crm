@@ -16,6 +16,7 @@ import { CalendarEvent, QuoteData } from './types';
 const LandingPage = lazy(() => import('./components/home/LandingPage').then(m => ({ default: m.LandingPage })));
 const LoginPage = lazy(() => import('./components/auth/LoginPage').then(m => ({ default: m.LoginPage })));
 const PublicBookingPage = lazy(() => import('./pages/PublicBookingPage').then(m => ({ default: m.PublicBookingPage })));
+const PublicQuotePage = lazy(() => import('./pages/PublicQuotePage').then(m => ({ default: m.PublicQuotePage })));
 const PhotographerDashboard = lazy(() => import('./components/dashboard/PhotographerDashboard').then(m => ({ default: m.PhotographerDashboard })));
 const SettingsPage = lazy(() => import('./components/dashboard/SettingsPage').then(m => ({ default: m.SettingsPage })));
 const GearsManagementPage = lazy(() => import('./components/dashboard/GearsManagementPage').then(m => ({ default: m.GearsManagementPage })));
@@ -132,7 +133,7 @@ export function App() {
             <Route
               path="/quote/:token"
               element={
-                <PublicBookingPage
+                <PublicQuotePage
                   initialQuote={quote || undefined}
                   onQuoteStatusChange={handleQuoteStatusChange}
                   onBookingSubmit={handleNewBooking}
@@ -144,7 +145,7 @@ export function App() {
             <Route
               path="/quote"
               element={
-                <PublicBookingPage
+                <PublicQuotePage
                   initialQuote={quote || undefined}
                   onQuoteStatusChange={handleQuoteStatusChange}
                   onBookingSubmit={handleNewBooking}

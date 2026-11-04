@@ -169,7 +169,6 @@ export async function processPaymentWebhook(
     const updatePayload: any = {
       status: nextStatus,
       paid_amount: newPaidAmount,
-      remaining_amount: newRemainingAmount,
       updated_at: new Date().toISOString(),
     };
 

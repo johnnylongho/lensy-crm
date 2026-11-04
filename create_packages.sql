@@ -8,6 +8,7 @@ CREATE TABLE IF NOT EXISTS packages (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     photographer_id UUID REFERENCES users(id) ON DELETE CASCADE,
     name TEXT NOT NULL,
+    category VARCHAR(50) NOT NULL DEFAULT 'studio',
     price NUMERIC(12, 2) NOT NULL DEFAULT 0,
     description TEXT,
     features JSONB DEFAULT '[]'::jsonb,
@@ -17,8 +18,9 @@ CREATE TABLE IF NOT EXISTS packages (
     updated_at TIMESTAMPTZ DEFAULT NOW()
 );
 
--- Tạo Index tăng tốc truy vấn theo thợ ảnh và trạng thái hoạt động
+-- Tạo Index tăng tốc truy vấn theo thợ ảnh, category và trạng thái hoạt động
 CREATE INDEX IF NOT EXISTS idx_packages_photographer_id ON packages(photographer_id);
+CREATE INDEX IF NOT EXISTS idx_packages_category ON packages(category);
 CREATE INDEX IF NOT EXISTS idx_packages_is_active ON packages(is_active);
 CREATE INDEX IF NOT EXISTS idx_packages_created_at ON packages(created_at DESC);
 

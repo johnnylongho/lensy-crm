@@ -10,16 +10,16 @@ interface Props {
 
 /**
  * PublicBookingPage:
- * Trang Đặt Lịch Công Khai dành riêng cho khách hàng (Public Booking Experience).
- * Áp dụng nguyên tắc Mobile-First:
- * - Triệt tiêu hoàn toàn thanh cuộn ngang (overflow-x-hidden w-full max-w-full)
- * - Lưới giá dịch vụ responsive (1 cột trên mobile, 2 cột trên tablet, 3 cột trên desktop)
- * - Nút CTA xác nhận tối ưu vùng bấm cảm ứng (min-h-[48px], sticky chân trang)
+ * Trang Đặt Lịch Công Khai (Public Client Booking Portal - Standard Web & Mobile-First).
+ * - Giải phóng hoàn toàn các ràng buộc khổ in A4 (max-w-[210mm], aspect-[1/1.414], min-h-[297mm]).
+ * - Bố cục Container chuẩn web: max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-8 trên nền sáng bg-slate-50.
  */
 export const PublicBookingPage: React.FC<Props> = (props) => {
   return (
-    <div className="w-full max-w-full overflow-x-hidden min-h-screen relative">
-      <QuoteView {...props} />
+    <div className="w-full min-h-screen bg-slate-50 text-slate-800 font-sans selection:bg-orange-500/20">
+      <div className="w-full max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        <QuoteView {...props} />
+      </div>
     </div>
   );
 };

@@ -1,14 +1,12 @@
 import React from 'react';
 import { QuoteData } from '../../types';
-import { CheckCircle2, Camera, Sparkles, Download, Clock } from 'lucide-react';
+import { Check, Clock } from 'lucide-react';
 
 interface Props {
   quote: QuoteData;
 }
 
 export const ClientProjectJourney: React.FC<Props> = ({ quote }) => {
-  // Xác định bước hiện tại dựa trên trạng thái booking
-  // 1: Chốt cọc | 2: Đã chụp | 3: Đang hậu kỳ | 4: Đã bàn giao
   const status = quote.status;
   const hasDeliveryLink = Boolean(quote.drive_delivery_link);
 
@@ -22,179 +20,82 @@ export const ClientProjectJourney: React.FC<Props> = ({ quote }) => {
   } else if (status === 'da_chot' || status === 'deposited') {
     currentStep = 1;
   } else {
-    // lead / cho_coc / cho_xac_nhan_coc
     currentStep = 0;
   }
 
   const steps = [
-    {
-      index: 1,
-      title: 'Chốt Lịch & Cọc',
-      subtitle: currentStep >= 1 ? 'Đã kích hoạt hợp đồng' : 'Chờ xác nhận cọc',
-      icon: CheckCircle2,
-      activeColor: 'from-emerald-500 to-teal-500',
-      badgeColor: 'bg-emerald-500/20 text-emerald-300 border-emerald-500/40',
-    },
-    {
-      index: 2,
-      title: 'Ngày Bấm Máy',
-      subtitle: currentStep >= 2 ? 'Đã hoàn thành buổi chụp' : `${quote.eventDate || 'Theo lịch'}`,
-      icon: Camera,
-      activeColor: 'from-amber-500 to-orange-500',
-      badgeColor: 'bg-amber-500/20 text-amber-300 border-amber-500/40',
-    },
-    {
-      index: 3,
-      title: 'Hậu Kỳ & Chỉnh Màu',
-      subtitle: currentStep >= 4 ? 'Đã hoàn thiện màu' : currentStep === 3 ? 'Đang blend màu & retouch' : 'Dự kiến 3 - 5 ngày',
-      icon: Sparkles,
-      activeColor: 'from-purple-500 to-indigo-500',
-      badgeColor: 'bg-purple-500/20 text-purple-300 border-purple-500/40',
-    },
-    {
-      index: 4,
-      title: 'Bàn Giao & Tải Ảnh',
-      subtitle: currentStep >= 4 ? 'Sẵn sàng tải file' : 'Sau khi hoàn tất hậu kỳ',
-      icon: Download,
-      activeColor: 'from-rose-500 to-pink-500',
-      badgeColor: 'bg-rose-500/20 text-rose-300 border-rose-500/40',
-    },
+    { index: 1, title: 'Chốt Lịch & Cọc' },
+    { index: 2, title: 'Ngày Bấm Máy' },
+    { index: 3, title: 'Hậu Kỳ Màu' },
+    { index: 4, title: 'Bàn Giao Ảnh' },
   ];
 
+  const statusLabel =
+    currentStep >= 4
+      ? 'Đã bàn giao hoàn tất'
+      : currentStep === 3
+      ? 'Đang hậu kỳ & blend màu'
+      : currentStep === 2
+      ? 'Đã hoàn thành buổi chụp'
+      : currentStep === 1
+      ? 'Đã chốt lịch chụp'
+      : 'Chờ khách xác nhận cọc';
+
   return (
-    <div className="rounded-3xl p-5 sm:p-7 bg-[#1c1917]/80 backdrop-blur-xl border border-amber-500/20 shadow-2xl space-y-5 animate-fadeIn">
-      <div className="flex flex-wrap items-center justify-between gap-3 border-b border-stone-800 pb-4">
-        <div className="space-y-1">
-          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-amber-500/10 border border-amber-500/30 text-amber-400 text-[11px] font-bold uppercase tracking-wider">
-            <Clock className="w-3.5 h-3.5" />
-            <span>Hành Trình Dự Án (Project Journey)</span>
-          </div>
-          <h3 className="text-lg sm:text-xl font-extrabold text-white tracking-tight">
-            Tiến Độ Thực Hiện Show Chụp
-          </h3>
+    <div className="bg-white border border-slate-200 rounded-xl p-2.5 sm:p-3 shadow-sm print:p-1.5 print:m-0 print:border-slate-100 space-y-1.5 break-inside-avoid print:break-inside-avoid">
+      {/* Header thanh mảnh */}
+      <div className="flex items-center justify-between text-xs border-b border-slate-100 pb-1 print:pb-0.5">
+        <div className="inline-flex items-center gap-1.5 font-bold uppercase tracking-wider text-orange-600 text-[11px] print:text-[10px]">
+          <Clock className="w-3.5 h-3.5 text-orange-500" />
+          <span>Tiến Độ Thực Hiện</span>
         </div>
-        <div className="text-right">
-          <span className="text-xs text-stone-400 block">Trạng thái hiện tại:</span>
-          <span className="text-sm font-bold text-amber-400">
-            {currentStep >= 4
-              ? '🎁 Đã bàn giao ảnh hoàn tất'
-              : currentStep === 3
-              ? '🎨 Đang hậu kỳ & blend màu'
-              : currentStep === 2
-              ? '📸 Đã chụp, chờ chuyển file'
-              : currentStep === 1
-              ? '✨ Đã chốt lịch chụp'
-              : '⏳ Chờ chốt cọc'}
-          </span>
-        </div>
+        <span className="text-[11px] print:text-[10px] font-semibold text-orange-600">
+          {statusLabel}
+        </span>
       </div>
 
-      {/* Desktop Horizontal Stepper */}
-      <div className="hidden sm:grid grid-cols-4 gap-3 relative">
+      {/* Thanh tiến trình ngang thanh mảnh (Horizontal Stepper) */}
+      <div className="grid grid-cols-4 gap-2 items-center relative py-1 print:py-0.5">
         {steps.map((s, idx) => {
-          const Icon = s.icon;
           const isPassed = currentStep > s.index;
           const isCurrent = currentStep === s.index;
-          const isPending = currentStep < s.index;
 
           return (
-            <div
-              key={s.index}
-              className={`relative rounded-2xl p-4 transition-all duration-300 border flex flex-col justify-between ${
-                isCurrent
-                  ? 'bg-stone-800/90 border-amber-500/50 shadow-lg shadow-amber-500/10 ring-1 ring-amber-500/30'
-                  : isPassed
-                  ? 'bg-stone-900/60 border-stone-800 text-stone-300'
-                  : 'bg-stone-950/40 border-stone-800/50 opacity-60'
-              }`}
-            >
-              <div className="flex items-center justify-between mb-3">
-                <span
-                  className={`w-7 h-7 rounded-xl flex items-center justify-center text-xs font-bold ${
-                    isPassed
-                      ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/40'
-                      : isCurrent
-                      ? 'bg-amber-500 text-stone-950 font-black shadow-md shadow-amber-500/30'
-                      : 'bg-stone-800 text-stone-400'
-                  }`}
-                >
-                  {isPassed ? '✓' : s.index}
-                </span>
-
+            <div key={s.index} className="flex flex-col items-center text-center relative">
+              {/* Connector Line giữa các bước */}
+              {idx < steps.length - 1 && (
                 <div
-                  className={`p-2 rounded-xl ${
-                    isCurrent
-                      ? 'bg-amber-500/20 text-amber-400'
-                      : isPassed
-                      ? 'bg-emerald-500/10 text-emerald-400'
-                      : 'bg-stone-800/50 text-stone-500'
+                  className={`absolute top-2.5 left-1/2 w-full h-[2px] -z-0 ${
+                    currentStep > s.index ? 'bg-orange-500' : 'bg-slate-200'
                   }`}
-                >
-                  <Icon className="w-4 h-4" />
-                </div>
-              </div>
-
-              <div className="space-y-1">
-                <h4 className="text-xs sm:text-sm font-bold text-white tracking-tight">
-                  {s.title}
-                </h4>
-                <p className="text-[11px] text-stone-400 leading-snug truncate">
-                  {s.subtitle}
-                </p>
-              </div>
-
-              {isCurrent && (
-                <div className="mt-3 pt-2 border-t border-amber-500/20 flex items-center gap-1.5 text-[10px] font-bold text-amber-400 animate-pulse">
-                  <span className="w-1.5 h-1.5 rounded-full bg-amber-400" />
-                  <span>Đang thực hiện</span>
-                </div>
+                />
               )}
-            </div>
-          );
-        })}
-      </div>
 
-      {/* Mobile Stacked Stepper */}
-      <div className="sm:hidden space-y-2.5">
-        {steps.map(s => {
-          const Icon = s.icon;
-          const isPassed = currentStep > s.index;
-          const isCurrent = currentStep === s.index;
-
-          return (
-            <div
-              key={s.index}
-              className={`p-3.5 rounded-2xl border flex items-center gap-3 transition-all ${
-                isCurrent
-                  ? 'bg-stone-800/95 border-amber-500/50 shadow-md ring-1 ring-amber-500/30'
-                  : isPassed
-                  ? 'bg-stone-900/60 border-stone-800'
-                  : 'bg-stone-950/40 border-stone-800/40 opacity-60'
-              }`}
-            >
-              <span
-                className={`w-7 h-7 rounded-xl flex items-center justify-center text-xs font-bold flex-shrink-0 ${
+              {/* Node Circle */}
+              <div
+                className={`relative z-10 w-5 h-5 rounded-full flex items-center justify-center text-[10px] font-bold transition-all ${
                   isPassed
-                    ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/40'
+                    ? 'bg-orange-500 text-white shadow-sm'
                     : isCurrent
-                    ? 'bg-amber-500 text-stone-950 font-black'
-                    : 'bg-stone-800 text-stone-400'
+                    ? 'bg-orange-600 text-white ring-2 ring-orange-200'
+                    : 'bg-slate-100 text-slate-400 border border-slate-200'
                 }`}
               >
-                {isPassed ? '✓' : s.index}
-              </span>
-              <div className="flex-1 min-w-0">
-                <div className="flex items-center justify-between">
-                  <h4 className="text-xs font-bold text-white truncate">{s.title}</h4>
-                  {isCurrent && (
-                    <span className="text-[10px] font-bold text-amber-400 px-2 py-0.5 rounded-full bg-amber-500/10 border border-amber-500/30">
-                      Hiện tại
-                    </span>
-                  )}
-                </div>
-                <p className="text-[11px] text-stone-400 truncate">{s.subtitle}</p>
+                {isPassed ? <Check className="w-3 h-3 stroke-[3]" /> : s.index}
               </div>
-              <Icon className={`w-4 h-4 flex-shrink-0 ${isCurrent ? 'text-amber-400' : isPassed ? 'text-emerald-400' : 'text-stone-600'}`} />
+
+              {/* Step Label */}
+              <span
+                className={`text-[11px] print:text-[10px] mt-0.5 font-medium leading-tight truncate w-full ${
+                  isCurrent
+                    ? 'text-orange-600 font-bold'
+                    : isPassed
+                    ? 'text-slate-800'
+                    : 'text-slate-400'
+                }`}
+              >
+                {s.title}
+              </span>
             </div>
           );
         })}

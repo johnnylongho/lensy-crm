@@ -592,9 +592,9 @@ export const DashboardLayout: React.FC = () => {
       </aside>
 
       {/* ===================================================================== */}
-      {/* 2. MAIN CONTENT AREA                                                  */}
+      {/* 2. MAIN CONTENT AREA (FLUID FULL-WIDTH LAYOUT)                        */}
       {/* ===================================================================== */}
-      <main className="flex-1 h-full overflow-y-auto p-4 sm:p-6 md:p-8 bg-slate-50/50 dark:bg-[#090a0f]">
+      <main className="flex-1 overflow-x-hidden overflow-y-auto bg-slate-50 dark:bg-[#090a0f] p-6 lg:p-8">
         {/* Header: Page Title + Actions + Profile Pill */}
         <div className="flex flex-row items-center justify-between w-full gap-2 mb-6">
           <div className="flex items-center gap-2 sm:gap-3 min-w-0">
@@ -815,8 +815,8 @@ export const DashboardLayout: React.FC = () => {
           </div>
         </div>
 
-        {/* Dynamic Nested Page Content via Outlet */}
-        <div className="relative">
+        {/* Dynamic Nested Page Content via Outlet (Fluid Full-Width) */}
+        <div className="relative w-full">
           {/* Floating Toast Notification (Access Denied / Security Feedback) */}
           {toastBanner && (
             <div className="fixed top-20 right-4 sm:right-8 z-50 max-w-md animate-in fade-in slide-in-from-top-4 duration-300">

@@ -323,7 +323,7 @@ export const ClientsManagementPage: React.FC = () => {
       animate={{ opacity: 1, y: 0 }}
       exit={{ opacity: 0, y: -10 }}
       transition={{ duration: 0.2 }}
-      className="w-full space-y-6"
+      className="w-full h-full flex flex-col gap-6"
     >
       {/* Page Header & Action (Single row aligned, no duplicate h1) */}
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">

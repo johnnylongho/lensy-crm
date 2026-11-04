@@ -1025,7 +1025,7 @@ export const StudioSettingsPage: React.FC = () => {
       animate={{ opacity: 1, y: 0 }}
       exit={{ opacity: 0, y: -10 }}
       transition={{ duration: 0.2 }}
-      className="max-w-5xl mx-auto px-4 py-6 sm:py-8 space-y-6"
+      className="w-full h-full flex flex-col gap-6"
     >
       {/* Toast Notification */}
       {toast && (
@@ -1124,7 +1124,7 @@ export const StudioSettingsPage: React.FC = () => {
       {/* TAB 1: THÔNG TIN CHUNG                                               */}
       {/* ==================================================================== */}
       {activeTab === 'general' && (
-        <form onSubmit={handleSaveStudioInfo} className="space-y-6 animate-fadeIn">
+        <form onSubmit={handleSaveStudioInfo} className="w-full max-w-4xl space-y-6 animate-fadeIn">
           <div className="p-6 sm:p-8 rounded-3xl bg-white/60 dark:bg-white/5 backdrop-blur-xl border border-slate-200 dark:border-white/10 shadow-sm space-y-6">
             <div className="flex items-center justify-between pb-4 border-b border-slate-200 dark:border-white/10">
               <div>
@@ -1806,7 +1806,7 @@ export const StudioSettingsPage: React.FC = () => {
       {/* TAB 3: TÍCH HỢP & TELEGRAM BOT                                       */}
       {/* ==================================================================== */}
       {activeTab === 'integrations' && (
-        <div className="space-y-6 animate-fadeIn">
+        <div className="w-full max-w-4xl space-y-6 animate-fadeIn">
           <form onSubmit={handleSaveTelegram} className="space-y-6">
             <div className="p-6 sm:p-8 rounded-3xl bg-white/60 dark:bg-white/5 backdrop-blur-xl border border-slate-200 dark:border-white/10 shadow-sm space-y-6">
               {/* Header */}

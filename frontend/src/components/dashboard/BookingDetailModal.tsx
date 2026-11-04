@@ -62,6 +62,8 @@ import {
   Zap,
   CheckSquare,
   Square,
+  DollarSign,
+  Wallet,
 } from 'lucide-react';
 import { batchCompressImages } from '../../utils/imageCompressor';
 import { openZaloChat, generatePhotoDeliveryMessage } from '../../lib/zaloMessenger';
@@ -126,7 +128,6 @@ interface Props {
   onClose: () => void;
   onBookingUpdated?: (updatedBooking: CalendarEvent) => void;
   onOpenDebtReminder?: (booking: CalendarEvent) => void;
-  onEditFinancials?: (booking: CalendarEvent) => void;
 }
 
 export const BookingDetailModal: React.FC<Props> = ({
@@ -136,7 +137,6 @@ export const BookingDetailModal: React.FC<Props> = ({
   onClose,
   onBookingUpdated,
   onOpenDebtReminder,
-  onEditFinancials,
 }) => {
   const { user } = useAuth();
   const { currentStudio } = useWorkspace();
@@ -184,6 +184,14 @@ export const BookingDetailModal: React.FC<Props> = ({
   const [selectedCategory, setSelectedCategory] = useState<string>('portrait');
   const [packageType, setPackageType] = useState<string>('');
   const [studioPackages, setStudioPackages] = useState<Array<{ id: string; name: string; price: number }>>([]);
+
+  // Direct Financial & Package Pricing States
+  const [packagePrice, setPackagePrice] = useState<number>(booking?.packagePrice || 0);
+  const [paidAmount, setPaidAmount] = useState<number>(
+    booking?.paidAmount && booking.paidAmount > 0 
+      ? booking.paidAmount 
+      : (booking?.depositAmount || 0)
+  );
 
   // Fetch danh sách gói chụp của studio từ bảng packages
   useEffect(() => {
@@ -235,6 +243,8 @@ export const BookingDetailModal: React.FC<Props> = ({
       setAssignedMakeupId(booking.makeup_artist_id || booking.makeup_artist?.id || '');
       setSelectedCategory(normalizeCategory(booking.category || booking.sessionType));
       setPackageType(booking.package_type || '');
+      setPackagePrice(booking.packagePrice || 0);
+      setPaidAmount(booking.paidAmount && booking.paidAmount > 0 ? booking.paidAmount : (booking.depositAmount || 0));
       setDeliveryLink(booking.drive_delivery_link || '');
       setDeliveryNotes(booking.delivery_notes || '');
       setDeliveryDate(
@@ -737,7 +747,7 @@ export const BookingDetailModal: React.FC<Props> = ({
   const handleCopyVietQrTransfer = (member: CrewAssignmentItem) => {
     const calculatedFee =
       member.fee_type === 'percent'
-        ? Math.round((booking.packagePrice * Number(member.fee || 0)) / 100)
+        ? Math.round((packagePrice * Number(member.fee || 0)) / 100)
         : Number(member.fee || 0);
 
     const transferContent = `Thu lao show ${booking.clientName} ngay ${booking.eventDate}`;
@@ -918,7 +928,7 @@ export const BookingDetailModal: React.FC<Props> = ({
 
   const totalCrewCost = crewMembers.reduce((sum, member) => {
     if (member.fee_type === 'percent') {
-      return sum + Math.round((booking.packagePrice * Number(member.fee || 0)) / 100);
+      return sum + Math.round((packagePrice * Number(member.fee || 0)) / 100);
     }
     return sum + Number(member.fee || 0);
   }, 0);
@@ -927,7 +937,7 @@ export const BookingDetailModal: React.FC<Props> = ({
     .filter(m => m.is_paid)
     .reduce((sum, member) => {
       if (member.fee_type === 'percent') {
-        return sum + Math.round((booking.packagePrice * Number(member.fee || 0)) / 100);
+        return sum + Math.round((packagePrice * Number(member.fee || 0)) / 100);
       }
       return sum + Number(member.fee || 0);
     }, 0);
@@ -935,10 +945,11 @@ export const BookingDetailModal: React.FC<Props> = ({
   const unpaidCrewCost = Math.max(0, totalCrewCost - paidCrewCost);
   const combinedTotalCost = totalExpenses + totalCrewCost;
 
-  const effectivePaid = Number(booking.paidAmount || booking.depositAmount || 0);
+  const effectivePaid = Number(paidAmount || 0);
   const netProfit = effectivePaid - combinedTotalCost;
-  const projectedNetProfit = booking.packagePrice - combinedTotalCost;
-  const profitMargin = booking.packagePrice > 0 ? Math.round((projectedNetProfit / booking.packagePrice) * 100) : 0;
+  const projectedNetProfit = packagePrice - combinedTotalCost;
+  const profitMargin = packagePrice > 0 ? Math.round((projectedNetProfit / packagePrice) * 100) : 0;
+  const remainingDebt = Math.max(0, packagePrice - effectivePaid);
 
   // Lưu phân bổ thiết bị, hạch toán chi phí VÀ phân công nhân sự vào Supabase
   const handleSaveAssignedGears = async () => {
@@ -965,6 +976,9 @@ export const BookingDetailModal: React.FC<Props> = ({
 
       if (isSupabaseConfigured) {
         const updatePayload: any = {
+          package_price: packagePrice,
+          deposit_amount: paidAmount,
+          paid_amount: paidAmount,
           assigned_gears: selectedGearIds,
           expenses: combinedTotalCost,
           expense_details: expenseItems,
@@ -1000,6 +1014,9 @@ export const BookingDetailModal: React.FC<Props> = ({
           const { error: fallbackErr } = await supabase
             .from('bookings')
             .update({
+              package_price: packagePrice,
+              deposit_amount: paidAmount,
+              paid_amount: paidAmount,
               assigned_gears: selectedGearIds,
               expenses: combinedTotalCost,
               expense_details: expenseItems,
@@ -1054,6 +1071,10 @@ export const BookingDetailModal: React.FC<Props> = ({
 
       const updated: CalendarEvent = {
         ...booking,
+        packagePrice: packagePrice,
+        depositAmount: paidAmount,
+        paidAmount: paidAmount,
+        remainingAmount: Math.max(0, packagePrice - paidAmount),
         category: canonicalCategory,
         sessionType: canonicalCategory as any,
         package_type: packageType.trim() || undefined,
@@ -1094,10 +1115,7 @@ export const BookingDetailModal: React.FC<Props> = ({
     }
   };
 
-  const remainingDebt = Math.max(
-    0,
-    booking.packagePrice - (booking.paidAmount || booking.depositAmount)
-  );
+  // remainingDebt is already computed above
 
   return (
     <div
@@ -1105,11 +1123,11 @@ export const BookingDetailModal: React.FC<Props> = ({
       onClick={onClose}
     >
       <div
-        className="relative z-10 w-full max-w-full sm:max-w-3xl bg-zinc-950 border border-white/10 rounded-3xl shadow-2xl flex flex-col max-h-[90vh] overflow-y-auto overflow-x-hidden"
+        className="relative z-10 w-full max-w-full sm:max-w-3xl bg-[#0a0a0a] border border-white/10 rounded-3xl shadow-2xl flex flex-col max-h-[90vh] overflow-y-auto overflow-x-hidden text-zinc-200"
         onClick={e => e.stopPropagation()}
       >
         {/* Modal Header */}
-        <div className="p-5 sm:p-6 border-b border-slate-800 bg-slate-900/95 backdrop-blur-md flex-shrink-0 flex items-start justify-between gap-3">
+        <div className="p-5 sm:p-6 border-b border-white/10 bg-[#0a0a0a] backdrop-blur-md flex-shrink-0 flex items-start justify-between gap-3">
           <div className="space-y-1.5 flex-1 min-w-0 pr-2">
             <div className="flex flex-wrap items-center gap-2">
               <span className="text-[10px] uppercase font-bold px-2 py-0.5 rounded bg-amber-500/10 border border-amber-500/30 text-amber-300">
@@ -1208,19 +1226,10 @@ export const BookingDetailModal: React.FC<Props> = ({
             <div className="p-3 rounded-xl bg-zinc-900/50 border border-orange-500/20 flex flex-col justify-between">
               <div className="flex items-center justify-between gap-1.5">
                 <span className="text-zinc-400 block text-[10px] uppercase font-medium tracking-wider">Tổng Gói (HĐ)</span>
-                {onEditFinancials && (
-                  <button
-                    type="button"
-                    onClick={() => onEditFinancials(booking)}
-                    className="text-zinc-400 hover:text-white transition-colors p-0.5 rounded hover:bg-white/10 cursor-pointer"
-                    title="Cập nhật tài chính"
-                  >
-                    <Pencil className="w-3 h-3" />
-                  </button>
-                )}
+
               </div>
               <span className="font-mono font-bold text-white text-xs sm:text-sm mt-1">
-                {booking.packagePrice.toLocaleString('vi-VN')} đ
+                {packagePrice.toLocaleString('vi-VN')} đ
               </span>
             </div>
             <div className="p-3 rounded-xl bg-zinc-900/50 border border-white/10 flex flex-col justify-between">
@@ -1330,7 +1339,17 @@ export const BookingDetailModal: React.FC<Props> = ({
                 </label>
                 <select
                   value={packageType}
-                  onChange={e => setPackageType(e.target.value)}
+                  onChange={e => {
+                    const selectedVal = e.target.value;
+                    setPackageType(selectedVal);
+                    const matched = studioPackages.find(p => p.name === selectedVal);
+                    if (matched && matched.price > 0) {
+                      setPackagePrice(matched.price);
+                      if (!paidAmount || paidAmount === 0) {
+                        setPaidAmount(Math.round(matched.price * 0.3));
+                      }
+                    }
+                  }}
                   className="w-full px-3 py-2 rounded-xl bg-zinc-950 border border-zinc-800 text-xs font-semibold text-white outline-none focus:border-orange-500 cursor-pointer"
                 >
                   <option value="" disabled className="bg-zinc-950 text-zinc-500">
@@ -1349,6 +1368,84 @@ export const BookingDetailModal: React.FC<Props> = ({
                 </select>
               </div>
             </div>
+
+            {/* Direct Package Price & Financial Adjustment */}
+            <div className="mt-3 pt-3 border-t border-zinc-800/80 grid grid-cols-1 sm:grid-cols-3 gap-3">
+              {/* Field 1: Giá Gói Hợp Đồng */}
+              <div className="space-y-1.5">
+                <div className="flex items-center justify-between">
+                  <label className="text-[11px] font-bold text-orange-400 block">
+                    Giá Gói Chụp (HĐ) *
+                  </label>
+                  <span className="text-[10px] text-zinc-500 font-mono">VNĐ</span>
+                </div>
+                <div className="relative">
+                  <input
+                    type="text"
+                    value={formatCurrencyVND(packagePrice)}
+                    onChange={e => setPackagePrice(parseCurrencyVND(e.target.value))}
+                    className="w-full px-3 py-2 pl-7 rounded-xl bg-zinc-950 border border-zinc-800 text-xs font-mono font-bold text-white outline-none focus:border-orange-500 transition-colors"
+                    placeholder="0"
+                  />
+                  <DollarSign className="w-3.5 h-3.5 text-zinc-500 absolute left-2.5 top-1/2 -translate-y-1/2" />
+                </div>
+              </div>
+
+              {/* Field 2: Khách Đã Cọc / Thanh Toán */}
+              <div className="space-y-1.5">
+                <div className="flex items-center justify-between">
+                  <label className="text-[11px] font-bold text-emerald-400 block">
+                    Khách Đã Cọc / Trả
+                  </label>
+                  <div className="flex items-center gap-1">
+                    <button
+                      type="button"
+                      onClick={() => setPaidAmount(Math.round(packagePrice * 0.3))}
+                      className="text-[9px] px-1.5 py-0.5 rounded bg-orange-500/10 hover:bg-orange-500/20 text-orange-400 font-bold border border-orange-500/20 transition-colors"
+                      title="Chốt nhanh cọc 30%"
+                    >
+                      30%
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setPaidAmount(packagePrice)}
+                      className="text-[9px] px-1.5 py-0.5 rounded bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-400 font-bold border border-emerald-500/20 transition-colors"
+                      title="Đã thanh toán đủ 100%"
+                    >
+                      100%
+                    </button>
+                  </div>
+                </div>
+                <div className="relative">
+                  <input
+                    type="text"
+                    value={formatCurrencyVND(paidAmount)}
+                    onChange={e => setPaidAmount(parseCurrencyVND(e.target.value))}
+                    className="w-full px-3 py-2 pl-7 rounded-xl bg-zinc-950 border border-zinc-800 text-xs font-mono font-bold text-emerald-400 outline-none focus:border-emerald-500 transition-colors"
+                    placeholder="0"
+                  />
+                  <Wallet className="w-3.5 h-3.5 text-zinc-500 absolute left-2.5 top-1/2 -translate-y-1/2" />
+                </div>
+              </div>
+
+              {/* Field 3: Còn Lại Phải Thu */}
+              <div className="space-y-1.5">
+                <div className="flex items-center justify-between">
+                  <label className="text-[11px] font-bold text-zinc-400 block">
+                    Còn Lại Phải Thu
+                  </label>
+                  <span className={'text-[10px] font-mono font-bold ' + (Math.max(0, packagePrice - paidAmount) > 0 ? 'text-amber-400' : 'text-emerald-400')}>
+                    {Math.max(0, packagePrice - paidAmount) > 0 ? 'Chưa tất toán' : 'Đã tất toán'}
+                  </span>
+                </div>
+                <div className="w-full px-3 py-2 rounded-xl bg-zinc-950/60 border border-zinc-800/80 flex items-center justify-between">
+                  <span className="text-[11px] text-zinc-500 font-medium">Nợ còn:</span>
+                  <span className="text-xs font-mono font-bold text-amber-400">
+                    {formatCurrencyVND(Math.max(0, packagePrice - paidAmount))} đ
+                  </span>
+                </div>
+              </div>
+            </div>
           </div>
 
           {/* Tab Switcher */}
@@ -1357,9 +1454,7 @@ export const BookingDetailModal: React.FC<Props> = ({
               type="button"
               onClick={() => setActiveTab('crew')}
               className={`flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-xs font-semibold transition-all whitespace-nowrap cursor-pointer ${
-                activeTab === 'crew'
-                  ? 'bg-orange-500/10 text-orange-500 border border-orange-500/30 shadow-xs'
-                  : 'bg-transparent text-zinc-400 hover:text-zinc-200 border border-transparent hover:border-zinc-800'
+                activeTab === 'crew' ? 'border-b-2 border-orange-500 text-orange-500 bg-orange-500/10' : 'border-b-2 border-transparent text-zinc-400 hover:text-zinc-200 hover:border-zinc-800'
               }`}
             >
               <Users className="w-3.5 h-3.5" />
@@ -1373,9 +1468,7 @@ export const BookingDetailModal: React.FC<Props> = ({
               type="button"
               onClick={() => setActiveTab('expenses')}
               className={`flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-xs font-semibold transition-all whitespace-nowrap cursor-pointer ${
-                activeTab === 'expenses'
-                  ? 'bg-orange-500/10 text-orange-500 border border-orange-500/30 shadow-xs'
-                  : 'bg-transparent text-zinc-400 hover:text-zinc-200 border border-transparent hover:border-zinc-800'
+                activeTab === 'expenses' ? 'border-b-2 border-orange-500 text-orange-500 bg-orange-500/10' : 'border-b-2 border-transparent text-zinc-400 hover:text-zinc-200 hover:border-zinc-800'
               }`}
             >
               <Receipt className="w-3.5 h-3.5" />
@@ -1389,9 +1482,7 @@ export const BookingDetailModal: React.FC<Props> = ({
               type="button"
               onClick={() => setActiveTab('gears')}
               className={`flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-xs font-semibold transition-all whitespace-nowrap cursor-pointer ${
-                activeTab === 'gears'
-                  ? 'bg-orange-500/10 text-orange-500 border border-orange-500/30 shadow-xs'
-                  : 'bg-transparent text-zinc-400 hover:text-zinc-200 border border-transparent hover:border-zinc-800'
+                activeTab === 'gears' ? 'border-b-2 border-orange-500 text-orange-500 bg-orange-500/10' : 'border-b-2 border-transparent text-zinc-400 hover:text-zinc-200 hover:border-zinc-800'
               }`}
             >
               <Camera className="w-3.5 h-3.5" />
@@ -1405,9 +1496,7 @@ export const BookingDetailModal: React.FC<Props> = ({
               type="button"
               onClick={() => setActiveTab('delivery')}
               className={`flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-xs font-semibold transition-all whitespace-nowrap cursor-pointer ${
-                activeTab === 'delivery'
-                  ? 'bg-orange-500/10 text-orange-500 border border-orange-500/30 shadow-xs'
-                  : 'bg-transparent text-zinc-400 hover:text-zinc-200 border border-transparent hover:border-zinc-800'
+                activeTab === 'delivery' ? 'border-b-2 border-orange-500 text-orange-500 bg-orange-500/10' : 'border-b-2 border-transparent text-zinc-400 hover:text-zinc-200 hover:border-zinc-800'
               }`}
             >
               <FolderOpen className="w-3.5 h-3.5" />
@@ -1623,7 +1712,7 @@ export const BookingDetailModal: React.FC<Props> = ({
                         {(() => {
                           const num = parseFloat(String(newCrewFee).replace(/[^0-9.]/g, '')) || 0;
                           const isPercent = newCrewFeeType === 'percent' || String(newCrewFee).includes('%');
-                          const calc = isPercent ? Math.round((booking.packagePrice * num) / 100) : num;
+                          const calc = isPercent ? Math.round((packagePrice * num) / 100) : num;
                           return calc > 0 ? `= ${calc.toLocaleString('vi-VN')} đ` : '';
                         })()}
                       </span>
@@ -1729,7 +1818,7 @@ export const BookingDetailModal: React.FC<Props> = ({
                       const roleConfig = CREW_ROLE_CONFIG[member.role] || CREW_ROLE_CONFIG.other;
                       const calculatedFee =
                         member.fee_type === 'percent'
-                          ? Math.round((booking.packagePrice * Number(member.fee || 0)) / 100)
+                          ? Math.round((packagePrice * Number(member.fee || 0)) / 100)
                           : Number(member.fee || 0);
 
                       return (
@@ -2760,7 +2849,7 @@ export const BookingDetailModal: React.FC<Props> = ({
                         sessionType: booking.category || booking.sessionType,
                         portalUrl: portalUrl,
                         deliveryNotes: deliveryNotes,
-                        remainingAmount: booking.remainingAmount,
+                        remainingAmount: remainingDebt,
                         studioName: currentStudio?.name || 'MIRMIA STUDIO & ACADEMY',
                       });
                       openZaloChat(booking.clientPhone, msg);
@@ -2777,7 +2866,7 @@ export const BookingDetailModal: React.FC<Props> = ({
         </div>
 
         {/* Modal Sticky Footer */}
-        <div className="p-4 sm:p-5 border-t border-slate-800 bg-slate-950/90 backdrop-blur-md flex flex-col sm:flex-row items-center justify-between gap-3 flex-shrink-0">
+        <div className="p-4 sm:p-5 border-t border-white/10 bg-[#0a0a0a] backdrop-blur-md flex flex-col sm:flex-row items-center justify-between gap-3 flex-shrink-0">
           <div>
             {remainingDebt > 0 && onOpenDebtReminder && (
               <button
@@ -2786,7 +2875,7 @@ export const BookingDetailModal: React.FC<Props> = ({
                   onClose();
                   onOpenDebtReminder(booking);
                 }}
-                className="text-xs text-amber-400 hover:text-amber-300 font-bold underline transition-colors flex items-center gap-1 cursor-pointer"
+                className="text-xs text-orange-500 hover:text-orange-400 font-bold underline transition-colors flex items-center gap-1 cursor-pointer"
               >
                 <span>Mở Trợ Lý Nhắc Nợ ({remainingDebt.toLocaleString('vi-VN')} đ)</span>
               </button>
@@ -2836,7 +2925,7 @@ export const BookingDetailModal: React.FC<Props> = ({
                 type="button"
                 disabled={isSaving}
                 onClick={handleSaveAssignedGears}
-                className="flex-1 sm:flex-none px-5 py-2.5 rounded-xl bg-gradient-to-r from-amber-500 to-emerald-400 hover:from-amber-400 hover:to-emerald-300 text-slate-950 text-xs font-extrabold flex items-center justify-center gap-1.5 shadow-lg shadow-amber-500/20 transition-all hover:scale-[1.02] disabled:opacity-50 cursor-pointer"
+                className="flex-1 sm:flex-none px-5 py-2.5 rounded-xl bg-gradient-to-r from-orange-500 to-amber-500 text-white border-none hover:from-orange-600 hover:to-amber-600 text-xs font-extrabold flex items-center justify-center gap-1.5 shadow-lg shadow-orange-500/25 transition-all hover:scale-[1.02] disabled:opacity-50 cursor-pointer"
               >
                 {isSaving ? (
                   <>

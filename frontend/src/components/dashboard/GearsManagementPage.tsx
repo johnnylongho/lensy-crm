@@ -297,7 +297,7 @@ export const GearsManagementPage: React.FC = () => {
       animate={{ opacity: 1, y: 0 }}
       exit={{ opacity: 0, y: -10 }}
       transition={{ duration: 0.2 }}
-      className="w-full space-y-6 text-slate-100"
+      className="w-full h-full flex flex-col gap-6 text-slate-100"
     >
       {/* Toast Alert */}
       {toast && (

@@ -64,7 +64,6 @@ interface Props {
   onOpenCreateQuote: () => void;
   onOpenDetailModal: (event: CalendarEvent) => void;
   onDeleteBooking: (event: CalendarEvent) => void;
-  onQuickEditFinancials?: (event: CalendarEvent) => void;
   onSelectEventDate?: (dateStr: string) => void;
   onRefreshData?: () => void;
   onOpenImportCsv?: () => void;
@@ -88,7 +87,6 @@ export const ClayStudioDashboard: React.FC<Props> = ({
   onOpenCreateQuote,
   onOpenDetailModal,
   onDeleteBooking,
-  onQuickEditFinancials,
   onSelectEventDate,
   onRefreshData,
   onOpenImportCsv,
@@ -293,7 +291,7 @@ export const ClayStudioDashboard: React.FC<Props> = ({
   }, [searchQuery, statusFilter]);
 
   return (
-    <div className="space-y-6">
+    <div className="w-full h-full flex flex-col gap-6">
       {/* ===================================================================== */}
       {/* 1. LENSY COMMAND CENTER UTILITY STRIP (RBAC & SYNC CONTROLS)          */}
       {/* ===================================================================== */}
@@ -467,26 +465,29 @@ export const ClayStudioDashboard: React.FC<Props> = ({
       {/* ===================================================================== */}
       {/* 2. HERO METRICS BLOCK (KHỐI NỀN CAM TỔNG & 4 THẺ KPI GLASS/SOLID) */}
       {/* ===================================================================== */}
-      <div className="rounded-3xl bg-gradient-to-br from-orange-500 via-[#df8653] to-amber-500 p-5 sm:p-7 shadow-lg shadow-orange-500/20 relative overflow-hidden">
+      {/* ===================================================================== */}
+      {/* 2. HERO METRICS BLOCK (BRAND GRADIENT CAM - HỒNG - TÍM & 4 THẺ KPI) */}
+      {/* ===================================================================== */}
+      <div className="rounded-3xl bg-gradient-to-br from-[#FF9A44] via-[#FC6076] to-[#A044FF] p-5 sm:p-7 shadow-xl shadow-[#FC6076]/25 relative overflow-hidden">
         {/* Ambient Lighting Accents */}
-        <div className="absolute -top-24 -right-24 w-72 h-72 bg-white/15 rounded-full blur-3xl pointer-events-none" />
-        <div className="absolute -bottom-24 -left-24 w-72 h-72 bg-black/10 rounded-full blur-3xl pointer-events-none" />
+        <div className="absolute -top-24 -right-24 w-72 h-72 bg-white/20 rounded-full blur-3xl pointer-events-none" />
+        <div className="absolute -bottom-24 -left-24 w-72 h-72 bg-white/10 rounded-full blur-3xl pointer-events-none" />
 
         {/* Grid 4 Thẻ KPI Cân Đối Hoàn Hảo */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 relative z-10 items-stretch">
           {/* Thẻ 1: TRUNG TÂM DÒNG TIỀN & LỢI NHUẬN RÒNG */}
-          <div className="rounded-2xl bg-white dark:bg-zinc-900/95 backdrop-blur-md p-4 sm:p-5 shadow-xs flex flex-col justify-between space-y-3 transition-all hover:shadow-md">
+          <div className="rounded-2xl bg-white/95 dark:bg-zinc-900/95 backdrop-blur-md border border-white/20 p-4 sm:p-5 shadow-sm flex flex-col justify-between space-y-3 transition-all hover:shadow-md">
             <div className="space-y-1">
               <div className="flex items-center justify-between">
-                <span className="text-[10px] font-mono font-bold tracking-widest uppercase text-orange-600 dark:text-orange-400">
+                <span className="text-[10px] font-sans font-bold tracking-wider uppercase text-orange-600 dark:text-orange-400">
                   {isStudioMember ? 'TIẾN ĐỘ TÁC CHIẾN' : 'TRUNG TÂM DÒNG TIỀN'}
                 </span>
-                <span className="text-[9px] font-mono font-bold px-2 py-0.5 rounded-full bg-orange-100 text-orange-700 dark:bg-orange-500/15 dark:text-orange-400 uppercase">
+                <span className="text-[9px] font-sans font-bold px-2 py-0.5 rounded-full bg-orange-100 text-orange-700 dark:bg-orange-500/15 dark:text-orange-400 uppercase">
                   {isStudioMember ? 'Ekip KPI' : 'Net Profit'}
                 </span>
               </div>
 
-              <div className="text-xl sm:text-2xl font-mono font-black text-slate-900 dark:text-white tracking-tight pt-0.5">
+              <div className="text-xl sm:text-2xl font-sans font-bold text-slate-900 dark:text-white tracking-tight pt-0.5">
                 {isStudioMember
                   ? `${validEvents.filter(e => e.status === 'shot' || e.status === 'editing' || e.status === 'da_tra_file').length} Ca Đang Chạy`
                   : formatVND(financialMetrics.totalActualRevenue)}
@@ -507,19 +508,19 @@ export const ClayStudioDashboard: React.FC<Props> = ({
                   />
                 </div>
 
-                <div className="flex items-center justify-between text-[11px] font-mono">
+                <div className="flex items-center justify-between text-[11px] font-sans">
                   <span className="text-slate-500 dark:text-zinc-400">
-                    Đã thu: <strong className="text-slate-900 dark:text-white">{financialMetrics.contractCollectionRatio}%</strong>
+                    Đã thu: <strong className="text-slate-900 dark:text-white font-sans font-bold tracking-tight">{financialMetrics.contractCollectionRatio}%</strong>
                   </span>
                   <span className="text-slate-500 dark:text-zinc-400">
-                    Tổng HĐ: <strong className="text-slate-900 dark:text-white">{formatVND(financialMetrics.totalContractValue)}</strong>
+                    Tổng HĐ: <strong className="text-slate-900 dark:text-white font-sans font-bold tracking-tight">{formatVND(financialMetrics.totalContractValue)}</strong>
                   </span>
                 </div>
 
                 <div className="pt-2 border-t border-slate-100 dark:border-zinc-800 flex items-center justify-between text-xs">
                   <span className="text-slate-500 dark:text-zinc-400 text-[11px]">Lợi Nhuận Ròng:</span>
-                  <div className="flex items-center gap-1 font-mono">
-                    <span className="text-emerald-600 dark:text-emerald-400 font-black text-xs sm:text-sm">
+                  <div className="flex items-center gap-1 font-sans">
+                    <span className="text-emerald-600 dark:text-emerald-400 font-sans font-bold text-xs sm:text-sm tracking-tight">
                       +{formatVND(financialMetrics.totalNetProfit)}
                     </span>
                     <span className="text-[10px] text-emerald-700 dark:text-emerald-500 font-bold">
@@ -531,23 +532,23 @@ export const ClayStudioDashboard: React.FC<Props> = ({
             ) : (
               <div className="pt-2 border-t border-slate-100 dark:border-zinc-800 flex items-center justify-between text-xs text-slate-500 dark:text-zinc-400">
                 <span>Trạng thái hoạt động:</span>
-                <span className="text-emerald-600 dark:text-emerald-400 font-mono font-bold">Sẵn sàng nhận show</span>
+                <span className="text-emerald-600 dark:text-emerald-400 font-sans font-bold">Sẵn sàng nhận show</span>
               </div>
             )}
           </div>
 
           {/* Thẻ 2: CA CHỤP HÔM NAY */}
-          <div className="rounded-2xl bg-white dark:bg-zinc-900/95 backdrop-blur-md p-4 sm:p-5 shadow-xs flex flex-col justify-between space-y-3 transition-all hover:shadow-md">
+          <div className="rounded-2xl bg-white/95 dark:bg-zinc-900/95 backdrop-blur-md border border-white/20 p-4 sm:p-5 shadow-sm flex flex-col justify-between space-y-3 transition-all hover:shadow-md">
             <div className="space-y-1">
               <div className="flex items-center justify-between">
-                <span className="text-[10px] font-mono font-bold uppercase tracking-wider text-slate-500 dark:text-zinc-400">
+                <span className="text-[10px] font-sans font-bold uppercase tracking-wider text-slate-500 dark:text-zinc-400">
                   CA CHỤP HÔM NAY
                 </span>
-                <span className="text-[10px] font-mono font-bold px-2 py-0.5 rounded-full bg-slate-100 dark:bg-zinc-800 text-slate-700 dark:text-zinc-300">
+                <span className="text-[10px] font-sans font-bold px-2 py-0.5 rounded-full bg-slate-100 dark:bg-zinc-800 text-slate-700 dark:text-zinc-300">
                   {format(currentDate, 'dd/MM')}
                 </span>
               </div>
-              <div className="text-xl sm:text-2xl font-mono font-black text-slate-900 dark:text-white tracking-tight pt-0.5">
+              <div className="text-xl sm:text-2xl font-sans font-bold text-slate-900 dark:text-white tracking-tight pt-0.5">
                 {todayShoots.length}
               </div>
               <div className="text-xs font-semibold text-slate-700 dark:text-zinc-300">
@@ -558,7 +559,7 @@ export const ClayStudioDashboard: React.FC<Props> = ({
             <div className="pt-2 border-t border-slate-100 dark:border-zinc-800 text-xs">
               {todayShoots.length > 0 ? (
                 <div className="text-[11px] text-slate-600 dark:text-zinc-400 truncate">
-                  <span className="font-bold text-orange-600 dark:text-orange-400 font-mono mr-1">
+                  <span className="font-bold text-orange-600 dark:text-orange-400 font-sans mr-1">
                     {todayShoots[0].startTime || '08:00'}:
                   </span>
                   <span className="font-semibold text-slate-800 dark:text-zinc-200">
@@ -578,13 +579,13 @@ export const ClayStudioDashboard: React.FC<Props> = ({
           </div>
 
           {/* Thẻ 3: CỌC & CÔNG NỢ */}
-          <div className="rounded-2xl bg-white dark:bg-zinc-900/95 backdrop-blur-md p-4 sm:p-5 shadow-xs flex flex-col justify-between space-y-3 transition-all hover:shadow-md">
+          <div className="rounded-2xl bg-white/95 dark:bg-zinc-900/95 backdrop-blur-md border border-white/20 p-4 sm:p-5 shadow-sm flex flex-col justify-between space-y-3 transition-all hover:shadow-md">
             <div className="space-y-1">
               <div className="flex items-center justify-between">
-                <span className="text-[10px] font-mono font-bold uppercase tracking-wider text-slate-500 dark:text-zinc-400">
+                <span className="text-[10px] font-sans font-bold uppercase tracking-wider text-slate-500 dark:text-zinc-400">
                   CỌC & CÔNG NỢ
                 </span>
-                <span className={`text-[9px] font-mono font-bold px-2 py-0.5 rounded-full ${
+                <span className={`text-[9px] font-sans font-bold px-2 py-0.5 rounded-full ${
                   pendingCount > 0
                     ? 'bg-amber-100 text-amber-700 dark:bg-amber-500/15 dark:text-amber-400'
                     : 'bg-emerald-100 text-emerald-700 dark:bg-emerald-500/15 dark:text-emerald-400'
@@ -592,7 +593,7 @@ export const ClayStudioDashboard: React.FC<Props> = ({
                   {pendingCount > 0 ? 'CẦN CHỐT' : 'ỔN ĐỊNH'}
                 </span>
               </div>
-              <div className="text-xl sm:text-2xl font-mono font-black text-slate-900 dark:text-white tracking-tight pt-0.5">
+              <div className="text-xl sm:text-2xl font-sans font-bold text-slate-900 dark:text-white tracking-tight pt-0.5">
                 {pendingCount}
               </div>
               <div className="text-xs font-semibold text-slate-700 dark:text-zinc-300">
@@ -602,14 +603,14 @@ export const ClayStudioDashboard: React.FC<Props> = ({
 
             <div className="pt-2 border-t border-slate-100 dark:border-zinc-800 text-xs">
               {financialMetrics.totalDebt > 0 ? (
-                <div className="text-[11px] font-mono flex items-center justify-between">
+                <div className="text-[11px] font-sans flex items-center justify-between">
                   <span className="text-slate-500 dark:text-zinc-400 font-sans">Nợ đọng:</span>
-                  <span className="text-rose-600 dark:text-rose-400 font-bold">
+                  <span className="text-rose-600 dark:text-rose-400 font-sans font-bold tracking-tight">
                     {formatVND(financialMetrics.totalDebt)}
                   </span>
                 </div>
               ) : (
-                <span className="text-[11px] font-mono text-emerald-600 dark:text-emerald-400 font-bold">
+                <span className="text-[11px] font-sans font-bold text-emerald-600 dark:text-emerald-400">
                   Đã thu đủ 100%
                 </span>
               )}
@@ -617,17 +618,17 @@ export const ClayStudioDashboard: React.FC<Props> = ({
           </div>
 
           {/* Thẻ 4: HIỆU SUẤT THÁNG */}
-          <div className="rounded-2xl bg-white dark:bg-zinc-900/95 backdrop-blur-md p-4 sm:p-5 shadow-xs flex flex-col justify-between space-y-3 transition-all hover:shadow-md">
+          <div className="rounded-2xl bg-white/95 dark:bg-zinc-900/95 backdrop-blur-md border border-white/20 p-4 sm:p-5 shadow-sm flex flex-col justify-between space-y-3 transition-all hover:shadow-md">
             <div className="space-y-1">
               <div className="flex items-center justify-between">
-                <span className="text-[10px] font-mono font-bold uppercase tracking-wider text-slate-500 dark:text-zinc-400">
+                <span className="text-[10px] font-sans font-bold uppercase tracking-wider text-slate-500 dark:text-zinc-400">
                   HIỆU SUẤT THÁNG
                 </span>
-                <span className="text-[10px] font-mono font-bold px-2 py-0.5 rounded-full bg-slate-100 dark:bg-zinc-800 text-slate-700 dark:text-zinc-300">
+                <span className="text-[10px] font-sans font-bold px-2 py-0.5 rounded-full bg-slate-100 dark:bg-zinc-800 text-slate-700 dark:text-zinc-300">
                   {format(currentDate, 'MM/yyyy')}
                 </span>
               </div>
-              <div className="text-xl sm:text-2xl font-mono font-black text-slate-900 dark:text-white tracking-tight pt-0.5">
+              <div className="text-xl sm:text-2xl font-sans font-bold text-slate-900 dark:text-white tracking-tight pt-0.5">
                 {completedMonthCount}
               </div>
               <div className="text-xs font-semibold text-slate-700 dark:text-zinc-300">
@@ -636,9 +637,9 @@ export const ClayStudioDashboard: React.FC<Props> = ({
             </div>
 
             <div className="pt-2 border-t border-slate-100 dark:border-zinc-800 text-xs">
-              <div className="flex items-center justify-between text-[11px]">
+              <div className="flex items-center justify-between text-[11px] font-sans">
                 <span className="text-slate-500 dark:text-zinc-400">Tỷ lệ hoàn thành:</span>
-                <span className="font-mono font-bold text-amber-600 dark:text-amber-400">
+                <span className="font-sans font-bold text-amber-600 dark:text-amber-400">
                   {monthCompletionPct}%
                 </span>
               </div>
@@ -970,7 +971,7 @@ export const ClayStudioDashboard: React.FC<Props> = ({
                       </td>
 
                       {/* Amount */}
-                      <td className="py-3 px-3.5 text-right font-mono font-bold text-slate-900 dark:text-white tabular-nums">
+                      <td className="py-3 px-3.5 text-right font-sans font-bold tracking-tight text-slate-900 dark:text-white tabular-nums">
                         {formatVND(b.packagePrice)}
                       </td>
 
@@ -1031,10 +1032,10 @@ export const ClayStudioDashboard: React.FC<Props> = ({
                       )}
                     </div>
                     <div className="text-right">
-                      <span className="font-mono font-bold text-sm text-slate-900 dark:text-white block">
+                      <span className="font-sans font-bold tracking-tight text-sm text-slate-900 dark:text-white block">
                         {formatVND(b.packagePrice)}
                       </span>
-                      <span className="text-[10px] font-mono text-slate-500 dark:text-zinc-400">
+                      <span className="text-[10px] font-sans text-slate-500 dark:text-zinc-400">
                         {b.eventDate}
                       </span>
                     </div>
@@ -1089,7 +1090,6 @@ export const ClayStudioDashboard: React.FC<Props> = ({
               onSelectBooking={onOpenDetailModal}
               onOpenDebtReminder={onOpenDebtReminder}
               onDeleteBooking={onDeleteBooking}
-              onEditFinancials={onQuickEditFinancials}
               onEditCategory={onEditCategory}
             />
           </div>
@@ -1192,53 +1192,70 @@ export const ClayStudioDashboard: React.FC<Props> = ({
               </div>
 
               {/* Financial Summary */}
-              <div className="p-3.5 rounded-2xl border border-slate-200/80 dark:border-white/10 bg-white dark:bg-white/5 space-y-1.5">
-                <div className="flex justify-between text-slate-600 dark:text-zinc-400">
-                  <span>Tổng Chi Phí Gói:</span>
-                  <span className="font-mono font-bold text-slate-900 dark:text-white">
+              <div 
+                onClick={() => {
+                  const b = selectedBooking;
+                  setSelectedBooking(null);
+                  onOpenDetailModal(b);
+                }}
+                className="group p-3.5 rounded-2xl border border-slate-200/80 dark:border-white/10 bg-white dark:bg-white/5 space-y-1.5 cursor-pointer hover:border-orange-500/50 hover:bg-orange-500/5 transition-all"
+                title="Bấm để điều chỉnh giá gói & số tiền cọc"
+              >
+                <div className="flex justify-between items-center text-slate-600 dark:text-zinc-400">
+                  <div className="flex items-center gap-1.5">
+                    <span>Tổng Chi Phí Gói:</span>
+                    <span className="text-[10px] text-orange-500 font-semibold group-hover:underline flex items-center gap-0.5">
+                      (Sửa giá ✎)
+                    </span>
+                  </div>
+                  <span className="font-sans font-bold tracking-tight text-slate-900 dark:text-white">
                     {formatVND(selectedBooking.packagePrice)}
                   </span>
                 </div>
                 <div className="flex justify-between text-emerald-600 dark:text-emerald-400">
                   <span>Đã Cọc / Thanh Toán:</span>
-                  <span className="font-mono font-bold">
+                  <span className="font-sans font-bold tracking-tight">
                     - {formatVND(selectedBooking.paidAmount || selectedBooking.depositAmount || 0)}
                   </span>
                 </div>
                 <div className="pt-2 border-t border-slate-100 dark:border-white/10 flex justify-between font-bold text-slate-900 dark:text-white">
                   <span>Số Tiền Còn Lại:</span>
-                  <span className="font-mono text-orange-600 dark:text-orange-400">
+                  <span className="font-sans font-bold tracking-tight text-orange-600 dark:text-orange-400">
                     {formatVND(selectedBooking.remainingAmount !== undefined ? selectedBooking.remainingAmount : selectedBooking.packagePrice - (selectedBooking.paidAmount || selectedBooking.depositAmount || 0))}
                   </span>
                 </div>
               </div>
             </div>
 
-            {/* Actions Grid */}
-            <div className="pt-2 space-y-2">
+            {/* Actions Grid with Strict Hierarchy */}
+            <div className="pt-2 space-y-2.5">
+              {/* 1. PRIMARY ACTION: Chỉnh Sửa Toàn Diện (Nền Cam Nổi Bật) */}
+              <button
+                type="button"
+                onClick={() => {
+                  const b = selectedBooking;
+                  setSelectedBooking(null);
+                  onOpenDetailModal(b);
+                }}
+                className="w-full flex items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-orange-500 to-amber-500 hover:from-orange-600 hover:to-amber-600 text-white font-bold py-2.5 px-4 shadow-md shadow-orange-500/25 active:scale-[0.98] transition-all cursor-pointer text-xs sm:text-sm"
+              >
+                <Edit className="w-4 h-4" />
+                <span>Chỉnh Sửa Toàn Diện</span>
+              </button>
+
+              {/* 2. SECONDARY ACTIONS: Nền Xám / Kính Mờ */}
               <div className="grid grid-cols-2 gap-2">
                 <button
                   type="button"
                   onClick={() => {
-                    onOpenQuote(selectedBooking.id);
+                    const id = selectedBooking.id;
+                    setSelectedBooking(null);
+                    onOpenQuote(id);
                   }}
-                  className="flex items-center justify-center gap-1.5 rounded-xl border border-slate-200/80 dark:border-white/10 bg-white dark:bg-white/5 px-3 py-2 font-semibold text-slate-700 dark:text-zinc-300 hover:bg-slate-50 dark:hover:bg-white/10 transition-colors cursor-pointer"
+                  className="flex items-center justify-center gap-1.5 rounded-xl border border-slate-200/80 dark:border-white/10 bg-slate-100/80 dark:bg-white/5 hover:bg-slate-200/80 dark:hover:bg-white/10 px-3 py-2 text-xs font-semibold text-slate-700 dark:text-zinc-200 transition-colors cursor-pointer"
                 >
                   <ExternalLink className="w-3.5 h-3.5 text-orange-500" />
                   <span>Trang Báo Giá</span>
-                </button>
-
-                <button
-                  type="button"
-                  onClick={() => {
-                    const b = selectedBooking;
-                    setSelectedBooking(null);
-                    onOpenDetailModal(b);
-                  }}
-                  className="flex items-center justify-center gap-1.5 rounded-xl border border-orange-500/30 bg-orange-500/10 px-3 py-2 font-semibold text-orange-600 dark:text-orange-400 hover:bg-orange-500/20 transition-colors cursor-pointer"
-                >
-                  <Edit className="w-3.5 h-3.5" />
-                  <span>Chỉnh Sửa Toàn Diện</span>
                 </button>
 
                 {onOpenDebtReminder && (
@@ -1246,45 +1263,57 @@ export const ClayStudioDashboard: React.FC<Props> = ({
                     type="button"
                     onClick={() => {
                       const b = selectedBooking;
+                      setSelectedBooking(null);
                       onOpenDebtReminder(b);
                     }}
-                    className="flex items-center justify-center gap-1.5 rounded-xl border border-amber-300/40 bg-amber-50 dark:bg-amber-950/20 px-3 py-2 font-semibold text-amber-800 dark:text-amber-300 hover:bg-amber-100 dark:hover:bg-amber-900/30 transition-colors cursor-pointer"
+                    className="flex items-center justify-center gap-1.5 rounded-xl border border-slate-200/80 dark:border-white/10 bg-slate-100/80 dark:bg-white/5 hover:bg-slate-200/80 dark:hover:bg-white/10 px-3 py-2 text-xs font-semibold text-slate-700 dark:text-zinc-200 transition-colors cursor-pointer"
                   >
-                    <BellRing className="w-3.5 h-3.5 text-amber-600 dark:text-amber-400" />
+                    <BellRing className="w-3.5 h-3.5 text-amber-500" />
                     <span>Nhắc Nợ Zalo</span>
                   </button>
                 )}
+
+                <button
+                  type="button"
+                  onClick={async () => {
+                    const current = selectedBooking.status;
+                    const nextStatus =
+                      current === 'hoan_thanh' || current === 'done'
+                        ? 'da_chot'
+                        : 'hoan_thanh';
+                    await onStatusChange(selectedBooking.id, nextStatus);
+                    setSelectedBooking(prev => prev ? { ...prev, status: nextStatus } : null);
+                  }}
+                  className={'flex items-center justify-center gap-1.5 rounded-xl border border-slate-200/80 dark:border-white/10 bg-slate-100/80 dark:bg-white/5 hover:bg-slate-200/80 dark:hover:bg-white/10 px-3 py-2 text-xs font-semibold text-slate-700 dark:text-zinc-200 transition-colors cursor-pointer ' +
+                    (!onOpenDebtReminder || (onOpenReceiptReview && selectedBooking.receiptUrl) ? '' : 'col-span-2')
+                  }
+                >
+                  <CheckCircle2 className="w-3.5 h-3.5 text-emerald-500" />
+                  <span>
+                    {selectedBooking.status === 'hoan_thanh' || selectedBooking.status === 'done'
+                      ? 'Chuyển về Đã Cọc'
+                      : 'Đánh Dấu Hoàn Thành'}
+                  </span>
+                </button>
 
                 {onOpenReceiptReview && selectedBooking.receiptUrl && (
                   <button
                     type="button"
                     onClick={() => {
                       const b = selectedBooking;
+                      setSelectedBooking(null);
                       onOpenReceiptReview(b);
                     }}
-                    className="flex items-center justify-center gap-1.5 rounded-xl border border-blue-300/40 bg-blue-50 dark:bg-blue-950/20 px-3 py-2 font-semibold text-blue-800 dark:text-blue-300 hover:bg-blue-100 dark:hover:bg-blue-900/30 transition-colors cursor-pointer"
+                    className="flex items-center justify-center gap-1.5 rounded-xl border border-slate-200/80 dark:border-white/10 bg-slate-100/80 dark:bg-white/5 hover:bg-slate-200/80 dark:hover:bg-white/10 px-3 py-2 text-xs font-semibold text-slate-700 dark:text-zinc-200 transition-colors cursor-pointer"
                   >
-                    <Receipt className="w-3.5 h-3.5 text-blue-600 dark:text-blue-400" />
+                    <Receipt className="w-3.5 h-3.5 text-blue-500" />
                     <span>Duyệt Biên Lai</span>
-                  </button>
-                )}
-
-                {onQuickEditFinancials && (
-                  <button
-                    type="button"
-                    onClick={() => {
-                      const b = selectedBooking;
-                      onQuickEditFinancials(b);
-                    }}
-                    className="flex items-center justify-center gap-1.5 rounded-xl border border-slate-200/80 dark:border-white/10 bg-white dark:bg-white/5 px-3 py-2 font-semibold text-slate-700 dark:text-zinc-300 hover:bg-slate-50 dark:hover:bg-white/10 transition-colors cursor-pointer"
-                  >
-                    <Sparkles className="w-3.5 h-3.5 text-orange-500" />
-                    <span>Sửa Tiền Cọc/Chi</span>
                   </button>
                 )}
               </div>
 
-              <div className="flex items-center justify-between pt-1">
+              {/* 3. DANGER ACTION: Hủy Lịch (Màu đỏ / Viền đỏ) */}
+              <div className="pt-1">
                 <button
                   type="button"
                   onClick={() => {
@@ -1292,28 +1321,10 @@ export const ClayStudioDashboard: React.FC<Props> = ({
                     setSelectedBooking(null);
                     onDeleteBooking(b);
                   }}
-                  className="text-rose-500 hover:text-rose-600 flex items-center gap-1 text-[11px] font-semibold cursor-pointer"
+                  className="w-full flex items-center justify-center gap-1.5 py-2 px-3 rounded-xl border border-rose-200 dark:border-rose-900/40 bg-rose-50/50 dark:bg-rose-950/20 hover:bg-rose-100 dark:hover:bg-rose-950/40 text-rose-600 dark:text-rose-400 font-semibold text-xs transition-colors cursor-pointer"
                 >
                   <Trash2 className="w-3.5 h-3.5" />
-                  <span>Hủy Lịch</span>
-                </button>
-
-                <button
-                  type="button"
-                  onClick={async () => {
-                    const current = selectedBooking.status;
-                    const nextStatus: BookingStatus =
-                      current === 'hoan_thanh' || current === 'done'
-                        ? 'da_chot'
-                        : 'hoan_thanh';
-                    await onStatusChange(selectedBooking.id, nextStatus);
-                    setSelectedBooking(prev => prev ? { ...prev, status: nextStatus } : null);
-                  }}
-                  className="rounded-xl bg-orange-600 hover:bg-orange-500 px-4 py-2 font-semibold text-white shadow-xs transition-all cursor-pointer"
-                >
-                  {selectedBooking.status === 'hoan_thanh' || selectedBooking.status === 'done'
-                    ? 'Chuyển về Đã Cọc'
-                    : 'Đánh Dấu Hoàn Thành'}
+                  <span>Hủy Lịch Chụp</span>
                 </button>
               </div>
             </div>

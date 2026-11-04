@@ -584,7 +584,7 @@ export const PayrollManagementPage: React.FC = () => {
   };
 
   return (
-    <div className="space-y-6 pb-12">
+    <div className="w-full h-full flex flex-col gap-6 pb-12">
       {toast && (
         <div
           className={`p-3.5 rounded-2xl text-xs font-bold flex items-center justify-between gap-3 shadow-lg ${

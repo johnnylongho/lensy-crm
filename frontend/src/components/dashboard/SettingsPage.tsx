@@ -819,7 +819,7 @@ export const SettingsPage: React.FC = () => {
       animate={{ opacity: 1, y: 0 }}
       exit={{ opacity: 0, y: -10 }}
       transition={{ duration: 0.2 }}
-      className="max-w-4xl mx-auto px-4 py-6 sm:py-8 space-y-6"
+      className="w-full h-full flex flex-col gap-6"
     >
       {/* Toast Notification */}
       {toast && (
@@ -846,7 +846,7 @@ export const SettingsPage: React.FC = () => {
       )}
 
       {/* Top Header & Action Link (Single row aligned, no duplicate h1 or back btn) */}
-      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
+      <div className="w-full max-w-4xl flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
         <p className="text-sm text-zinc-500 dark:text-zinc-400">
           Phân loại tài khoản Freelancer / Studio, thương hiệu và nhận cọc VietQR.
         </p>
@@ -863,7 +863,7 @@ export const SettingsPage: React.FC = () => {
       </div>
 
       {/* Dynamic Booking Link Preview Card */}
-      <div className="p-5 sm:p-6 rounded-3xl bg-white/60 dark:bg-white/5 backdrop-blur-xl border border-amber-500/30 shadow-sm space-y-3">
+      <div className="w-full max-w-4xl p-5 sm:p-6 rounded-3xl bg-white/60 dark:bg-white/5 backdrop-blur-xl border border-amber-500/30 shadow-sm space-y-3">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2 text-amber-500 dark:text-amber-400 font-bold text-xs">
             <Sparkles className="w-4 h-4" />
@@ -899,7 +899,7 @@ export const SettingsPage: React.FC = () => {
       </div>
 
       {/* Main Settings Form */}
-      <form onSubmit={handleSaveSettings} className="space-y-6">
+      <form onSubmit={handleSaveSettings} className="w-full max-w-4xl space-y-6">
         {/* ==================================================================== */}
         {/* SECTION 1: PHÂN LOẠI TÀI KHOẢN (FREELANCER VS STUDIO MEMBER)         */}
         {/* ==================================================================== */}

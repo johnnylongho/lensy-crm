@@ -284,7 +284,7 @@ export const DashboardHeader: React.FC<Props> = ({
               <DollarSign className="w-4 h-4" />
             </div>
           </div>
-          <div className="text-2xl sm:text-3xl font-light text-slate-900 dark:text-white/90 font-mono tracking-tight">
+          <div className="text-2xl sm:text-3xl font-bold text-slate-900 dark:text-white/90 font-sans tracking-tight">
             <CountUp start={0} end={totalGrossCollected} duration={1.5} separator="." suffix=" đ" />
           </div>
           <div className="text-[11px] text-slate-500 dark:text-white/50 truncate pt-1">
@@ -303,7 +303,7 @@ export const DashboardHeader: React.FC<Props> = ({
               <Receipt className="w-4 h-4" />
             </div>
           </div>
-          <div className="text-2xl sm:text-3xl font-light text-rose-500 dark:text-rose-400 font-mono tracking-tight">
+          <div className="text-2xl sm:text-3xl font-bold text-rose-500 dark:text-rose-400 font-sans tracking-tight">
             -<CountUp start={0} end={totalExpenses} duration={1.5} separator="." suffix=" đ" />
           </div>
           <div className="text-[11px] text-slate-500 dark:text-white/50 pt-1">
@@ -325,7 +325,7 @@ export const DashboardHeader: React.FC<Props> = ({
               <Wallet className="w-4 h-4" />
             </div>
           </div>
-          <div className="text-2xl sm:text-3xl font-light text-emerald-600 dark:text-emerald-300 font-mono tracking-tight">
+          <div className="text-2xl sm:text-3xl font-bold text-emerald-600 dark:text-emerald-300 font-sans tracking-tight">
             <CountUp start={0} end={totalNetProfit} duration={1.5} separator="." suffix=" đ" />
           </div>
           <div className="text-[11px] text-emerald-700/90 dark:text-emerald-300/80 font-medium flex items-center justify-between pt-1">

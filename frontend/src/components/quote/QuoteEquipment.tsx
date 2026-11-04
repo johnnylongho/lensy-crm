@@ -1,34 +1,55 @@
 import React from 'react';
-import { ShieldCheck, Cpu } from 'lucide-react';
+import { ShieldCheck, Camera } from 'lucide-react';
 
 interface Props {
   equipmentList: string[];
 }
 
-export const QuoteEquipment: React.FC<Props> = ({ equipmentList }) => {
+const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
+const DEFAULT_BACKUP_EQUIPMENT = [
+  'Body Canon EOS R (Full-Frame)',
+  'Ống kính Canon RF 85mm f/2 Macro',
+  'Đèn Studio Godox V860iii & Trigger',
+  'Softbox & Chân đèn tản sáng',
+];
+
+export const QuoteEquipment: React.FC<Props> = ({ equipmentList = [] }) => {
+  const cleanEquipmentList = (equipmentList || [])
+    .filter(item => typeof item === 'string' && item.trim().length > 0 && !UUID_REGEX.test(item.trim()));
+
+  const finalDisplayList = cleanEquipmentList.length > 0 ? cleanEquipmentList : DEFAULT_BACKUP_EQUIPMENT;
+
   return (
-    <div className="rounded-3xl bg-slate-900/60 border border-slate-800 p-5 sm:p-6 shadow-xl backdrop-blur-sm space-y-3">
-      <div className="flex items-center justify-between">
-        <h3 className="text-sm font-bold uppercase tracking-wider text-slate-200 flex items-center gap-2">
-          <ShieldCheck className="w-4 h-4 text-indigo-400" /> Cam Kết Thiết Bị Chuyên Nghiệp
-        </h3>
-        <span className="text-[10px] text-indigo-400 bg-indigo-950/60 border border-indigo-500/30 px-2 py-0.5 rounded-full font-medium">
+    <div className="bg-white border border-slate-200 rounded-xl p-3 sm:p-4 print:p-2 shadow-sm space-y-1.5 flex flex-col justify-between h-full break-inside-avoid print:break-inside-avoid print:m-0">
+      <div className="flex items-center justify-between border-b border-slate-100 pb-1.5 print:pb-1">
+        <div>
+          <span className="text-[10px] font-bold uppercase tracking-wider text-orange-600 block print:text-[9px]">
+            Tiêu Chuẩn Thiết Bị
+          </span>
+          <h3 className="text-slate-900 font-bold text-sm sm:text-base uppercase tracking-wide flex items-center gap-1.5 print:text-xs">
+            <ShieldCheck className="w-4 h-4 text-orange-500" />
+            <span>Cam Kết Thiết Bị</span>
+          </h3>
+        </div>
+        <span className="text-[10px] font-bold text-orange-600 bg-orange-50 border border-orange-200 px-2 py-0.5 rounded-full uppercase tracking-wider print:text-[9px]">
           Đã Khóa Thiết Bị
         </span>
       </div>
 
-      <p className="text-xs text-slate-400">
-        Studio cam kết mang đầy đủ thân máy chính & thân máy dự phòng cùng ống kính khẩu độ lớn cao cấp nhất để đảm bảo an toàn tuyệt đối cho buổi chụp:
+      <p className="text-xs print:text-[10px] text-slate-500 leading-tight">
+        Studio cam kết mang đầy đủ thân máy chính & phụ cùng ống kính khẩu độ lớn cao cấp nhất:
       </p>
 
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 pt-1">
-        {equipmentList.map((item, idx) => (
+      {/* Danh sách thiết bị dạng thẻ Tags (Pills) thanh mảnh */}
+      <div className="flex flex-wrap gap-1.5 pt-0.5 flex-1 items-start">
+        {finalDisplayList.map((item, idx) => (
           <div
             key={idx}
-            className="flex items-center gap-2 p-2.5 rounded-xl bg-slate-950/40 border border-slate-800/60 text-xs text-slate-300"
+            className="bg-slate-50 border border-slate-200 text-slate-700 px-2.5 py-1 rounded-lg text-xs font-medium flex items-center gap-1.5 print:text-[10px] print:py-0.5 print:px-2"
           >
-            <Cpu className="w-3.5 h-3.5 text-indigo-400 flex-shrink-0" />
-            <span className="truncate">{item}</span>
+            <Camera className="w-3 h-3 text-orange-500 shrink-0" />
+            <span>{item}</span>
           </div>
         ))}
       </div>

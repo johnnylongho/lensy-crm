@@ -37,6 +37,7 @@ interface Props {
 export interface DbPackage {
   id: string;
   name: string;
+  category?: string;
   price: number;
   description?: string;
   features?: string[];
@@ -145,6 +146,7 @@ export const CreateQuoteModal: React.FC<Props> = ({
             name: p.name,
             price: Number(p.price || 0),
             description: p.description,
+            category: p.category || 'studio',
             features: Array.isArray(p.features) ? p.features : (p.features ? JSON.parse(p.features) : []),
             is_active: p.is_active,
           }));

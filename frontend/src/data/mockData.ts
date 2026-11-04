@@ -206,6 +206,7 @@ export const MOCK_CALENDAR_EVENTS: CalendarEvent[] = [
 export const MOCK_PACKAGES: import('../types').PackageItem[] = [
   {
     id: 'pkg-1',
+    category: 'event',
     name: 'Phóng Sự Cưới Cao Cấp (Luxury Wedding Journalism)',
     price: 18000000,
     description: 'Trọn gói chụp ngày cưới với 2 thợ chính, bắt trọn từng khoảnh khắc cảm xúc thăng hoa và đẳng cấp nghệ thuật.',
@@ -227,6 +228,7 @@ export const MOCK_PACKAGES: import('../types').PackageItem[] = [
   },
   {
     id: 'pkg-2',
+    category: 'outdoor',
     name: 'Chụp Pre-Wedding Ngoại Cảnh & Phim Trường',
     price: 14500000,
     description: 'Buổi chụp lãng mạn ngoại cảnh hoặc phim trường chuyên nghiệp, hỗ trợ stylist và hướng dẫn tạo dáng tự nhiên.',
@@ -248,6 +250,7 @@ export const MOCK_PACKAGES: import('../types').PackageItem[] = [
   },
   {
     id: 'pkg-3',
+    category: 'studio',
     name: 'Lookbook Thời Trang & Portrait Doanh Nhân',
     price: 8500000,
     description: 'Chuyên nghiệp cho các thương hiệu thời trang, lookbook bộ sưu tập hoặc bộ ảnh xây dựng thương hiệu cá nhân doanh nhân.',

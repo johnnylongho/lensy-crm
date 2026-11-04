@@ -1,5 +1,4 @@
 import React from 'react';
-import { Sparkles, Camera, Award } from 'lucide-react';
 import { QuoteData } from '../../types';
 
 interface Props {
@@ -7,40 +6,42 @@ interface Props {
 }
 
 export const QuoteHeader: React.FC<Props> = ({ quote }) => {
-  return (
-    <div className="relative overflow-hidden pt-8 pb-6 px-4 text-center border-b border-white/5">
-      {/* Background ambient lighting */}
-      <div className="absolute top-0 left-1/2 -translate-x-1/2 w-64 h-32 bg-amber-500/10 blur-3xl pointer-events-none" />
+  const logoSrc = quote.studioAvatarUrl || '/mirmia-logo.png';
+  const rawTitle = quote.sessionTitle?.trim();
+  const displayTitle = rawTitle
+    ? `THƯ ĐỀ XUẤT DỊCH VỤ: ${rawTitle.toUpperCase()}`
+    : 'THƯ ĐỀ XUẤT DỊCH VỤ NHIẾP ẢNH';
 
-      {/* Studio Brand Logo & Badge */}
-      <div className="flex flex-col items-center justify-center gap-2 mb-3">
-        <div className="w-16 h-16 rounded-2xl overflow-hidden border border-red-500/30 shadow-xl shadow-red-950/40 p-0.5 bg-gradient-to-b from-red-900/60 to-black">
-          <img
-            src="/mirmia-logo.png"
-            alt="Mirmia Studio & Academy"
-            className="w-full h-full object-cover rounded-xl"
-          />
-        </div>
-        <div className="inline-flex items-center gap-2 px-3 py-0.5 rounded-full bg-red-950/60 border border-red-500/30 text-red-300 text-[11px] font-medium tracking-widest uppercase">
-          <Sparkles className="w-3.5 h-3.5 text-red-400" />
-          <span>Thư Báo Giá Chính Thức • Powered by Lensy</span>
-        </div>
+  return (
+    <div className="pt-2 sm:pt-4 pb-2 px-2 text-center print:pt-0 print:pb-1 print:px-0 print:m-0 break-inside-avoid print:break-inside-avoid">
+      {/* Studio Brand Logo: Hình vuông nguyên bản, KHÔNG viền, KHÔNG bo tròn cắt lẹm */}
+      <div className="flex justify-center mb-1.5 print:mb-1">
+        <img
+          src={logoSrc}
+          alt={quote.studioName || 'Studio Logo'}
+          className="w-16 h-16 sm:w-20 sm:h-20 print:w-16 print:h-16 object-contain rounded-none border-none mx-auto"
+          onError={e => {
+            (e.target as HTMLImageElement).src = '/mirmia-logo.png';
+          }}
+        />
       </div>
 
       {/* Studio Brand Name */}
-      <div className="mb-2">
-        <h3 className="text-sm uppercase tracking-[0.25em] text-white font-extrabold">
-          {quote.studioName}
+      <div className="space-y-0.5">
+        <h3 className="text-xs sm:text-sm uppercase tracking-[0.2em] text-slate-500 font-extrabold print:text-[10px]">
+          {quote.studioName || 'MIRMIA STUDIO & ACADEMY'}
         </h3>
-        <h1 className="font-serif text-2xl sm:text-3xl text-amber-200/95 font-medium italic mt-1 tracking-tight">
-          Proposal for Your Cherished Moments
+
+        {/* Dynamic Proposal Title (Tiêu đề động) */}
+        <h1 className="text-lg sm:text-xl font-serif font-bold text-slate-900 tracking-wide text-center mt-1 print:text-sm print:mt-0.5">
+          {displayTitle}
         </h1>
       </div>
 
-      {/* Personalized Greeting */}
-      <div className="max-w-md mx-auto mt-4 p-3 rounded-2xl bg-white/[0.02] border border-white/5 text-xs text-slate-300">
-        Kính gửi <span className="font-bold text-amber-200">{quote.clientName}</span>, cảm ơn hai bạn đã lựa chọn trao gửi khoảnh khắc quan trọng nhất cuộc đời cho chúng tôi.
-      </div>
+      {/* Lời chào khách hàng chuẩn mực */}
+      <p className="text-xs sm:text-sm text-slate-600 text-center mt-1.5 print:mt-1 print:text-[11px] max-w-2xl mx-auto leading-relaxed">
+        Kính gửi <strong>{quote.clientName || 'Quý khách'}</strong>, {quote.studioName || 'MIRMIA Studio'} hân hạnh gửi đến Quý khách thông tin chi tiết về gói dịch vụ.
+      </p>
     </div>
   );
 };

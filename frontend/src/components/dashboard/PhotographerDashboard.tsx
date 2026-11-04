@@ -16,7 +16,6 @@ import { supabase, isSupabaseConfigured } from '../../lib/supabase';
 import { STATUS_CONFIG } from './BookingStatusSelect';
 import { CheckCircle2, AlertCircle } from 'lucide-react';
 import { smartSortBookings } from '../../utils/dateSorting';
-import { QuickEditFinancialsModal } from './QuickEditFinancialsModal';
 import { EditCategoryModal } from './EditCategoryModal';
 // @ts-ignore
 import { Dashboard } from './Dashboard';
@@ -47,7 +46,6 @@ export const PhotographerDashboard: React.FC<Props> = ({
   const [isWebhookSimulatorOpen, setIsWebhookSimulatorOpen] = useState(false);
   const [bookingToDelete, setBookingToDelete] = useState<CalendarEvent | null>(null);
   const [isDeletingBooking, setIsDeletingBooking] = useState(false);
-  const [financialsModalBooking, setFinancialsModalBooking] = useState<CalendarEvent | null>(null);
   const [categoryModalBooking, setCategoryModalBooking] = useState<CalendarEvent | null>(null);
   const [toastNotification, setToastNotification] = useState<{
     type: 'success' | 'error';
@@ -432,7 +430,7 @@ export const PhotographerDashboard: React.FC<Props> = ({
       animate={{ opacity: 1, y: 0 }}
       exit={{ opacity: 0, y: -10 }}
       transition={{ duration: 0.2 }}
-      className="w-full space-y-6"
+      className="w-full h-full flex flex-col gap-6"
     >
       {/* Top Floating Toast Notification */}
       {toastNotification && (
@@ -476,15 +474,6 @@ export const PhotographerDashboard: React.FC<Props> = ({
           setActiveDetailBooking(null);
           setActiveDebtReminderBooking(b);
         }}
-        onEditFinancials={b => setFinancialsModalBooking(b)}
-      />
-
-      {/* Modal Cập Nhật Tài Chính Nhanh (Quick Edit Financials) */}
-      <QuickEditFinancialsModal
-        isOpen={Boolean(financialsModalBooking)}
-        booking={financialsModalBooking}
-        onClose={() => setFinancialsModalBooking(null)}
-        onSuccess={handleBookingFinancialsUpdated}
       />
 
       {/* Modal Cập Nhật Loại Hình Chụp & Gói Dịch Vụ (Edit Category / Package) */}
@@ -593,7 +582,6 @@ export const PhotographerDashboard: React.FC<Props> = ({
         onOpenCreateQuote={() => setIsCreateQuoteOpen(true)}
         onOpenDetailModal={(event: CalendarEvent) => setActiveDetailBooking(event)}
         onDeleteBooking={(event: CalendarEvent) => setBookingToDelete(event)}
-        onQuickEditFinancials={(event: CalendarEvent) => setFinancialsModalBooking(event)}
         onSelectEventDate={handleSelectEventDate}
         onRefreshData={fetchBookingsFromSupabase}
         onOpenImportCsv={() => setIsImportModalOpen(true)}

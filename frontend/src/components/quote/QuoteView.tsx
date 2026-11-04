@@ -12,8 +12,10 @@ import { PackagePricingSection } from './PackagePricingSection';
 import { ClientProjectJourney } from './ClientProjectJourney';
 import { ClientProofingSection } from './ClientProofingSection';
 import { ClientDeliverySection } from './ClientDeliverySection';
-import { QuoteData, SessionType, PackageItem } from '../../types';
+import { LegalQuoteDocument } from './LegalQuoteDocument';
+import { QuoteData, SessionType, PackageItem, Studio } from '../../types';
 import { supabase, isSupabaseConfigured } from '../../lib/supabase';
+import { useWorkspace } from '../../context/WorkspaceContext';
 import {
   Phone,
   MessageCircle,
@@ -31,7 +33,7 @@ interface Props {
   onBookingSubmit?: (newBooking: any) => void;
 }
 
-// Hàm bổ trợ tạo danh mục quyền lợi & sản phẩm bàn giao mặc định theo loại buổi chụp
+// Hàm bổ trợ tạo danh mục quyền lợi & sản phẩm bàn giao mặc định khi không tìm thấy package trong DB
 function getDefaultInclusionsAndDeliverables(sessionType: SessionType) {
   switch (sessionType) {
     case 'wedding':
@@ -45,17 +47,17 @@ function getDefaultInclusionsAndDeliverables(sessionType: SessionType) {
           {
             id: 'inc-2',
             title: 'Hệ Máy Full-Frame & Ống Kính Cao Cấp',
-            description: 'Hệ thống Body máy ảnh Full-Frame chuyên nghiệp cùng ống kính tiêu cự vàng chuyên chụp thiếu sáng tại sảnh tiệc.',
+            description: 'Hệ thống Body máy ảnh Full-Frame chuyên nghiệp cùng ống kính tiêu cự vàng chụp tiệc & ngoại cảnh.',
           },
           {
             id: 'inc-3',
             title: 'Hậu Kỳ Màu Fine-Art Độc Quyền',
-            description: 'Toàn bộ file ảnh được blend màu tone điện ảnh sang trọng từ Mirmia Studio.',
+            description: 'Toàn bộ file ảnh được blend màu tone điện ảnh sang trọng.',
           },
           {
             id: 'inc-4',
             title: 'Bàn Giao Siêu Tốc',
-            description: 'Trả 30-50 ảnh Highlight trong 24h để cô dâu chú rể đăng MXH. Trả link toàn bộ trong 7 ngày.',
+            description: 'Trả 30-50 ảnh Highlight trong 24h để đăng MXH. Trả link toàn bộ trong 7 ngày.',
           },
         ],
         deliverables: [
@@ -108,7 +110,7 @@ function getDefaultInclusionsAndDeliverables(sessionType: SessionType) {
           },
           {
             id: 'inc-3',
-            title: 'Hậu Kỳ Màu Độc Quyền Mirmia',
+            title: 'Hậu Kỳ Màu Độc Quyền',
             description: 'Blend màu nghệ thuật độc bản theo từng concept của khách hàng.',
           },
         ],
@@ -124,19 +126,20 @@ function getDefaultInclusionsAndDeliverables(sessionType: SessionType) {
 const DEFAULT_FALLBACK_QUOTE: QuoteData = {
   id: 'lensy-studio-booking',
   quoteToken: 'booking',
-  studioName: 'MIRMIA STUDIO & ACADEMY',
-  studioLogoText: 'MIRMIA',
-  photographerName: 'Johnny Long Hồ',
+  studioName: 'Lensy Photography Studio',
+  studioLogoText: 'LENSY',
+  photographerName: 'Lensy Creative Team',
   photographerPhone: '0901234567',
-  photographerEmail: 'contact@mirmia.vn',
+  photographerEmail: 'contact@lensy.vn',
   clientName: 'Khách Hàng',
-  clientPhone: '',
+  clientPhone: '0988 888 888',
+  clientEmail: 'khachhang@example.com',
   sessionType: 'wedding',
   sessionTitle: 'Gói Chụp Ảnh Studio & Ngoại Cảnh',
   eventDate: new Date().toISOString().split('T')[0],
   startTime: '08:00',
   endTime: '12:00',
-  location: 'Tại Studio',
+  location: 'Tại Studio & Ngoại Cảnh',
   packagePrice: 15000000,
   depositPercentage: 30,
   depositAmount: 4500000,
@@ -164,7 +167,7 @@ const DEFAULT_FALLBACK_QUOTE: QuoteData = {
   bankInfo: {
     bankName: 'MB Bank',
     accountNumber: '0901234567',
-    accountName: 'HO HOANG LONG',
+    accountName: 'LENSY STUDIO',
   },
 };
 
@@ -173,6 +176,7 @@ export const QuoteView: React.FC<Props> = ({
   onQuoteStatusChange,
   onBookingSubmit,
 }) => {
+  const { currentStudio } = useWorkspace();
   const { token, username, slug, id } = useParams<{
     token?: string;
     username?: string;
@@ -187,6 +191,7 @@ export const QuoteView: React.FC<Props> = ({
   );
 
   const [quote, setQuote] = useState<QuoteData>(initialQuote);
+  const [fetchedStudio, setFetchedStudio] = useState<Studio | null>(null);
   const [photographerId, setPhotographerId] = useState<string | null>(null);
   const [isPhotographerVerified, setIsPhotographerVerified] = useState<boolean>(true);
   const isBookingPage = Boolean(username) || Boolean(studioParam);
@@ -263,8 +268,12 @@ export const QuoteView: React.FC<Props> = ({
             }
           }
 
-          let displayStudioName = studioData?.name || userData?.studio_name || 'MIRMIA STUDIO & ACADEMY';
-          let displayAvatarUrl = studioData?.logo_url || userData?.avatar_url || '/mirmia-logo.png';
+          if (studioData) {
+            setFetchedStudio(studioData);
+          }
+
+          let displayStudioName = studioData?.name || userData?.studio_name || 'Studio Nhiếp Ảnh';
+          let displayAvatarUrl = studioData?.logo_url || userData?.avatar_url || '/lensy-logo.png';
           let studioVerifiedInfo: { name: string; logoUrl?: string } | null = studioData ? {
             name: studioData.name,
             logoUrl: studioData.logo_url,
@@ -278,9 +287,13 @@ export const QuoteView: React.FC<Props> = ({
             studioName: displayStudioName,
             studioAvatarUrl: displayAvatarUrl,
             studioCoverUrl: userData?.cover_image || userData?.cover_url || 'https://images.unsplash.com/photo-1492691527719-9d1e07e534b4?auto=format&fit=crop&w=1200&q=80',
+            studioAddress: studioData?.address || undefined,
+            studioTaxCode: studioData?.tax_code || undefined,
+            studioPhone: studioData?.phone || userData?.phone || undefined,
+            studioEmail: studioData?.email || userData?.email || undefined,
             photographerName: userData?.full_name || displayStudioName,
-            photographerPhone: userData?.phone || '0901234567',
-            photographerEmail: userData?.email || 'contact@mirmia.vn',
+            photographerPhone: userData?.phone || studioData?.phone || '0901234567',
+            photographerEmail: userData?.email || studioData?.email || 'contact@lensy.vn',
             bankInfo: {
               bankName: userData?.bank_name || 'MB Bank',
               accountNumber: userData?.bank_account_number || '0901234567',
@@ -314,7 +327,13 @@ export const QuoteView: React.FC<Props> = ({
               }));
             }
             setPackages(pkgList);
-            if (pkgList.length > 0) setSelectedPackage(pkgList[0]);
+            if (pkgList.length > 0) {
+              setSelectedPackage(pkgList[0]);
+              setQuote(prev => ({
+                ...prev,
+                features: pkgList[0].features,
+              }));
+            }
           } catch (pkgErr) {
             console.warn('Lỗi khi fetch gói dịch vụ:', pkgErr);
           }
@@ -332,17 +351,31 @@ export const QuoteView: React.FC<Props> = ({
 
   // Fetch dynamic quote from Supabase by token
   useEffect(() => {
-    if (username || studioParam) return; // Nếu đang ở link /book/:username hoặc /book/studio/:slug hoặc /book/studio/:id thì không fetch theo token
+    if (username || studioParam) return;
 
     if (!token) {
-      setQuote(initialQuote);
+      if (currentStudio) {
+        setQuote(prev => ({
+          ...initialQuote,
+          studio_id: currentStudio.id,
+          studioName: currentStudio.name || initialQuote.studioName,
+          studioAvatarUrl: currentStudio.logo_url || initialQuote.studioAvatarUrl,
+          studioAddress: currentStudio.address || initialQuote.studioAddress,
+          studioTaxCode: currentStudio.tax_code || initialQuote.studioTaxCode,
+          studioPhone: currentStudio.phone || initialQuote.photographerPhone,
+          studioEmail: currentStudio.email || initialQuote.photographerEmail,
+          bankInfo: {
+            ...initialQuote.bankInfo,
+            accountName: currentStudio.name || initialQuote.bankInfo.accountName,
+          },
+        }));
+      } else {
+        setQuote(initialQuote);
+      }
       setIsLoading(false);
       setIsNotFound(false);
       return;
     }
-
-    // Nếu token trùng với mock data mặc định
-    // Mock quote fallback removed
 
     const fetchQuoteByToken = async () => {
       setIsLoading(true);
@@ -362,37 +395,177 @@ export const QuoteView: React.FC<Props> = ({
             return;
           }
 
+          // 1. TRUY XUẤT THÔNG TIN STUDIO ĐANG SỞ HỮU BOOKING NÀY (DYNAMIC STUDIO PROFILE)
+          let matchedStudio: Studio | null = null;
+          if (data.studio_id) {
+            try {
+              const { data: sData } = await supabase
+                .from('studios')
+                .select('*')
+                .eq('id', data.studio_id)
+                .maybeSingle();
+              if (sData) matchedStudio = sData as Studio;
+            } catch (sErr) {
+              console.warn('Lỗi khi fetch studio theo studio_id:', sErr);
+            }
+          }
+
+          if (!matchedStudio && data.photographer_id) {
+            try {
+              const { data: sData } = await supabase
+                .from('studios')
+                .select('*')
+                .eq('owner_id', data.photographer_id)
+                .maybeSingle();
+              if (sData) matchedStudio = sData as Studio;
+            } catch (sErr) {
+              console.warn('Lỗi khi fetch studio theo photographer_id:', sErr);
+            }
+          }
+
+          if (matchedStudio) {
+            setFetchedStudio(matchedStudio);
+          }
+
           const pkgPrice = Number(data.package_price || 0);
           const depAmount = Number(data.deposit_amount || Math.round(pkgPrice * 0.3));
           const paidAmt = Number(data.paid_amount || 0);
           const remAmt = Number(
-            data.remaining_amount !== undefined && data.remaining_amount !== null
+            data.remaining_amount !== undefined &&
+            data.remaining_amount !== null &&
+            Number(data.remaining_amount) > 0 &&
+            Number(data.remaining_amount) < pkgPrice
               ? data.remaining_amount
-              : pkgPrice - paidAmt
+              : Math.max(0, pkgPrice - (paidAmt > 0 ? paidAmt : depAmount))
           );
 
           const sessionType: SessionType = data.session_type || 'wedding';
           const { inclusions, deliverables } = getDefaultInclusionsAndDeliverables(sessionType);
 
+          // 2. ĐỒNG BỘ DỮ LIỆU GÓI DỊCH VỤ (DYNAMIC DATA MAPPING TỪ BẢNG PACKAGES)
+          let dynamicFeatures: string[] = [];
+          try {
+            let matchedPkg: any = null;
+
+            // Truy xuất từ bảng packages theo package_id nếu có
+            if (data.package_id) {
+              const { data: pData } = await supabase
+                .from('packages')
+                .select('*')
+                .eq('id', data.package_id)
+                .maybeSingle();
+              if (pData) matchedPkg = pData;
+            }
+
+            // Nếu chưa tìm thấy, truy xuất theo package_type hoặc session_title
+            if (!matchedPkg && (data.package_type || data.session_title)) {
+              const searchName = data.package_type || data.session_title;
+              let pQuery = supabase.from('packages').select('*');
+              if (data.photographer_id) {
+                pQuery = pQuery.or(`photographer_id.eq.${data.photographer_id},studio_id.eq.${data.studio_id || ''}`);
+              }
+              const { data: pList } = await pQuery;
+              if (pList && pList.length > 0) {
+                matchedPkg = pList.find((p: any) =>
+                  p.name?.toLowerCase().includes(searchName.toLowerCase()) ||
+                  searchName.toLowerCase().includes(p.name?.toLowerCase())
+                ) || pList[0];
+              }
+            }
+
+            // Kiểm tra localStorage cache nếu offline hoặc local state
+            if (!matchedPkg) {
+              try {
+                const localPkgs = JSON.parse(localStorage.getItem('lensy_packages_local') || '[]');
+                matchedPkg = localPkgs.find((p: any) =>
+                  p.id === data.package_id ||
+                  (data.package_type && p.name?.toLowerCase().includes(data.package_type.toLowerCase())) ||
+                  (data.session_title && p.name?.toLowerCase().includes(data.session_title.toLowerCase()))
+                );
+              } catch (localErr) {
+                // ignore
+              }
+            }
+
+            if (matchedPkg) {
+              if (Array.isArray(matchedPkg.features)) {
+                dynamicFeatures = matchedPkg.features;
+              } else if (typeof matchedPkg.features === 'string') {
+                try {
+                  dynamicFeatures = JSON.parse(matchedPkg.features);
+                } catch {
+                  dynamicFeatures = [matchedPkg.features];
+                }
+              }
+            }
+          } catch (pkgErr) {
+            console.warn('Lỗi khi fetch gói dịch vụ cho báo giá:', pkgErr);
+          }
+
           // Trích xuất thiết bị thực tế từ assigned_gears hoặc notes
+          const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
           let equipmentList: string[] = [];
+
           if (data.assigned_gears && Array.isArray(data.assigned_gears) && data.assigned_gears.length > 0) {
-            equipmentList = data.assigned_gears.map((g: any) => (typeof g === 'string' ? g : g.name || g.id));
-          } else if (data.notes && data.notes.includes('[Gears:')) {
-            const match = data.notes.match(/\[Gears:\s*([^\]]+)\]/);
-            if (match && match[1]) {
-              equipmentList = match[1].split(';').map((s: string) => s.trim());
+            const rawGears: string[] = data.assigned_gears
+              .map((g: any) => (typeof g === 'string' ? g : g.name || g.id || ''))
+              .filter(Boolean);
+
+            const uuidIds = rawGears.filter(id => UUID_REGEX.test(id));
+            const plainNames = rawGears.filter(id => !UUID_REGEX.test(id));
+
+            if (uuidIds.length > 0 && isSupabaseConfigured) {
+              try {
+                const { data: gearsData } = await supabase
+                  .from('gears')
+                  .select('id, name')
+                  .in('id', uuidIds);
+
+                const gearMap: Record<string, string> = {};
+                (gearsData || []).forEach((r: any) => {
+                  gearMap[r.id] = r.name;
+                });
+
+                const resolvedNames = uuidIds
+                  .map(id => gearMap[id])
+                  .filter((name): name is string => Boolean(name && !UUID_REGEX.test(name)));
+
+                equipmentList = [...plainNames, ...resolvedNames];
+              } catch (gearErr) {
+                console.warn('Lỗi khi fetch tên thiết bị từ bảng gears:', gearErr);
+                equipmentList = plainNames;
+              }
+            } else {
+              equipmentList = plainNames;
             }
           }
 
-          let studioName = 'MIRMIA STUDIO & ACADEMY';
-          let photogName = 'Mirmia Creative Team (Lead Photographer)';
-          let photogPhone = '0901234567';
-          let photogEmail = 'contact@mirmia.vn';
+          if (equipmentList.length === 0 && data.notes && data.notes.includes('[Gears:')) {
+            const match = data.notes.match(/\[Gears:\s*([^\]]+)\]/);
+            if (match && match[1]) {
+              equipmentList = match[1]
+                .split(';')
+                .map((s: string) => s.trim())
+                .filter((name: string) => !UUID_REGEX.test(name));
+            }
+          }
+
+          if (equipmentList.length === 0) {
+            equipmentList = [
+              'Body Canon EOS R (Full-Frame)',
+              'Lens Canon RF 85mm f/2 Macro IS STM',
+              'Đèn Studio Godox V860iii & Softbox Tản Sáng',
+            ];
+          }
+
+          let studioName = matchedStudio?.name || 'Lensy Photography Studio';
+          let photogName = matchedStudio?.name || 'Lead Photographer';
+          let photogPhone = matchedStudio?.phone || '0901234567';
+          let photogEmail = matchedStudio?.email || 'contact@lensy.vn';
           let bankInfo = {
             bankName: 'MB Bank (Ngân Hàng Quân Đội)',
             accountNumber: '0901234567',
-            accountName: 'MIRMIA STUDIO',
+            accountName: studioName,
           };
 
           if (data.photographer_id) {
@@ -405,10 +578,10 @@ export const QuoteView: React.FC<Props> = ({
                 .maybeSingle();
 
               if (userData) {
-                if (userData.phone) photogPhone = userData.phone;
-                if (userData.studio_name) studioName = userData.studio_name;
+                if (!matchedStudio?.phone && userData.phone) photogPhone = userData.phone;
+                if (!matchedStudio?.name && userData.studio_name) studioName = userData.studio_name;
                 if (userData.full_name) photogName = userData.full_name;
-                if (userData.email) photogEmail = userData.email;
+                if (!matchedStudio?.email && userData.email) photogEmail = userData.email;
                 if (userData.bank_name) bankInfo.bankName = userData.bank_name;
                 if (userData.bank_account_number) bankInfo.accountNumber = userData.bank_account_number;
                 if (userData.bank_account_name) bankInfo.accountName = userData.bank_account_name;
@@ -424,8 +597,14 @@ export const QuoteView: React.FC<Props> = ({
           const dynamicQuote: QuoteData = {
             id: data.id,
             quoteToken: data.quote_token,
-            studioName: studioName,
-            studioLogoText: 'MIRMIA',
+            studio_id: data.studio_id || matchedStudio?.id,
+            studioName: matchedStudio?.name || studioName,
+            studioLogoText: matchedStudio?.name?.slice(0, 6)?.toUpperCase() || 'STUDIO',
+            studioAvatarUrl: matchedStudio?.logo_url || undefined,
+            studioAddress: matchedStudio?.address || undefined,
+            studioTaxCode: matchedStudio?.tax_code || undefined,
+            studioPhone: matchedStudio?.phone || photogPhone,
+            studioEmail: matchedStudio?.email || photogEmail,
             photographerName: photogName,
             photographerPhone: photogPhone,
             photographerEmail: photogEmail,
@@ -443,6 +622,7 @@ export const QuoteView: React.FC<Props> = ({
             depositAmount: depAmount,
             remainingAmount: remAmt,
             status: data.status,
+            features: dynamicFeatures.length > 0 ? dynamicFeatures : undefined,
             inclusions: inclusions,
             equipmentList: equipmentList,
             deliverables: deliverables,
@@ -457,7 +637,6 @@ export const QuoteView: React.FC<Props> = ({
 
           setQuote(dynamicQuote);
         } else {
-          // Demo fallback
           setQuote(initialQuote);
         }
       } catch (err) {
@@ -469,7 +648,7 @@ export const QuoteView: React.FC<Props> = ({
     };
 
     fetchQuoteByToken();
-  }, [token, initialQuote]);
+  }, [token, initialQuote, currentStudio]);
 
   const handleConfirmDeposit = () => {
     const updated: QuoteData = {
@@ -482,18 +661,18 @@ export const QuoteView: React.FC<Props> = ({
     }
   };
 
-  // Màn hình Skeleton Loading
+  // Màn hình Skeleton Loading (Light Mode)
   if (isLoading) {
     return (
-      <div className="min-h-screen bg-[#070b13] text-slate-100 flex flex-col items-center justify-center p-4">
+      <div className="min-h-screen bg-slate-50 text-slate-800 font-sans flex flex-col items-center justify-center p-4">
         <div className="text-center space-y-4 max-w-sm mx-auto">
-          <div className="w-14 h-14 rounded-2xl bg-amber-500/10 border border-amber-500/30 text-amber-400 flex items-center justify-center mx-auto animate-pulse">
+          <div className="w-14 h-14 rounded-2xl bg-orange-100 text-orange-600 flex items-center justify-center mx-auto animate-pulse">
             <Loader2 className="w-7 h-7 animate-spin" />
           </div>
           <div className="space-y-1">
-            <h3 className="text-base font-bold text-white">Đang tải Thư Báo Giá...</h3>
-            <p className="text-xs text-slate-400">
-              Đang xác thực mã bảo mật và tải thông tin lịch chụp từ Mirmia Studio
+            <h3 className="text-base font-bold text-slate-900">Đang tải Thư Báo Giá...</h3>
+            <p className="text-xs text-slate-500">
+              Đang xác thực mã bảo mật và tải thông tin lịch chụp từ {quote.studioName || 'Studio'}
             </p>
           </div>
         </div>
@@ -504,22 +683,22 @@ export const QuoteView: React.FC<Props> = ({
   // Màn hình 404 Không tìm thấy Studio (/book/:username)
   if (isStudioNotFound) {
     return (
-      <div className="min-h-screen bg-[#070b13] text-slate-100 flex flex-col items-center justify-center p-4">
-        <div className="w-full max-w-md mx-auto text-center space-y-5 p-6 sm:p-8 rounded-3xl bg-slate-900/70 border border-rose-500/30 shadow-2xl animate-scaleUp">
-          <div className="w-16 h-16 rounded-full bg-rose-500/10 border border-rose-500/30 text-rose-400 flex items-center justify-center mx-auto shadow-lg shadow-rose-950/50">
+      <div className="min-h-screen bg-slate-50 text-slate-800 font-sans flex flex-col items-center justify-center p-4">
+        <div className="w-full max-w-md mx-auto text-center space-y-5 p-6 sm:p-8 rounded-2xl bg-white border border-rose-200 shadow-sm animate-scaleUp">
+          <div className="w-16 h-16 rounded-full bg-rose-50 border border-rose-200 text-rose-600 flex items-center justify-center mx-auto">
             <AlertCircle className="w-8 h-8" />
           </div>
           <div className="space-y-2">
-            <h3 className="text-xl font-extrabold text-white">Không Tìm Thấy Studio Này</h3>
-            <p className="text-xs text-slate-400 leading-relaxed">
+            <h3 className="text-xl font-extrabold text-slate-900">Không Tìm Thấy Studio Này</h3>
+            <p className="text-xs text-slate-600 leading-relaxed">
               Tên định danh Studio / Nhiếp ảnh gia{' '}
-              <strong className="text-amber-400 font-mono">@{username}</strong> không tồn tại trong hệ thống Lensy CRM. Quý khách vui lòng kiểm tra lại đường dẫn từ thợ ảnh.
+              <strong className="text-orange-600">@{username}</strong> không tồn tại trong hệ thống. Quý khách vui lòng kiểm tra lại đường dẫn từ thợ ảnh.
             </p>
           </div>
           <div className="pt-2 flex flex-wrap items-center justify-center gap-3">
             <Link
               to="/book/johnnylongho"
-              className="px-4 py-2.5 rounded-xl bg-gradient-to-r from-amber-500 to-yellow-500 hover:from-amber-400 hover:to-yellow-400 text-slate-950 text-xs font-extrabold inline-flex items-center gap-1.5 shadow-md shadow-amber-500/20 transition-all hover:scale-[1.02]"
+              className="px-4 py-2.5 rounded-xl bg-gradient-to-r from-orange-600 to-amber-500 hover:from-orange-500 hover:to-amber-400 text-white text-xs font-bold inline-flex items-center gap-1.5 shadow-md shadow-orange-500/20 transition-all hover:scale-[1.02]"
             >
               <span>Xem Studio Chính (@johnnylongho)</span>
             </Link>
@@ -532,28 +711,28 @@ export const QuoteView: React.FC<Props> = ({
   // Màn hình 404 Không tìm thấy báo giá
   if (isNotFound) {
     return (
-      <div className="min-h-screen bg-[#070b13] text-slate-100 flex flex-col items-center justify-center p-4">
-        <div className="w-full max-w-md mx-auto text-center space-y-5 p-6 rounded-3xl bg-slate-900/60 border border-slate-800 shadow-2xl">
-          <div className="w-14 h-14 rounded-full bg-rose-500/10 border border-rose-500/30 text-rose-400 flex items-center justify-center mx-auto">
+      <div className="min-h-screen bg-slate-50 text-slate-800 font-sans flex flex-col items-center justify-center p-4">
+        <div className="w-full max-w-md mx-auto text-center space-y-5 p-6 sm:p-8 rounded-2xl bg-white border border-slate-200 shadow-sm">
+          <div className="w-14 h-14 rounded-full bg-rose-50 border border-rose-200 text-rose-600 flex items-center justify-center mx-auto">
             <AlertCircle className="w-7 h-7" />
           </div>
           <div className="space-y-1.5">
-            <h3 className="text-lg font-bold text-white">Không Tìm Thấy Thư Báo Giá</h3>
-            <p className="text-xs text-slate-400">
+            <h3 className="text-lg font-bold text-slate-900">Không Tìm Thấy Thư Báo Giá</h3>
+            <p className="text-xs text-slate-600">
               Mã liên kết <strong>{token}</strong> không tồn tại hoặc đã hết hiệu lực. Quý khách vui lòng kiểm tra lại đường link hoặc liên hệ trực tiếp với studio.
             </p>
           </div>
           <div className="pt-2 flex flex-wrap items-center justify-center gap-3">
             <Link
               to="/quote"
-              className="px-4 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-bold inline-flex items-center gap-1.5 transition-colors"
+              className="px-4 py-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold inline-flex items-center gap-1.5 transition-colors"
             >
               <ArrowLeft className="w-3.5 h-3.5" />
               <span>Xem Thư Báo Giá Mẫu</span>
             </Link>
             <a
               href="tel:0901234567"
-              className="px-4 py-2 rounded-xl bg-amber-500 hover:bg-amber-400 text-slate-950 text-xs font-extrabold inline-flex items-center gap-1.5 shadow"
+              className="px-4 py-2 rounded-xl bg-gradient-to-r from-orange-600 to-amber-500 hover:from-orange-500 hover:to-amber-400 text-white text-xs font-extrabold inline-flex items-center gap-1.5 shadow"
             >
               <Phone className="w-3.5 h-3.5" />
               <span>Hotline Studio: 0901234567</span>
@@ -574,28 +753,34 @@ export const QuoteView: React.FC<Props> = ({
   const phoneUrl = `tel:${cleanStudioPhone}`;
 
   return (
-    <div className="min-h-screen w-full max-w-full overflow-x-hidden bg-slate-50 text-slate-900 dark:bg-[#090a0f] dark:text-zinc-100 flex flex-col relative transition-colors duration-200">
-      {/* Print CSS Rules */}
+    <div className="min-h-screen bg-slate-50 text-slate-800 font-sans selection:bg-orange-500/20 flex flex-col relative print:bg-white">
+      {/* Print CSS Rules - Ép buộc toàn bộ nội dung nằm trọn trong 1 trang A4 */}
       <style>{`
         @media print {
           @page {
             size: A4 portrait;
-            margin: 12mm 15mm;
+            margin: 5mm 6mm;
           }
-          body {
+          html, body {
             background: #ffffff !important;
-            color: #090a0f !important;
+            color: #0f172a !important;
+            -webkit-print-color-adjust: exact !important;
+            print-color-adjust: exact !important;
+            margin: 0 !important;
+            padding: 0 !important;
+            width: 210mm !important;
+            height: 297mm !important;
+          }
+          .no-print, .print\\:hidden, footer, .fixed {
+            display: none !important;
+          }
+          * {
             -webkit-print-color-adjust: exact !important;
             print-color-adjust: exact !important;
           }
-          .no-print {
-            display: none !important;
-          }
-          footer, .fixed {
-            display: none !important;
-          }
         }
       `}</style>
+
       {/* Dynamic SEO & Open Graph Meta Tags cho Zalo, Facebook, Telegram Preview */}
       {isBookingPage ? (
         <Helmet>
@@ -603,19 +788,19 @@ export const QuoteView: React.FC<Props> = ({
           <meta property="og:title" content={`Báo giá & Đặt lịch - ${quote.studioName}`} />
           <meta
             property="og:description"
-            content={`Khám phá các gói dịch vụ và đặt lịch chụp ngay với ${quote.studioName}. Nền tảng được cung cấp bởi Lensy.`}
+            content={`Khám phá các gói dịch vụ và đặt lịch chụp ngay với ${quote.studioName}.`}
           />
           <meta property="og:image" content={studioCoverUrl || studioAvatarUrl || '/lensy-logo.png'} />
           <meta
             name="description"
-            content={`Khám phá các gói dịch vụ và đặt lịch chụp ngay với ${quote.studioName}. Nền tảng được cung cấp bởi Lensy.`}
+            content={`Khám phá các gói dịch vụ và đặt lịch chụp ngay với ${quote.studioName}.`}
           />
           <meta property="og:type" content="website" />
           <meta name="twitter:card" content="summary_large_image" />
           <meta name="twitter:title" content={`Báo giá & Đặt lịch - ${quote.studioName}`} />
           <meta
             name="twitter:description"
-            content={`Khám phá các gói dịch vụ và đặt lịch chụp ngay với ${quote.studioName}. Nền tảng được cung cấp bởi Lensy.`}
+            content={`Khám phá các gói dịch vụ và đặt lịch chụp ngay với ${quote.studioName}.`}
           />
           <meta name="twitter:image" content={studioCoverUrl || studioAvatarUrl || '/lensy-logo.png'} />
         </Helmet>
@@ -631,29 +816,33 @@ export const QuoteView: React.FC<Props> = ({
         </Helmet>
       )}
 
-      {/* Container - Responsive width */}
-      <div className={`w-full max-w-full mx-auto px-4 py-4 sm:py-8 space-y-6 flex-1 pb-24 overflow-x-hidden ${isBookingPage ? 'max-w-5xl' : 'max-w-4xl'}`}>
+      {/* Container - Kích thước A4 chuẩn mực (max-w-[210mm] min-h-[297mm]), padding tối ưu khi in */}
+      <div className={`w-full mx-auto p-0 sm:p-2 print:p-0 print:m-0 flex-1 pb-16 print:pb-0 overflow-x-hidden ${
+        isBookingPage
+          ? 'space-y-6 bg-transparent max-w-full'
+          : 'max-w-[210mm] min-h-[297mm] bg-white space-y-2.5 print:space-y-1.5 shadow-xl print:shadow-none'
+      }`}>
         {isBookingPage ? (
           <>
           {/* Dynamic Studio Banner, Title & Dynamic Greeting */}
-          <div className="relative rounded-3xl overflow-hidden border border-slate-200 dark:border-white/10 shadow-sm dark:shadow-2xl bg-white/80 dark:bg-zinc-900/50 backdrop-blur-xl animate-fadeIn">
+          <div className="relative rounded-2xl overflow-hidden border border-slate-200 shadow-sm bg-white animate-fadeIn">
             {/* Studio Cover Image */}
-            <div className="h-44 sm:h-52 w-full relative overflow-hidden bg-slate-900 dark:bg-zinc-950">
+            <div className="h-44 sm:h-52 w-full relative overflow-hidden bg-slate-100">
               <img
                 src={studioCoverUrl}
                 alt={quote.studioName}
-                className="w-full h-full object-cover brightness-[0.7] transform hover:scale-105 transition-transform duration-700"
+                className="w-full h-full object-cover transform hover:scale-105 transition-transform duration-700"
               />
-              <div className="absolute inset-0 bg-gradient-to-t from-slate-900 dark:from-[#090a0f] via-slate-900/60 dark:via-[#090a0f]/60 to-transparent" />
+              <div className="absolute inset-0 bg-gradient-to-t from-white via-white/40 to-transparent" />
             </div>
 
-            {/* Studio Logo & Title */}
+            {/* Studio Logo: Hình vuông nguyên bản, KHÔNG viền, KHÔNG bo tròn */}
             <div className="relative px-5 sm:px-7 pb-4 pt-0 -mt-14 sm:-mt-16 flex flex-col sm:flex-row items-center sm:items-end gap-4 text-center sm:text-left">
-              <div className="w-24 h-24 sm:w-28 sm:h-28 rounded-2xl overflow-hidden border-2 border-orange-500/50 shadow-2xl bg-white dark:bg-zinc-950 p-1 flex-shrink-0">
+              <div className="w-20 h-20 sm:w-24 sm:h-24 rounded-none overflow-hidden border-none shadow-none bg-transparent p-0 flex-shrink-0">
                 <img
                   src={studioAvatarUrl}
                   alt={quote.studioName}
-                  className="w-full h-full object-cover rounded-xl"
+                  className="w-full h-full object-contain rounded-none border-none"
                   onError={e => {
                     (e.target as HTMLImageElement).src = '/mirmia-logo.png';
                   }}
@@ -661,27 +850,26 @@ export const QuoteView: React.FC<Props> = ({
               </div>
               <div className="space-y-1.5 flex-1">
                 <div className="flex flex-wrap items-center gap-2">
-                  <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-orange-500/10 border border-orange-500/30 text-orange-600 dark:text-orange-400 text-[11px] font-semibold tracking-wide uppercase">
+                  <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-orange-50 border border-orange-200 text-orange-700 text-[11px] font-semibold tracking-wide uppercase">
                     <span className="w-1.5 h-1.5 rounded-full bg-orange-500" />
                     <span>Studio Profile</span>
                   </div>
 
-                  {/* Badge nhỏ "Verified by [Tên Studio]" khi được phê duyệt */}
                   {verifiedStudio && (
-                    <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-blue-500/15 border border-blue-500/40 text-blue-300 text-[11px] font-bold tracking-wide shadow-sm">
-                      <ShieldCheck className="w-3.5 h-3.5 text-blue-400" />
+                    <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-blue-50 border border-blue-200 text-blue-700 text-[11px] font-bold tracking-wide shadow-sm">
+                      <ShieldCheck className="w-3.5 h-3.5 text-blue-600" />
                       <span>Verified by {verifiedStudio.name}</span>
                     </div>
                   )}
                 </div>
 
-                <h1 className="text-2xl sm:text-3xl font-extrabold text-slate-900 dark:text-zinc-100 tracking-tight">
+                <h1 className="text-2xl sm:text-3xl font-extrabold text-slate-900 tracking-tight">
                   {quote.studioName}
                 </h1>
                 {quote.photographerName && (
-                  <p className="text-xs text-slate-500 dark:text-zinc-400 flex items-center justify-center sm:justify-start gap-1.5 mt-0.5">
+                  <p className="text-xs text-slate-600 flex items-center justify-center sm:justify-start gap-1.5 mt-0.5">
                     <span>Nhiếp ảnh gia chính:</span>
-                    <span className="text-slate-700 dark:text-zinc-200 font-semibold">{quote.photographerName}</span>
+                    <span className="text-slate-900 font-semibold">{quote.photographerName}</span>
                     {isPhotographerVerified && <VerifiedBadge className="w-3.5 h-3.5" />}
                   </p>
                 )}
@@ -690,8 +878,8 @@ export const QuoteView: React.FC<Props> = ({
 
             {/* Dynamic Standard Greeting */}
             <div className="px-5 sm:px-7 pb-6 pt-2">
-              <div className="p-4 sm:p-5 rounded-2xl bg-orange-500/5 dark:bg-orange-500/10 border border-orange-500/20 text-slate-700 dark:text-zinc-300 text-xs sm:text-sm leading-relaxed">
-                Chào mừng bạn đến với <strong className="text-orange-600 dark:text-orange-400 font-bold">{quote.studioName}</strong>. Vui lòng để lại thông tin, chúng tôi sẽ liên hệ tư vấn gói chụp phù hợp nhất cho bạn.
+              <div className="p-4 sm:p-5 rounded-xl bg-orange-50 border border-orange-100 text-slate-700 text-xs sm:text-sm leading-relaxed">
+                Chào mừng bạn đến với <strong className="text-orange-600 font-bold">{quote.studioName}</strong>. Vui lòng để lại thông tin, chúng tôi sẽ liên hệ tư vấn gói chụp phù hợp nhất cho bạn.
               </div>
             </div>
           </div>
@@ -702,6 +890,14 @@ export const QuoteView: React.FC<Props> = ({
             selectedPackageId={selectedPackage?.id || null}
             onSelectPackage={pkg => {
               setSelectedPackage(pkg);
+              setQuote(prev => ({
+                ...prev,
+                features: pkg.features,
+                packagePrice: pkg.price,
+                depositAmount: Math.round(pkg.price * 0.3),
+                remainingAmount: pkg.price - Math.round(pkg.price * 0.3),
+                sessionTitle: pkg.name,
+              }));
               const formEl = document.getElementById('client-booking-form-wrapper');
               if (formEl) {
                 formEl.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
@@ -712,166 +908,136 @@ export const QuoteView: React.FC<Props> = ({
           </>
         ) : (
           <>
-            {/* Quote Header */}
-            <QuoteHeader quote={quote} />
-
-            {/* Client Project Stepper & Journey */}
-            <ClientProjectJourney quote={quote} />
-
-            {/* Client Proofing & Photo Selection Portal */}
-            <ClientProofingSection
+            <LegalQuoteDocument
               quote={quote}
-              onProofingUpdated={(updatedSession) => {
-                setQuote(prev => ({
-                  ...prev,
-                  proofing_session: updatedSession,
-                  status: updatedSession.is_locked ? 'editing' : prev.status,
-                }));
-              }}
+              studio={fetchedStudio || currentStudio}
+              onQuoteStatusChange={onQuoteStatusChange}
+              onBookingSubmit={onBookingSubmit}
             />
 
-            {/* Photo Delivery Showcase & Download Callout */}
-            <ClientDeliverySection
-              quote={quote}
-              onOpenPaymentModal={() => {
-                setPaymentModalType('final');
-                setIsDepositModalOpen(true);
-              }}
-            />
-
-            {/* Session Primary Info */}
-            <QuoteSessionInfo quote={quote} />
-
-            {/* Print / PDF Action Bar for Client Quote (Ẩn khi in) */}
-            <div className="no-print flex items-center justify-between p-3.5 sm:p-4 rounded-2xl bg-white dark:bg-zinc-900/50 backdrop-blur-xl border border-slate-200 dark:border-white/10 shadow-sm">
-              <div className="flex items-center gap-2">
-                <span className="w-2 h-2 rounded-full bg-orange-600 animate-pulse" />
-                <span className="text-xs font-bold text-slate-800 dark:text-zinc-200">
-                  Báo Giá & Hợp Đồng Dịch Vụ
-                </span>
-              </div>
-              <button
-                type="button"
-                onClick={() => window.print()}
-                className="h-11 min-h-[44px] px-4 rounded-xl bg-orange-600 hover:bg-orange-500 active:scale-95 text-white font-semibold text-xs flex items-center gap-2 transition-all shadow-md shadow-orange-600/20 cursor-pointer"
-                title="In ra giấy hoặc lưu thành file PDF"
-              >
-                <Printer className="w-4 h-4" />
-                <span>In Báo Giá / Xuất PDF</span>
-              </button>
-            </div>
-
-            {/* Grid 1 Cột trên Mobile, 2 Cột trên Desktop: Quyền Lợi & Quyết Toán Tài Chính */}
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 items-start">
-              {/* Cột 1: Quyền Lợi, Sản Phẩm & Thiết Bị */}
-              <div className="space-y-6">
-                <QuoteInclusions
-                  inclusions={quote.inclusions}
-                  deliverables={quote.deliverables}
-                />
-                <QuoteEquipment equipmentList={quote.equipmentList} />
-              </div>
-
-              {/* Cột 2: Quyết Toán Tài Chính */}
-              <div className="space-y-6 lg:sticky lg:top-6">
-                <QuotePriceSummary
+            {/* Client Proofing & Photo Selection Portal (Ẩn khi in ấn báo giá) */}
+            {quote.proofing_session && (
+              <div className="no-print print:hidden space-y-3 pt-4">
+                <ClientProofingSection
                   quote={quote}
-                  onOpenDepositModal={() => {
-                    setPaymentModalType('deposit');
+                  onProofingUpdated={(updatedSession) => {
+                    setQuote(prev => ({
+                      ...prev,
+                      proofing_session: updatedSession,
+                      status: updatedSession.is_locked ? 'editing' : prev.status,
+                    }));
+                  }}
+                />
+                <ClientDeliverySection
+                  quote={quote}
+                  onOpenPaymentModal={() => {
+                    setPaymentModalType('final');
                     setIsDepositModalOpen(true);
                   }}
                 />
               </div>
-            </div>
+            )}
           </>
         )}
 
-        {/* Client Booking Submission Form (Direct Supabase Insert & VietQR Payment) */}
-        <div id="client-booking-form-wrapper">
-          <ClientBookingForm
-            studioName={quote.studioName}
-            studioId={quote.studio_id || (id ? id : null)}
-            defaultSessionType={quote.sessionType}
-            defaultPrice={selectedPackage ? selectedPackage.price : quote.packagePrice}
-            defaultDeposit={selectedPackage ? Math.round(selectedPackage.price * 0.3) : quote.depositAmount}
-            photographerId={photographerId}
-            bankInfo={quote.bankInfo}
-            studioPhone={quote.photographerPhone}
-            isDynamicBookingPage={isBookingPage}
-            packages={packages}
-            selectedPackage={selectedPackage}
-            onSelectPackage={pkg => setSelectedPackage(pkg)}
-            onBookingCreated={newBooking => {
-              if (onBookingSubmit) onBookingSubmit(newBooking);
-            }}
-          />
-        </div>
+        {/* Client Booking Submission Form */}
+        {isBookingPage && (
+          <div id="client-booking-form-wrapper" className="no-print print:hidden scroll-mt-8">
+            <ClientBookingForm
+              studioName={quote.studioName}
+              studioId={quote.studio_id || (id ? id : null)}
+              defaultSessionType={quote.sessionType}
+              defaultPrice={selectedPackage ? selectedPackage.price : quote.packagePrice}
+              defaultDeposit={selectedPackage ? Math.round(selectedPackage.price * 0.3) : quote.depositAmount}
+              photographerId={photographerId}
+              bankInfo={quote.bankInfo}
+              studioPhone={quote.photographerPhone}
+              isDynamicBookingPage={isBookingPage}
+              packages={packages}
+              selectedPackage={selectedPackage}
+              onSelectPackage={pkg => {
+                setSelectedPackage(pkg);
+                setQuote(prev => ({
+                  ...prev,
+                  features: pkg.features,
+                }));
+              }}
+              onBookingCreated={newBooking => {
+                if (onBookingSubmit) onBookingSubmit(newBooking);
+              }}
+            />
+          </div>
+        )}
 
-        {/* Photographer Contact Card */}
-        <div className="rounded-2xl bg-white dark:bg-zinc-900/50 backdrop-blur-xl border border-slate-200 dark:border-white/10 p-5 sm:p-6 text-center space-y-3 shadow-sm dark:shadow-xl">
-          <h4 className="text-xs font-bold uppercase tracking-wider text-orange-600 dark:text-orange-400 flex items-center justify-center gap-1.5">
+        {/* Photographer Contact Card - CHỈ HIỂN THỊ Ở TRANG BOOKING */}
+        {isBookingPage && (
+        <div className="no-print print:hidden bg-white border border-slate-200 rounded-xl p-4 sm:p-5 text-center space-y-2.5 shadow-sm">
+          <h4 className="text-orange-600 font-bold text-sm uppercase tracking-wide flex items-center justify-center gap-1.5">
             <span>Hỗ Trợ & Tư Vấn</span>
             {isPhotographerVerified && <VerifiedBadge className="w-3.5 h-3.5" />}
           </h4>
-          <p className="text-xs text-slate-500 dark:text-zinc-400">
+          <p className="text-xs text-slate-500">
             Mọi thắc mắc hoặc yêu cầu riêng, quý khách vui lòng liên hệ:
           </p>
-          <div className="flex flex-wrap items-center justify-center gap-2 pt-1 text-xs">
+          <div className="flex flex-wrap items-center justify-center gap-2 pt-0.5 text-xs">
             <a
               href={phoneUrl}
-              className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-slate-100 hover:bg-orange-500/10 dark:bg-zinc-800/90 dark:hover:bg-orange-500/20 border border-slate-200 hover:border-orange-500/30 dark:border-zinc-700 dark:hover:border-orange-500/40 text-slate-700 hover:text-orange-600 dark:text-zinc-200 dark:hover:text-orange-400 font-semibold transition-all duration-200 shadow-sm"
+              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-slate-50 hover:bg-orange-50 border border-slate-200 hover:border-orange-200 text-slate-700 hover:text-orange-600 font-semibold transition-all duration-200 shadow-sm"
             >
-              <Phone className="w-3.5 h-3.5 text-orange-600 dark:text-orange-400" />
+              <Phone className="w-3.5 h-3.5 text-orange-500" />
               <span>{studioPhone}</span>
             </a>
             <a
               href={zaloUrl}
               target="_blank"
               rel="noreferrer"
-              className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-[#0068FF]/15 hover:bg-[#0068FF]/25 border border-[#0068FF]/30 hover:border-[#0068FF]/50 text-blue-300 hover:text-white font-semibold transition-all duration-200 shadow-sm"
+              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-[#0068FF]/10 hover:bg-[#0068FF]/20 border border-[#0068FF]/20 text-[#0068FF] font-semibold transition-all duration-200 shadow-sm"
             >
               <MessageCircle className="w-3.5 h-3.5" />
               <span>Nhắn Zalo</span>
             </a>
           </div>
         </div>
+        )}
       </div>
 
-      {/* Sticky Bottom Watermark (Dấu chìm dính đáy) */}
-      <footer className="sticky bottom-0 z-30 w-full py-2.5 px-4 bg-white/80 dark:bg-[#090a0f]/85 backdrop-blur-md border-t border-slate-200 dark:border-white/10 text-center">
-        <div className="text-xs sm:text-[11px] text-slate-500 dark:text-zinc-500 opacity-50 hover:opacity-100 transition-opacity duration-300 inline-flex items-center justify-center gap-1 cursor-default select-none">
-          <span>⚡ Powered by Lensy - Developed by Mirmia Studio & Academy</span>
-        </div>
-      </footer>
+      {/* Sticky Bottom Bar & Floating Buttons - CHỈ HIỂN THỊ Ở TRANG BOOKING */}
+      {isBookingPage && (
+        <>
+          <footer className="no-print print:hidden sticky bottom-0 z-30 w-full py-2 px-4 bg-white/90 backdrop-blur-md border-t border-slate-200 text-center">
+            <div className="text-xs sm:text-[11px] text-slate-400 font-medium inline-flex items-center justify-center gap-1 cursor-default select-none">
+              <span>{quote.studioName} • Báo Giá & Hợp Đồng Dịch Vụ</span>
+            </div>
+          </footer>
 
-      {/* Floating Action Buttons: Chat Zalo & Gọi Điện Nhanh (Góc dưới cùng màn hình) */}
-      <div className="fixed bottom-12 right-4 sm:bottom-14 sm:right-6 z-40 flex items-center gap-2.5 sm:gap-3 drop-shadow-2xl animate-fadeIn">
-        {/* Nút Chat Zalo (#0068FF) */}
-        <a
-          href={zaloUrl}
-          target="_blank"
-          rel="noopener noreferrer"
-          className="relative flex items-center gap-2 px-4 py-2.5 rounded-full bg-[#0068FF] hover:bg-[#0057d9] text-white text-xs sm:text-sm font-bold shadow-xl shadow-blue-600/40 hover:shadow-blue-600/60 transition-all duration-200 transform hover:scale-105 active:scale-95 group"
-          title={`Chat Zalo với ${quote.photographerName || 'Studio'} (${studioPhone})`}
-        >
-          <span className="w-5 h-5 rounded-full bg-white text-[#0068FF] font-black text-[11px] flex items-center justify-center tracking-tighter shadow-sm">
-            Z
-          </span>
-          <span className="tracking-wide">Chat Zalo</span>
-        </a>
+          {/* Floating Action Buttons: Chat Zalo & Gọi Điện Nhanh - ẨN KHI IN */}
+          <div className="no-print print:hidden fixed bottom-12 right-4 sm:bottom-14 sm:right-6 z-40 flex items-center gap-2.5 sm:gap-3 drop-shadow-lg animate-fadeIn">
+            {/* Nút Chat Zalo */}
+            <a
+              href={zaloUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="relative flex items-center gap-2 px-4 py-2 rounded-full bg-[#0068FF] hover:bg-[#0057d9] text-white text-xs sm:text-sm font-bold shadow-md shadow-blue-600/30 transition-all duration-200 transform hover:scale-105 active:scale-95 group"
+              title={`Chat Zalo với ${quote.photographerName || 'Studio'} (${studioPhone})`}
+            >
+              <span className="w-4 h-4 rounded-full bg-blue-100 text-[#0068FF] font-black text-[10px] flex items-center justify-center tracking-tighter shadow-sm">
+                Z
+              </span>
+              <span className="tracking-wide">Chat Zalo</span>
+            </a>
 
-        {/* Nút Gọi Điện (Màu xanh lá) */}
-        <a
-          href={phoneUrl}
-          className="flex items-center gap-2 px-4 py-2.5 rounded-full bg-orange-600 hover:bg-orange-500 text-white text-xs sm:text-sm font-semibold shadow-xl shadow-orange-600/35 hover:shadow-orange-600/50 transition-all duration-200 transform hover:scale-105 active:scale-95 group"
-          title={`Gọi hotline Studio: ${studioPhone}`}
-        >
-          <div className="w-5 h-5 rounded-full bg-white/20 flex items-center justify-center">
-            <Phone className="w-3.5 h-3.5 text-white" />
+            {/* Nút Gọi Điện */}
+            <a
+              href={phoneUrl}
+              className="flex items-center gap-2 px-4 py-2 rounded-full bg-gradient-to-r from-orange-600 to-amber-500 hover:from-orange-500 hover:to-amber-400 text-white text-xs sm:text-sm font-semibold shadow-md shadow-orange-600/30 transition-all duration-200 transform hover:scale-105 active:scale-95 group"
+              title={`Gọi hotline Studio: ${studioPhone}`}
+            >
+              <Phone className="w-3.5 h-3.5 text-white" />
+              <span className="tracking-wide">Gọi Điện</span>
+            </a>
           </div>
-          <span className="tracking-wide">Gọi Điện</span>
-        </a>
-      </div>
+        </>
+      )}
 
       {/* Deposit QR & Transfer Modal */}
       <DepositModal

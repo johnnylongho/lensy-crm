@@ -28,6 +28,10 @@ export interface QuoteData {
   studioLogoText: string;
   studioAvatarUrl?: string;
   studioCoverUrl?: string;
+  studioAddress?: string;
+  studioTaxCode?: string;
+  studioPhone?: string;
+  studioEmail?: string;
   photographerName: string;
   photographerPhone: string;
   photographerEmail: string;
@@ -48,6 +52,7 @@ export interface QuoteData {
   inclusions: PackageInclusion[];
   equipmentList: string[];
   deliverables: string[];
+  features?: string[];
   specialNotes?: string;
   validUntil: string;
   bankInfo: {
@@ -187,7 +192,10 @@ export interface GearItem {
   created_at?: string;
 }
 
+export type PackageCategory = 'studio' | 'outdoor' | 'event' | 'wedding' | 'makeup' | 'rental';
+
 export interface PackageItem {
+  category?: PackageCategory | string;
   id: string;
   photographer_id?: string;
   studio_id?: string | null;
@@ -215,6 +223,8 @@ export interface Studio {
   slug?: string;
   logo_url?: string | null;
   address?: string | null;
+  tax_code?: string | null;
+  email?: string | null;
   facebook_url?: string | null;
   phone?: string | null;
   invite_code?: string;

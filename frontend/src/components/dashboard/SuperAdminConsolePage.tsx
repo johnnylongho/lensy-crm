@@ -404,7 +404,7 @@ export const SuperAdminConsolePage: React.FC = () => {
   }, [usersList, searchQuery, roleFilter]);
 
   return (
-    <div className="space-y-6 pb-12 animate-fadeIn max-w-7xl mx-auto">
+    <div className="w-full h-full flex flex-col gap-6 pb-12 animate-fadeIn">
       {/* Toast Notification */}
       {toast && (
         <div

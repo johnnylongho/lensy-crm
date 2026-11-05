@@ -55,7 +55,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       setSession(session);
       setUser(prev => {
         if (!session?.user) return null;
-        if (prev && prev.id === session.user.id) {
+        if (prev && prev.id === session?.user?.id) {
           return prev;
         }
         return session.user;

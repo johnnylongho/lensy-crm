@@ -253,6 +253,52 @@ export const QuoteView: React.FC<Props> = ({
               return;
             }
             userData = uData;
+
+            // ================================================================
+            // TÌM VÀ LIÊN KẾT STUDIO CỦA THỢ ẢNH / TÀI KHOẢN NÀY
+            // ================================================================
+            try {
+              // 1. Kiểm tra studio_id trên bản ghi users
+              if (uData.studio_id) {
+                const { data: sData } = await supabase
+                  .from('studios')
+                  .select('*')
+                  .eq('id', uData.studio_id)
+                  .maybeSingle();
+                if (sData) studioData = sData;
+              }
+
+              // 2. Nếu chưa tìm thấy, kiểm tra xem user có phải chủ Studio (owner_id) không
+              if (!studioData) {
+                const { data: sOwnerData } = await supabase
+                  .from('studios')
+                  .select('*')
+                  .eq('owner_id', uData.id)
+                  .order('created_at', { ascending: false })
+                  .maybeSingle();
+                if (sOwnerData) studioData = sOwnerData;
+              }
+
+              // 3. Nếu vẫn chưa có, kiểm tra bảng studio_members
+              if (!studioData) {
+                const { data: memberRecord } = await supabase
+                  .from('studio_members')
+                  .select('studios(*)')
+                  .eq('user_id', uData.id)
+                  .eq('status', 'approved')
+                  .maybeSingle();
+                if (memberRecord && (memberRecord as any).studios) {
+                  studioData = (memberRecord as any).studios;
+                }
+              }
+            } catch (studioFetchErr) {
+              console.warn('[QuoteView] Lỗi truy xuất studio liên kết:', studioFetchErr);
+            }
+
+            // 4. Fallback: Nếu đang xem trước trong cùng workspace session
+            if (!studioData && currentStudio) {
+              studioData = currentStudio;
+            }
           }
 
           if (!userData && !studioData) {
@@ -272,28 +318,55 @@ export const QuoteView: React.FC<Props> = ({
             setFetchedStudio(studioData);
           }
 
-          let displayStudioName = studioData?.name || userData?.studio_name || 'Studio Nhiếp Ảnh';
-          let displayAvatarUrl = studioData?.logo_url || userData?.avatar_url || '/lensy-logo.png';
-          let studioVerifiedInfo: { name: string; logoUrl?: string } | null = studioData ? {
-            name: studioData.name,
-            logoUrl: studioData.logo_url,
+          // ================================================================
+          // TRÍCH XUẤT CHÍNH XÁC LOGO STUDIO TỪ HỒ SƠ THƯƠNG HIỆU
+          // ================================================================
+          let resolvedStudioLogo = studioData?.logo_url || studioData?.logo;
+
+          // Kiểm tra cache metadata từ localStorage nếu DB chưa có
+          const targetStudioId = studioData?.id || currentStudio?.id;
+          if (!resolvedStudioLogo && targetStudioId) {
+            try {
+              const metaStr = localStorage.getItem(`lensy_studio_meta_${targetStudioId}`);
+              if (metaStr) {
+                const meta = JSON.parse(metaStr);
+                if (meta.logo_url || meta.logo) resolvedStudioLogo = meta.logo_url || meta.logo;
+              }
+            } catch (e) {}
+          }
+
+          if (!resolvedStudioLogo && currentStudio?.logo_url) {
+            resolvedStudioLogo = currentStudio.logo_url;
+          }
+
+          if (!resolvedStudioLogo) {
+            const globalLogo = localStorage.getItem('lensy_current_studio_logo');
+            if (globalLogo) resolvedStudioLogo = globalLogo;
+          }
+
+          const displayStudioName = studioData?.name || currentStudio?.name || userData?.studio_name || 'MIRMIA STUDIO & ACADEMY';
+          const displayAvatarUrl = resolvedStudioLogo || userData?.avatar_url || '/mirmia-logo.png';
+
+          const studioVerifiedInfo: { name: string; logoUrl?: string } | null = (studioData || currentStudio) ? {
+            name: studioData?.name || currentStudio?.name || displayStudioName,
+            logoUrl: displayAvatarUrl,
           } : null;
 
           setVerifiedStudio(studioVerifiedInfo);
 
           setQuote(prev => ({
             ...prev,
-            studio_id: studioData?.id || prev.studio_id,
+            studio_id: studioData?.id || currentStudio?.id || prev.studio_id,
             studioName: displayStudioName,
             studioAvatarUrl: displayAvatarUrl,
-            studioCoverUrl: userData?.cover_image || userData?.cover_url || 'https://images.unsplash.com/photo-1492691527719-9d1e07e534b4?auto=format&fit=crop&w=1200&q=80',
-            studioAddress: studioData?.address || undefined,
-            studioTaxCode: studioData?.tax_code || undefined,
-            studioPhone: studioData?.phone || userData?.phone || undefined,
-            studioEmail: studioData?.email || userData?.email || undefined,
+            studioCoverUrl: userData?.cover_image || userData?.cover_url || studioData?.cover_image || 'https://images.unsplash.com/photo-1492691527719-9d1e07e534b4?auto=format&fit=crop&w=1200&q=80',
+            studioAddress: studioData?.address || currentStudio?.address || undefined,
+            studioTaxCode: studioData?.tax_code || currentStudio?.tax_code || undefined,
+            studioPhone: studioData?.phone || currentStudio?.phone || userData?.phone || undefined,
+            studioEmail: studioData?.email || currentStudio?.email || userData?.email || undefined,
             photographerName: userData?.full_name || displayStudioName,
-            photographerPhone: userData?.phone || studioData?.phone || '0901234567',
-            photographerEmail: userData?.email || studioData?.email || 'contact@lensy.vn',
+            photographerPhone: userData?.phone || studioData?.phone || currentStudio?.phone || '0901234567',
+            photographerEmail: userData?.email || studioData?.email || currentStudio?.email || 'contact@lensy.vn',
             bankInfo: {
               bankName: userData?.bank_name || 'MB Bank',
               accountNumber: userData?.bank_account_number || '0901234567',
@@ -746,7 +819,11 @@ export const QuoteView: React.FC<Props> = ({
   const studioCoverUrl =
     quote.studioCoverUrl ||
     'https://images.unsplash.com/photo-1492691527719-9d1e07e534b4?auto=format&fit=crop&w=1200&q=80';
-  const studioAvatarUrl = quote.studioAvatarUrl || '/mirmia-logo.png';
+  const studioAvatarUrl =
+    quote.studioAvatarUrl ||
+    currentStudio?.logo_url ||
+    (typeof window !== 'undefined' ? localStorage.getItem('lensy_current_studio_logo') : null) ||
+    '/mirmia-logo.png';
   const studioPhone = quote.photographerPhone || '0901234567';
   const cleanStudioPhone = studioPhone.replace(/[^0-9]/g, '');
   const zaloUrl = `https://zalo.me/${cleanStudioPhone}`;
@@ -836,13 +913,13 @@ export const QuoteView: React.FC<Props> = ({
               <div className="absolute inset-0 bg-gradient-to-t from-white via-white/40 to-transparent" />
             </div>
 
-            {/* Studio Logo: Hình vuông nguyên bản, KHÔNG viền, KHÔNG bo tròn */}
+            {/* Studio Logo: Hiển thị hình vuông bo góc sang trọng, viền trắng nổi bật */}
             <div className="relative px-5 sm:px-7 pb-4 pt-0 -mt-14 sm:-mt-16 flex flex-col sm:flex-row items-center sm:items-end gap-4 text-center sm:text-left">
-              <div className="w-20 h-20 sm:w-24 sm:h-24 rounded-none overflow-hidden border-none shadow-none bg-transparent p-0 flex-shrink-0">
+              <div className="w-20 h-20 sm:w-24 sm:h-24 rounded-2xl overflow-hidden border-2 border-white shadow-md bg-white p-1.5 flex-shrink-0 flex items-center justify-center">
                 <img
                   src={studioAvatarUrl}
                   alt={quote.studioName}
-                  className="w-full h-full object-contain rounded-none border-none"
+                  className="w-full h-full object-contain rounded-xl"
                   onError={e => {
                     (e.target as HTMLImageElement).src = '/mirmia-logo.png';
                   }}
@@ -990,7 +1067,7 @@ export const QuoteView: React.FC<Props> = ({
             <a
               href={zaloUrl}
               target="_blank"
-              rel="noreferrer"
+              rel="noopener noreferrer"
               className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-[#0068FF]/10 hover:bg-[#0068FF]/20 border border-[#0068FF]/20 text-[#0068FF] font-semibold transition-all duration-200 shadow-sm"
             >
               <MessageCircle className="w-3.5 h-3.5" />

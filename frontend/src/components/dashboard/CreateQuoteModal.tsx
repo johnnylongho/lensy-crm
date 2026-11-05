@@ -552,7 +552,7 @@ export const CreateQuoteModal: React.FC<Props> = ({
                 <a
                   href={`/quote/${createdQuoteData.token}`}
                   target="_blank"
-                  rel="noreferrer"
+                  rel="noopener noreferrer"
                   className="px-4 py-2 rounded-lg bg-zinc-800 hover:bg-zinc-700 text-white font-bold flex items-center gap-1.5 border border-zinc-700 cursor-pointer transition-colors"
                 >
                   <ExternalLink className="w-4 h-4 text-orange-400" />
@@ -562,7 +562,7 @@ export const CreateQuoteModal: React.FC<Props> = ({
                 <a
                   href={`https://zalo.me/${clientPhone.replace(/^0/, '84')}`}
                   target="_blank"
-                  rel="noreferrer"
+                  rel="noopener noreferrer"
                   onClick={() => {
                     navigator.clipboard.writeText(getZaloShareText());
                   }}

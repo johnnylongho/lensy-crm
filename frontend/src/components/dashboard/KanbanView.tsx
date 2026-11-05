@@ -245,11 +245,11 @@ const CompactKanbanCardContent: React.FC<{
                 <div className="relative">
                   <div
                     className="w-5 h-5 rounded-full overflow-hidden border border-amber-500/70 bg-amber-500/20 shadow-sm"
-                    title={`Thợ chụp: ${item.photographer.full_name}${item.photographer.is_verified ? ' (Đã xác thực)' : ''}`}
+                    title={`Thợ chụp: ${item.photographer?.full_name || 'Thợ ảnh'}${item.photographer?.is_verified ? ' (Đã xác thực)' : ''}`}
                   >
                     <img
                       src={item.photographer.avatar_url || '/mirmia-logo.png'}
-                      alt={item.photographer.full_name}
+                      alt={item.photographer?.full_name || 'Thợ ảnh'}
                       className="w-full h-full object-cover"
                       onError={(e) => {
                         (e.target as HTMLImageElement).src = '/mirmia-logo.png';
@@ -267,11 +267,11 @@ const CompactKanbanCardContent: React.FC<{
                 <div className="relative">
                   <div
                     className="w-5 h-5 rounded-full overflow-hidden border border-fuchsia-500/70 bg-fuchsia-500/20 shadow-sm"
-                    title={`Thợ Makeup (MUA): ${item.makeup_artist.full_name}${item.makeup_artist.is_verified ? ' (Đã xác thực)' : ''}`}
+                    title={`Thợ Makeup (MUA): ${item.makeup_artist?.full_name || 'MUA'}${item.makeup_artist?.is_verified ? ' (Đã xác thực)' : ''}`}
                   >
                     <img
                       src={item.makeup_artist.avatar_url || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150'}
-                      alt={item.makeup_artist.full_name}
+                      alt={item.makeup_artist?.full_name || 'MUA'}
                       className="w-full h-full object-cover"
                       onError={(e) => {
                         (e.target as HTMLImageElement).src = '/mirmia-logo.png';

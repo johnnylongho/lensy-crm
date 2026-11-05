@@ -448,23 +448,22 @@ export const ClientBookingForm: React.FC<Props> = ({
           newRecord.client_id = resolvedClientId;
         }
 
-        if (assignedMUAId) {
-          const chosenMUA = muaList.find(m => m.id === assignedMUAId);
-          if (chosenMUA) {
-            newRecord.makeup_artist = {
-              id: chosenMUA.id,
-              full_name: chosenMUA.name,
-              avatar_url: chosenMUA.avatar_url,
-            };
-          }
-        }
-
-        // 3. Thực thi lệnh insert vào Supabase
+        // 3. Thực thi lệnh insert vào Supabase (bảng bookings sử dụng makeup_artist_id, không có cột makeup_artist)
         const { error } = await supabase
           .from('bookings')
           .insert([newRecord]);
 
         if (error) throw error;
+
+        const chosenMUA = assignedMUAId ? muaList.find(m => m.id === assignedMUAId) : null;
+        const createdRecordForState = {
+          ...newRecord,
+          makeup_artist: chosenMUA ? {
+            id: chosenMUA.id,
+            full_name: chosenMUA.name,
+            avatar_url: chosenMUA.avatar_url,
+          } : null,
+        };
 
         setSubmittedBooking({
           clientName: cleanName,
@@ -472,7 +471,7 @@ export const ClientBookingForm: React.FC<Props> = ({
           depositAmount: finalDeposit || 1000000,
           sessionTitle: `Gói ${shootRequirement}`,
         });
-        if (onBookingCreated) onBookingCreated(newRecord);
+        if (onBookingCreated) onBookingCreated(createdRecordForState);
       } else {
         // Fallback mô phỏng khi chưa kết nối URL Supabase thật
         const demoRecord: any = {
@@ -822,7 +821,7 @@ export const ClientBookingForm: React.FC<Props> = ({
               </button>
               {muaList.map(mua => (
                 <div key={mua.id}>
-                  <a href={mua.portfolio_url || 'https://instagram.com'}>Xem Portfolio</a>
+                  <a href={mua.portfolio_url || 'https://instagram.com'} target="_blank" rel="noopener noreferrer">Xem Portfolio</a>
                 </div>
               ))}
             </div>

@@ -1581,8 +1581,8 @@ export const BookingDetailModal: React.FC<Props> = ({
                     <div className="flex items-center gap-2">
                       <Users className="w-4 h-4 text-pink-400" />
                       <span>
-                        <strong>Thợ Makeup (MUA):</strong> {booking.makeup_artist.full_name}
-                        {booking.makeup_artist.phone && ` • SĐT: ${booking.makeup_artist.phone}`}
+                        <strong>Thợ Makeup (MUA):</strong> {booking.makeup_artist?.full_name || 'Chưa cập nhật'}
+                        {booking.makeup_artist?.phone && ` • SĐT: ${booking.makeup_artist.phone}`}
                       </span>
                     </div>
                     <span className="text-[10px] bg-pink-500/20 text-pink-200 px-2 py-0.5 rounded-full font-bold">

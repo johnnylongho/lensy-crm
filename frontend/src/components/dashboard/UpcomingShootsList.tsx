@@ -320,14 +320,14 @@ export const UpcomingShootsList: React.FC<Props> = ({
                       </span>
                     )}
                     {ev.photographer && (
-                      <span className="text-[10px] px-2 py-0.5 rounded font-bold border bg-amber-50 dark:bg-amber-950/60 border-amber-200 dark:border-amber-500/30 text-amber-700 dark:text-amber-300 flex items-center gap-1 flex-shrink-0" title={`Thợ ảnh: ${ev.photographer.full_name}`}>
-                        <span>{ev.photographer.full_name}</span>
+                      <span className="text-[10px] px-2 py-0.5 rounded font-bold border bg-amber-50 dark:bg-amber-950/60 border-amber-200 dark:border-amber-500/30 text-amber-700 dark:text-amber-300 flex items-center gap-1 flex-shrink-0" title={`Thợ ảnh: ${ev.photographer?.full_name || 'Thợ ảnh'}`}>
+                        <span>{ev.photographer?.full_name || 'Thợ ảnh'}</span>
                         {ev.photographer.is_verified && <VerifiedBadge className="w-3 h-3" />}
                       </span>
                     )}
                     {ev.makeup_artist && (
-                      <span className="text-[10px] px-2 py-0.5 rounded font-bold border bg-fuchsia-50 dark:bg-fuchsia-950/60 border-fuchsia-200 dark:border-fuchsia-500/30 text-fuchsia-700 dark:text-fuchsia-300 flex items-center gap-1 flex-shrink-0" title={`MUA: ${ev.makeup_artist.full_name}`}>
-                        <span>{ev.makeup_artist.full_name}</span>
+                      <span className="text-[10px] px-2 py-0.5 rounded font-bold border bg-fuchsia-50 dark:bg-fuchsia-950/60 border-fuchsia-200 dark:border-fuchsia-500/30 text-fuchsia-700 dark:text-fuchsia-300 flex items-center gap-1 flex-shrink-0" title={`MUA: ${ev.makeup_artist?.full_name || 'MUA'}`}>
+                        <span>{ev.makeup_artist?.full_name || 'MUA'}</span>
                         {ev.makeup_artist.is_verified && <VerifiedBadge className="w-3 h-3" />}
                       </span>
                     )}

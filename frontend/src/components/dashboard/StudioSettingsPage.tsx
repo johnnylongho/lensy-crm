@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
+import { useWorkspace } from '../../context/WorkspaceContext';
 import { supabase, isSupabaseConfigured } from '../../lib/supabase';
 import { Studio, StudioMember, StudioRole } from '../../types';
 import {
@@ -45,6 +46,7 @@ import {
 
 export const StudioSettingsPage: React.FC = () => {
   const { user } = useAuth();
+  const { refreshWorkspace } = useWorkspace();
   const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
 
@@ -480,7 +482,10 @@ export const StudioSettingsPage: React.FC = () => {
       const cleanPhone = studioPhone.trim();
 
       // Đồng bộ ngay vào localStorage metadata để đảm bảo offline & schema fallback luôn persist dữ liệu mới nhất
+      localStorage.setItem('lensy_current_studio_logo', cleanLogo);
       localStorage.setItem(`lensy_studio_meta_${studio.id}`, JSON.stringify({
+        name: cleanName,
+        logo_url: cleanLogo,
         address: cleanAddress,
         facebook_url: cleanFanpage,
         phone: cleanPhone,
@@ -528,6 +533,11 @@ export const StudioSettingsPage: React.FC = () => {
           logo_url: cleanLogo || null,
           address: cleanAddress || undefined,
         } : null);
+        try {
+          if (refreshWorkspace) await refreshWorkspace();
+        } catch (e) {
+          console.warn('[StudioSettings] Lỗi refresh workspace:', e);
+        }
         setToast({
           type: 'success',
           message: '🎉 Đã cập nhật thông tin Studio thành công!',
@@ -1327,13 +1337,13 @@ export const StudioSettingsPage: React.FC = () => {
                           {member.user?.email && (
                             <span className="flex items-center gap-1">
                               <Mail className="w-3 h-3 text-slate-400" />
-                              {member.user.email}
+                              {member.user?.email || 'Chưa cập nhật'}
                             </span>
                           )}
                           {member.user?.phone && (
                             <span className="flex items-center gap-1">
                               <Phone className="w-3 h-3 text-slate-400" />
-                              {member.user.phone}
+                              {member.user?.phone || 'Chưa cập nhật'}
                             </span>
                           )}
                         </div>

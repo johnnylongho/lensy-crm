@@ -78,13 +78,29 @@ export const PackagesManagementPage: React.FC = () => {
           .select('*')
           .order('created_at', { ascending: false });
 
-        if (currentStudio) {
-          query = query.or(`studio_id.eq.${currentStudio.id},photographer_id.eq.${user?.id}`);
-        } else if (user) {
+        if (currentStudio && user?.id) {
+          query = query.or(`studio_id.eq.${currentStudio.id},photographer_id.eq.${user.id}`);
+        } else if (currentStudio) {
+          query = query.eq('studio_id', currentStudio.id);
+        } else if (user?.id) {
           query = query.eq('photographer_id', user.id);
         }
 
-        const { data, error } = await query;
+        let { data, error } = await query;
+
+        // Fallback nếu schema DB chưa có cột studio_id
+        if (error && error.message?.includes('studio_id')) {
+          console.warn('[Packages] Cột studio_id chưa có trong DB, thử lại query đơn giản:', error.message);
+          let simpleQuery = supabase
+            .from('packages')
+            .select('*')
+            .order('created_at', { ascending: false });
+          if (user?.id) simpleQuery = simpleQuery.eq('photographer_id', user.id);
+          const simpleRes = await simpleQuery;
+          data = simpleRes.data;
+          error = simpleRes.error;
+        }
+
         if (error) {
           if (error.code === 'PGRST205' || error.message.includes('not find the table')) {
             console.warn('[Packages] Bảng packages chưa được migrate trên Supabase. Sử dụng dữ liệu khởi tạo.');
@@ -108,6 +124,7 @@ export const PackagesManagementPage: React.FC = () => {
             is_active: pkg.is_active ?? true,
           }));
           setPackages(formatted);
+          saveToLocalCache(formatted);
         } else {
           const localSaved = localStorage.getItem('lensy_packages_local');
           if (localSaved) {
@@ -171,28 +188,59 @@ export const PackagesManagementPage: React.FC = () => {
   }) => {
     setIsSubmitting(true);
     try {
-      const packagePayload = {
-        photographer_id: user?.id || 'a1111111-1111-1111-1111-111111111111',
-        studio_id: currentStudio?.id || null,
-        name: payload.name,
+      // 1. Xác thực ID người dùng chính xác
+      let effectiveUserId = user?.id;
+      if (!effectiveUserId && isSupabaseConfigured) {
+        try {
+          const { data: authData } = await supabase.auth.getUser();
+          effectiveUserId = authData?.user?.id;
+        } catch (authErr) {
+          console.warn('[Packages] Không thể lấy auth user:', authErr);
+        }
+      }
+
+      const packagePayload: any = {
+        name: payload.name.trim(),
         price: payload.price,
-        category: payload.category,
-        description: payload.description,
-        features: payload.features,
-        image_urls: payload.image_urls,
+        category: payload.category || 'studio',
+        description: payload.description ? payload.description.trim() : null,
+        features: payload.features || [],
+        image_urls: payload.image_urls || [],
         is_active: payload.is_active,
         updated_at: new Date().toISOString(),
       };
 
+      if (effectiveUserId) {
+        packagePayload.photographer_id = effectiveUserId;
+      }
+      if (currentStudio?.id) {
+        packagePayload.studio_id = currentStudio.id;
+      }
+
       if (editingPackage) {
         // CẬP NHẬT GÓI
         if (isSupabaseConfigured) {
-          const { error } = await supabase
+          let updatePayload = { ...packagePayload };
+          let { error } = await supabase
             .from('packages')
-            .update(packagePayload)
+            .update(updatePayload)
             .eq('id', editingPackage.id);
 
-          if (error) throw error;
+          // Tự động fallback nếu DB thiếu cột category hoặc studio_id
+          if (error) {
+            console.warn('[Packages] Fallback update khi DB thiếu cột:', error.message);
+            if (error.message.includes('category')) delete updatePayload.category;
+            if (error.message.includes('studio_id')) delete updatePayload.studio_id;
+            const retryRes = await supabase
+              .from('packages')
+              .update(updatePayload)
+              .eq('id', editingPackage.id);
+            error = retryRes.error;
+          }
+
+          if (error) {
+            throw new Error(`Không thể cập nhật gói vào cơ sở dữ liệu: ${error.message}`);
+          }
         }
 
         // Cập nhật local state
@@ -209,17 +257,37 @@ export const PackagesManagementPage: React.FC = () => {
         const newPackageItem: PackageItem = {
           id: newId,
           ...packagePayload,
+          category: payload.category, // Đảm bảo luôn giữ category trên client
           description: packagePayload.description || undefined,
           created_at: new Date().toISOString(),
         };
 
         if (isSupabaseConfigured) {
-          const { data, error } = await supabase
+          let insertPayload = { ...packagePayload };
+          let { data, error } = await supabase
             .from('packages')
-            .insert([{ ...packagePayload }])
+            .insert([insertPayload])
             .select();
 
-          if (!error && data && data[0]) {
+          // Tự động fallback retry nếu schema DB chưa có cột category hoặc studio_id
+          if (error) {
+            console.warn('[Packages] Fallback insert khi DB thiếu cột mở rộng:', error.message);
+            if (error.message.includes('category')) delete insertPayload.category;
+            if (error.message.includes('studio_id')) delete insertPayload.studio_id;
+
+            const retryRes = await supabase
+              .from('packages')
+              .insert([insertPayload])
+              .select();
+            data = retryRes.data;
+            error = retryRes.error;
+          }
+
+          if (error) {
+            throw new Error(`Không thể lưu gói vào cơ sở dữ liệu: ${error.message}`);
+          }
+
+          if (data && data[0]) {
             newPackageItem.id = data[0].id;
           }
         }
@@ -228,13 +296,18 @@ export const PackagesManagementPage: React.FC = () => {
         setPackages(updatedList);
         saveToLocalCache(updatedList);
 
-        setToast({ type: 'success', message: `Đã thêm gói dịch vụ mới "${payload.name}"!` });
+        // Tự động chuyển bộ lọc về 'all' nếu người dùng đang lọc danh mục khác để thấy gói vừa thêm
+        if (categoryFilter !== 'all' && categoryFilter !== payload.category) {
+          setCategoryFilter('all');
+        }
+
+        setToast({ type: 'success', message: `Đã thêm gói dịch vụ mới "${payload.name}" thành công!` });
       }
 
       setIsModalOpen(false);
     } catch (err: any) {
       console.error('Lỗi khi lưu gói:', err);
-      setToast({ type: 'error', message: 'Lỗi khi lưu gói: ' + err.message });
+      setToast({ type: 'error', message: err.message || 'Lỗi khi lưu gói dịch vụ' });
     } finally {
       setIsSubmitting(false);
     }
@@ -285,24 +358,35 @@ export const PackagesManagementPage: React.FC = () => {
 
     if (isSupabaseConfigured) {
       try {
-        const { data, error } = await supabase
+        let duplicatePayload: any = {
+          name: duplicatedName,
+          price: pkg.price,
+          category: pkg.category || 'studio',
+          description: pkg.description,
+          features: pkg.features,
+          image_urls: pkg.image_urls,
+          is_active: pkg.is_active,
+        };
+        if (user?.id || pkg.photographer_id) {
+          duplicatePayload.photographer_id = user?.id || pkg.photographer_id;
+        }
+        if (currentStudio?.id || pkg.studio_id) {
+          duplicatePayload.studio_id = currentStudio?.id || pkg.studio_id;
+        }
+
+        let { data, error } = await supabase
           .from('packages')
-          .insert([
-            {
-              photographer_id: user?.id || pkg.photographer_id,
-              studio_id: currentStudio?.id || pkg.studio_id || null,
-              name: duplicatedName,
-              price: pkg.price,
-              category: pkg.category || 'studio',
-              description: pkg.description,
-              features: pkg.features,
-              image_urls: pkg.image_urls,
-              is_active: pkg.is_active,
-            },
-          ])
+          .insert([duplicatePayload])
           .select();
 
-        if (!error && data && data[0]) {
+        if (error) {
+          if (error.message.includes('category')) delete duplicatePayload.category;
+          if (error.message.includes('studio_id')) delete duplicatePayload.studio_id;
+          const retryRes = await supabase.from('packages').insert([duplicatePayload]).select();
+          data = retryRes.data;
+        }
+
+        if (data && data[0]) {
           duplicatedPkg.id = data[0].id;
         }
       } catch (err) {

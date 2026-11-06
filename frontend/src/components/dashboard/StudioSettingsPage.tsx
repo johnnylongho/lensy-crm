@@ -71,6 +71,11 @@ export const StudioSettingsPage: React.FC = () => {
   const [isUploadingLogo, setIsUploadingLogo] = useState(false);
   const logoFileInputRef = React.useRef<HTMLInputElement | null>(null);
 
+  // Ảnh bìa trang đặt lịch (Cover Banner)
+  const [coverUrl, setCoverUrl] = useState('');
+  const [isUploadingCover, setIsUploadingCover] = useState(false);
+  const coverFileInputRef = React.useRef<HTMLInputElement | null>(null);
+
   const handleLogoFileSelected = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
@@ -155,6 +160,118 @@ export const StudioSettingsPage: React.FC = () => {
       });
     } finally {
       setIsUploadingLogo(false);
+      if (e.target) e.target.value = '';
+    }
+  };
+
+  // Upload ảnh bìa trang đặt lịch (Studio Cover Banner)
+  const handleCoverFileSelected = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    if (!file.type.startsWith('image/')) {
+      setToast({
+        type: 'error',
+        message: 'Vui lòng chọn file hình ảnh hợp lệ (PNG, JPG, WEBP).',
+      });
+      if (e.target) e.target.value = '';
+      return;
+    }
+
+    if (file.size > 8 * 1024 * 1024) {
+      setToast({
+        type: 'error',
+        message: 'Dung lượng ảnh bìa không được vượt quá 8MB.',
+      });
+      if (e.target) e.target.value = '';
+      return;
+    }
+
+    setIsUploadingCover(true);
+    try {
+      if (isSupabaseConfigured && user) {
+        const fileExt = file.name.split('.').pop() || 'jpg';
+        const fileName = `studio_cover_${studio?.id || user.id}_${Date.now()}.${fileExt}`;
+        const filePath = `studios/${fileName}`;
+
+        let uploadRes = await supabase.storage
+          .from('avatars')
+          .upload(filePath, file, { cacheControl: '3600', upsert: true });
+
+        let bucketName = 'avatars';
+        if (uploadRes.error) {
+          const publicRes = await supabase.storage
+            .from('public')
+            .upload(filePath, file, { cacheControl: '3600', upsert: true });
+          if (!publicRes.error) {
+            uploadRes = publicRes;
+            bucketName = 'public';
+          }
+        }
+
+        if (uploadRes.error) {
+          console.warn('[Storage] Upload failed, falling back to FileReader:', uploadRes.error);
+          const reader = new FileReader();
+          reader.onload = (event) => {
+            const result = event.target?.result as string;
+            if (result) {
+              setCoverUrl(result);
+              if (studio?.id) {
+                localStorage.setItem(`lensy_studio_cover_${studio.id}`, result);
+              }
+              localStorage.setItem('lensy_current_studio_cover', result);
+              setToast({
+                type: 'success',
+                message: '🎉 Tải ảnh bìa Studio thành công! Hãy bấm "Lưu Thông Tin Studio" để hoàn tất.',
+              });
+            }
+          };
+          reader.readAsDataURL(file);
+          return;
+        }
+
+        const { data: publicUrlData } = supabase.storage
+          .from(bucketName)
+          .getPublicUrl(filePath);
+
+        const newUrl = publicUrlData?.publicUrl;
+        if (newUrl) {
+          setCoverUrl(newUrl);
+          if (studio?.id) {
+            localStorage.setItem(`lensy_studio_cover_${studio.id}`, newUrl);
+          }
+          localStorage.setItem('lensy_current_studio_cover', newUrl);
+          setToast({
+            type: 'success',
+            message: '🎉 Upload ảnh bìa Studio thành công! Hãy bấm "Lưu Thông Tin Studio" để lưu.',
+          });
+        }
+      } else {
+        const reader = new FileReader();
+        reader.onload = (event) => {
+          const result = event.target?.result as string;
+          if (result) {
+            setCoverUrl(result);
+            if (studio?.id) {
+              localStorage.setItem(`lensy_studio_cover_${studio.id}`, result);
+            }
+            localStorage.setItem('lensy_current_studio_cover', result);
+            setToast({
+              type: 'success',
+              message: '🎉 [Demo] Đã tải ảnh bìa Studio lên thành công!',
+            });
+          }
+        };
+        reader.readAsDataURL(file);
+      }
+    } catch (err: any) {
+      console.error('Lỗi khi tải ảnh bìa Studio:', err);
+      setToast({
+        type: 'error',
+        message: 'Lỗi upload ảnh bìa: ' + (err.message || 'Lỗi lưu trữ'),
+      });
+    } finally {
+      setIsUploadingCover(false);
       if (e.target) e.target.value = '';
     }
   };
@@ -287,22 +404,37 @@ export const StudioSettingsPage: React.FC = () => {
           setIsStudioOwner(isOwner);
           setIsStudioAdmin(isAdmin);
           setStudioName(currentStudio.name);
-          setLogoUrl(currentStudio.logo_url || '');
+          const studioSavedLogo = currentStudio.logo_url || (typeof window !== 'undefined' ? localStorage.getItem('lensy_current_studio_logo') : null) || '/mirmia-logo.png';
+          setLogoUrl(studioSavedLogo);
+
+          const studioSavedCover =
+            (currentStudio as any).cover_url ||
+            (currentStudio as any).cover_image ||
+            (typeof window !== 'undefined'
+              ? (localStorage.getItem('lensy_studio_cover_' + currentStudio.id) ||
+                 localStorage.getItem('lensy_current_studio_cover'))
+              : null) ||
+            '';
+          setCoverUrl(studioSavedCover);
+
           // Khôi phục trường Địa Chỉ trực tiếp từ cột address
           let initialAddress = currentStudio.address || '';
           let initialFanpage = currentStudio.facebook_url || '';
+          let initialPhone = currentStudio.phone || '';
           try {
             const rawMeta = localStorage.getItem('lensy_studio_meta_' + currentStudio.id);
             if (rawMeta) {
               const meta = JSON.parse(rawMeta);
               if (!initialAddress && meta.address) initialAddress = meta.address;
               if (!initialFanpage && meta.facebook_url) initialFanpage = meta.facebook_url;
+              if (!initialPhone && meta.phone) initialPhone = meta.phone;
             }
           } catch {
             // ignore
           }
           setStudioAddress(initialAddress);
           setStudioFanpage(initialFanpage);
+          setStudioPhone(initialPhone);
           setVerifiedStatus(currentStudio.verified_status || false);
 
           // Fetch members
@@ -477,33 +609,43 @@ export const StudioSettingsPage: React.FC = () => {
     try {
       const cleanName = studioName.trim();
       const cleanLogo = logoUrl.trim();
+      const cleanCover = coverUrl.trim();
       const cleanAddress = studioAddress.trim();
       const cleanFanpage = studioFanpage.trim();
       const cleanPhone = studioPhone.trim();
 
       // Đồng bộ ngay vào localStorage metadata để đảm bảo offline & schema fallback luôn persist dữ liệu mới nhất
       localStorage.setItem('lensy_current_studio_logo', cleanLogo);
+      if (cleanCover) {
+        localStorage.setItem('lensy_current_studio_cover', cleanCover);
+        localStorage.setItem(`lensy_studio_cover_${studio.id}`, cleanCover);
+      }
       localStorage.setItem(`lensy_studio_meta_${studio.id}`, JSON.stringify({
         name: cleanName,
         logo_url: cleanLogo,
+        cover_url: cleanCover,
         address: cleanAddress,
         facebook_url: cleanFanpage,
         phone: cleanPhone,
       }));
 
       if (isSupabaseConfigured) {
-        // Payload gửi lên Database với định dạng chuẩn xác: address, facebook_url (không dùng location)
+        // Payload gửi lên Database với định dạng chuẩn xác
         let updatePayload: {
           name: string;
           logo_url: string | null;
+          cover_url?: string | null;
           address?: string | null;
           facebook_url?: string | null;
+          phone?: string | null;
           updated_at: string;
         } = {
           name: cleanName,
           logo_url: cleanLogo || null,
+          cover_url: cleanCover || null,
           address: cleanAddress || null,
           facebook_url: cleanFanpage || null,
+          phone: cleanPhone || null,
           updated_at: new Date().toISOString(),
         };
 
@@ -515,8 +657,10 @@ export const StudioSettingsPage: React.FC = () => {
         if (error) {
           const errMsg = error.message || '';
           console.warn('[Supabase Schema Cache] Cột mở rộng chưa có trong schema cache studios, tự động fallback:', errMsg);
+          if (errMsg.includes('cover_url')) delete updatePayload.cover_url;
           if (errMsg.includes('facebook_url')) delete updatePayload.facebook_url;
           if (errMsg.includes('address')) delete updatePayload.address;
+          if (errMsg.includes('phone')) delete updatePayload.phone;
 
           const retryRes = await supabase
             .from('studios')
@@ -527,10 +671,26 @@ export const StudioSettingsPage: React.FC = () => {
 
         if (error) throw error;
 
+        // Đồng bộ cover_image / cover_url vào users table để đảm bảo trang đặt lịch cá nhân /book/:username đọc được
+        if (user) {
+          try {
+            await supabase
+              .from('users')
+              .update({
+                cover_image: cleanCover || null,
+                cover_url: cleanCover || null,
+              })
+              .eq('id', user.id);
+          } catch (uErr) {
+            console.warn('[StudioSettings] Fallback users update cover:', uErr);
+          }
+        }
+
         setStudio(prev => prev ? {
           ...prev,
           name: cleanName,
           logo_url: cleanLogo || null,
+          cover_url: cleanCover || null,
           address: cleanAddress || undefined,
         } : null);
         try {
@@ -1078,14 +1238,14 @@ export const StudioSettingsPage: React.FC = () => {
       </div>
 
       {/* Tabs Navigation */}
-      <div className="flex items-center gap-2 border-b border-slate-200 dark:border-white/10 pb-2">
+      <div className="flex items-center gap-1.5 border-b border-slate-200/80 dark:border-zinc-800 pb-3">
         <button
           type="button"
           onClick={() => setActiveTab('general')}
-          className={`flex items-center gap-2 px-4 py-2.5 rounded-2xl text-xs font-bold transition-all ${
+          className={`flex items-center gap-2 px-3.5 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer ${
             activeTab === 'general'
-              ? 'bg-amber-500 text-slate-950 shadow-md shadow-amber-500/20'
-              : 'text-slate-600 dark:text-slate-400 hover:bg-white/10 hover:text-slate-900 dark:hover:text-white'
+              ? 'bg-orange-600 text-white shadow-xs'
+              : 'text-slate-600 dark:text-zinc-400 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-zinc-800'
           }`}
         >
           <Building2 className="w-4 h-4" />
@@ -1095,10 +1255,10 @@ export const StudioSettingsPage: React.FC = () => {
         <button
           type="button"
           onClick={() => setActiveTab('members')}
-          className={`flex items-center gap-2 px-4 py-2.5 rounded-2xl text-xs font-bold transition-all relative ${
+          className={`flex items-center gap-2 px-3.5 py-2 rounded-xl text-xs font-bold transition-all relative cursor-pointer ${
             activeTab === 'members'
-              ? 'bg-amber-500 text-slate-950 shadow-md shadow-amber-500/20'
-              : 'text-slate-600 dark:text-slate-400 hover:bg-white/10 hover:text-slate-900 dark:hover:text-white'
+              ? 'bg-orange-600 text-white shadow-xs'
+              : 'text-slate-600 dark:text-zinc-400 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-zinc-800'
           }`}
         >
           <Users className="w-4 h-4" />
@@ -1116,10 +1276,10 @@ export const StudioSettingsPage: React.FC = () => {
             setActiveTab('integrations');
             setSearchParams({ tab: 'integrations' });
           }}
-          className={`flex items-center gap-2 px-4 py-2.5 rounded-2xl text-xs font-bold transition-all relative ${
+          className={`flex items-center gap-2 px-3.5 py-2 rounded-xl text-xs font-bold transition-all relative cursor-pointer ${
             activeTab === 'integrations'
-              ? 'bg-amber-500 text-slate-950 shadow-md shadow-amber-500/20'
-              : 'text-slate-600 dark:text-slate-400 hover:bg-white/10 hover:text-slate-900 dark:hover:text-white'
+              ? 'bg-orange-600 text-white shadow-xs'
+              : 'text-slate-600 dark:text-zinc-400 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-zinc-800'
           }`}
         >
           <Bot className="w-4 h-4" />
@@ -1131,155 +1291,381 @@ export const StudioSettingsPage: React.FC = () => {
       </div>
 
       {/* ==================================================================== */}
-      {/* TAB 1: THÔNG TIN CHUNG                                               */}
+      {/* TAB 1: THÔNG TIN CHUNG & NHẬN DIỆN THƯƠNG HIỆU                       */}
       {/* ==================================================================== */}
       {activeTab === 'general' && (
-        <form onSubmit={handleSaveStudioInfo} className="w-full max-w-4xl space-y-6 animate-fadeIn">
-          <div className="p-6 sm:p-8 rounded-3xl bg-white/60 dark:bg-white/5 backdrop-blur-xl border border-slate-200 dark:border-white/10 shadow-sm space-y-6">
-            <div className="flex items-center justify-between pb-4 border-b border-slate-200 dark:border-white/10">
-              <div>
-                <h2 className="text-sm font-bold text-slate-900 dark:text-white uppercase tracking-wider">
-                  Hồ Sơ Thương Hiệu Studio
-                </h2>
-                <p className="text-[11px] text-slate-500 dark:text-white/50">
-                  Thông tin này sẽ tự động gắn lên trang đặt lịch của các thợ ảnh trực thuộc Studio
-                </p>
-              </div>
-              {verifiedStatus && (
-                <div className="flex items-center gap-1.5 px-3 py-1 rounded-full bg-emerald-500/15 border border-emerald-500/30 text-emerald-400 text-xs font-bold">
-                  <ShieldCheck className="w-4 h-4 text-emerald-400" />
-                  <span>Đã Xác Thực Thương Hiệu</span>
-                </div>
-              )}
-            </div>
-
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-              {/* Logo Preview & Tải Ảnh (Loại bỏ ô nhập URL bằng text) */}
-              <div className="md:col-span-1 flex flex-col items-center justify-center p-6 rounded-2xl bg-slate-50 dark:bg-zinc-900/50 backdrop-blur-xl border border-slate-200 dark:border-white/10 shadow-sm text-center space-y-4">
-                <div className="w-28 h-28 rounded-2xl overflow-hidden border border-slate-200 dark:border-white/10 bg-white dark:bg-zinc-950 p-2 shadow-sm flex items-center justify-center">
-                  <img
-                    src={logoUrl || '/mirmia-logo.png'}
-                    alt="Studio Logo"
-                    className="w-full h-full object-contain rounded-xl"
-                    onError={e => {
-                      (e.target as HTMLImageElement).src = '/mirmia-logo.png';
-                    }}
-                  />
-                </div>
-                <div className="space-y-1">
-                  <p className="text-xs font-bold text-slate-800 dark:text-slate-200 truncate max-w-[180px]">{studioName || 'Tên Studio'}</p>
-                  <p className="text-[10px] text-slate-400">Xem trước Logo Studio</p>
-                </div>
-
-                {/* Nút Upload trực tiếp từ máy (loại bỏ ô text URL) */}
-                <input
-                  ref={logoFileInputRef}
-                  type="file"
-                  accept="image/*"
-                  onChange={handleLogoFileSelected}
-                  className="hidden"
-                />
-                <button
-                  type="button"
-                  disabled={isUploadingLogo}
-                  onClick={() => logoFileInputRef.current?.click()}
-                  className="w-full px-3 py-2 rounded-xl bg-orange-600 hover:bg-orange-500 text-white text-xs font-semibold shadow-xs flex items-center justify-center gap-1.5 transition-all cursor-pointer disabled:opacity-50"
-                >
-                  {isUploadingLogo ? (
-                    <>
-                      <Loader2 className="w-3.5 h-3.5 animate-spin" />
-                      <span>Đang tải lên...</span>
-                    </>
-                  ) : (
-                    <>
-                      <Upload className="w-3.5 h-3.5" />
-                      <span>Tải Ảnh Từ Máy</span>
-                    </>
+        <form onSubmit={handleSaveStudioInfo} className="w-full space-y-6 animate-fadeIn">
+          {/* BỐ CỤC 2 CỘT CÂN ĐỐI TOÀN MÀN HÌNH (7 COLS FORM + 5 COLS LIVE PREVIEW) */}
+          <div className="grid grid-cols-1 xl:grid-cols-12 gap-6 items-start">
+            
+            {/* CỘT TRÁI (7 COLS): CẤU HÌNH HÌNH ẢNH & THÔNG TIN STUDIO */}
+            <div className="xl:col-span-7 space-y-6">
+              
+              {/* CARD 1: ẢNH BÌA & LOGO STUDIO */}
+              <div className="rounded-2xl bg-white dark:bg-zinc-900 border border-slate-200/80 dark:border-zinc-800 shadow-xs p-5 sm:p-6 space-y-5">
+                <div className="flex items-center justify-between pb-3 border-b border-slate-100 dark:border-zinc-800">
+                  <div>
+                    <h2 className="text-sm font-bold text-slate-900 dark:text-white uppercase tracking-wider flex items-center gap-2">
+                      <Camera className="w-4 h-4 text-orange-500" />
+                      <span>Nhận Diện Hình Ảnh Studio</span>
+                    </h2>
+                    <p className="text-[11px] text-slate-500 dark:text-zinc-400">
+                      Ảnh bìa và Logo chính thức tự động hiển thị trên đầu trang đặt lịch hẹn của khách
+                    </p>
+                  </div>
+                  {verifiedStatus && (
+                    <div className="flex items-center gap-1.5 px-3 py-1 rounded-full bg-emerald-500/15 border border-emerald-500/30 text-emerald-600 dark:text-emerald-400 text-xs font-bold shrink-0">
+                      <ShieldCheck className="w-4 h-4 text-emerald-500" />
+                      <span>Đã Xác Thực</span>
+                    </div>
                   )}
-                </button>
-                <p className="text-[10px] text-slate-400 leading-tight">
-                  Hỗ trợ PNG, JPG, WEBP hoặc SVG (tối đa 5MB)
-                </p>
+                </div>
+
+                {/* KHU VỰC ẢNH BÌA (STUDIO COVER BANNER) */}
+                <div className="space-y-2">
+                  <div className="flex items-center justify-between">
+                    <label className="text-xs font-bold text-slate-700 dark:text-slate-300 flex items-center gap-1.5">
+                      <span>🖼️</span>
+                      <span>Ảnh Bìa Trang Đặt Lịch (Studio Cover Banner)</span>
+                    </label>
+                    <span className="text-[11px] text-slate-400 font-mono">Tỷ lệ 16:5 (1920x600px)</span>
+                  </div>
+
+                  <div className="relative w-full h-44 sm:h-52 rounded-2xl overflow-hidden border-2 border-dashed border-slate-200 dark:border-zinc-700 bg-slate-100 dark:bg-zinc-800/60 group">
+                    {coverUrl ? (
+                      <>
+                        <img
+                          src={coverUrl}
+                          alt="Studio Cover"
+                          className="w-full h-full object-cover group-hover:scale-102 transition-transform duration-500"
+                        />
+                        <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-black/20" />
+                      </>
+                    ) : (
+                      <div className="w-full h-full flex flex-col items-center justify-center gap-2 text-slate-400 p-4 text-center">
+                        <div className="w-12 h-12 rounded-full bg-orange-500/10 text-orange-500 flex items-center justify-center">
+                          <Camera className="w-6 h-6" />
+                        </div>
+                        <p className="text-xs font-bold text-slate-600 dark:text-slate-300">
+                          Chưa có ảnh bìa riêng
+                        </p>
+                        <p className="text-[11px] text-slate-400 max-w-sm">
+                          Trang đặt lịch hiện dùng ảnh mặc định. Hãy tải ảnh không gian Studio hoặc góc chụp thực tế của bạn.
+                        </p>
+                      </div>
+                    )}
+
+                    {/* Upload Input & Nút bấm trên Banner */}
+                    <input
+                      ref={coverFileInputRef}
+                      type="file"
+                      accept="image/*"
+                      onChange={handleCoverFileSelected}
+                      className="hidden"
+                    />
+                    <div className="absolute top-3 right-3 flex items-center gap-2">
+                      {coverUrl && (
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setCoverUrl('');
+                            if (studio?.id) localStorage.removeItem(`lensy_studio_cover_${studio.id}`);
+                            localStorage.removeItem('lensy_current_studio_cover');
+                            setToast({ type: 'info', message: 'Đã bỏ ảnh bìa riêng, trở về ảnh bìa mặc định.' });
+                          }}
+                          className="px-2.5 py-1.5 rounded-xl bg-black/60 hover:bg-rose-600 text-white text-[11px] font-semibold backdrop-blur-md transition-all cursor-pointer"
+                          title="Xóa ảnh bìa riêng"
+                        >
+                          Xóa Ảnh
+                        </button>
+                      )}
+                      <button
+                        type="button"
+                        disabled={isUploadingCover}
+                        onClick={() => coverFileInputRef.current?.click()}
+                        className="px-3.5 py-1.5 rounded-xl bg-orange-600 hover:bg-orange-500 text-white text-xs font-bold shadow-md backdrop-blur-md flex items-center gap-1.5 transition-all cursor-pointer disabled:opacity-50"
+                      >
+                        {isUploadingCover ? (
+                          <>
+                            <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                            <span>Đang tải lên...</span>
+                          </>
+                        ) : (
+                          <>
+                            <Upload className="w-3.5 h-3.5" />
+                            <span>{coverUrl ? 'Thay Đổi Ảnh Bìa' : 'Tải Ảnh Bìa Lên'}</span>
+                          </>
+                        )}
+                      </button>
+                    </div>
+                  </div>
+                </div>
+
+                {/* KHU VỰC LOGO STUDIO */}
+                <div className="flex flex-col sm:flex-row items-center sm:items-start gap-4 p-4 rounded-xl bg-slate-50/70 dark:bg-zinc-950/50 border border-slate-200/80 dark:border-zinc-800">
+                  <div className="w-20 h-20 rounded-2xl overflow-hidden border border-slate-200 dark:border-zinc-700 bg-white dark:bg-zinc-800 p-1.5 shadow-xs flex-shrink-0 flex items-center justify-center">
+                    <img
+                      src={logoUrl || '/mirmia-logo.png'}
+                      alt="Studio Logo"
+                      className="w-full h-full object-contain rounded-xl"
+                      onError={e => {
+                        (e.target as HTMLImageElement).src = '/mirmia-logo.png';
+                      }}
+                    />
+                  </div>
+
+                  <div className="flex-1 space-y-1.5 text-center sm:text-left">
+                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                      <div>
+                        <h4 className="text-xs font-bold text-slate-900 dark:text-white">
+                          Logo Thương Hiệu Studio
+                        </h4>
+                        <p className="text-[11px] text-slate-500 dark:text-zinc-400">
+                          Hiển thị trên Avatar trang đặt lịch, thư báo giá và menu Sidebar
+                        </p>
+                      </div>
+                      
+                      <input
+                        ref={logoFileInputRef}
+                        type="file"
+                        accept="image/*"
+                        onChange={handleLogoFileSelected}
+                        className="hidden"
+                      />
+                      <button
+                        type="button"
+                        disabled={isUploadingLogo}
+                        onClick={() => logoFileInputRef.current?.click()}
+                        className="px-3.5 py-1.5 rounded-xl bg-slate-200 dark:bg-zinc-800 hover:bg-orange-600 hover:text-white text-slate-700 dark:text-zinc-200 text-xs font-semibold shadow-xs flex items-center justify-center gap-1.5 transition-all cursor-pointer disabled:opacity-50"
+                      >
+                        {isUploadingLogo ? (
+                          <>
+                            <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                            <span>Đang tải...</span>
+                          </>
+                        ) : (
+                          <>
+                            <Upload className="w-3.5 h-3.5" />
+                            <span>Đổi Logo</span>
+                          </>
+                        )}
+                      </button>
+                    </div>
+                    <p className="text-[10px] text-slate-400">
+                      Hỗ trợ PNG, JPG, WEBP hoặc SVG (kích thước vuông, tối đa 5MB)
+                    </p>
+                  </div>
+                </div>
               </div>
 
-              {/* Form Inputs */}
-              <div className="md:col-span-2 space-y-4">
-                <div className="space-y-1.5">
-                  <label className="text-xs font-bold text-slate-700 dark:text-slate-300 flex items-center gap-1.5">
-                    <Building2 className="w-3.5 h-3.5 text-amber-500 dark:text-amber-400" />
-                    <span>Tên Studio Chính Thức *</span>
-                  </label>
-                  <input
-                    type="text"
-                    required
-                    value={studioName}
-                    onChange={e => setStudioName(e.target.value)}
-                    placeholder="VD: MIRMIA STUDIO & ACADEMY"
-                    className="w-full px-3.5 py-2.5 rounded-xl bg-slate-100/90 dark:bg-black/40 border border-slate-200 dark:border-white/10 text-xs text-slate-900 dark:text-white outline-none focus:border-amber-400"
-                  />
+              {/* CARD 2: THÔNG TIN LIÊN HỆ & PHÁP LÝ */}
+              <div className="rounded-2xl bg-white dark:bg-zinc-900 border border-slate-200/80 dark:border-zinc-800 shadow-xs p-5 sm:p-6 space-y-4">
+                <div className="flex items-center gap-2 pb-3 border-b border-slate-100 dark:border-zinc-800">
+                  <Building2 className="w-4 h-4 text-orange-500" />
+                  <h2 className="text-sm font-bold text-slate-900 dark:text-white uppercase tracking-wider">
+                    Thông Tin Liên Hệ & Trụ Sở
+                  </h2>
                 </div>
 
-                {/* Trường Số Điện Thoại / Hotline Studio */}
-                <div className="space-y-1.5">
-                  <label className="text-xs font-bold text-slate-700 dark:text-slate-300 flex items-center gap-1.5">
-                    <span>📞</span>
-                    <span>Số Điện Thoại / Hotline Studio</span>
-                  </label>
-                  <input
-                    type="tel"
-                    value={studioPhone}
-                    onChange={e => setStudioPhone(e.target.value)}
-                    placeholder="VD: 0901234567"
-                    className="w-full px-3.5 py-2.5 rounded-xl bg-slate-100/90 dark:bg-black/40 border border-slate-200 dark:border-white/10 text-xs text-slate-900 dark:text-white outline-none focus:border-amber-400"
-                  />
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <div className="space-y-1.5 sm:col-span-2">
+                    <label className="text-xs font-bold text-slate-700 dark:text-slate-300 flex items-center gap-1.5">
+                      <Building2 className="w-3.5 h-3.5 text-orange-500" />
+                      <span>Tên Studio Chính Thức *</span>
+                    </label>
+                    <input
+                      type="text"
+                      required
+                      value={studioName}
+                      onChange={e => setStudioName(e.target.value)}
+                      placeholder="VD: MIRMIA STUDIO & ACADEMY"
+                      className="w-full px-3.5 py-2.5 rounded-xl bg-slate-50/60 dark:bg-zinc-950/50 border border-slate-200/80 dark:border-zinc-800 text-xs text-slate-900 dark:text-white outline-none focus:border-orange-500 focus:ring-1 focus:ring-orange-500"
+                    />
+                  </div>
+
+                  <div className="space-y-1.5">
+                    <label className="text-xs font-bold text-slate-700 dark:text-slate-300 flex items-center gap-1.5">
+                      <Phone className="w-3.5 h-3.5 text-orange-500" />
+                      <span>Số Điện Thoại / Hotline Studio</span>
+                    </label>
+                    <input
+                      type="tel"
+                      value={studioPhone}
+                      onChange={e => setStudioPhone(e.target.value)}
+                      placeholder="VD: 0901234567"
+                      className="w-full px-3.5 py-2.5 rounded-xl bg-slate-50/60 dark:bg-zinc-950/50 border border-slate-200/80 dark:border-zinc-800 text-xs text-slate-900 dark:text-white outline-none focus:border-orange-500 focus:ring-1 focus:ring-orange-500"
+                    />
+                  </div>
+
+                  <div className="space-y-1.5">
+                    <label className="text-xs font-bold text-slate-700 dark:text-slate-300 flex items-center gap-1.5">
+                      <span>🌐</span>
+                      <span>Fanpage / Link Mạng Xã Hội</span>
+                    </label>
+                    <input
+                      type="url"
+                      value={studioFanpage}
+                      onChange={e => setStudioFanpage(e.target.value)}
+                      placeholder="https://facebook.com/mirmia.studio"
+                      className="w-full px-3.5 py-2.5 rounded-xl bg-slate-50/60 dark:bg-zinc-950/50 border border-slate-200/80 dark:border-zinc-800 text-xs text-slate-900 dark:text-white outline-none focus:border-orange-500 focus:ring-1 focus:ring-orange-500 font-mono"
+                    />
+                  </div>
+
+                  <div className="space-y-1.5 sm:col-span-2">
+                    <label className="text-xs font-bold text-slate-700 dark:text-slate-300 flex items-center gap-1.5">
+                      <span>📍</span>
+                      <span>Địa Chỉ Studio Trụ Sở *</span>
+                    </label>
+                    <input
+                      type="text"
+                      required
+                      value={studioAddress}
+                      onChange={e => setStudioAddress(e.target.value)}
+                      placeholder="VD: 124 Pasteur, Phường Bến Nghé, Quận 1, TP. Hồ Chí Minh"
+                      className="w-full px-3.5 py-2.5 rounded-xl bg-slate-50/60 dark:bg-zinc-950/50 border border-slate-200/80 dark:border-zinc-800 text-xs text-slate-900 dark:text-white outline-none focus:border-orange-500 focus:ring-1 focus:ring-orange-500"
+                    />
+                  </div>
                 </div>
 
-                {/* Trường Địa chỉ Studio */}
-                <div className="space-y-1.5">
-                  <label className="text-xs font-bold text-slate-700 dark:text-slate-300 flex items-center gap-1.5">
-                    <span>📍</span>
-                    <span>Địa Chỉ Studio *</span>
-                  </label>
-                  <input
-                    type="text"
-                    required
-                    value={studioAddress}
-                    onChange={e => setStudioAddress(e.target.value)}
-                    placeholder="VD: 124 Pasteur, Phường Bến Nghé, Quận 1, TP. Hồ Chí Minh"
-                    className="w-full px-3.5 py-2.5 rounded-xl bg-slate-100/90 dark:bg-black/40 border border-slate-200 dark:border-white/10 text-xs text-slate-900 dark:text-white outline-none focus:border-amber-400"
-                  />
+                <div className="flex items-center justify-end pt-3 border-t border-slate-100 dark:border-zinc-800">
+                  <button
+                    type="submit"
+                    disabled={isSaving}
+                    className="px-6 py-2.5 rounded-xl bg-orange-600 hover:bg-orange-500 disabled:opacity-50 text-white text-xs font-bold flex items-center gap-2 shadow-xs transition-all active:scale-95 cursor-pointer"
+                  >
+                    {isSaving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
+                    <span>Lưu Thông Tin Studio</span>
+                  </button>
+                </div>
+              </div>
+
+            </div>
+
+            {/* CỘT PHẢI (5 COLS): LIVE PREVIEW TRỰC QUAN TRANG ĐẶT LỊCH (BOOKING PORTAL MOCKUP) */}
+            <div className="xl:col-span-5 sticky top-6 space-y-4">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <Sparkles className="w-4 h-4 text-orange-500" />
+                  <h3 className="text-sm font-bold text-slate-900 dark:text-white uppercase tracking-wider">
+                    Xem Trước Trang Đặt Lịch
+                  </h3>
+                </div>
+                <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-orange-500/10 text-orange-600 dark:text-orange-400 border border-orange-500/20">
+                  Khách Hàng Nhìn Thấy
+                </span>
+              </div>
+
+              {/* MÔ PHỎNG TRANG ĐẶT LỊCH CHUẨN REALTIME */}
+              <div className="rounded-2xl border border-slate-200/80 dark:border-zinc-800 bg-white dark:bg-zinc-900 shadow-sm overflow-hidden space-y-0">
+                
+                {/* Header Browser Bar Mockup */}
+                <div className="px-3.5 py-2.5 bg-slate-100/90 dark:bg-zinc-950/80 border-b border-slate-200/80 dark:border-zinc-800 flex items-center justify-between text-[11px]">
+                  <div className="flex items-center gap-1.5">
+                    <span className="w-2.5 h-2.5 rounded-full bg-rose-400" />
+                    <span className="w-2.5 h-2.5 rounded-full bg-amber-400" />
+                    <span className="w-2.5 h-2.5 rounded-full bg-emerald-400" />
+                  </div>
+                  <span className="font-mono text-[10px] text-slate-500 dark:text-zinc-400 truncate max-w-[210px]">
+                    lensy.vn/book/{(user as any)?.username || user?.user_metadata?.username || 'johnnylongho'}
+                  </span>
+                  <a
+                    href={`/book/${(user as any)?.username || user?.user_metadata?.username || 'johnnylongho'}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-orange-600 hover:text-orange-500 font-bold flex items-center gap-1 text-[10px] cursor-pointer"
+                    title="Mở trang đặt lịch trên tab mới"
+                  >
+                    <span>Mở Tab</span>
+                    <ExternalLink className="w-3 h-3" />
+                  </a>
                 </div>
 
-                {/* Trường Fanpage / Link Mạng Xã Hội */}
-                <div className="space-y-1.5">
-                  <label className="text-xs font-bold text-slate-700 dark:text-slate-300 flex items-center gap-1.5">
-                    <span>🌐</span>
-                    <span>Fanpage / Link Mạng Xã Hội</span>
-                  </label>
-                  <input
-                    type="url"
-                    value={studioFanpage}
-                    onChange={e => setStudioFanpage(e.target.value)}
-                    placeholder="https://facebook.com/mirmia.studio"
-                    className="w-full px-3.5 py-2.5 rounded-xl bg-slate-100/90 dark:bg-black/40 border border-slate-200 dark:border-white/10 text-xs text-slate-900 dark:text-white outline-none focus:border-amber-400 font-mono"
-                  />
-                  <p className="text-[10px] text-slate-400">
-                    Đường dẫn Facebook Fanpage, Instagram hoặc TikTok chính thức của Studio.
-                  </p>
+                {/* Banner & Profile Preview */}
+                <div className="p-4 space-y-4">
+                  <div className="relative rounded-xl overflow-hidden border border-slate-200/80 dark:border-zinc-800 bg-slate-50 dark:bg-zinc-950">
+                    
+                    {/* Studio Cover Banner Preview */}
+                    <div className="h-32 sm:h-36 w-full relative overflow-hidden bg-slate-200 dark:bg-zinc-800">
+                      <img
+                        src={coverUrl || 'https://images.unsplash.com/photo-1492691527719-9d1e07e534b4?auto=format&fit=crop&w=1200&q=80'}
+                        alt={studioName || 'Studio Banner'}
+                        className="w-full h-full object-cover"
+                      />
+                      <div className="absolute inset-0 bg-gradient-to-t from-white/95 dark:from-zinc-900/95 via-transparent to-black/10" />
+                    </div>
+
+                    {/* Logo & Studio Info Overlay */}
+                    <div className="relative px-3 pb-3 pt-0 -mt-10 flex items-end gap-3">
+                      <div className="w-16 h-16 rounded-xl overflow-hidden border-2 border-white dark:border-zinc-800 shadow-md bg-white dark:bg-zinc-900 p-1 flex-shrink-0 flex items-center justify-center">
+                        <img
+                          src={logoUrl || '/mirmia-logo.png'}
+                          alt="Logo"
+                          className="w-full h-full object-contain rounded-lg"
+                          onError={e => {
+                            (e.target as HTMLImageElement).src = '/mirmia-logo.png';
+                          }}
+                        />
+                      </div>
+                      <div className="space-y-0.5 flex-1 min-w-0">
+                        <div className="flex items-center gap-1.5 flex-wrap">
+                          <span className="text-[9px] font-bold uppercase tracking-wider px-1.5 py-0.5 rounded bg-orange-50 dark:bg-orange-500/10 text-orange-600 dark:text-orange-400 border border-orange-200 dark:border-orange-500/20">
+                            Studio Profile
+                          </span>
+                          {verifiedStatus && (
+                            <span className="text-[9px] font-bold px-1.5 py-0.5 rounded bg-blue-50 dark:bg-blue-500/10 text-blue-600 dark:text-blue-400 border border-blue-200 dark:border-blue-500/20">
+                              Verified
+                            </span>
+                          )}
+                        </div>
+                        <h4 className="text-sm font-extrabold text-slate-900 dark:text-white truncate">
+                          {studioName || 'MIRMIA STUDIO & ACADEMY'}
+                        </h4>
+                        <p className="text-[10px] text-slate-500 dark:text-zinc-400 truncate">
+                          Nhiếp ảnh gia chính: {(user as any)?.full_name || 'Johnny Long Hồ'}
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Dòng Chào Mừng Khách Hàng */}
+                  <div className="p-3 rounded-xl bg-orange-50/70 dark:bg-orange-500/5 border border-orange-200/60 dark:border-orange-500/20 text-[11px] text-orange-950 dark:text-orange-200 leading-relaxed">
+                    Chào mừng bạn đến với <b>{studioName || 'MIRMIA STUDIO & ACADEMY'}</b>. Vui lòng để lại thông tin, chúng tôi sẽ liên hệ tư vấn gói chụp phù hợp nhất cho bạn.
+                  </div>
+
+                  {/* Mô phỏng các gói dịch vụ mẫu */}
+                  <div className="space-y-2 pt-1 border-t border-slate-100 dark:border-zinc-800">
+                    <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400">
+                      Gói Dịch Vụ Niêm Yết Của Bạn
+                    </span>
+                    <div className="grid grid-cols-2 gap-2 text-xs">
+                      <div className="p-2.5 rounded-xl border border-slate-200 dark:border-zinc-800 bg-slate-50/60 dark:bg-zinc-950/50 space-y-1">
+                        <span className="text-[9px] font-bold px-1.5 py-0.5 rounded bg-orange-500/10 text-orange-600 block w-max">
+                          Chụp Studio
+                        </span>
+                        <p className="font-bold text-slate-900 dark:text-white truncate text-[11px]">Portrait Nghệ Thuật</p>
+                        <p className="font-extrabold text-orange-600 text-xs">500.000 đ</p>
+                      </div>
+                      <div className="p-2.5 rounded-xl border border-slate-200 dark:border-zinc-800 bg-slate-50/60 dark:bg-zinc-950/50 space-y-1">
+                        <span className="text-[9px] font-bold px-1.5 py-0.5 rounded bg-purple-500/10 text-purple-600 block w-max">
+                          Trang Điểm & Styling
+                        </span>
+                        <p className="font-bold text-slate-900 dark:text-white truncate text-[11px]">Make Up - Gói Cơ Bản</p>
+                        <p className="font-extrabold text-orange-600 text-xs">80.000 đ</p>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Thông tin cam kết đồng bộ */}
+                  <div className="p-3 rounded-xl bg-slate-50 dark:bg-zinc-950 border border-slate-200/80 dark:border-zinc-800 flex items-start gap-2.5 text-[11px] text-slate-600 dark:text-zinc-400">
+                    <ShieldCheck className="w-4 h-4 text-emerald-500 shrink-0 mt-0.5" />
+                    <span>
+                      Ảnh bìa, logo và hotline sau khi lưu sẽ lập tức đồng bộ thời gian thực (Realtime) vào toàn bộ hệ thống đặt lịch của Studio.
+                    </span>
+                  </div>
                 </div>
               </div>
             </div>
-          </div>
 
-          <div className="flex items-center justify-end gap-3">
-            <button
-              type="submit"
-              disabled={isSaving}
-              className="px-6 py-2.5 rounded-xl bg-gradient-to-r from-amber-500 to-yellow-500 hover:from-amber-400 hover:to-yellow-400 disabled:opacity-50 text-slate-950 text-xs font-extrabold flex items-center gap-2 shadow-lg shadow-amber-500/20 transition-all hover:scale-[1.02]"
-            >
-              {isSaving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
-              <span>Lưu Thông Tin Studio</span>
-            </button>
           </div>
         </form>
       )}

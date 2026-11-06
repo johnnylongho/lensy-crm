@@ -135,17 +135,15 @@ export const DashboardHeader: React.FC<Props> = ({
 
         {/* Action Controls: Duy nhất 1 CTA "Tạo Báo Giá Mới" + Icon ... (More Options) */}
         <div className="flex items-center gap-3">
-          {/* CTA Duy Nhất: Nút Tạo Báo Giá với gradient mượt mà & glow viền */}
+          {/* CTA Duy Nhất: Nút Tạo Báo Giá */}
           {onOpenCreateQuote && (
             <button
               type="button"
               onClick={onOpenCreateQuote}
-              className="relative overflow-hidden px-5 py-2.5 rounded-2xl bg-gradient-to-r from-amber-500 via-amber-400 to-yellow-500 hover:from-amber-400 hover:to-yellow-400 text-slate-950 text-xs sm:text-sm font-extrabold flex items-center gap-2 shadow-lg shadow-amber-500/25 ring-1 ring-amber-400/50 hover:shadow-amber-500/40 hover:scale-[1.02] active:scale-[0.98] transition-all cursor-pointer group"
+              className="px-4 py-2 rounded-xl bg-orange-600 hover:bg-orange-500 text-white text-xs sm:text-sm font-bold flex items-center gap-2 shadow-xs transition-all cursor-pointer"
             >
-              {/* Subtle shimmer sweep overlay */}
-              <div className="absolute inset-0 w-1/2 h-full bg-gradient-to-r from-transparent via-white/40 to-transparent opacity-60 pointer-events-none animate-shimmer-sweep" />
-              <Camera className="w-4 h-4 relative z-10" />
-              <span className="relative z-10">+ Tạo Báo Giá Mới</span>
+              <Camera className="w-4 h-4" />
+              <span>+ Tạo Báo Giá Mới</span>
             </button>
           )}
 

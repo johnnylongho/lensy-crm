@@ -816,16 +816,16 @@ export const PackageModal: React.FC<PackageModalProps> = ({
             <button
               type="submit"
               disabled={isSubmitting}
-              className="px-6 py-2.5 rounded-xl bg-gradient-to-r from-amber-500 via-amber-400 to-yellow-400 hover:from-amber-400 hover:to-yellow-300 text-slate-950 font-black text-xs flex items-center gap-2 shadow-lg disabled:opacity-50 cursor-pointer"
+              className="px-6 py-2.5 rounded-xl bg-orange-600 hover:bg-orange-500 text-white font-bold text-xs flex items-center gap-2 shadow-xs disabled:opacity-50 cursor-pointer transition-all"
             >
               {isSubmitting ? (
                 <>
-                  <Loader2 className="w-4 h-4 animate-spin text-slate-950" />
+                  <Loader2 className="w-4 h-4 animate-spin text-white" />
                   <span>Đang Lưu...</span>
                 </>
               ) : (
                 <>
-                  <Check className="w-4 h-4 text-slate-950" />
+                  <Check className="w-4 h-4 text-white" />
                   <span>{editingPackage ? 'Cập Nhật Gói' : 'Tạo Gói Dịch Vụ'}</span>
                 </>
               )}

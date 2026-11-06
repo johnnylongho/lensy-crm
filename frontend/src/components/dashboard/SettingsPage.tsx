@@ -863,33 +863,33 @@ export const SettingsPage: React.FC = () => {
       </div>
 
       {/* Dynamic Booking Link Preview Card */}
-      <div className="w-full max-w-4xl p-5 sm:p-6 rounded-3xl bg-white/60 dark:bg-white/5 backdrop-blur-xl border border-amber-500/30 shadow-sm space-y-3">
+      <div className="w-full max-w-4xl p-5 sm:p-6 rounded-2xl bg-white dark:bg-zinc-900 border border-slate-200/80 dark:border-zinc-800 shadow-xs space-y-3">
         <div className="flex items-center justify-between">
-          <div className="flex items-center gap-2 text-amber-500 dark:text-amber-400 font-bold text-xs">
+          <div className="flex items-center gap-2 text-orange-600 dark:text-orange-400 font-bold text-xs">
             <Sparkles className="w-4 h-4" />
             <span>Đường Dẫn Đặt Lịch Độc Quyền Dành Cho Khách Hàng (Dynamic Routing)</span>
           </div>
-          <span className="text-[10px] font-mono px-2 py-0.5 rounded-full bg-amber-500/20 text-amber-600 dark:text-amber-300 border border-amber-500/30">
+          <span className="text-[10px] font-mono px-2 py-0.5 rounded-full bg-orange-500/15 text-orange-600 dark:text-orange-400 border border-orange-500/30">
             /book/:username
           </span>
         </div>
 
-        <p className="text-xs text-slate-600 dark:text-white/70 leading-relaxed">
+        <p className="text-xs text-slate-600 dark:text-zinc-400 leading-relaxed">
           Gửi đường link này cho khách hàng tiềm năng qua tin nhắn, Zalo hoặc gắn lên Bio Facebook / Instagram để khách tự chọn lịch và đặt cọc giữ chỗ:
         </p>
 
         <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 pt-1">
-          <div className="flex-1 px-3.5 py-2.5 rounded-xl bg-slate-100/90 dark:bg-black/40 border border-slate-200 dark:border-white/10 font-mono text-xs text-amber-600 dark:text-amber-300 select-all truncate flex items-center gap-2">
-            <AtSign className="w-4 h-4 text-slate-400 dark:text-slate-500 flex-shrink-0" />
+          <div className="flex-1 px-3.5 py-2.5 rounded-xl bg-slate-50/70 dark:bg-zinc-950/50 border border-slate-200/80 dark:border-zinc-800 font-mono text-xs text-orange-600 dark:text-orange-400 select-all truncate flex items-center gap-2">
+            <AtSign className="w-4 h-4 text-slate-400 dark:text-zinc-500 flex-shrink-0" />
             <span className="truncate">{bookingUrl}</span>
           </div>
           <button
             type="button"
             onClick={handleCopyBookingLink}
-            className={`px-4 py-2.5 rounded-xl text-xs font-bold flex items-center justify-center gap-1.5 transition-all shadow-md ${
+            className={`px-4 py-2.5 rounded-xl text-xs font-bold flex items-center justify-center gap-1.5 transition-all shadow-xs cursor-pointer ${
               isCopiedLink
                 ? 'bg-emerald-600 text-white'
-                : 'bg-gradient-to-r from-amber-500 to-yellow-500 hover:from-amber-400 hover:to-yellow-400 text-slate-950 shadow-amber-500/20'
+                : 'bg-orange-600 hover:bg-orange-500 text-white'
             }`}
           >
             {isCopiedLink ? <CheckCircle2 className="w-4 h-4" /> : <Copy className="w-4 h-4" />}
@@ -903,7 +903,7 @@ export const SettingsPage: React.FC = () => {
         {/* ==================================================================== */}
         {/* SECTION 1: PHÂN LOẠI TÀI KHOẢN (FREELANCER VS STUDIO MEMBER)         */}
         {/* ==================================================================== */}
-        <div className="p-5 sm:p-7 rounded-3xl bg-white/60 dark:bg-white/5 backdrop-blur-xl border border-white/60 dark:border-white/10 shadow-[0_8px_32px_0_rgba(0,0,0,0.25)] space-y-5">
+        <div className="p-5 sm:p-7 rounded-2xl bg-white dark:bg-zinc-900 border border-slate-200/80 dark:border-zinc-800 shadow-xs space-y-5">
           <div className="flex items-center gap-2.5 pb-3 border-b border-slate-200/60 dark:border-white/10">
             <User className="w-5 h-5 text-amber-500 dark:text-amber-400" />
             <div>
@@ -1385,7 +1385,7 @@ export const SettingsPage: React.FC = () => {
         {/* ==================================================================== */}
         {/* SECTION 2: THÔNG TIN CÁ NHÂN & LIÊN HỆ                             */}
         {/* ==================================================================== */}
-        <div className="p-5 sm:p-7 rounded-3xl bg-white/60 dark:bg-white/5 backdrop-blur-xl border border-white/60 dark:border-white/10 shadow-[0_8px_32px_0_rgba(0,0,0,0.25)] space-y-6">
+        <div className="p-5 sm:p-7 rounded-2xl bg-white dark:bg-zinc-900 border border-slate-200/80 dark:border-zinc-800 shadow-xs space-y-6">
           <div className="flex items-center gap-2.5 pb-3 border-b border-slate-200/60 dark:border-white/10">
             <Building2 className="w-5 h-5 text-amber-500 dark:text-amber-400" />
             <div>
@@ -1566,7 +1566,7 @@ export const SettingsPage: React.FC = () => {
         {/* ==================================================================== */}
         {/* SECTION 3: TÀI KHOẢN NGÂN HÀNG (VIETQR & NHẮC NỢ)                   */}
         {/* ==================================================================== */}
-        <div className="p-5 sm:p-7 rounded-3xl bg-white/60 dark:bg-white/5 backdrop-blur-xl border border-white/60 dark:border-white/10 shadow-[0_8px_32px_0_rgba(0,0,0,0.25)] space-y-5">
+        <div className="p-5 sm:p-7 rounded-2xl bg-white dark:bg-zinc-900 border border-slate-200/80 dark:border-zinc-800 shadow-xs space-y-5">
           <div className="flex items-center gap-2.5 pb-3 border-b border-slate-200/60 dark:border-white/10">
             <CreditCard className="w-5 h-5 text-amber-500 dark:text-amber-400" />
             <div>
@@ -1665,7 +1665,7 @@ export const SettingsPage: React.FC = () => {
           <button
             type="submit"
             disabled={isSaving}
-            className="px-6 py-2.5 rounded-xl bg-gradient-to-r from-amber-500 to-yellow-500 hover:from-amber-400 hover:to-yellow-400 disabled:opacity-50 text-slate-950 text-xs font-extrabold flex items-center gap-2 shadow-lg shadow-amber-500/20 transition-all hover:scale-[1.02]"
+            className="px-6 py-2.5 rounded-xl bg-orange-600 hover:bg-orange-500 disabled:opacity-50 text-white text-xs font-bold flex items-center gap-2 shadow-xs transition-all cursor-pointer"
           >
             {isSaving ? (
               <>

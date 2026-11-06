@@ -649,29 +649,29 @@ export const PayrollManagementPage: React.FC = () => {
 
       {/* 1. KPI SUMMARY CARDS */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 mb-6">
-        <div className="p-5 rounded-3xl bg-white/80 dark:bg-zinc-900/50 backdrop-blur-2xl border border-slate-200/80 dark:border-white/10 shadow-sm space-y-1.5">
-          <div className="flex items-center justify-between text-xs text-gray-500 dark:text-zinc-400 font-semibold">
+        <div className="rounded-2xl border border-slate-200/80 dark:border-zinc-800 bg-white dark:bg-zinc-900 p-5 shadow-xs hover:shadow-md transition-all space-y-2">
+          <div className="flex items-center justify-between text-xs text-slate-500 dark:text-zinc-400 font-semibold">
             <span>{isStudioMember ? 'Tổng Thù Lao Của Tôi' : 'Tổng Quỹ Lương & Thù Lao Ekip'}</span>
-            <div className="p-2 rounded-xl bg-amber-500/10 text-amber-500 border border-amber-500/20">
+            <div className="p-2 rounded-xl bg-orange-500/10 text-orange-600 dark:text-orange-400 border border-orange-500/20">
               <Wallet className="w-4 h-4" />
             </div>
           </div>
-          <div className="text-2xl font-black font-mono text-gray-900 dark:text-white">
+          <div className="text-2xl sm:text-3xl font-extrabold text-slate-900 dark:text-white tracking-tight tabular-nums">
             {totalPayrollAmount.toLocaleString('vi-VN')} đ
           </div>
-          <p className="text-[11px] text-gray-400 dark:text-zinc-500">
+          <p className="text-[11px] text-slate-400 dark:text-zinc-500">
             {filteredRows.length} lượt phân công {!isStudioMember && excludeOwnerPayroll && '(Đã tách chủ studio)'}
           </p>
         </div>
 
-        <div className="p-5 rounded-3xl bg-white/80 dark:bg-zinc-900/50 backdrop-blur-2xl border border-slate-200/80 dark:border-white/10 shadow-sm space-y-1.5">
-          <div className="flex items-center justify-between text-xs text-gray-500 dark:text-zinc-400 font-semibold">
+        <div className="rounded-2xl border border-slate-200/80 dark:border-zinc-800 bg-white dark:bg-zinc-900 p-5 shadow-xs hover:shadow-md transition-all space-y-2">
+          <div className="flex items-center justify-between text-xs text-slate-500 dark:text-zinc-400 font-semibold">
             <span>{isStudioMember ? 'Đã Nhận Thanh Toán' : 'Đã Chi Trả Cho Ekip'}</span>
-            <div className="p-2 rounded-xl bg-emerald-500/10 text-emerald-500 border border-emerald-500/20">
+            <div className="p-2 rounded-xl bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20">
               <CheckCircle2 className="w-4 h-4" />
             </div>
           </div>
-          <div className="text-2xl font-black font-mono text-emerald-600 dark:text-emerald-400">
+          <div className="text-2xl sm:text-3xl font-extrabold text-emerald-600 dark:text-emerald-400 tracking-tight tabular-nums">
             {totalPaidAmount.toLocaleString('vi-VN')} đ
           </div>
           <p className="text-[11px] text-emerald-600/70 dark:text-emerald-400/70">
@@ -679,14 +679,14 @@ export const PayrollManagementPage: React.FC = () => {
           </p>
         </div>
 
-        <div className="p-5 rounded-3xl bg-white/80 dark:bg-zinc-900/50 backdrop-blur-2xl border border-rose-200/70 dark:border-rose-900/40 shadow-sm space-y-1.5 border-l-4 border-l-rose-500">
-          <div className="flex items-center justify-between text-xs text-gray-500 dark:text-zinc-400 font-semibold">
+        <div className="rounded-2xl border border-rose-200/80 dark:border-rose-900/40 bg-white dark:bg-zinc-900 p-5 shadow-xs hover:shadow-md transition-all space-y-2 border-l-4 border-l-rose-500">
+          <div className="flex items-center justify-between text-xs text-slate-500 dark:text-zinc-400 font-semibold">
             <span>{isStudioMember ? 'Chờ Studio Thanh Toán' : 'Công Nợ Lương Cần Chi'}</span>
             <div className="p-2 rounded-xl bg-rose-500/10 text-rose-500 border border-rose-500/20">
               <Clock className="w-4 h-4" />
             </div>
           </div>
-          <div className="text-2xl font-black font-mono text-rose-600 dark:text-rose-400">
+          <div className="text-2xl sm:text-3xl font-extrabold text-rose-600 dark:text-rose-400 tracking-tight tabular-nums">
             {totalUnpaidAmount.toLocaleString('vi-VN')} đ
           </div>
           <p className="text-[11px] text-rose-600/70 dark:text-rose-400/70">
@@ -696,11 +696,11 @@ export const PayrollManagementPage: React.FC = () => {
       </div>
 
       {/* 2. FILTER BAR */}
-      <div className="p-4 rounded-3xl bg-white/80 dark:bg-zinc-900/50 backdrop-blur-2xl border border-slate-200/80 dark:border-white/10 shadow-sm flex flex-col md:flex-row items-stretch md:items-center justify-between gap-3">
+      <div className="p-3.5 rounded-2xl bg-white dark:bg-zinc-900 border border-slate-200/80 dark:border-zinc-800 shadow-xs flex flex-col md:flex-row items-stretch md:items-center justify-between gap-3">
         <div className="flex flex-wrap items-center gap-2.5">
           {/* Thanh Chọn Tháng Trực Quan Dạng Dropdown + Nút Nhanh */}
-          <div className="flex items-center gap-1.5 bg-slate-50 dark:bg-white/5 border border-slate-200/80 dark:border-white/10 rounded-2xl px-3 py-1.5 text-xs">
-            <Calendar className="w-3.5 h-3.5 text-amber-500" />
+          <div className="flex items-center gap-1.5 bg-slate-50 dark:bg-zinc-950/50 border border-slate-200/80 dark:border-zinc-800 rounded-xl px-3 py-1.5 text-xs">
+            <Calendar className="w-3.5 h-3.5 text-orange-500" />
             <select
               value={selectedMonth}
               onChange={e => setSelectedMonth(e.target.value)}
@@ -712,13 +712,13 @@ export const PayrollManagementPage: React.FC = () => {
                 </option>
               ))}
             </select>
-            <div className="flex items-center gap-1 ml-1 border-l border-slate-200 dark:border-white/10 pl-2">
+            <div className="flex items-center gap-1 ml-1 border-l border-slate-200 dark:border-zinc-800 pl-2">
               <button
                 type="button"
                 onClick={() => setSelectedMonth(currentMonthStr)}
                 className={`px-2 py-0.5 rounded-lg text-[10px] font-bold transition-all cursor-pointer ${
                   selectedMonth === currentMonthStr
-                    ? 'bg-amber-500 text-slate-950 shadow-2xs'
+                    ? 'bg-orange-600 text-white shadow-2xs'
                     : 'bg-slate-200 dark:bg-white/10 text-slate-700 dark:text-zinc-300 hover:bg-slate-300 dark:hover:bg-white/15'
                 }`}
               >
@@ -729,7 +729,7 @@ export const PayrollManagementPage: React.FC = () => {
                 onClick={() => setSelectedMonth('all')}
                 className={`px-2 py-0.5 rounded-lg text-[10px] font-bold transition-all cursor-pointer ${
                   selectedMonth === 'all'
-                    ? 'bg-amber-500 text-slate-950 shadow-2xs'
+                    ? 'bg-orange-600 text-white shadow-2xs'
                     : 'bg-slate-200 dark:bg-white/10 text-slate-700 dark:text-zinc-300 hover:bg-slate-300 dark:hover:bg-white/15'
                 }`}
               >
@@ -740,12 +740,12 @@ export const PayrollManagementPage: React.FC = () => {
 
           {/* Tùy chọn Tách thù lao của Chủ Studio khỏi công nợ */}
           {!isStudioMember && (
-            <label className="flex items-center gap-2 px-3 py-2 rounded-2xl bg-slate-50 dark:bg-white/5 border border-slate-200/80 dark:border-white/10 text-xs font-semibold text-slate-700 dark:text-zinc-300 cursor-pointer select-none hover:border-amber-500/30 transition-colors">
+            <label className="flex items-center gap-2 px-3 py-1.5 rounded-xl bg-slate-50 dark:bg-zinc-950/50 border border-slate-200/80 dark:border-zinc-800 text-xs font-semibold text-slate-700 dark:text-zinc-300 cursor-pointer select-none hover:border-orange-500/30 transition-colors">
               <input
                 type="checkbox"
                 checked={excludeOwnerPayroll}
                 onChange={e => setExcludeOwnerPayroll(e.target.checked)}
-                className="w-3.5 h-3.5 rounded text-amber-500 focus:ring-amber-400 cursor-pointer"
+                className="w-3.5 h-3.5 rounded text-orange-500 focus:ring-orange-400 cursor-pointer"
               />
               <span>Tách thù lao Chủ Studio khỏi công nợ</span>
             </label>
@@ -919,19 +919,19 @@ export const PayrollManagementPage: React.FC = () => {
         </h3>
 
         {isLoading ? (
-          <div className="p-12 rounded-3xl bg-white dark:bg-zinc-900 border border-gray-200 dark:border-zinc-800 flex flex-col items-center justify-center space-y-2">
+          <div className="p-12 rounded-2xl bg-white dark:bg-zinc-900 border border-slate-200/80 dark:border-zinc-800 flex flex-col items-center justify-center space-y-2">
             <Loader2 className="w-7 h-7 text-orange-500 animate-spin" />
-            <p className="text-xs text-gray-500 dark:text-zinc-400">Đang tải dữ liệu thù lao...</p>
+            <p className="text-xs text-slate-500 dark:text-zinc-400">Đang tải dữ liệu thù lao...</p>
           </div>
         ) : filteredRows.length === 0 ? (
-          <div className="p-12 rounded-3xl bg-white dark:bg-zinc-900 border border-dashed border-gray-200 dark:border-zinc-800 text-center space-y-2">
-            <Wallet className="w-8 h-8 text-gray-400 mx-auto" />
-            <p className="text-sm font-bold text-gray-800 dark:text-zinc-200">
+          <div className="p-12 rounded-2xl bg-white dark:bg-zinc-900 border border-dashed border-slate-200/80 dark:border-zinc-800 text-center space-y-2">
+            <Wallet className="w-8 h-8 text-slate-400 mx-auto" />
+            <p className="text-sm font-bold text-slate-800 dark:text-zinc-200">
               Không có bản ghi thù lao nào trong kỳ này
             </p>
           </div>
         ) : (
-          <div className="rounded-2xl bg-white dark:bg-zinc-900 border border-gray-200 dark:border-zinc-800 overflow-hidden shadow-xs">
+          <div className="rounded-2xl bg-white dark:bg-zinc-900 border border-slate-200/80 dark:border-zinc-800 overflow-hidden shadow-xs">
             <div className="overflow-x-auto">
               <table className="w-full text-left border-collapse text-xs">
                 <thead>
@@ -1035,7 +1035,7 @@ export const PayrollManagementPage: React.FC = () => {
           onClick={() => setQrPayoutModal(null)}
         >
           <div
-            className="w-full max-w-md rounded-3xl bg-white dark:bg-zinc-900 border border-gray-200 dark:border-zinc-800 p-6 shadow-2xl space-y-5"
+            className="w-full max-w-md rounded-2xl bg-white dark:bg-zinc-900 border border-slate-200/80 dark:border-zinc-800 p-6 shadow-2xl space-y-5"
             onClick={e => e.stopPropagation()}
           >
             <div className="flex items-center justify-between border-b border-gray-100 dark:border-zinc-800 pb-3">

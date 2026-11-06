@@ -342,80 +342,112 @@ export const ClientsManagementPage: React.FC = () => {
         </button>
       </div>
 
-      {/* 4 Thẻ Thống Kê Tổng Quan (KPIs) - Liquid Glass */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 mb-6">
+      {/* 4 Thẻ Thống Kê Tổng Quan (KPIs) - Phong Cách Dashboard Đồng Bộ */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
         {/* Tổng Khách */}
-        <div className="p-5 sm:p-6 rounded-3xl bg-white/60 dark:bg-white/5 backdrop-blur-xl border border-slate-200 dark:border-white/10 shadow-sm space-y-1.5 hover:shadow-md hover:-translate-y-0.5 transition-all duration-300">
-          <span className="text-xs font-medium text-slate-500 dark:text-white/50 flex items-center gap-1.5">
-            <Users className="w-3.5 h-3.5 text-blue-500 dark:text-blue-400" />
-            <span>Tổng Khách Hàng</span>
-          </span>
+        <div className="rounded-2xl border border-slate-200/80 dark:border-zinc-800 bg-white dark:bg-zinc-900 p-5 shadow-xs hover:shadow-md transition-all space-y-2">
+          <div className="flex items-center justify-between text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-zinc-400">
+            <span className="flex items-center gap-2">
+              <span className="w-8 h-8 rounded-xl bg-blue-500/10 text-blue-600 dark:text-blue-400 flex items-center justify-center">
+                <Users className="w-4 h-4" />
+              </span>
+              <span>Tổng Khách Hàng</span>
+            </span>
+            <span className="text-[10px] px-2 py-0.5 rounded-full bg-blue-500/10 text-blue-600 dark:text-blue-400 font-bold">
+              CRM Tệp
+            </span>
+          </div>
           {isLoading ? (
-            <div className="h-8 w-24 bg-slate-200 dark:bg-white/10 rounded-lg animate-pulse my-1" />
+            <div className="h-8 w-24 bg-slate-200 dark:bg-zinc-800 rounded-lg animate-pulse my-1" />
           ) : (
-            <p className="text-2xl sm:text-3xl font-light font-mono text-slate-900 dark:text-white tracking-tight">
-              {kpiStats.totalClients} <span className="text-xs font-normal text-slate-500 dark:text-white/50">người</span>
-            </p>
+            <div className="flex items-baseline gap-2">
+              <p className="text-2xl sm:text-3xl font-extrabold font-sans text-slate-900 dark:text-white tracking-tight tabular-nums">
+                {kpiStats.totalClients}
+              </p>
+              <span className="text-xs font-semibold text-slate-400">người</span>
+            </div>
           )}
+          <p className="text-[11px] text-slate-400 dark:text-zinc-500">Toàn bộ hồ sơ liên hệ trong hệ thống</p>
         </div>
 
         {/* Khách VIP */}
-        <div className="p-5 sm:p-6 rounded-3xl bg-gradient-to-br from-amber-500/10 via-white/60 to-amber-500/5 dark:from-amber-950/40 dark:via-white/5 dark:to-transparent backdrop-blur-xl border border-amber-400/40 dark:border-amber-500/30 shadow-sm space-y-1.5 hover:shadow-md hover:-translate-y-0.5 transition-all duration-300">
-          <span className="text-xs font-medium text-amber-600 dark:text-amber-400 flex items-center gap-1.5">
-            <Crown className="w-3.5 h-3.5 text-amber-500" />
-            <span>Khách Hàng VIP (👑)</span>
-          </span>
+        <div className="rounded-2xl border border-slate-200/80 dark:border-zinc-800 bg-white dark:bg-zinc-900 p-5 shadow-xs hover:shadow-md transition-all space-y-2">
+          <div className="flex items-center justify-between text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-zinc-400">
+            <span className="flex items-center gap-2">
+              <span className="w-8 h-8 rounded-xl bg-amber-500/10 text-amber-600 dark:text-amber-400 flex items-center justify-center">
+                <Crown className="w-4 h-4" />
+              </span>
+              <span>Khách VIP (👑)</span>
+            </span>
+            <span className="text-[10px] px-2 py-0.5 rounded-full bg-amber-500/10 text-amber-600 dark:text-amber-400 font-bold">
+              {kpiStats.totalClients > 0 ? Math.round((kpiStats.vipCount / kpiStats.totalClients) * 100) : 0}% tệp
+            </span>
+          </div>
           {isLoading ? (
             <div className="h-8 w-20 bg-amber-500/20 rounded-lg animate-pulse my-1" />
           ) : (
             <div className="flex items-baseline gap-2">
-              <p className="text-2xl sm:text-3xl font-light font-mono text-amber-600 dark:text-amber-300 tracking-tight">
+              <p className="text-2xl sm:text-3xl font-extrabold font-sans text-amber-600 dark:text-amber-400 tracking-tight tabular-nums">
                 {kpiStats.vipCount}
               </p>
-              <span className="text-xs text-amber-600/80 dark:text-amber-400/80 font-medium">
-                ({kpiStats.totalClients > 0 ? Math.round((kpiStats.vipCount / kpiStats.totalClients) * 100) : 0}% tệp khách)
-              </span>
+              <span className="text-xs font-semibold text-slate-400">khách VIP</span>
             </div>
           )}
+          <p className="text-[11px] text-slate-400 dark:text-zinc-500">Khách có từ 2 show hoặc chi tiêu cao</p>
         </div>
 
         {/* Tổng Doanh Thu Thực Thu */}
-        <div className="p-5 sm:p-6 rounded-3xl bg-white/60 dark:bg-white/5 backdrop-blur-xl border border-slate-200 dark:border-white/10 shadow-sm space-y-1.5 hover:shadow-md hover:-translate-y-0.5 transition-all duration-300">
-          <span className="text-xs font-medium text-slate-500 dark:text-white/50 flex items-center gap-1.5">
-            <DollarSign className="w-3.5 h-3.5 text-emerald-500 dark:text-emerald-400" />
-            <span>Tổng Doanh Thu Thực Thu</span>
-          </span>
+        <div className="rounded-2xl border border-slate-200/80 dark:border-zinc-800 bg-white dark:bg-zinc-900 p-5 shadow-xs hover:shadow-md transition-all space-y-2">
+          <div className="flex items-center justify-between text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-zinc-400">
+            <span className="flex items-center gap-2">
+              <span className="w-8 h-8 rounded-xl bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 flex items-center justify-center">
+                <DollarSign className="w-4 h-4" />
+              </span>
+              <span>Tổng Doanh Thu (LTV)</span>
+            </span>
+            <span className="text-[10px] px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 font-bold">
+              Thực Thu
+            </span>
+          </div>
           {isLoading ? (
-            <div className="h-8 w-32 bg-slate-200 dark:bg-white/10 rounded-lg animate-pulse my-1" />
+            <div className="h-8 w-32 bg-slate-200 dark:bg-zinc-800 rounded-lg animate-pulse my-1" />
           ) : (
             <div>
-              <p className="text-xl sm:text-2xl font-light font-mono text-emerald-600 dark:text-emerald-400 truncate tracking-tight">
+              <p className="text-2xl sm:text-3xl font-extrabold font-sans text-emerald-600 dark:text-emerald-400 tracking-tight tabular-nums truncate">
                 {kpiStats.totalLtvRevenue.toLocaleString('vi-VN')} đ
               </p>
-              <p className="text-[10px] text-slate-400 dark:text-zinc-500 mt-0.5">Dòng tiền thực nhận (đã cọc & tất toán)</p>
             </div>
           )}
+          <p className="text-[11px] text-slate-400 dark:text-zinc-500">Dòng tiền thực nhận (cọc & thanh toán)</p>
         </div>
 
         {/* AOV */}
-        <div className="p-5 sm:p-6 rounded-3xl bg-white/60 dark:bg-white/5 backdrop-blur-xl border border-slate-200 dark:border-white/10 shadow-sm space-y-1.5 hover:shadow-md hover:-translate-y-0.5 transition-all duration-300">
-          <span className="text-xs font-medium text-slate-500 dark:text-white/50 flex items-center gap-1.5">
-            <TrendingUp className="w-3.5 h-3.5 text-purple-500 dark:text-purple-400" />
-            <span>Giá Trị Trung Bình / Khách</span>
-          </span>
+        <div className="rounded-2xl border border-slate-200/80 dark:border-zinc-800 bg-white dark:bg-zinc-900 p-5 shadow-xs hover:shadow-md transition-all space-y-2">
+          <div className="flex items-center justify-between text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-zinc-400">
+            <span className="flex items-center gap-2">
+              <span className="w-8 h-8 rounded-xl bg-purple-500/10 text-purple-600 dark:text-purple-400 flex items-center justify-center">
+                <TrendingUp className="w-4 h-4" />
+              </span>
+              <span>AOV Trung Bình</span>
+            </span>
+            <span className="text-[10px] px-2 py-0.5 rounded-full bg-purple-500/10 text-purple-600 dark:text-purple-400 font-bold">
+              / Khách
+            </span>
+          </div>
           {isLoading ? (
-            <div className="h-8 w-28 bg-slate-200 dark:bg-white/10 rounded-lg animate-pulse my-1" />
+            <div className="h-8 w-28 bg-slate-200 dark:bg-zinc-800 rounded-lg animate-pulse my-1" />
           ) : (
-            <p className="text-xl sm:text-2xl font-light font-mono text-purple-600 dark:text-purple-300 truncate tracking-tight">
+            <p className="text-2xl sm:text-3xl font-extrabold font-sans text-purple-600 dark:text-purple-400 tracking-tight tabular-nums truncate">
               {kpiStats.avgOrderValue.toLocaleString('vi-VN')} đ
             </p>
           )}
+          <p className="text-[11px] text-slate-400 dark:text-zinc-500">Giá trị chi tiêu trung bình trên mỗi khách</p>
         </div>
       </div>
 
-      {/* Toolbar: Tìm kiếm & Bộ lọc Tab Phân Loại Khách Hàng (Mobile App First) */}
-      <div className="flex flex-col lg:flex-row items-stretch lg:items-center justify-between gap-3 p-3 sm:p-4 rounded-3xl bg-white/70 dark:bg-white/5 backdrop-blur-xl border border-slate-200 dark:border-white/10 shadow-sm">
-        {/* Khung Tìm Kiếm Linh Hoạt */}
+      {/* Toolbar: Tìm kiếm & Bộ lọc Tab Phân Loại Khách Hàng */}
+      <div className="flex flex-col lg:flex-row items-stretch lg:items-center justify-between gap-3 p-3 rounded-2xl bg-white dark:bg-zinc-900 border border-slate-200/80 dark:border-zinc-800 shadow-xs">
+        {/* Khung Tìm Kiếm */}
         <div className="relative flex-1">
           <Search className="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
           <input
@@ -423,13 +455,13 @@ export const ClientsManagementPage: React.FC = () => {
             value={searchQuery}
             onChange={e => setSearchQuery(e.target.value)}
             placeholder="Tìm theo tên, SĐT, email khách hàng..."
-            className="w-full bg-slate-100/90 dark:bg-black/30 border border-slate-200/90 dark:border-white/10 focus:border-[#df8653] focus:ring-2 focus:ring-[#df8653]/20 rounded-2xl pl-10 pr-9 py-2.5 min-h-[44px] text-xs sm:text-sm text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-slate-500 focus:outline-none transition-all shadow-inner"
+            className="w-full h-10 bg-slate-50/60 dark:bg-zinc-950/50 border border-slate-200/80 dark:border-zinc-800 focus:border-orange-500 focus:ring-1 focus:ring-orange-500 rounded-xl pl-9 pr-8 text-xs text-slate-900 dark:text-white placeholder:text-slate-400 focus:outline-none transition-all"
           />
           {searchQuery && (
             <button
               type="button"
               onClick={() => setSearchQuery('')}
-              className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 dark:hover:text-white p-1 rounded-full hover:bg-slate-200 dark:hover:bg-white/10 transition-colors"
+              className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 dark:hover:text-white p-1 rounded-full hover:bg-slate-200 dark:hover:bg-zinc-800 transition-colors cursor-pointer"
               title="Xóa ô tìm kiếm"
             >
               <X className="w-3.5 h-3.5" />
@@ -437,19 +469,19 @@ export const ClientsManagementPage: React.FC = () => {
           )}
         </div>
 
-        {/* Khung Phân Loại Khách Hàng Dạng Pills Cuộn Ngang Mượt Mà */}
-        <div className="flex items-center gap-1.5 bg-slate-100/90 dark:bg-black/30 p-1.5 rounded-2xl border border-slate-200/90 dark:border-white/10 text-xs overflow-x-auto scrollbar-none touch-pan-x">
+        {/* Khung Phân Loại Khách Hàng Dạng Pills Dashboard */}
+        <div className="flex items-center gap-1 bg-slate-100 dark:bg-zinc-800 p-1 rounded-xl text-xs font-semibold overflow-x-auto scrollbar-none">
           <button
             type="button"
             onClick={() => setFilterTier('all')}
-            className={`px-3.5 py-2 min-h-[40px] rounded-xl font-bold transition-all flex items-center gap-1.5 flex-shrink-0 cursor-pointer ${
+            className={`px-3 py-1.5 rounded-lg font-bold transition-all flex items-center gap-1.5 flex-shrink-0 cursor-pointer ${
               filterTier === 'all'
-                ? 'bg-gradient-to-r from-orange-500 via-[#df8653] to-amber-500 text-white shadow-md shadow-orange-500/25'
-                : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-white/70 dark:hover:bg-white/5'
+                ? 'bg-orange-600 text-white shadow-xs'
+                : 'text-slate-600 dark:text-zinc-400 hover:text-slate-900 dark:hover:text-white'
             }`}
           >
             <span>Tất Cả</span>
-            <span className={`text-[10px] px-1.5 py-0.5 rounded-full font-mono ${filterTier === 'all' ? 'bg-black/20 text-white' : 'bg-slate-200 dark:bg-white/10 text-slate-600 dark:text-slate-300'}`}>
+            <span className={`text-[10px] px-1.5 py-0.2 rounded-full font-sans ${filterTier === 'all' ? 'bg-white/20 text-white' : 'bg-slate-200 dark:bg-zinc-700 text-slate-600 dark:text-zinc-300'}`}>
               {clients.length}
             </span>
           </button>
@@ -457,14 +489,14 @@ export const ClientsManagementPage: React.FC = () => {
           <button
             type="button"
             onClick={() => setFilterTier('vip')}
-            className={`px-3.5 py-2 min-h-[40px] rounded-xl font-bold transition-all flex items-center gap-1.5 flex-shrink-0 cursor-pointer ${
+            className={`px-3 py-1.5 rounded-lg font-bold transition-all flex items-center gap-1.5 flex-shrink-0 cursor-pointer ${
               filterTier === 'vip'
-                ? 'bg-gradient-to-r from-amber-400 via-amber-500 to-yellow-600 text-slate-950 shadow-md shadow-amber-500/25'
-                : 'text-amber-600 dark:text-amber-400 hover:text-amber-700 dark:hover:text-amber-300 hover:bg-white/70 dark:hover:bg-white/5'
+                ? 'bg-orange-600 text-white shadow-xs'
+                : 'text-amber-600 dark:text-amber-400 hover:text-amber-700 dark:hover:text-amber-300'
             }`}
           >
             <span>👑 VIP</span>
-            <span className={`text-[10px] px-1.5 py-0.5 rounded-full font-mono ${filterTier === 'vip' ? 'bg-black/20 text-slate-950' : 'bg-amber-500/15 text-amber-600 dark:text-amber-400'}`}>
+            <span className={`text-[10px] px-1.5 py-0.2 rounded-full font-sans ${filterTier === 'vip' ? 'bg-white/20 text-white' : 'bg-amber-500/15 text-amber-600 dark:text-amber-400'}`}>
               {kpiStats.vipCount}
             </span>
           </button>
@@ -472,14 +504,14 @@ export const ClientsManagementPage: React.FC = () => {
           <button
             type="button"
             onClick={() => setFilterTier('regular')}
-            className={`px-3.5 py-2 min-h-[40px] rounded-xl font-bold transition-all flex items-center gap-1.5 flex-shrink-0 cursor-pointer ${
+            className={`px-3 py-1.5 rounded-lg font-bold transition-all flex items-center gap-1.5 flex-shrink-0 cursor-pointer ${
               filterTier === 'regular'
-                ? 'bg-gradient-to-r from-orange-500 via-[#df8653] to-amber-500 text-white shadow-md shadow-orange-500/25'
-                : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-white/70 dark:hover:bg-white/5'
+                ? 'bg-orange-600 text-white shadow-xs'
+                : 'text-slate-600 dark:text-zinc-400 hover:text-slate-900 dark:hover:text-white'
             }`}
           >
             <span>🥈 Thân Thiết</span>
-            <span className={`text-[10px] px-1.5 py-0.5 rounded-full font-mono ${filterTier === 'regular' ? 'bg-black/20 text-white' : 'bg-slate-200 dark:bg-white/10 text-slate-600 dark:text-slate-300'}`}>
+            <span className={`text-[10px] px-1.5 py-0.2 rounded-full font-sans ${filterTier === 'regular' ? 'bg-white/20 text-white' : 'bg-slate-200 dark:bg-zinc-700 text-slate-600 dark:text-zinc-300'}`}>
               {kpiStats.regularCount}
             </span>
           </button>
@@ -487,14 +519,14 @@ export const ClientsManagementPage: React.FC = () => {
           <button
             type="button"
             onClick={() => setFilterTier('debt')}
-            className={`px-3.5 py-2 min-h-[40px] rounded-xl font-bold transition-all flex items-center gap-1.5 flex-shrink-0 cursor-pointer ${
+            className={`px-3 py-1.5 rounded-lg font-bold transition-all flex items-center gap-1.5 flex-shrink-0 cursor-pointer ${
               filterTier === 'debt'
-                ? 'bg-gradient-to-r from-rose-500 to-red-600 text-white shadow-md shadow-rose-500/25'
-                : 'text-rose-500 dark:text-rose-400 hover:text-rose-600 dark:hover:text-rose-300 hover:bg-white/70 dark:hover:bg-white/5'
+                ? 'bg-rose-600 text-white shadow-xs'
+                : 'text-rose-500 dark:text-rose-400 hover:text-rose-600 dark:hover:text-rose-300'
             }`}
           >
             <span>⏳ Còn Nợ</span>
-            <span className={`text-[10px] px-1.5 py-0.5 rounded-full font-mono ${filterTier === 'debt' ? 'bg-black/20 text-white' : 'bg-rose-500/15 text-rose-500 dark:text-rose-400'}`}>
+            <span className={`text-[10px] px-1.5 py-0.2 rounded-full font-sans ${filterTier === 'debt' ? 'bg-white/20 text-white' : 'bg-rose-500/15 text-rose-500 dark:text-rose-400'}`}>
               {kpiStats.debtCount}
             </span>
           </button>
@@ -502,11 +534,11 @@ export const ClientsManagementPage: React.FC = () => {
       </div>
 
       {/* 1. MÀN HÌNH DESKTOP: BẢNG DỮ LIỆU TẬN DỤNG TOÀN DIỆN CHIỀU NGANG */}
-      <div className="hidden md:block rounded-2xl border border-slate-200 dark:border-slate-800 bg-white/70 dark:bg-slate-900/60 overflow-hidden shadow-xl">
+      <div className="hidden md:block rounded-2xl border border-slate-200/80 dark:border-zinc-800 bg-white dark:bg-zinc-900 overflow-hidden shadow-xs">
         <div className="overflow-x-auto">
           <table className="w-full text-left text-xs border-collapse">
             <thead>
-              <tr className="bg-slate-100/90 dark:bg-slate-950/80 border-b border-slate-200 dark:border-slate-800 text-[11px] font-bold uppercase tracking-wider text-slate-600 dark:text-slate-400">
+              <tr className="bg-slate-50/75 dark:bg-zinc-900/75 border-b border-slate-200/80 dark:border-zinc-800 text-[11px] font-extrabold uppercase tracking-wider text-slate-400 dark:text-zinc-500 font-mono">
                 <th className="py-3 px-4">Khách Hàng</th>
                 <th className="py-3 px-4">Số Điện Thoại</th>
                 <th className="py-3 px-4 text-center">Hạng Khách</th>
@@ -516,7 +548,7 @@ export const ClientsManagementPage: React.FC = () => {
                 <th className="py-3 px-4 text-center">Thao Tác</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-slate-200/80 dark:divide-slate-800/60">
+            <tbody className="divide-y divide-slate-100 dark:divide-zinc-800/80">
               {isLoading ? (
                 Array.from({ length: 5 }).map((_, idx) => (
                   <tr key={`skel-row-${idx}`} className="animate-pulse">
@@ -675,7 +707,7 @@ export const ClientsManagementPage: React.FC = () => {
                           <button
                             type="button"
                             onClick={() => handleOpenClientProfile(client)}
-                            className="px-2.5 py-1 rounded-lg bg-slate-100 dark:bg-slate-800 hover:bg-amber-500 hover:text-slate-950 border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-200 font-bold text-[11px] transition-all flex items-center gap-1 cursor-pointer"
+                            className="px-2.5 py-1 rounded-lg bg-slate-100 dark:bg-zinc-800 hover:bg-orange-600 hover:text-white hover:border-orange-600 border border-slate-200 dark:border-zinc-700 text-slate-700 dark:text-zinc-200 font-bold text-[11px] transition-all flex items-center gap-1 cursor-pointer"
                           >
                             <span>Xem Hồ Sơ</span>
                             <ChevronRight className="w-3 h-3" />

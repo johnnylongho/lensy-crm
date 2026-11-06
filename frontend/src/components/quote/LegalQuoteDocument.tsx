@@ -51,7 +51,10 @@ export const LegalQuoteDocument: React.FC<Props> = ({
   const activeStudio = studio || currentStudio;
   const studioName = activeStudio?.name || quote.studioName || 'Studio Nhiếp Ảnh';
   const studioLogo =
-    activeStudio?.logo_url || quote.studioAvatarUrl || '/lensy-logo.png';
+    activeStudio?.logo_url ||
+    (quote.studioAvatarUrl && !quote.studioAvatarUrl.includes('lensy-logo.png') ? quote.studioAvatarUrl : null) ||
+    (typeof window !== 'undefined' ? localStorage.getItem('lensy_current_studio_logo') : null) ||
+    '/mirmia-logo.png';
   const studioAddress =
     activeStudio?.address || quote.studioAddress || '';
   const studioTaxCode =
@@ -138,7 +141,7 @@ export const LegalQuoteDocument: React.FC<Props> = ({
               alt={studioName}
               className="w-16 h-16 object-contain mb-2"
               onError={e => {
-                (e.target as HTMLImageElement).src = '/lensy-logo.png';
+                (e.target as HTMLImageElement).src = '/mirmia-logo.png';
               }}
             />
             <h2 className="text-sm sm:text-base font-black text-slate-900 tracking-wide uppercase">
@@ -362,9 +365,13 @@ export const LegalQuoteDocument: React.FC<Props> = ({
           </div>
 
           {/* Lời Cảm Ơn Kết Thúc Thư Báo Giá */}
-          <p className="text-xs text-slate-500 italic text-center pt-3 pb-1 border-t border-slate-100">
-            Xin chân thành cảm ơn Quý khách đã tin tưởng và lựa chọn dịch vụ của {studioName}.
-          </p>
+          <div className="pt-3 pb-1 border-t border-slate-100 flex flex-col sm:flex-row items-center justify-between gap-2 text-xs text-slate-500 italic">
+            <p>Xin chân thành cảm ơn Quý khách đã tin tưởng và lựa chọn dịch vụ của {studioName}.</p>
+            <div className="not-italic flex items-center gap-1.5 text-[11px] text-slate-400">
+              <img src="/lensy-logo.png" alt="Lensy CRM" className="w-3.5 h-3.5 object-contain rounded" />
+              <span>Powered by <strong className="font-semibold text-slate-600">Lensy</strong></span>
+            </div>
+          </div>
         </div>
       </div>
 

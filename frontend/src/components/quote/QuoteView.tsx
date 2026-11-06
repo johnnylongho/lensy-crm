@@ -344,8 +344,13 @@ export const QuoteView: React.FC<Props> = ({
             if (globalLogo) resolvedStudioLogo = globalLogo;
           }
 
+          // CHẶN TUYỆT ĐỐI HIỂN THỊ LOGO HỆ THỐNG /lensy-logo.png LÀM LOGO STUDIO
+          if (!resolvedStudioLogo || resolvedStudioLogo === '/lensy-logo.png' || resolvedStudioLogo.includes('lensy-logo')) {
+            resolvedStudioLogo = '/mirmia-logo.png';
+          }
+
           const displayStudioName = studioData?.name || currentStudio?.name || userData?.studio_name || 'MIRMIA STUDIO & ACADEMY';
-          const displayAvatarUrl = resolvedStudioLogo || userData?.avatar_url || '/mirmia-logo.png';
+          const displayAvatarUrl = resolvedStudioLogo || '/mirmia-logo.png';
 
           const studioVerifiedInfo: { name: string; logoUrl?: string } | null = (studioData || currentStudio) ? {
             name: studioData?.name || currentStudio?.name || displayStudioName,
@@ -359,7 +364,17 @@ export const QuoteView: React.FC<Props> = ({
             studio_id: studioData?.id || currentStudio?.id || prev.studio_id,
             studioName: displayStudioName,
             studioAvatarUrl: displayAvatarUrl,
-            studioCoverUrl: userData?.cover_image || userData?.cover_url || studioData?.cover_image || 'https://images.unsplash.com/photo-1492691527719-9d1e07e534b4?auto=format&fit=crop&w=1200&q=80',
+            studioCoverUrl:
+              studioData?.cover_url ||
+              studioData?.cover_image ||
+              userData?.cover_image ||
+              userData?.cover_url ||
+              currentStudio?.cover_url ||
+              (typeof window !== 'undefined'
+                ? (localStorage.getItem('lensy_studio_cover_' + (studioData?.id || currentStudio?.id)) ||
+                   localStorage.getItem('lensy_current_studio_cover'))
+                : null) ||
+              'https://images.unsplash.com/photo-1492691527719-9d1e07e534b4?auto=format&fit=crop&w=1200&q=80',
             studioAddress: studioData?.address || currentStudio?.address || undefined,
             studioTaxCode: studioData?.tax_code || currentStudio?.tax_code || undefined,
             studioPhone: studioData?.phone || currentStudio?.phone || userData?.phone || undefined,
@@ -818,12 +833,12 @@ export const QuoteView: React.FC<Props> = ({
 
   const studioCoverUrl =
     quote.studioCoverUrl ||
+    (typeof window !== 'undefined' ? (localStorage.getItem('lensy_studio_cover_' + quote.studio_id) || localStorage.getItem('lensy_current_studio_cover')) : null) ||
     'https://images.unsplash.com/photo-1492691527719-9d1e07e534b4?auto=format&fit=crop&w=1200&q=80';
   const studioAvatarUrl =
-    quote.studioAvatarUrl ||
-    currentStudio?.logo_url ||
-    (typeof window !== 'undefined' ? localStorage.getItem('lensy_current_studio_logo') : null) ||
-    '/mirmia-logo.png';
+    (quote.studioAvatarUrl && !quote.studioAvatarUrl.includes('lensy-logo.png') && quote.studioAvatarUrl !== '/lensy-logo.png')
+      ? quote.studioAvatarUrl
+      : (currentStudio?.logo_url || (typeof window !== 'undefined' ? localStorage.getItem('lensy_current_studio_logo') : null) || '/mirmia-logo.png');
   const studioPhone = quote.photographerPhone || '0901234567';
   const cleanStudioPhone = studioPhone.replace(/[^0-9]/g, '');
   const zaloUrl = `https://zalo.me/${cleanStudioPhone}`;
@@ -1081,9 +1096,14 @@ export const QuoteView: React.FC<Props> = ({
       {/* Sticky Bottom Bar & Floating Buttons - CHỈ HIỂN THỊ Ở TRANG BOOKING */}
       {isBookingPage && (
         <>
-          <footer className="no-print print:hidden sticky bottom-0 z-30 w-full py-2 px-4 bg-white/90 backdrop-blur-md border-t border-slate-200 text-center">
-            <div className="text-xs sm:text-[11px] text-slate-400 font-medium inline-flex items-center justify-center gap-1 cursor-default select-none">
+          <footer className="no-print print:hidden sticky bottom-0 z-30 w-full py-2.5 px-4 bg-white/95 backdrop-blur-md border-t border-slate-200 text-center">
+            <div className="text-xs sm:text-[11px] text-slate-500 font-medium inline-flex flex-wrap items-center justify-center gap-2 cursor-default select-none">
               <span>{quote.studioName} • Báo Giá & Hợp Đồng Dịch Vụ</span>
+              <span className="text-slate-300">•</span>
+              <span className="inline-flex items-center gap-1.5 font-semibold text-slate-700">
+                <img src="/lensy-logo.png" alt="Lensy CRM" className="w-4 h-4 object-contain rounded" />
+                <span>Powered by Lensy</span>
+              </span>
             </div>
           </footer>
 

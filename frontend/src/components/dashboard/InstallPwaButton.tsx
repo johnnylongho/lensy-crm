@@ -17,7 +17,11 @@ if (typeof window !== 'undefined') {
   });
 }
 
-export const InstallPwaButton: React.FC = () => {
+interface InstallPwaButtonProps {
+  className?: string;
+}
+
+export const InstallPwaButton: React.FC<InstallPwaButtonProps> = ({ className }) => {
   const [deferredPrompt, setDeferredPrompt] = useState<BeforeInstallPromptEvent | null>(
     globalDeferredPrompt
   );
@@ -105,7 +109,7 @@ export const InstallPwaButton: React.FC = () => {
       <button
         type="button"
         onClick={handleInstallClick}
-        className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-xl bg-gradient-to-r from-amber-500 via-amber-400 to-yellow-500 hover:from-amber-400 hover:to-yellow-400 text-slate-950 font-extrabold text-xs shadow-md shadow-amber-500/25 transition-all hover:scale-[1.03] active:scale-[0.98]"
+        className={`inline-flex items-center gap-2 px-3.5 py-1.5 rounded-xl bg-gradient-to-r from-amber-500 via-amber-400 to-yellow-500 hover:from-amber-400 hover:to-yellow-400 text-slate-950 font-extrabold text-xs shadow-md shadow-amber-500/25 transition-all hover:scale-[1.03] active:scale-[0.98] ${className || ''}`}
         title="Cài đặt Lensy thành ứng dụng máy tính hoặc điện thoại"
       >
         <Download className="w-3.5 h-3.5" />

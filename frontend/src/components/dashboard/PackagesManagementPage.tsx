@@ -495,9 +495,9 @@ export const PackagesManagementPage: React.FC = () => {
         <div className="flex items-center gap-2.5 shrink-0">
           <button
             onClick={handleOpenCreateModal}
-            className="px-4 py-2.5 rounded-2xl bg-gradient-to-r from-amber-500 via-amber-400 to-yellow-400 hover:from-amber-400 hover:to-yellow-300 text-slate-950 font-black text-xs sm:text-sm flex items-center gap-2 shadow-sm hover:scale-[1.02] active:scale-95 transition-all cursor-pointer"
+            className="flex items-center gap-2 px-3.5 py-2 rounded-xl bg-orange-600 hover:bg-orange-500 text-white font-bold text-xs shadow-xs transition-all active:scale-95 cursor-pointer"
           >
-            <Plus className="w-4 h-4" />
+            <Plus className="w-4 h-4 stroke-[2.2]" />
             <span>Thêm Gói Dịch Vụ Mới</span>
           </button>
         </div>
@@ -507,34 +507,34 @@ export const PackagesManagementPage: React.FC = () => {
       {/* 4 STATS CARDS LIQUID GLASS                                           */}
       {/* ==================================================================== */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 mb-6">
-        <div className="p-4 rounded-3xl bg-white/70 dark:bg-white/[0.04] backdrop-blur-xl border border-white/60 dark:border-white/10 shadow-sm space-y-1">
-          <span className="text-[11px] font-bold uppercase tracking-wider text-slate-400">Tổng Gói Dịch Vụ</span>
+        <div className="rounded-2xl border border-slate-200/80 dark:border-zinc-800 bg-white dark:bg-zinc-900 p-5 shadow-xs hover:shadow-md transition-all space-y-2">
+          <span className="text-[11px] font-bold uppercase tracking-wider text-slate-500 dark:text-zinc-400">Tổng Gói Dịch Vụ</span>
           <div className="flex items-baseline justify-between">
-            <span className="text-2xl sm:text-3xl font-black text-slate-900 dark:text-white">{totalPackages}</span>
-            <span className="text-xs text-amber-500 font-bold">Gói niêm yết</span>
+            <span className="text-2xl sm:text-3xl font-extrabold text-slate-900 dark:text-white tracking-tight tabular-nums">{totalPackages}</span>
+            <span className="text-xs text-orange-600 dark:text-orange-400 font-bold">Gói niêm yết</span>
           </div>
         </div>
 
-        <div className="p-4 rounded-3xl bg-white/70 dark:bg-white/[0.04] backdrop-blur-xl border border-white/60 dark:border-white/10 shadow-sm space-y-1">
-          <span className="text-[11px] font-bold uppercase tracking-wider text-slate-400">Đang Hoạt Động</span>
+        <div className="rounded-2xl border border-slate-200/80 dark:border-zinc-800 bg-white dark:bg-zinc-900 p-5 shadow-xs hover:shadow-md transition-all space-y-2">
+          <span className="text-[11px] font-bold uppercase tracking-wider text-slate-500 dark:text-zinc-400">Đang Hoạt Động</span>
           <div className="flex items-baseline justify-between">
-            <span className="text-2xl sm:text-3xl font-black text-emerald-600 dark:text-emerald-400">{activePackages}</span>
+            <span className="text-2xl sm:text-3xl font-extrabold text-emerald-600 dark:text-emerald-400 tracking-tight tabular-nums">{activePackages}</span>
             <span className="text-xs text-slate-400 font-medium">/{totalPackages} gói</span>
           </div>
         </div>
 
-        <div className="p-4 rounded-3xl bg-white/70 dark:bg-white/[0.04] backdrop-blur-xl border border-white/60 dark:border-white/10 shadow-sm space-y-1">
-          <span className="text-[11px] font-bold uppercase tracking-wider text-slate-400">Giá Gói Cao Nhất</span>
+        <div className="rounded-2xl border border-slate-200/80 dark:border-zinc-800 bg-white dark:bg-zinc-900 p-5 shadow-xs hover:shadow-md transition-all space-y-2">
+          <span className="text-[11px] font-bold uppercase tracking-wider text-slate-500 dark:text-zinc-400">Giá Gói Cao Nhất</span>
           <div className="flex items-baseline justify-between">
-            <span className="text-xl sm:text-2xl font-black text-amber-500">{formatVND(maxPrice)}</span>
+            <span className="text-xl sm:text-2xl font-extrabold text-orange-600 dark:text-orange-400 tracking-tight tabular-nums">{formatVND(maxPrice)}</span>
             <span className="text-[10px] text-slate-400">Luxury</span>
           </div>
         </div>
 
-        <div className="p-4 rounded-3xl bg-white/70 dark:bg-white/[0.04] backdrop-blur-xl border border-white/60 dark:border-white/10 shadow-sm space-y-1">
-          <span className="text-[11px] font-bold uppercase tracking-wider text-slate-400">Giá Trung Bình</span>
+        <div className="rounded-2xl border border-slate-200/80 dark:border-zinc-800 bg-white dark:bg-zinc-900 p-5 shadow-xs hover:shadow-md transition-all space-y-2">
+          <span className="text-[11px] font-bold uppercase tracking-wider text-slate-500 dark:text-zinc-400">Giá Trung Bình</span>
           <div className="flex items-baseline justify-between">
-            <span className="text-xl sm:text-2xl font-black text-slate-900 dark:text-white">{formatVND(avgPrice)}</span>
+            <span className="text-xl sm:text-2xl font-extrabold text-slate-900 dark:text-white tracking-tight tabular-nums">{formatVND(avgPrice)}</span>
             <span className="text-[10px] text-slate-400">/ hợp đồng</span>
           </div>
         </div>
@@ -543,7 +543,7 @@ export const PackagesManagementPage: React.FC = () => {
       {/* ==================================================================== */}
       {/* TOOLBAR: SEARCH, CATEGORY FILTER, STATUS FILTER & VIEW TOGGLE         */}
       {/* ==================================================================== */}
-      <div className="flex flex-col lg:flex-row items-stretch lg:items-center justify-between gap-3 p-2.5 rounded-2xl bg-white/50 dark:bg-white/[0.02] border border-white/60 dark:border-white/10 backdrop-blur-md">
+      <div className="flex flex-col lg:flex-row items-stretch lg:items-center justify-between gap-3 p-3 rounded-2xl bg-white dark:bg-zinc-900 border border-slate-200/80 dark:border-zinc-800 shadow-xs">
         <div className="flex flex-1 flex-wrap items-center gap-2">
           {/* Ô tìm kiếm */}
           <div className="relative flex-1 min-w-[200px] max-w-sm">
@@ -553,7 +553,7 @@ export const PackagesManagementPage: React.FC = () => {
               placeholder="Tìm theo tên, mô tả hoặc quyền lợi..."
               value={searchTerm}
               onChange={e => setSearchTerm(e.target.value)}
-              className="w-full pl-9 pr-8 py-2 text-xs rounded-xl bg-white/70 dark:bg-slate-950/70 border border-slate-200 dark:border-white/10 text-slate-900 dark:text-white placeholder-slate-400 focus:outline-none focus:border-amber-500"
+              className="w-full pl-9 pr-8 py-2 text-xs rounded-xl bg-slate-50/60 dark:bg-zinc-950/50 border border-slate-200/80 dark:border-zinc-800 text-slate-900 dark:text-white placeholder-slate-400 focus:outline-none focus:border-orange-500"
             />
             {searchTerm && (
               <button
@@ -567,20 +567,20 @@ export const PackagesManagementPage: React.FC = () => {
 
           {/* Lọc danh mục dịch vụ (Category Filter Dropdown) */}
           <div className="relative">
-            <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-white/70 dark:bg-slate-950/70 border border-slate-200 dark:border-white/10 text-xs text-slate-700 dark:text-slate-300">
-              <Tag className="w-3.5 h-3.5 text-amber-500 shrink-0" />
+            <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-slate-50/60 dark:bg-zinc-950/50 border border-slate-200/80 dark:border-zinc-800 text-xs text-slate-700 dark:text-slate-300">
+              <Tag className="w-3.5 h-3.5 text-orange-500 shrink-0" />
               <select
                 value={categoryFilter}
                 onChange={e => setCategoryFilter(e.target.value as any)}
                 className="bg-transparent text-slate-900 dark:text-white text-xs font-semibold focus:outline-none cursor-pointer pr-1"
               >
-                <option value="all" className="bg-slate-900 text-white">
+                <option value="all" className="bg-white dark:bg-zinc-900 text-slate-900 dark:text-white">
                   Tất cả phân loại ({packages.length})
                 </option>
                 {PACKAGE_CATEGORIES.map(cat => {
                   const count = packages.filter(p => (p.category || 'studio') === cat.value).length;
                   return (
-                    <option key={cat.value} value={cat.value} className="bg-slate-900 text-white">
+                    <option key={cat.value} value={cat.value} className="bg-white dark:bg-zinc-900 text-slate-900 dark:text-white">
                       {cat.label} ({count})
                     </option>
                   );
@@ -590,33 +590,33 @@ export const PackagesManagementPage: React.FC = () => {
           </div>
 
           {/* Lọc trạng thái (Status Filter Tabs) */}
-          <div className="flex items-center gap-1 bg-slate-100 dark:bg-white/5 p-1 rounded-xl text-xs font-semibold">
+          <div className="flex items-center gap-1 bg-slate-100 dark:bg-zinc-800/60 p-1 rounded-xl text-xs font-semibold">
             <button
               onClick={() => setStatusFilter('all')}
-              className={`px-2.5 py-1 rounded-lg transition-all ${
+              className={`px-3 py-1 rounded-lg transition-all font-bold ${
                 statusFilter === 'all'
-                  ? 'bg-white dark:bg-amber-500/20 text-slate-900 dark:text-amber-300 shadow-sm'
-                  : 'text-slate-500 hover:text-slate-900 dark:hover:text-white'
+                  ? 'bg-orange-600 text-white shadow-xs'
+                  : 'text-slate-600 dark:text-zinc-400 hover:text-slate-900 dark:hover:text-white'
               }`}
             >
               Tất cả
             </button>
             <button
               onClick={() => setStatusFilter('active')}
-              className={`px-2.5 py-1 rounded-lg transition-all ${
+              className={`px-3 py-1 rounded-lg transition-all font-bold ${
                 statusFilter === 'active'
-                  ? 'bg-white dark:bg-emerald-500/20 text-emerald-700 dark:text-emerald-300 shadow-sm'
-                  : 'text-slate-500 hover:text-emerald-600'
+                  ? 'bg-emerald-600 text-white shadow-xs'
+                  : 'text-slate-600 dark:text-zinc-400 hover:text-emerald-600'
               }`}
             >
               Hoạt động ({packages.filter(p => p.is_active).length})
             </button>
             <button
               onClick={() => setStatusFilter('inactive')}
-              className={`px-2.5 py-1 rounded-lg transition-all ${
+              className={`px-3 py-1 rounded-lg transition-all font-bold ${
                 statusFilter === 'inactive'
-                  ? 'bg-white dark:bg-slate-700 text-slate-900 dark:text-slate-300 shadow-sm'
-                  : 'text-slate-500 hover:text-slate-900 dark:hover:text-white'
+                  ? 'bg-zinc-700 text-white shadow-xs'
+                  : 'text-slate-600 dark:text-zinc-400 hover:text-slate-900 dark:hover:text-white'
               }`}
             >
               Tạm ẩn ({packages.filter(p => !p.is_active).length})
@@ -625,14 +625,14 @@ export const PackagesManagementPage: React.FC = () => {
         </div>
 
         {/* Chuyển đổi View Lưới / Bảng */}
-        <div className="flex items-center gap-1 self-end lg:self-auto bg-slate-100 dark:bg-white/5 p-1 rounded-xl shrink-0">
+        <div className="flex items-center gap-1 self-end lg:self-auto bg-slate-100 dark:bg-zinc-800/60 p-1 rounded-xl shrink-0">
           <button
             onClick={() => setViewMode('grid')}
             title="Dạng lưới thẻ"
             className={`p-1.5 rounded-lg transition-all ${
               viewMode === 'grid'
-                ? 'bg-white dark:bg-white/10 text-amber-500 shadow-sm'
-                : 'text-slate-400 hover:text-white'
+                ? 'bg-orange-600 text-white shadow-xs'
+                : 'text-slate-400 hover:text-slate-700 dark:hover:text-white'
             }`}
           >
             <LayoutGrid className="w-4 h-4" />
@@ -642,8 +642,8 @@ export const PackagesManagementPage: React.FC = () => {
             title="Dạng danh sách bảng"
             className={`p-1.5 rounded-lg transition-all ${
               viewMode === 'table'
-                ? 'bg-white dark:bg-white/10 text-amber-500 shadow-sm'
-                : 'text-slate-400 hover:text-white'
+                ? 'bg-orange-600 text-white shadow-xs'
+                : 'text-slate-400 hover:text-slate-700 dark:hover:text-white'
             }`}
           >
             <List className="w-4 h-4" />
@@ -656,12 +656,12 @@ export const PackagesManagementPage: React.FC = () => {
       {/* ==================================================================== */}
       {isLoading ? (
         <div className="py-20 flex flex-col items-center justify-center space-y-3">
-          <Loader2 className="w-8 h-8 text-amber-500 animate-spin" />
+          <Loader2 className="w-8 h-8 text-orange-500 animate-spin" />
           <p className="text-xs text-slate-400 font-mono">Đang tải danh sách gói dịch vụ...</p>
         </div>
       ) : filteredPackages.length === 0 ? (
-        <div className="p-12 text-center rounded-3xl bg-white/40 dark:bg-white/[0.02] border border-dashed border-slate-300 dark:border-white/10 space-y-4">
-          <div className="w-14 h-14 rounded-full bg-amber-500/10 text-amber-400 mx-auto flex items-center justify-center">
+        <div className="p-12 text-center rounded-2xl bg-white dark:bg-zinc-900 border border-dashed border-slate-200/80 dark:border-zinc-800 space-y-4">
+          <div className="w-14 h-14 rounded-full bg-orange-500/10 text-orange-500 mx-auto flex items-center justify-center">
             <Package className="w-7 h-7" />
           </div>
           <div className="space-y-1">
@@ -674,14 +674,14 @@ export const PackagesManagementPage: React.FC = () => {
           </div>
           <button
             onClick={handleOpenCreateModal}
-            className="px-4 py-2 rounded-xl bg-amber-500 text-slate-950 font-bold text-xs inline-flex items-center gap-1.5 shadow-md cursor-pointer hover:bg-amber-400"
+            className="px-4 py-2 rounded-xl bg-orange-600 hover:bg-orange-500 text-white font-bold text-xs inline-flex items-center gap-1.5 shadow-xs cursor-pointer"
           >
             <Plus className="w-3.5 h-3.5" />
             <span>Thêm Gói Mới Ngay</span>
           </button>
         </div>
       ) : viewMode === 'grid' ? (
-        /* DẠNG GRID CARDS CHUẨN LIQUID GLASS */
+        /* DẠNG GRID CARDS */
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
           {filteredPackages.map(pkg => {
             const hasImages = pkg.image_urls && pkg.image_urls.length > 0;
@@ -693,10 +693,10 @@ export const PackagesManagementPage: React.FC = () => {
             return (
               <div
                 key={pkg.id}
-                className={`group rounded-3xl bg-white/80 dark:bg-white/[0.04] backdrop-blur-2xl border transition-all duration-300 flex flex-col justify-between overflow-hidden shadow-[0_8px_32px_0_rgba(0,0,0,0.06)] dark:shadow-[0_8px_32px_0_rgba(0,0,0,0.37)] ${
+                className={`group rounded-2xl bg-white dark:bg-zinc-900 border transition-all duration-300 flex flex-col justify-between overflow-hidden shadow-xs hover:shadow-md ${
                   pkg.is_active
-                    ? 'border-white/60 dark:border-white/10 hover:border-amber-500/40 hover:-translate-y-1'
-                    : 'border-slate-300 dark:border-white/5 opacity-70 hover:opacity-100'
+                    ? 'border-slate-200/80 dark:border-zinc-800 hover:border-orange-500/40 hover:-translate-y-0.5'
+                    : 'border-slate-200/50 dark:border-zinc-800/50 opacity-70 hover:opacity-100'
                 }`}
               >
                 <div>
@@ -830,10 +830,10 @@ export const PackagesManagementPage: React.FC = () => {
         </div>
       ) : (
         /* DẠNG BẢNG (TABLE VIEW) */
-        <div className="rounded-3xl bg-white/80 dark:bg-white/[0.04] backdrop-blur-2xl border border-white/60 dark:border-white/10 overflow-hidden shadow-sm">
+        <div className="rounded-2xl bg-white dark:bg-zinc-900 border border-slate-200/80 dark:border-zinc-800 overflow-hidden shadow-xs">
           <div className="overflow-x-auto">
             <table className="w-full text-left text-xs">
-              <thead className="bg-slate-50 dark:bg-white/5 border-b border-slate-200 dark:border-white/10 text-[11px] uppercase tracking-wider text-slate-400">
+              <thead className="bg-slate-50/75 dark:bg-zinc-900/75 border-b border-slate-200/80 dark:border-zinc-800 text-[11px] font-extrabold uppercase font-mono text-slate-500 dark:text-zinc-400">
                 <tr>
                   <th className="py-3.5 px-4 font-extrabold">Gói Dịch Vụ</th>
                   <th className="py-3.5 px-4 font-extrabold">Phân Loại</th>

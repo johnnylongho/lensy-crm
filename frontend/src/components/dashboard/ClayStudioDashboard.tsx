@@ -55,6 +55,11 @@ import { GrowthProgressBar } from './GrowthProgressBar';
 import { BookingStatusSelect } from './BookingStatusSelect';
 import { formatCurrencyVND } from '../../utils/currency';
 import { VerifiedBadge } from '../common/VerifiedBadge';
+import { ModernMetricCards } from './ModernMetricCards';
+import { StudioIntelligenceRail } from './StudioIntelligenceRail';
+import { FinancialAnalyticsView } from './FinancialAnalyticsView';
+import { ShowsTableView } from './ShowsTableView';
+import { VietQRDepositModal } from '../modals/VietQRDepositModal';
 
 interface Props {
   events: CalendarEvent[];
@@ -101,6 +106,8 @@ export const ClayStudioDashboard: React.FC<Props> = ({
   const [dashboardView, setDashboardView] = useState<'table' | 'calendar' | 'kanban' | 'roi'>('table');
   const [selectedCalendarDate, setSelectedCalendarDate] = useState<Date>(new Date());
   const [visibleCount, setVisibleCount] = useState<number>(10);
+  const [vietQrBooking, setVietQrBooking] = useState<CalendarEvent | null>(null);
+  const [showIntelligenceRail, setShowIntelligenceRail] = useState<boolean>(true);
 
   const navigate = useNavigate();
   const { user } = useAuth();
@@ -463,190 +470,9 @@ export const ClayStudioDashboard: React.FC<Props> = ({
       </div>
 
       {/* ===================================================================== */}
-      {/* 2. HERO METRICS BLOCK (KHỐI NỀN CAM TỔNG & 4 THẺ KPI GLASS/SOLID) */}
+      {/* 2. MODERN METRIC CARDS (4 THẺ KPI NỔI VỚI MICRO-SPARKLINES)          */}
       {/* ===================================================================== */}
-      {/* ===================================================================== */}
-      {/* 2. HERO METRICS BLOCK (BRAND GRADIENT CAM - HỒNG - TÍM & 4 THẺ KPI) */}
-      {/* ===================================================================== */}
-      <div className="rounded-3xl bg-gradient-to-br from-[#FF9A44] via-[#FC6076] to-[#A044FF] p-5 sm:p-7 shadow-xl shadow-[#FC6076]/25 relative overflow-hidden">
-        {/* Ambient Lighting Accents */}
-        <div className="absolute -top-24 -right-24 w-72 h-72 bg-white/20 rounded-full blur-3xl pointer-events-none" />
-        <div className="absolute -bottom-24 -left-24 w-72 h-72 bg-white/10 rounded-full blur-3xl pointer-events-none" />
-
-        {/* Grid 4 Thẻ KPI Cân Đối Hoàn Hảo */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 relative z-10 items-stretch">
-          {/* Thẻ 1: TRUNG TÂM DÒNG TIỀN & LỢI NHUẬN RÒNG */}
-          <div className="rounded-2xl bg-white/95 dark:bg-zinc-900/95 backdrop-blur-md border border-white/20 p-4 sm:p-5 shadow-sm flex flex-col justify-between space-y-3 transition-all hover:shadow-md">
-            <div className="space-y-1">
-              <div className="flex items-center justify-between">
-                <span className="text-[10px] font-sans font-bold tracking-wider uppercase text-orange-600 dark:text-orange-400">
-                  {isStudioMember ? 'TIẾN ĐỘ TÁC CHIẾN' : 'TRUNG TÂM DÒNG TIỀN'}
-                </span>
-                <span className="text-[9px] font-sans font-bold px-2 py-0.5 rounded-full bg-orange-100 text-orange-700 dark:bg-orange-500/15 dark:text-orange-400 uppercase">
-                  {isStudioMember ? 'Ekip KPI' : 'Net Profit'}
-                </span>
-              </div>
-
-              <div className="text-xl sm:text-2xl font-sans font-bold text-slate-900 dark:text-white tracking-tight pt-0.5">
-                {isStudioMember
-                  ? `${validEvents.filter(e => e.status === 'shot' || e.status === 'editing' || e.status === 'da_tra_file').length} Ca Đang Chạy`
-                  : formatVND(financialMetrics.totalActualRevenue)}
-              </div>
-              <p className="text-[11px] text-slate-500 dark:text-zinc-400 font-sans line-clamp-1">
-                {isStudioMember
-                  ? 'Số ca chụp và hậu kỳ được phân bổ cho ekip'
-                  : 'Dòng tiền thực tế đã thu vào tài khoản'}
-              </p>
-            </div>
-
-            {!isStudioMember ? (
-              <div className="space-y-1.5 pt-0.5">
-                <div className="w-full bg-slate-100 dark:bg-zinc-800 rounded-full h-1.5 overflow-hidden">
-                  <div
-                    className="bg-gradient-to-r from-orange-500 to-amber-500 h-1.5 rounded-full transition-all duration-500"
-                    style={{ width: `${financialMetrics.contractCollectionRatio}%` }}
-                  />
-                </div>
-
-                <div className="flex items-center justify-between text-[11px] font-sans">
-                  <span className="text-slate-500 dark:text-zinc-400">
-                    Đã thu: <strong className="text-slate-900 dark:text-white font-sans font-bold tracking-tight">{financialMetrics.contractCollectionRatio}%</strong>
-                  </span>
-                  <span className="text-slate-500 dark:text-zinc-400">
-                    Tổng HĐ: <strong className="text-slate-900 dark:text-white font-sans font-bold tracking-tight">{formatVND(financialMetrics.totalContractValue)}</strong>
-                  </span>
-                </div>
-
-                <div className="pt-2 border-t border-slate-100 dark:border-zinc-800 flex items-center justify-between text-xs">
-                  <span className="text-slate-500 dark:text-zinc-400 text-[11px]">Lợi Nhuận Ròng:</span>
-                  <div className="flex items-center gap-1 font-sans">
-                    <span className="text-emerald-600 dark:text-emerald-400 font-sans font-bold text-xs sm:text-sm tracking-tight">
-                      +{formatVND(financialMetrics.totalNetProfit)}
-                    </span>
-                    <span className="text-[10px] text-emerald-700 dark:text-emerald-500 font-bold">
-                      ({financialMetrics.netMargin}%)
-                    </span>
-                  </div>
-                </div>
-              </div>
-            ) : (
-              <div className="pt-2 border-t border-slate-100 dark:border-zinc-800 flex items-center justify-between text-xs text-slate-500 dark:text-zinc-400">
-                <span>Trạng thái hoạt động:</span>
-                <span className="text-emerald-600 dark:text-emerald-400 font-sans font-bold">Sẵn sàng nhận show</span>
-              </div>
-            )}
-          </div>
-
-          {/* Thẻ 2: CA CHỤP HÔM NAY */}
-          <div className="rounded-2xl bg-white/95 dark:bg-zinc-900/95 backdrop-blur-md border border-white/20 p-4 sm:p-5 shadow-sm flex flex-col justify-between space-y-3 transition-all hover:shadow-md">
-            <div className="space-y-1">
-              <div className="flex items-center justify-between">
-                <span className="text-[10px] font-sans font-bold uppercase tracking-wider text-slate-500 dark:text-zinc-400">
-                  CA CHỤP HÔM NAY
-                </span>
-                <span className="text-[10px] font-sans font-bold px-2 py-0.5 rounded-full bg-slate-100 dark:bg-zinc-800 text-slate-700 dark:text-zinc-300">
-                  {format(currentDate, 'dd/MM')}
-                </span>
-              </div>
-              <div className="text-xl sm:text-2xl font-sans font-bold text-slate-900 dark:text-white tracking-tight pt-0.5">
-                {todayShoots.length}
-              </div>
-              <div className="text-xs font-semibold text-slate-700 dark:text-zinc-300">
-                {todayShoots.length > 0 ? 'Buổi chụp trong ngày' : 'Trống lịch hôm nay'}
-              </div>
-            </div>
-
-            <div className="pt-2 border-t border-slate-100 dark:border-zinc-800 text-xs">
-              {todayShoots.length > 0 ? (
-                <div className="text-[11px] text-slate-600 dark:text-zinc-400 truncate">
-                  <span className="font-bold text-orange-600 dark:text-orange-400 font-sans mr-1">
-                    {todayShoots[0].startTime || '08:00'}:
-                  </span>
-                  <span className="font-semibold text-slate-800 dark:text-zinc-200">
-                    {todayShoots[0].clientName}
-                  </span>
-                </div>
-              ) : (
-                <button
-                  type="button"
-                  onClick={onOpenCreateQuote}
-                  className="text-orange-600 dark:text-orange-400 font-bold hover:underline cursor-pointer block text-xs"
-                >
-                  + Lên lịch chụp ngay
-                </button>
-              )}
-            </div>
-          </div>
-
-          {/* Thẻ 3: CỌC & CÔNG NỢ */}
-          <div className="rounded-2xl bg-white/95 dark:bg-zinc-900/95 backdrop-blur-md border border-white/20 p-4 sm:p-5 shadow-sm flex flex-col justify-between space-y-3 transition-all hover:shadow-md">
-            <div className="space-y-1">
-              <div className="flex items-center justify-between">
-                <span className="text-[10px] font-sans font-bold uppercase tracking-wider text-slate-500 dark:text-zinc-400">
-                  CỌC & CÔNG NỢ
-                </span>
-                <span className={`text-[9px] font-sans font-bold px-2 py-0.5 rounded-full ${
-                  pendingCount > 0
-                    ? 'bg-amber-100 text-amber-700 dark:bg-amber-500/15 dark:text-amber-400'
-                    : 'bg-emerald-100 text-emerald-700 dark:bg-emerald-500/15 dark:text-emerald-400'
-                }`}>
-                  {pendingCount > 0 ? 'CẦN CHỐT' : 'ỔN ĐỊNH'}
-                </span>
-              </div>
-              <div className="text-xl sm:text-2xl font-sans font-bold text-slate-900 dark:text-white tracking-tight pt-0.5">
-                {pendingCount}
-              </div>
-              <div className="text-xs font-semibold text-slate-700 dark:text-zinc-300">
-                Khách chờ chốt cọc
-              </div>
-            </div>
-
-            <div className="pt-2 border-t border-slate-100 dark:border-zinc-800 text-xs">
-              {financialMetrics.totalDebt > 0 ? (
-                <div className="text-[11px] font-sans flex items-center justify-between">
-                  <span className="text-slate-500 dark:text-zinc-400 font-sans">Nợ đọng:</span>
-                  <span className="text-rose-600 dark:text-rose-400 font-sans font-bold tracking-tight">
-                    {formatVND(financialMetrics.totalDebt)}
-                  </span>
-                </div>
-              ) : (
-                <span className="text-[11px] font-sans font-bold text-emerald-600 dark:text-emerald-400">
-                  Đã thu đủ 100%
-                </span>
-              )}
-            </div>
-          </div>
-
-          {/* Thẻ 4: HIỆU SUẤT THÁNG */}
-          <div className="rounded-2xl bg-white/95 dark:bg-zinc-900/95 backdrop-blur-md border border-white/20 p-4 sm:p-5 shadow-sm flex flex-col justify-between space-y-3 transition-all hover:shadow-md">
-            <div className="space-y-1">
-              <div className="flex items-center justify-between">
-                <span className="text-[10px] font-sans font-bold uppercase tracking-wider text-slate-500 dark:text-zinc-400">
-                  HIỆU SUẤT THÁNG
-                </span>
-                <span className="text-[10px] font-sans font-bold px-2 py-0.5 rounded-full bg-slate-100 dark:bg-zinc-800 text-slate-700 dark:text-zinc-300">
-                  {format(currentDate, 'MM/yyyy')}
-                </span>
-              </div>
-              <div className="text-xl sm:text-2xl font-sans font-bold text-slate-900 dark:text-white tracking-tight pt-0.5">
-                {completedMonthCount}
-              </div>
-              <div className="text-xs font-semibold text-slate-700 dark:text-zinc-300">
-                Show đã giao file
-              </div>
-            </div>
-
-            <div className="pt-2 border-t border-slate-100 dark:border-zinc-800 text-xs">
-              <div className="flex items-center justify-between text-[11px] font-sans">
-                <span className="text-slate-500 dark:text-zinc-400">Tỷ lệ hoàn thành:</span>
-                <span className="font-sans font-bold text-amber-600 dark:text-amber-400">
-                  {monthCompletionPct}%
-                </span>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
+      <ModernMetricCards events={events} onOpenCreateShow={onOpenCreateQuote} />
       
       {/* 3. TODAY'S TIMELINE BAR (CHỈ HIỂN THỊ KHI CÓ SHOW HÔM NAY)             */}
       {/* ===================================================================== */}
@@ -700,64 +526,81 @@ export const ClayStudioDashboard: React.FC<Props> = ({
       )}
 
       {/* ===================================================================== */}
-      {/* 4. WORKFLOW DISPATCH CENTER (TABS NAVIGATION & DIRECT WORKSPACE)      */}
+      {/* 4. WORKFLOW DISPATCH CENTER (2-COLUMN RESPONSIVE LAYOUT)              */}
       {/* ===================================================================== */}
-      <div className="rounded-xl border border-slate-200 dark:border-white/10 bg-white dark:bg-zinc-900/50 p-4 sm:p-6 shadow-sm">
-        {/* ================================================================= */}
-        {/* TẦNG 1: TABS ĐIỀU HƯỚNG RIÊNG BIỆT (LAYER 1: RESPONSIVE TABS)     */}
-        {/* ================================================================= */}
-        <div className="pb-3.5 border-b border-slate-100 dark:border-white/10">
-          {/* Mobile: Thẻ Select (Dropdown Menu) - Chuyển Tab tức thì, 0% lỗi tràn viền */}
-          <div className="sm:hidden w-full">
-            <select
-              value={dashboardView}
-              onChange={e => setDashboardView(e.target.value as any)}
-              className="w-full h-9 rounded-xl border border-slate-200/80 dark:border-white/10 bg-slate-50 dark:bg-white/5 px-3 text-xs font-bold text-slate-800 dark:text-zinc-100 focus:outline-hidden focus:ring-1 focus:ring-orange-500 cursor-pointer"
-            >
-              {[
-                { id: 'table', label: isStudioMember ? 'Ca Chụp Phân Công' : isFreelancer ? 'Lịch Chụp Cá Nhân' : 'Danh Sách Lịch Chụp' },
-                { id: 'kanban', label: 'Quy Trình Kanban (5 bước)' },
-                { id: 'calendar', label: 'Thời Khóa Biểu Tuần' },
-                ...(!isStudioMember ? [{ id: 'roi', label: isFreelancer ? 'Dòng Tiền Cá Nhân' : 'Biểu Đồ Tài Chính & ROI Thiết Bị' }] : []),
-              ].map(tab => (
-                <option
-                  key={tab.id}
-                  value={tab.id}
-                  className="bg-white dark:bg-zinc-900 text-slate-800 dark:text-zinc-100 font-semibold"
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
+        <div className={showIntelligenceRail ? "lg:col-span-8 space-y-6" : "lg:col-span-12 space-y-6"}>
+          <div className="rounded-xl border border-slate-200 dark:border-white/10 bg-white dark:bg-zinc-900/50 p-4 sm:p-6 shadow-sm">
+            {/* ================================================================= */}
+            {/* TẦNG 1: TABS ĐIỀU HƯỚNG RIÊNG BIỆT (LAYER 1: RESPONSIVE TABS)     */}
+            {/* ================================================================= */}
+            <div className="pb-3.5 border-b border-slate-100 dark:border-white/10">
+              {/* Mobile: Thẻ Select (Dropdown Menu) - Chuyển Tab tức thì, 0% lỗi tràn viền */}
+              <div className="sm:hidden w-full">
+                <select
+                  value={dashboardView}
+                  onChange={e => setDashboardView(e.target.value as any)}
+                  className="w-full h-9 rounded-xl border border-slate-200/80 dark:border-white/10 bg-slate-50 dark:bg-white/5 px-3 text-xs font-bold text-slate-800 dark:text-zinc-100 focus:outline-hidden focus:ring-1 focus:ring-orange-500 cursor-pointer"
                 >
-                  {tab.label}
-                </option>
-              ))}
-            </select>
-          </div>
+                  {[
+                    { id: 'table', label: isStudioMember ? 'Ca Chụp Phân Công' : isFreelancer ? 'Lịch Chụp Cá Nhân' : 'Danh Sách Lịch Chụp' },
+                    { id: 'kanban', label: 'Quy Trình Kanban (5 bước)' },
+                    { id: 'calendar', label: 'Thời Khóa Biểu Tuần' },
+                    ...(!isStudioMember ? [{ id: 'roi', label: isFreelancer ? 'Dòng Tiền Cá Nhân' : 'Biểu Đồ Tài Chính & ROI Thiết Bị' }] : []),
+                  ].map(tab => (
+                    <option
+                      key={tab.id}
+                      value={tab.id}
+                      className="bg-white dark:bg-zinc-900 text-slate-800 dark:text-zinc-100 font-semibold"
+                    >
+                      {tab.label}
+                    </option>
+                  ))}
+                </select>
+              </div>
 
-          {/* Desktop & Tablet: flex flex-wrap gap-2, các Tab tự xuống dòng gọn gàng, KHÔNG ép cuộn ngang */}
-          <div className="hidden sm:flex flex-wrap items-center gap-2">
-            {[
-              { id: 'table', label: isStudioMember ? 'Ca Chụp Phân Công' : isFreelancer ? 'Lịch Chụp Cá Nhân' : 'Danh Sách Lịch Chụp', icon: Briefcase },
-              { id: 'kanban', label: 'Quy Trình Kanban (5 bước)', icon: Kanban },
-              { id: 'calendar', label: 'Thời Khóa Biểu Tuần', icon: CalendarIcon },
-              ...(!isStudioMember ? [{ id: 'roi', label: isFreelancer ? 'Dòng Tiền Cá Nhân' : 'Biểu Đồ Tài Chính & ROI Thiết Bị', icon: TrendingUp }] : []),
-            ].map(tab => {
-              const Icon = tab.icon;
-              const isActive = dashboardView === tab.id;
-              return (
+              {/* Desktop & Tablet: flex flex-wrap gap-2, các Tab tự xuống dòng gọn gàng, KHÔNG ép cuộn ngang */}
+              <div className="hidden sm:flex flex-wrap items-center gap-2">
+                {[
+                  { id: 'table', label: isStudioMember ? 'Ca Chụp Phân Công' : isFreelancer ? 'Lịch Chụp Cá Nhân' : 'Danh Sách Lịch Chụp', icon: Briefcase },
+                  { id: 'kanban', label: 'Quy Trình Kanban (5 bước)', icon: Kanban },
+                  { id: 'calendar', label: 'Thời Khóa Biểu Tuần', icon: CalendarIcon },
+                  ...(!isStudioMember ? [{ id: 'roi', label: isFreelancer ? 'Dòng Tiền Cá Nhân' : 'Biểu Đồ Tài Chính & ROI Thiết Bị', icon: TrendingUp }] : []),
+                ].map(tab => {
+                  const Icon = tab.icon;
+                  const isActive = dashboardView === tab.id;
+                  return (
+                    <button
+                      key={tab.id}
+                      onClick={() => setDashboardView(tab.id as any)}
+                      className={`flex items-center gap-2 rounded-xl px-3.5 py-2 text-xs font-bold transition-all whitespace-nowrap cursor-pointer ${
+                        isActive
+                          ? 'bg-orange-100 text-orange-700 dark:bg-orange-600 dark:text-white shadow-xs'
+                          : 'text-slate-600 dark:text-zinc-400 hover:bg-slate-100 dark:hover:bg-white/5'
+                      }`}
+                    >
+                      <Icon className="h-3.5 w-3.5" />
+                      <span>{tab.label}</span>
+                    </button>
+                  );
+                })}
+
+                {/* Nút Toggle Cột Trí Tuệ Studio (AI Rail) */}
                 <button
-                  key={tab.id}
-                  onClick={() => setDashboardView(tab.id as any)}
-                  className={`flex items-center gap-2 rounded-xl px-3.5 py-2 text-xs font-bold transition-all whitespace-nowrap cursor-pointer ${
-                    isActive
-                      ? 'bg-orange-100 text-orange-700 dark:bg-orange-600 dark:text-white shadow-xs'
-                      : 'text-slate-600 dark:text-zinc-400 hover:bg-slate-100 dark:hover:bg-white/5'
+                  type="button"
+                  onClick={() => setShowIntelligenceRail(!showIntelligenceRail)}
+                  className={`ml-auto hidden lg:flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold border transition cursor-pointer ${
+                    showIntelligenceRail
+                      ? 'bg-orange-500/10 border-orange-500/30 text-orange-600 dark:text-orange-400'
+                      : 'bg-slate-100 dark:bg-zinc-800 border-slate-200 dark:border-zinc-700 text-slate-500 hover:text-slate-800 dark:hover:text-zinc-200'
                   }`}
+                  title="Bật/Tắt Cột Phân Tích Thông Minh Studio"
                 >
-                  <Icon className="h-3.5 w-3.5" />
-                  <span>{tab.label}</span>
+                  <Sparkles className="w-3.5 h-3.5 text-orange-500" />
+                  <span>{showIntelligenceRail ? 'Đóng AI Rail' : 'Mở AI Rail'}</span>
                 </button>
-              );
-            })}
-          </div>
-        </div>
+              </div>
+            </div>
 
         {/* ================================================================= */}
         {/* TẦNG 2: TOOLBAR TÌM KIẾM, LỌC & ACTION MENU (LAYER 2: TOOLBAR)   */}
@@ -1115,8 +958,24 @@ export const ClayStudioDashboard: React.FC<Props> = ({
         {/* ------------------------------------------------------------------- */}
         {dashboardView === 'roi' && (
           <div className="pt-4 space-y-6">
-            <ProfitTrendChart events={events} defaultCollapsed={false} />
+            <FinancialAnalyticsView events={events} />
+            <ProfitTrendChart events={events} defaultCollapsed={true} />
             <GrowthProgressBar events={events} />
+          </div>
+        )}
+          </div>
+        </div>
+
+        {/* Right Column: Studio Intelligence Rail */}
+        {showIntelligenceRail && (
+          <div className="lg:col-span-4">
+            <StudioIntelligenceRail
+              events={events}
+              onSelectShow={onOpenDetailModal}
+              onOpenVietQR={booking => setVietQrBooking(booking)}
+              onRefreshData={onRefreshData}
+              isLoading={isLoading}
+            />
           </div>
         )}
       </div>
@@ -1330,6 +1189,16 @@ export const ClayStudioDashboard: React.FC<Props> = ({
             </div>
           </div>
         </div>
+      )}
+      {/* Modal VietQR Thu Tiền Ca Chụp Tức Thì */}
+      {vietQrBooking && (
+        <VietQRDepositModal
+          booking={vietQrBooking}
+          onClose={() => setVietQrBooking(null)}
+          onSuccess={() => {
+            if (onRefreshData) onRefreshData();
+          }}
+        />
       )}
     </div>
   );

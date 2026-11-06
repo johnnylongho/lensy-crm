@@ -29,7 +29,6 @@ import { ThemeToggle } from '../components/common/ThemeToggle';
 import { NotificationDropdown } from '../components/navigation/NotificationDropdown';
 import { TierBadge } from '../components/dashboard/TierBadge';
 import { TierConfig, TIER_CONFIGS, calculateYtdRevenue, getTierProgress } from '../utils/tierSystem';
-import { QuickPassShowModal } from '../components/dashboard/QuickPassShowModal';
 
 export const DashboardLayout: React.FC = () => {
   const { user, signOut } = useAuth();
@@ -44,13 +43,18 @@ export const DashboardLayout: React.FC = () => {
   } = useWorkspace();
   const location = useLocation();
 
+  const studioDisplayName = currentStudio?.name || 'MIRMIA STUDIO & ACADEMY';
+  const studioDisplayLogo =
+    currentStudio?.logo_url ||
+    (typeof window !== 'undefined' ? localStorage.getItem('lensy_current_studio_logo') : null) ||
+    '/mirmia-logo.png';
+
   const [currentUsername, setCurrentUsername] = useState<string>('johnnylongho');
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState<boolean>(() => {
     return localStorage.getItem('lensy_sidebar_collapsed') === 'true';
   });
   const [isUserMenuOpen, setIsUserMenuOpen] = useState(false);
-  const [isPassShowOpen, setIsPassShowOpen] = useState(false);
   const [studioTier, setStudioTier] = useState<TierConfig>(TIER_CONFIGS.gold);
   const [toastBanner, setToastBanner] = useState<{ type: 'error' | 'success'; text: string } | null>(null);
   const mobileMenuRef = useRef<HTMLDivElement>(null);
@@ -99,13 +103,6 @@ export const DashboardLayout: React.FC = () => {
       return next;
     });
   };
-
-  // Lắng nghe sự kiện mở modal pass show từ mọi component
-  useEffect(() => {
-    const handlePassShow = () => setIsPassShowOpen(true);
-    window.addEventListener('lensy:pass-show', handlePassShow);
-    return () => window.removeEventListener('lensy:pass-show', handlePassShow);
-  }, []);
 
   useEffect(() => {
     if (!user) return;
@@ -407,87 +404,52 @@ export const DashboardLayout: React.FC = () => {
           isMobileMenuOpen ? 'translate-x-0 shadow-2xl' : '-translate-x-full lg:translate-x-0'
         }`}
       >
-        <div className="space-y-6">
-          {/* Logo & Brand Header */}
-          <div className="flex items-center justify-between pb-4 border-b border-gray-100 dark:border-white/10">
-            <Link
-              to="/dashboard"
-              className={`flex items-center gap-3 group ${isSidebarCollapsed ? 'lg:justify-center lg:w-full' : ''}`}
-              title="Trang chủ Lensy CRM"
+        <div className="space-y-4">
+          {/* Top Header: Fixed Toggle Button */}
+          <div className="flex items-center justify-between pb-3 border-b border-gray-100 dark:border-white/10 min-h-[44px]">
+            {/* Nút thu gọn / mở rộng menu - Cố định vị trí góc trên cùng bên trái, con trỏ chuột không dịch chuyển khi bấm */}
+            <button
+              type="button"
+              onClick={toggleSidebar}
+              className="hidden lg:flex w-9 h-9 items-center justify-center flex-shrink-0 rounded-xl text-gray-500 hover:text-orange-600 dark:text-zinc-400 dark:hover:text-orange-400 hover:bg-orange-50/80 dark:hover:bg-zinc-800 transition-all cursor-pointer"
+              title={isSidebarCollapsed ? "Mở rộng thanh menu" : "Thu gọn thanh menu"}
+              aria-label={isSidebarCollapsed ? "Mở rộng thanh menu" : "Thu gọn thanh menu"}
             >
-              <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-orange-50 dark:bg-orange-950/40 p-1.5 border border-orange-200/60 dark:border-orange-800/40 group-hover:scale-105 transition-transform flex-shrink-0">
-                <img src="/lensy-logo.png" alt="Lensy CRM" className="h-full w-full object-contain rounded-lg" />
-              </div>
-              {!isSidebarCollapsed && (
-                <div className="overflow-hidden transition-opacity duration-200">
-                  <h1 className="text-xl font-bold tracking-tight text-gray-900 dark:text-white flex items-center gap-1.5">
-                    <span>Lensy</span>
-                    <span className="text-[9px] font-bold px-1.5 py-0.5 rounded-full bg-orange-500/15 text-orange-600 dark:text-orange-400 uppercase border border-orange-500/25">
-                      CRM
-                    </span>
-                  </h1>
-                  <p className="text-[10px] font-semibold uppercase tracking-wider text-gray-400 dark:text-zinc-500 truncate">
-                    Studio Management
-                  </p>
-                </div>
+              {isSidebarCollapsed ? (
+                <PanelLeftOpen className="w-5 h-5 text-orange-500 hover:scale-110 transition-transform" />
+              ) : (
+                <PanelLeftClose className="w-5 h-5 text-gray-500 hover:text-orange-600 hover:scale-110 transition-transform" />
               )}
-            </Link>
+            </button>
+
+            {!isSidebarCollapsed && (
+              <div className="hidden lg:flex items-center gap-2 pr-1 min-w-0">
+                <span className="text-[11px] font-bold uppercase tracking-wider text-gray-400 dark:text-zinc-500 truncate select-none">
+                  Vận Hành Studio
+                </span>
+              </div>
+            )}
 
             {/* Nút đóng trên mobile */}
             <button
               type="button"
               onClick={() => setIsMobileMenuOpen(false)}
-              className="lg:hidden p-1.5 rounded-lg text-gray-400 hover:text-gray-600 dark:hover:text-zinc-200"
+              className="lg:hidden ml-auto p-1.5 rounded-lg text-gray-400 hover:text-gray-600 dark:hover:text-zinc-200"
             >
               <X className="w-5 h-5" />
             </button>
           </div>
 
-          {/* Role Identifier Badge trên Sidebar */}
-          {!isSidebarCollapsed && (
-            <div className="px-1">
-              {isStudioAdmin ? (
-                <div className="flex items-center justify-between px-3 py-2 rounded-xl bg-orange-500/10 border border-orange-500/25 text-[#df8653] dark:text-orange-400 text-xs font-bold">
-                  <span className="flex items-center gap-1.5 truncate">
-                    <ShieldCheck className="w-4 h-4 text-orange-500 flex-shrink-0" />
-                    <span className="truncate">Quản Lý Studio</span>
-                  </span>
-                  <span className="text-[9px] px-1.5 py-0.5 rounded bg-orange-500 text-white font-black uppercase">
-                    Admin
-                  </span>
-                </div>
-              ) : isStudioMember ? (
-                <div className="flex items-center justify-between px-3 py-2 rounded-xl bg-emerald-500/10 border border-emerald-500/25 text-emerald-700 dark:text-emerald-400 text-xs font-bold">
-                  <span className="flex items-center gap-1.5 truncate">
-                    <Users className="w-4 h-4 text-emerald-500 flex-shrink-0" />
-                    <span className="truncate">Thành Viên Ekip</span>
-                  </span>
-                  <span className="text-[9px] px-1.5 py-0.5 rounded bg-emerald-600 text-white font-black uppercase">
-                    Ekip
-                  </span>
-                </div>
-              ) : (
-                <div className="flex items-center justify-between px-3 py-2 rounded-xl bg-amber-500/10 border border-amber-500/25 text-amber-700 dark:text-amber-400 text-xs font-bold">
-                  <span className="flex items-center gap-1.5 truncate">
-                    <Camera className="w-4 h-4 text-amber-500 flex-shrink-0" />
-                    <span className="truncate">Freelancer Solo</span>
-                  </span>
-                  <span className="text-[9px] px-1.5 py-0.5 rounded bg-amber-500 text-slate-950 font-black uppercase">
-                    Solo
-                  </span>
-                </div>
-              )}
-            </div>
-          )}
-
-          {/* Navigation Items */}
-          <div className="space-y-6">
+          {/* Navigation Items - Cố định tọa độ X, Y tuyệt đối không nhảy giật khi mở/đóng */}
+          <div className="space-y-4">
             {menuGroups.map((group, groupIdx) => (
-              <div key={groupIdx} className="space-y-1.5">
-                {!isSidebarCollapsed && (
-                  <div className="px-3 text-[10px] font-bold uppercase tracking-wider text-gray-400 dark:text-zinc-500">
+              <div key={groupIdx} className="space-y-1">
+                {!isSidebarCollapsed ? (
+                  <div className="px-2 text-[10px] font-bold uppercase tracking-wider text-gray-400 dark:text-zinc-500 mb-1 select-none">
                     {group.title}
                   </div>
+                ) : (
+                  <div className="h-px bg-gray-100 dark:bg-zinc-800/80 my-2 mx-1" />
                 )}
                 <nav className="space-y-1">
                   {group.items.map((item, itemIdx) => {
@@ -498,18 +460,14 @@ export const DashboardLayout: React.FC = () => {
                         key={itemIdx}
                         to={item.to}
                         title={isSidebarCollapsed ? item.label : undefined}
-                        className={`flex items-center rounded-xl text-xs font-medium transition-all group cursor-pointer ${
-                          isSidebarCollapsed
-                            ? 'justify-center p-2.5'
-                            : 'w-full gap-3 px-3 py-2'
-                        } ${
+                        className={`flex items-center w-full h-10 px-2 rounded-xl text-xs font-medium transition-all group cursor-pointer ${
                           isActive
                             ? 'bg-orange-500/10 text-orange-600 dark:text-orange-400 font-bold border border-orange-500/20'
-                            : 'text-gray-600 dark:text-zinc-400 hover:bg-gray-50 dark:hover:bg-zinc-800/50 hover:text-gray-900 dark:hover:text-white'
+                            : 'text-gray-600 dark:text-zinc-400 hover:bg-gray-100/80 dark:hover:bg-zinc-800/50 hover:text-gray-900 dark:hover:text-white'
                         }`}
                       >
                         <div
-                          className={`flex h-7 w-7 items-center justify-center rounded-lg transition-colors flex-shrink-0 ${
+                          className={`flex h-8 w-8 items-center justify-center rounded-lg transition-colors flex-shrink-0 ${
                             isActive
                               ? 'bg-orange-500 text-white shadow-xs'
                               : 'text-gray-400 dark:text-zinc-500 group-hover:text-gray-700 dark:group-hover:text-white'
@@ -518,7 +476,7 @@ export const DashboardLayout: React.FC = () => {
                           <Icon className="h-4 w-4" />
                         </div>
                         {!isSidebarCollapsed && (
-                          <span className="truncate">{item.label}</span>
+                          <span className="ml-3 truncate select-none">{item.label}</span>
                         )}
                       </Link>
                     );
@@ -529,14 +487,70 @@ export const DashboardLayout: React.FC = () => {
           </div>
         </div>
 
-        {/* Bottom widgets of Sidebar */}
-        <div className="pt-4 space-y-2">
-          {/* Public Booking Link Banner */}
-          <div className={`rounded-xl border border-orange-200/60 dark:border-white/10 bg-orange-50/50 dark:bg-zinc-900/60 ${
-            isSidebarCollapsed ? 'p-2 flex justify-center' : 'p-2.5'
-          }`}>
-            {!isSidebarCollapsed ? (
-              <>
+        {/* Bottom widgets of Sidebar: Studio Brand Profile & Online Booking */}
+        <div className="pt-3 space-y-2 border-t border-gray-100 dark:border-white/10">
+          {!isSidebarCollapsed ? (
+            <>
+              {/* Studio Brand Profile Card (Logo không viền vàng, tên & subtitle bên dưới logo) */}
+              <div className="p-3 rounded-2xl bg-slate-50/80 dark:bg-zinc-900/60 border border-slate-200/60 dark:border-white/5 space-y-2.5">
+                <div className="flex items-center gap-3">
+                  {/* Studio Logo: Hoàn toàn không có viền vàng */}
+                  <div className="h-10 w-10 flex items-center justify-center rounded-xl bg-white dark:bg-zinc-800 p-0.5 shadow-2xs flex-shrink-0 overflow-hidden">
+                    <img
+                      src={studioDisplayLogo}
+                      alt={studioDisplayName}
+                      className="h-full w-full object-contain rounded-lg"
+                      onError={e => {
+                        (e.target as HTMLImageElement).src = '/mirmia-logo.png';
+                      }}
+                    />
+                  </div>
+                  <div className="min-w-0 flex-1">
+                    <h2 className="text-xs font-bold text-gray-900 dark:text-white truncate" title={studioDisplayName}>
+                      {studioDisplayName}
+                    </h2>
+                    <p className="text-[10px] font-bold uppercase tracking-wider text-orange-600 dark:text-orange-400 truncate">
+                      Studio Management
+                    </p>
+                  </div>
+                </div>
+
+                {/* Role Identifier Badge */}
+                {isStudioAdmin ? (
+                  <div className="flex items-center justify-between px-2.5 py-1.5 rounded-lg bg-orange-500/10 border border-orange-500/20 text-orange-700 dark:text-orange-400 text-[11px] font-bold">
+                    <span className="flex items-center gap-1.5 truncate">
+                      <ShieldCheck className="w-3.5 h-3.5 text-orange-500 flex-shrink-0" />
+                      <span className="truncate">Quản Lý Studio</span>
+                    </span>
+                    <span className="text-[9px] px-1 py-0.5 rounded bg-orange-500 text-white font-black uppercase">
+                      Admin
+                    </span>
+                  </div>
+                ) : isStudioMember ? (
+                  <div className="flex items-center justify-between px-2.5 py-1.5 rounded-lg bg-emerald-500/10 border border-emerald-500/20 text-emerald-700 dark:text-emerald-400 text-[11px] font-bold">
+                    <span className="flex items-center gap-1.5 truncate">
+                      <Users className="w-3.5 h-3.5 text-emerald-500 flex-shrink-0" />
+                      <span className="truncate">Thành Viên Ekip</span>
+                    </span>
+                    <span className="text-[9px] px-1 py-0.5 rounded bg-emerald-600 text-white font-black uppercase">
+                      Ekip
+                    </span>
+                  </div>
+                ) : (
+                  <div className="flex items-center justify-between px-2.5 py-1.5 rounded-lg bg-amber-500/10 border border-amber-500/20 text-amber-700 dark:text-amber-400 text-[11px] font-bold">
+                    <span className="flex items-center gap-1.5 truncate">
+                      <Camera className="w-3.5 h-3.5 text-amber-500 flex-shrink-0" />
+                      <span className="truncate">Freelancer Solo</span>
+                    </span>
+                    <span className="text-[9px] px-1 py-0.5 rounded bg-amber-500 text-slate-950 font-black uppercase">
+                      Solo
+                    </span>
+                  </div>
+                )}
+              </div>
+
+              {/* Public Booking Link Banner */}
+              <div className="rounded-xl border border-orange-200/60 dark:border-white/10 bg-orange-50/50 dark:bg-zinc-900/60 p-2.5">
                 <div className="text-[10px] font-bold uppercase tracking-wider text-orange-600 dark:text-orange-400 mb-1.5">
                   Link Đặt Lịch Online
                 </div>
@@ -549,54 +563,32 @@ export const DashboardLayout: React.FC = () => {
                   <span className="truncate max-w-[130px] font-mono text-[11px]">@{currentUsername}</span>
                   <ExternalLink className="w-3.5 h-3.5 text-orange-600 dark:text-orange-400 shrink-0" />
                 </a>
-              </>
-            ) : (
+              </div>
+            </>
+          ) : (
+            /* Khi đóng sidebar không cần hiển thị logo, chỉ giữ icon đặt lịch nhỏ gọn */
+            <div className="flex justify-center py-1">
               <a
                 href={`/book/${currentUsername}`}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="p-2 rounded-lg bg-white dark:bg-zinc-900/90 border border-gray-200 dark:border-white/10 text-orange-600 dark:text-orange-400 hover:scale-105 transition-transform"
+                className="w-10 h-10 flex items-center justify-center rounded-xl bg-orange-50/80 dark:bg-zinc-800 text-orange-600 dark:text-orange-400 hover:scale-105 transition-transform border border-orange-200/60 dark:border-white/10 shadow-2xs"
                 title={`Mở link đặt lịch online: @${currentUsername}`}
               >
                 <ExternalLink className="w-4 h-4" />
               </a>
-            )}
-          </div>
-
-          {/* Desktop Toggle Sidebar Button DUY NHẤT */}
-          <div className="pt-2 border-t border-gray-100 dark:border-white/10 hidden lg:block">
-            <button
-              type="button"
-              onClick={toggleSidebar}
-              className={`w-full flex items-center h-10 rounded-xl text-gray-500 hover:text-orange-600 dark:text-zinc-400 dark:hover:text-orange-400 hover:bg-orange-50/80 dark:hover:bg-zinc-800 transition-all cursor-pointer group ${
-                isSidebarCollapsed ? 'justify-center' : 'px-1'
-              }`}
-              title={isSidebarCollapsed ? "Mở rộng thanh menu" : "Thu gọn thanh menu"}
-              aria-label={isSidebarCollapsed ? "Mở rộng thanh menu" : "Thu gọn thanh menu"}
-            >
-              <div className="w-8 h-8 flex items-center justify-center flex-shrink-0 rounded-lg group-hover:bg-orange-100 dark:group-hover:bg-zinc-700/60 transition-colors">
-                {isSidebarCollapsed ? (
-                  <PanelLeftOpen className="w-5 h-5 text-orange-500 group-hover:scale-110 transition-transform" />
-                ) : (
-                  <PanelLeftClose className="w-5 h-5 group-hover:scale-110 transition-transform" />
-                )}
-              </div>
-              {!isSidebarCollapsed && (
-                <span className="text-xs font-semibold whitespace-nowrap overflow-hidden text-gray-600 dark:text-zinc-300 group-hover:text-orange-600 dark:group-hover:text-orange-400 transition-colors ml-2.5">
-                  Thu gọn menu
-                </span>
-              )}
-            </button>
-          </div>
+            </div>
+          )}
         </div>
       </aside>
 
       {/* ===================================================================== */}
       {/* 2. MAIN CONTENT AREA (FLUID FULL-WIDTH LAYOUT)                        */}
       {/* ===================================================================== */}
-      <main className="flex-1 overflow-x-hidden overflow-y-auto bg-slate-50 dark:bg-[#090a0f] p-6 lg:p-8">
-        {/* Header: Page Title + Actions + Profile Pill */}
-        <div className="flex flex-row items-center justify-between w-full gap-2 mb-6">
+      <main className="flex-1 overflow-x-hidden overflow-y-auto bg-slate-50 dark:bg-[#090a0f] p-6 lg:p-8 flex flex-col justify-between min-h-screen">
+        <div className="w-full flex-1 flex flex-col">
+          {/* Header: Page Title + Actions + Profile Pill */}
+          <div className="flex flex-row items-center justify-between w-full gap-2 mb-6">
           <div className="flex items-center gap-2 sm:gap-3 min-w-0">
             {/* Mobile menu trigger */}
             <button
@@ -635,29 +627,17 @@ export const DashboardLayout: React.FC = () => {
 
           {/* Top Action Buttons & Profile Card Pill */}
           <div className="flex items-center gap-1.5 sm:gap-2.5 shrink-0">
-            {/* Chỉ hiển thị nút Pass Show & Tạo Lịch Mới cho Quản lý Studio hoặc Freelancer */}
+            {/* Chỉ hiển thị nút Tạo Lịch Mới cho Quản lý Studio hoặc Freelancer */}
             {!isStudioMember && (
-              <>
-                <button
-                  type="button"
-                  onClick={() => setIsPassShowOpen(true)}
-                  className="hidden md:inline-flex items-center gap-1.5 rounded-xl bg-amber-500/15 hover:bg-amber-500/25 border border-amber-500/40 text-amber-700 dark:text-amber-300 px-3 py-2 text-xs font-bold shadow-xs active:scale-95 transition-all cursor-pointer"
-                  title="Tạo lịch chụp thủ công / Nhận pass show"
-                >
-                  <Zap className="h-4 w-4 stroke-[2.5] text-amber-500" />
-                  <span>Pass Show</span>
-                </button>
-
-                <button
-                  type="button"
-                  onClick={handleOpenNewBooking}
-                  className="inline-flex items-center gap-1.5 rounded-xl bg-orange-600 hover:bg-orange-500 px-2.5 sm:px-3.5 py-2 text-xs font-bold text-white shadow-xs hover:brightness-105 active:scale-95 transition-all cursor-pointer"
-                  title="Tạo Lịch Mới"
-                >
-                  <Plus className="h-4 w-4 stroke-[2.5]" />
-                  <span className="hidden sm:inline">Tạo Lịch Mới</span>
-                </button>
-              </>
+              <button
+                type="button"
+                onClick={handleOpenNewBooking}
+                className="inline-flex items-center gap-1.5 rounded-xl bg-orange-600 hover:bg-orange-500 px-2.5 sm:px-3.5 py-2 text-xs font-bold text-white shadow-xs hover:brightness-105 active:scale-95 transition-all cursor-pointer"
+                title="Tạo Lịch Mới"
+              >
+                <Plus className="h-4 w-4 stroke-[2.5]" />
+                <span className="hidden sm:inline">Tạo Lịch Mới</span>
+              </button>
             )}
 
             {/* Trung Tâm Thông Báo (In-App Notification Hub) */}
@@ -856,17 +836,25 @@ export const DashboardLayout: React.FC = () => {
 
           <Outlet />
         </div>
-      </main>
+        </div>
 
-      {/* Modal Quick Pass Show (Tạo lịch nhanh) */}
-      <QuickPassShowModal
-        isOpen={isPassShowOpen}
-        onClose={() => setIsPassShowOpen(false)}
-        onBookingCreated={() => {
-          setIsPassShowOpen(false);
-          window.dispatchEvent(new CustomEvent('lensy:refresh-bookings'));
-        }}
-      />
+        {/* Global Dashboard Footer: Powered by Lensy */}
+        <footer className="mt-12 pt-6 pb-2 border-t border-slate-200/80 dark:border-white/5 flex flex-col sm:flex-row items-center justify-between gap-3 text-xs text-slate-500 dark:text-zinc-500 select-none">
+          <div className="flex items-center gap-2">
+            <img src="/lensy-logo.png" alt="Lensy CRM" className="h-5 w-5 object-contain rounded-md" />
+            <span className="font-semibold text-slate-700 dark:text-zinc-300">Lensy CRM</span>
+            <span className="text-slate-300 dark:text-zinc-700">•</span>
+            <span>Hệ thống Quản lý Studio & Nhiếp ảnh chuyên nghiệp</span>
+          </div>
+          <div className="flex items-center gap-1.5 text-[11px]">
+            <span>Powered by</span>
+            <span className="font-bold text-slate-800 dark:text-zinc-200">Lensy</span>
+            <span className="px-1.5 py-0.5 rounded bg-orange-500/10 text-orange-600 dark:text-orange-400 font-bold text-[10px]">
+              v2.5 Pro
+            </span>
+          </div>
+        </footer>
+      </main>
     </div>
   );
 };

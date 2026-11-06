@@ -222,6 +222,8 @@ export interface Studio {
   name: string;
   slug?: string;
   logo_url?: string | null;
+  cover_url?: string | null;
+  cover_image?: string | null;
   address?: string | null;
   tax_code?: string | null;
   email?: string | null;
@@ -230,6 +232,9 @@ export interface Studio {
   invite_code?: string;
   verified_status: boolean;
   owner_id: string;
+  bank_name?: string | null;
+  bank_account?: string | null;
+  bank_account_name?: string | null;
   created_at?: string;
   updated_at?: string;
 }

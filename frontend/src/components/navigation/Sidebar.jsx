@@ -82,6 +82,12 @@ export const Sidebar = ({
             isActive: location.pathname.startsWith('/dashboard/payroll'),
           },
           {
+            to: '/dashboard/packages',
+            label: 'Gói Dịch Vụ',
+            icon: Layers,
+            isActive: location.pathname.startsWith('/dashboard/packages'),
+          },
+          {
             to: '/dashboard/settings',
             label: 'Cài Đặt',
             icon: Settings,
@@ -180,8 +186,15 @@ export const Sidebar = ({
             onClick={onCloseMobile}
             className="flex items-center gap-3 group overflow-hidden"
           >
-            <div className="w-10 h-10 rounded-2xl bg-gradient-to-tr from-orange-500 via-[#df8653] to-amber-500 flex items-center justify-center text-white font-black text-lg shadow-md shadow-orange-500/20 group-hover:scale-105 transition-all flex-shrink-0">
-              L
+            <div className="w-10 h-10 rounded-2xl bg-white dark:bg-zinc-800 p-1 border border-orange-200/60 dark:border-zinc-700 flex items-center justify-center shadow-md group-hover:scale-105 transition-all flex-shrink-0 overflow-hidden">
+              <img
+                src={currentStudio?.logo_url || (typeof window !== 'undefined' ? localStorage.getItem('lensy_current_studio_logo') : null) || '/mirmia-logo.png'}
+                alt={currentStudio?.name || 'Studio Logo'}
+                className="w-full h-full object-contain rounded-xl"
+                onError={e => {
+                  e.target.src = '/mirmia-logo.png';
+                }}
+              />
             </div>
             {!isCollapsed && (
               <div className="truncate">
